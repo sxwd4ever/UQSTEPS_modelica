@@ -23,11 +23,13 @@ package SCO2 "supercritical CO2"
   
   model CO2_pT "Base properties of medium"
     extends BaseProperties(final standardOrderComponents = true);
+    Modelica.SIunits.SpecificEntropy s;
   equation
       state.p = p;
       state.T = T;     
       d = CP.PropsSI("D", "P", state.p, "T", state.T, mediumName);
       h = CP.PropsSI("H", "P", state.p, "T", state.T, mediumName);
+      s = CP.PropsSI("S", "P", state.p, "T", state.T, mediumName);
       u = h - p / d;
       MM = 0.044;
       R = 8.3144 / MM; 
@@ -123,4 +125,3 @@ package SCO2 "supercritical CO2"
       cv := CP.PropsSI("CVMASS", "P", state.p, "T", state.T, mediumName);
   end specificHeatCapacityCv;  
 end SCO2;
-

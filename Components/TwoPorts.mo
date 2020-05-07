@@ -8,7 +8,10 @@ model TwoPorts
   replaceable Steps.Interfaces.PBFluidPort_b outlet(redeclare package Medium = SCO2) "Outlet port, next component";
   
   //SCO2.CO2_pT medium "medim in this component";  
-  SCO2.ThermodynamicState state_a;
-  SCO2.ThermodynamicState state_b;
-
+  //SCO2.ThermodynamicState state_in;
+  //SCO2.ThermodynamicState state_out;
+  
+  SCO2.CO2_pT medium_in;
+  SCO2.CO2_pT medium_out;
+  
 end TwoPorts;
