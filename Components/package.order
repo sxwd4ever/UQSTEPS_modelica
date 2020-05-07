@@ -6,3 +6,8 @@ Valve
 OilHeater
 Pump
 WaterCooler
+Splitter
+FanCooler
+Recuperator
+TemperatureOutput
+Merger
