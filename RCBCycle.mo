@@ -1,6 +1,6 @@
 within Steps;
 
-model RCBCCycle
+model RCBCycle
   "Brayton Cycle with Recuperator + Recompression"  
   
   // Adjustable parameters  
@@ -128,4 +128,4 @@ equation
 
 algorithm
   eta_total := if initial() then 0 else (turbine.W_turbine - pump.W_comp - recom_pump.W_comp) / pcm_heater.Q * 100;
-end RCBCCycle;
+end RCBCycle;
