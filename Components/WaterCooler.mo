@@ -10,10 +10,10 @@ model WaterCooler
     
 equation
   
-  medium_in.state = SCO2.setState_phX(p = inlet.p, h = inStream(inlet.h_outflow));
+  medium_in.state = PBMedia.setState_phX(p = inlet.p, h = inStream(inlet.h_outflow));
   
   outlet.p = inlet.p;
-  medium_out.state = SCO2.setState_pTX(p = outlet.p, T = T_cool_in + pinch);  
+  medium_out.state = PBMedia.setState_pTX(p = outlet.p, T = T_cool_in + pinch);  
 
   outlet.m_flow + inlet.m_flow = 0;  
   outlet.h_outflow = medium_out.h; 

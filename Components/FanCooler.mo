@@ -9,11 +9,9 @@ model FanCooler
   
 equation
   // Note that, no matter what the CO2 inlet conditions are, the fan cooler CO2 
-  // exit temperature is always the same for fixed ITD and ambient air temperature.
-  
-  medium_in.state = SCO2.setState_pTX(p = inlet.p, T = inlet.T);
-  
-  medium_out.state = SCO2.setState_pTX(p = inlet.p, T = T_amb + delta_T);
+  // exit temperature is always the same for fixed ITD and ambient air temperature.  
+  medium_in.state = PBMedia.setState_pTX(p = inlet.p, T = inlet.T);  
+  medium_out.state = PBMedia.setState_pTX(p = inlet.p, T = T_amb + delta_T);
   
   outlet.T =  medium_out.T;
   outlet.p = inlet.p;

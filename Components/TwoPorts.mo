@@ -2,16 +2,13 @@ within Steps.Components;
 
 model TwoPorts
   "Abstracted classes for the components with two ports"
-  replaceable package SCO2 = Steps.Media.SCO2;
+  replaceable package PBMedia = Steps.Media.SCO2;
  
-  replaceable Steps.Interfaces.PBFluidPort_a inlet(redeclare package Medium = SCO2) "Inlet port, previous component";
-  replaceable Steps.Interfaces.PBFluidPort_b outlet(redeclare package Medium = SCO2) "Outlet port, next component";
+  replaceable Steps.Interfaces.PBFluidPort_a inlet(redeclare package Medium = PBMedia) "Inlet port, previous component";
+  replaceable Steps.Interfaces.PBFluidPort_b outlet(redeclare package Medium = PBMedia) "Outlet port, next component";
   
-  //SCO2.CO2_pT medium "medim in this component";  
-  //SCO2.ThermodynamicState state_in;
-  //SCO2.ThermodynamicState state_out;
-  
-  SCO2.CO2_pT medium_in;
-  SCO2.CO2_pT medium_out;
+  // Common intermediate variables for states of inlet and outlet
+  PBMedia.CO2_pT medium_in;
+  PBMedia.CO2_pT medium_out;
   
 end TwoPorts;

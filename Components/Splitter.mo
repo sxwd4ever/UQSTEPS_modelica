@@ -4,14 +4,14 @@ model Splitter
   extends Steps.Components.TwoPorts;
   
   //Steps.OutPort split_out "the splitted output port";
-  Steps.Interfaces.PBFluidPort_b outlet_split(redeclare package Medium = SCO2);
-  SCO2.CO2_pT medium_split "splitted medium";
+  Steps.Interfaces.PBFluidPort_b outlet_split(redeclare package Medium = PBMedia);
+  PBMedia.CO2_pT medium_split "splitted medium";
   
   input Real split_ratio(start = 0.6) "mass split ratio for the input work fluid";
   
 equation
   
-  medium_in.state = SCO2.setState_pTX(p = inlet.p, T = inlet.T);
+  medium_in.state = PBMedia.setState_pTX(p = inlet.p, T = inlet.T);
   
   // split outlet
   medium_out.state = medium_in.state;

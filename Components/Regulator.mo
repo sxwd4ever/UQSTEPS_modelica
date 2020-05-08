@@ -12,8 +12,8 @@ model Regulator
   //Modelica.Blocks.Interfaces.RealInput T_input;
       
 equation  
-  medium_in.state = SCO2.setState_phX(p = inlet.p, h = inStream(inlet.h_outflow));
-  medium_out.state = SCO2.setState_pTX(p = p_init, T = T_init);
+  medium_in.state = PBMedia.setState_phX(p = inlet.p, h = inStream(inlet.h_outflow));
+  medium_out.state = PBMedia.setState_pTX(p = p_init, T = T_init);
   
   outlet.p = medium_out.p;
   outlet.m_flow = - m_flow_init;
