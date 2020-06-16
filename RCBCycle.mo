@@ -2,21 +2,17 @@ within Steps;
 
 model RCBCycle
   "Brayton Cycle with Recuperator + Recompression"  
-  
-  // Adjustable parameters  
+// Adjustable parameters
   import Util = Utilities.Util;
   parameter Modelica.SIunits.Pressure P_ATM = 101325; // Pa
   parameter Modelica.SIunits.Temperature T_AMB = Utilities.Util.ToK(15) "Ambinent temperature";
   
   parameter Modelica.SIunits.Time stop_time = 1.0 "time length of the experiment";
   
-  parameter Real M_CO2 = 51.91;  //# Co2 flow rate, kg/s    
-  
+  parameter Real M_CO2 = 51.91;    //# Co2 flow rate, kg/s
   parameter Modelica.SIunits.Pressure P_PUMP_I = 8.0 * 1e6 ; //# Pa
-  parameter Modelica.SIunits.Pressure P_PUMP_E = 20.0 * 1e6;  //# Pump exit pressure, Pa 
-  
-  Modelica.SIunits.Temperature T_PUMP_I = T_AMB + DT_COOLER; // K, "Pump inlet temperature - trial value" ; 
-   
+  parameter Modelica.SIunits.Pressure P_PUMP_E = 20.0 * 1e6;    //# Pump exit pressure, Pa
+  //Modelica.SIunits.Temperature T_PUMP_I = T_AMB + DT_COOLER; // K, "Pump inlet temperature - trial value" ;
   // efficiency of main compressor, bypass_compressor and turbine
   parameter Real eta_main_compressor = 0.89;
   
@@ -25,7 +21,7 @@ model RCBCycle
   parameter Real eta_turbine = 0.9;
   
   // effectiveness for two recuperators
-  // these two parameters will effect the difference between crec_in.T and hot_in.T of recuperator  
+  // these two parameters will effect the difference between crec_in.T and hot_in.T of recuperator
   parameter Real eta_recuperator_high = 0.99;
   
   parameter Real eta_recuperator_low = 0.99;
@@ -57,13 +53,17 @@ model RCBCycle
   );
   
   //high temperature recuperator
-  
   Steps.Components.Recuperator recup_high(
     eta = eta_recuperator_high  
   );
   
+  //low temperature recuperator
   Steps.Components.Recuperator recup_low(
     eta = eta_recuperator_low   
+  );
+  
+  // off-design heat exchanger
+  Steps.Components.PCHeatExchanger recup_high_offdesign(
   );
   
   parameter Real dT_pcm = 10.0;
@@ -102,11 +102,11 @@ equation
   
   connect(regulator.outlet, turbine.inlet);
   
-  connect(turbine.outlet, recup_high.inlet);
+  connect(turbine.outlet, recup_high.inlet_hot);
   
-  connect(recup_high.outlet, recup_low.inlet); 
+  connect(recup_high.outlet_hot, recup_low.inlet_hot); 
  
-  connect(recup_low.outlet, splitter.inlet);
+  connect(recup_low.outlet_hot, splitter.inlet);
   //recompression loop
   connect(splitter.outlet_split, recom_pump.inlet);
   connect(recom_pump.outlet, merger.inlet_merge);  
@@ -128,4 +128,7 @@ equation
 
 algorithm
   eta_total := if initial() then 0 else (turbine.W_turbine - pump.W_comp - recom_pump.W_comp) / pcm_heater.Q * 100;
+annotation(
+    experiment(StartTime = 0, StopTime = 1, Tolerance = 1e-6, Interval = 0.002),
+    __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian");
 end RCBCycle;

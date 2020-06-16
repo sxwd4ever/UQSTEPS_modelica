@@ -27,7 +27,6 @@ equation
   outlet_split.m_flow = - inlet.m_flow * split_ratio; // second output
   outlet_split.T = medium_split.T;
   outlet_split.p = medium_split.p;
-  outlet_split.h_outflow = medium_out.h;  
-    
+  outlet_split.h_outflow = medium_out.h;      
     
 end Splitter;
