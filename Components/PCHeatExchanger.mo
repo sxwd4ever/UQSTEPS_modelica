@@ -80,7 +80,7 @@ protected
   // length of one pipe in HeatExchanger
   parameter Modelica.SIunits.Length length = 1.0 "unit m";
   
-  parameter Integer N_seg = 10 "Number of segments in a tube";
+  parameter Integer N_seg = 1 "Number of segments in a tube";
   
   parameter Modelica.SIunits.Angle phi = 0.0 "unit rad";
   
@@ -88,196 +88,257 @@ protected
   
   parameter Modelica.SIunits.Diameter d_c = 0.0 "Diameter of semi-circular channel";
   // inlet/outlet temperature of hot/cool channel
-  parameter Modelica.SIunits.Temp_C T_hot_in;
+  parameter Modelica.SIunits.Temp_C T_hot_in = 500;
   //parameter Modelica.SIunits.Temp_C T_hot_out;
-  parameter Modelica.SIunits.Temp_C T_cool_in;
+  parameter Modelica.SIunits.Temp_C T_cool_in = 300;
   //parameter Modelica.SIunits.Temp_C T_cool_out;
   
   //pressure of hot/cool channel
-  parameter Modelica.SIunits.Pressure p_hot;
-  parameter Modelica.SIunits.Pressure p_cool;
+  parameter Modelica.SIunits.Pressure p_hot = 20 * 1e6;
+  parameter Modelica.SIunits.Pressure p_cool = 9 * 1e6;
   
   // mass flow of hot/cool channel
-  parameter Modelica.SIunits.MassFlowRate m_dot_hot;
-  parameter Modelica.SIunits.MassFlowRate m_dot_cool;
+  parameter Modelica.SIunits.MassFlowRate m_dot_hot = 5;
+  parameter Modelica.SIunits.MassFlowRate m_dot_cool = 5;
   
-  parameter Modelica.SIunits.Length pitch "pitch length of channel";
+  parameter Modelica.SIunits.Length pitch = 10 "pitch length of channel";
   
   parameter String name_material = "inconel 750";
   
-  Modelica.SIunits.Diameter d_h = 0.0 "Hydraulic Diameter";
+  Modelica.SIunits.Diameter d_h = 4 * A_c / peri_c "Hydraulic Diameter";
   
-  Modelica.SIunits.Length peri_c = 0.0 "perimeter of semi-circular";
+  Modelica.SIunits.Length peri_c = d_c * Modelica.Constants.pi /2 + d_c "perimeter of semi-circular";
   
-  Modelica.SIunits.Length t_wall "thickness of wall between two neighboring hot and cold";
+  Modelica.SIunits.Length t_wall = (2 - Modelica.Constants.pi  / 4) * (d_c / 2) "thickness of wall between two neighboring hot and cold";
   
-  Integer N_channel = 10 "number of channels";
+  Integer N_channel = integer(A_fmax / A_c) "number of channels";
   
-  Modelica.SIunits.Area A_fc = 1.0 "Area of cold stream area";
-  Modelica.SIunits.Area A_fh = 1.0 "Area of hot stream area";
-  Modelica.SIunits.Area A_fmax = 1.0 "Area of maximum stream area comparing A_fc and A_fh: A_fmax = max(A_fc, A_fh)";
+  Modelica.SIunits.Area A_fc = m_dot_cool * d_h / mu_c / Re_design "Area of cold stream area";
+  Modelica.SIunits.Area A_fh = m_dot_hot * d_h / mu_h /Re_design "Area of hot stream area";
+  Modelica.SIunits.Area A_fmax = max(A_fc, A_fh) "Area of maximum stream area comparing A_fc and A_fh: A_fmax = max(A_fc, A_fh)";
   
-  Modelica.SIunits.Area A_c = 1.0 "Area of semi-circular tube";    
+  Modelica.SIunits.Area A_c = Modelica.Constants.pi * d_c * d_c / 8 "Area of semi-circular tube";    
   
-  Modelica.SIunits.Area A_flow = 1.0 "Flow area of all channels";
+  Modelica.SIunits.Area A_flow = N_channel * A_c "Flow area of all channels";
   
-  Modelica.SIunits.Area A_stack = 1.0 "surface area of all cells in a stack";
+  Modelica.SIunits.Area A_stack = peri_c * length_cell * N_channel "surface area of all cells in a stack";
   
-  Modelica.SIunits.DynamicViscosity mu_c "average dynamic Viscosity in cold channel";
-  Modelica.SIunits.DynamicViscosity mu_h "average dynamic Viscosity in hot channel"; 
+  Modelica.SIunits.DynamicViscosity mu_c = CP.PropsSI("V", "P", p_cool, "T", T_cool_in, PBMedia.mediumName) "average dynamic Viscosity in cold channel";
+  Modelica.SIunits.DynamicViscosity mu_h = CP.PropsSI("V", "P", p_hot, "T", T_hot_in, PBMedia.mediumName) "average dynamic Viscosity in hot channel"; 
   
   HXCellState [N_seg] state_cell "state array of each cells";
   
-  Modelica.SIunits.Length length_cell = 1.0 "length of a cell";
+  Modelica.SIunits.Length length_cell = length / N_seg "length of a cell";
   
-  Real fit_const_a = 0.0 "fitting constant a in Eq[3] of [kim, 2011] ";
+  Real fit_const_a "fitting constant a in Eq[3] of [kim, 2011] ";
   
-  Real fit_const_b = 0.0 "fitting constant b in Eq[3] of [kim, 2011] ";
+  Real fit_const_b "fitting constant b in Eq[3] of [kim, 2011] ";
   
-  Real fit_const_c = 0.0 "fitting constant c in Eq[4] of [kim, 2011] ";
+  Real fit_const_c "fitting constant c in Eq[4] of [kim, 2011] ";
   
-  Real fit_const_d = 0.0 "fitting constant d in Eq[4] of [kim, 2011] ";
+  Real fit_const_d "fitting constant d in Eq[4] of [kim, 2011] ";
   
   Modelica.SIunits.MassFlowRate G_h "Mass flux of each hot channel";
-  Modelica.SIunits.MassFlowRate G_c "Mass flux of each cold channel"; 
-
-  HXCellState state_cur "state of current cell";
-  HXCellState state_next "state of next cell";
+  Modelica.SIunits.MassFlowRate G_c "Mass flux of each cold channel";   
   
+  // Flags for debug
+  parameter Boolean test_mode = true;
+
 initial algorithm
-
-  A_c := Modelica.Constants.pi * d_c * d_c / 8; 
-  peri_c := d_c * Modelica.Constants.pi /2 + d_c;
   d_h := 4 * A_c / peri_c;
-  t_wall := (2 - Modelica.Constants.pi  / 4) * (d_c / 2);
   
-  mu_c := CP.PropsSI("V", "P", p_cool, "T", T_cool_in, medium_cool_in.mediumName);
-  mu_h := CP.PropsSI("V", "P", p_hot, "T", T_hot_in, medium_hot_in.mediumName);
+  if test_mode == true then
   
-  A_fc := m_dot_cool * d_h / mu_c / Re_design;
-  A_fh := m_dot_hot * d_h / mu_h /Re_design;
-  
-  A_fmax := max(A_fc, A_fh);
-  N_channel := integer(A_fmax / A_c);
-  A_flow := N_channel * A_c;
-  length_cell := length / N_seg;
-  A_stack := peri_c * length_cell * N_channel;
-  
-  for i in 0 : N_seg loop
-    state_cell[i].length := length / N_seg;
-  end for;
-  
-  // determine fitting constant by pitch and hydraulic diameter  
-  if (sameValue(pitch, 24.6 * 1e-3) and sameValue(d_h, 0.922 * 1e-3)) then
-    table_4 := table_4a;
-    table_5 := table_5a;
-  elseif (sameValue(pitch, 12.3 * 1e-3) and sameValue(d_h, 0.922 * 1e-3)) then
-    table_4 := table_4b;
-    table_5 := table_5b;
-  elseif (sameValue(pitch, 24.6 * 1e-3) and sameValue(d_h, 1.222 * 1e-3)) then
-    table_4 := table_4c;
-    table_5 := table_5c;
-  else  
-    table_4 := table_4d;
-    table_5 := table_5d;
+    // determine fitting constant by pitch and hydraulic diameter  
+    if (sameValue(pitch, 24.6 * 1e-3) and sameValue(d_h, 0.922 * 1e-3)) then
+      table_4 := table_4a;
+      table_5 := table_5a;
+    elseif (sameValue(pitch, 12.3 * 1e-3) and sameValue(d_h, 0.922 * 1e-3)) then
+      table_4 := table_4b;
+      table_5 := table_5b;
+    elseif (sameValue(pitch, 24.6 * 1e-3) and sameValue(d_h, 1.222 * 1e-3)) then
+      table_4 := table_4c;
+      table_5 := table_5c;
+    else  
+      table_4 := table_4d;
+      table_5 := table_5d;
+    end if;
+    
+    fit_const_a := TB.CombiTable2D.getTableValue(table_4, u1 = phi, u2 = 1, tableAvailable = 0.0);
+    fit_const_b := TB.CombiTable2D.getTableValue(table_4, u1 = phi, u2 = 2, tableAvailable = 0.0);
+    fit_const_c := TB.CombiTable2D.getTableValue(table_5, u1 = phi, u2 = 1, tableAvailable = 0.0);
+    fit_const_d := TB.CombiTable2D.getTableValue(table_5, u1 = phi, u2 = 2, tableAvailable = 0.0);  
+    
+  else
+    fit_const_a := 1.0;
+    fit_const_b := 1.0; 
+    fit_const_c := 1.0; // TB.CombiTable2D.getTableValue(table_5, u1 = phi, u2 = 1, tableAvailable = 0.0);
+    fit_const_d := 1.0; // TB.CombiTable2D.getTableValue(table_5, u1 = phi, u2 = 2, tableAvailable = 0.0); 
   end if;
   
-  fit_const_a := TB.CombiTable2D.getTableValue(table_4, u1 = phi, u2 = 1, tableAvailable = 0.0);
-  fit_const_b := TB.CombiTable2D.getTableValue(table_4, u1 = phi, u2 = 2, tableAvailable = 0.0);
-  fit_const_c := TB.CombiTable2D.getTableValue(table_5, u1 = phi, u2 = 1, tableAvailable = 0.0);
-  fit_const_d := TB.CombiTable2D.getTableValue(table_5, u1 = phi, u2 = 2, tableAvailable = 0.0);  
-  
 equation
-  
+
   medium_hot_in.state = PBMedia.setState_pTX(p = inlet_hot.p, T = inlet_hot.T);
   medium_cool_in.state = PBMedia.setState_pTX(p = inlet_cool.p, T = inlet_cool.T);   
+  
+algorithm  
 
-algorithm   
   G_c := inlet_cool.m_flow / N_channel / A_c;
   G_h := inlet_hot.m_flow / N_channel / A_c;
   
   // Temperature
-  state_cell[0].T_h := inlet_hot.T;
-  state_cell[0].T_c := inlet_cool.T;
+  state_cell[1].T_h := medium_hot_in.T;
+  state_cell[1].T_c := medium_cool_in.T;
   
   // Pressure
-  state_cell[0].p_h := inlet_hot.p;
-  state_cell[0].p_c := inlet_cool.p;
+  state_cell[1].p_h := medium_hot_in.p;
+  state_cell[1].p_c := medium_cool_in.p;
   
   // specific enthalpy
-  state_cell[0].h_mass_h := CP.PropsSI("H", "P", inlet_hot.p, "T", inlet_hot.T, medium_hot_in.mediumName);
-  state_cell[0].h_mass_c := CP.PropsSI("H", "P", inlet_cool.p, "T", inlet_cool.T, medium_cool_in.mediumName);  
+  state_cell[1].h_mass_h := CP.PropsSI("H", "P", medium_hot_in.p, "T", medium_hot_in.T, medium_hot_in.mediumName);
+  state_cell[1].h_mass_c := CP.PropsSI("H", "P", medium_cool_in.p, "T", medium_cool_in.T, medium_cool_in.mediumName);  
   
-  for i in 0 : N_seg loop // index out of range??
-    state_cur := state_cell[i];
+  if test_mode == true and N_seg == 1 then
+    state_cell[1].length := length_cell;
+        
+    state_cell[1].mu_h := CP.PropsSI("V", "P", state_cell[1].p_h, "T", state_cell[1].T_h, medium_hot_in.mediumName);
+    state_cell[1].mu_c := CP.PropsSI("V", "P", state_cell[1].p_c, "T", state_cell[1].T_c, medium_cool_in.mediumName);
     
-    state_cur.length := length_cell;
+    state_cell[1].k_h := CP.PropsSI("L", "P", state_cell[1].p_h, "T", state_cell[1].T_h, medium_hot_in.mediumName);
+    state_cell[1].k_c := CP.PropsSI("L", "P", state_cell[1].p_c, "T", state_cell[1].T_c, medium_cool_in.mediumName);  
     
-    state_cur.mu_h := CP.PropsSI("V", "P", state_cur.p_h, "T", state_cur.T_h, medium_hot_in.mediumName);
-    state_cur.mu_c := CP.PropsSI("V", "P", state_cur.p_c, "T", state_cur.T_c, medium_cool_in.mediumName);
+    state_cell[1].Re_h := 2300; // G_h * d_h / state_cell[1].mu_h;
+    state_cell[1].Re_c := 2300; // G_c * d_h / state_cell[1].mu_c; 
     
-    state_cur.k_h := CP.PropsSI("L", "P", state_cur.p_h, "T", state_cur.T_h, medium_hot_in.mediumName);
-    state_cur.k_c := CP.PropsSI("L", "P", state_cur.p_c, "T", state_cur.T_c, medium_cool_in.mediumName);  
+    state_cell[1].rho_h := CP.PropsSI("D", "P", state_cell[1].p_h, "T", state_cell[1].T_h, medium_hot_in.mediumName);
+    state_cell[1].rho_c := CP.PropsSI("D", "P", state_cell[1].p_c, "T", state_cell[1].T_c, medium_cool_in.mediumName);   
     
-    state_cur.Re_h := G_h * d_h / state_cur.mu_h;
-    state_cur.Re_c := G_c * d_h / state_cur.mu_c; 
+    state_cell[1].u_h := 1.0; // inlet_hot.m_flow / A_stack / state_cell[1].rho_h;   
+    state_cell[1].u_c := 1.0; // inlet_cool.m_flow / A_stack / state_cell[1].rho_c; 
     
-    state_cur.rho_h := CP.PropsSI("D", "P", state_cur.p_h, "T", state_cur.T_h, medium_hot_in.mediumName);
-    state_cur.rho_c := CP.PropsSI("D", "P", state_cur.p_c, "T", state_cur.T_c, medium_cool_in.mediumName);   
+    state_cell[1].Nu_h := 1.0; // 4.089 + fit_const_c * (state_cell[1].Re_h^ fit_const_d);
+    state_cell[1].Nu_c := 1.0; // 4.089 + fit_const_c * (state_cell[1].Re_c^ fit_const_d);
     
-    state_cur.u_h := inlet_hot.m_flow / A_stack / state_cur.rho_h;   
-    state_cur.u_c := inlet_cool.m_flow / A_stack / state_cur.rho_c; 
+    state_cell[1].k_wall := 1.0; // thermal_conductivity(name_material, (state_cell[1].T_h + state_cell[1].T_c) / 2);
     
-    state_cur.Nu_h := 4.089 + fit_const_c * (state_cur.Re_h^ fit_const_d);
-    state_cur.Nu_c := 4.089 + fit_const_c * (state_cur.Re_c^ fit_const_d);
+    state_cell[1].h_h := 1.0; //state_cell[1].Nu_h * state_cell[1].k_h / d_h;
+    state_cell[1].h_c := 1.0; //state_cell[1].Nu_c * state_cell[1].k_c / d_h;
     
-    state_cur.k_wall := thermal_conductivity(name_material, (state_cur.T_h + state_cur.T_c) / 2);
+    state_cell[1].U := 1.0; //1 / ( 1 / state_cell[1].h_h + 1 / state_cell[1].h_c + t_wall / state_cell[1].k_wall);
     
-    state_cur.h_h := state_cur.Nu_h * state_cur.k_h / d_h;
-    state_cur.h_c := state_cur.Nu_c * state_cur.k_c / d_h;
-    
-    state_cur.U := 1 / ( 1 / state_cur.h_h + 1 / state_cur.h_c + t_wall / state_cur.k_wall);
-    
-    state_cur.f_h := (15.78 + fit_const_a * state_cur.Re_h ^ fit_const_b ) / state_cur.Re_h;
-    state_cur.f_c := (15.78 + fit_const_a * state_cur.Re_c ^ fit_const_b ) / state_cur.Re_c;
-    
-    if state_cur.T_h > state_cur.T_c then
-      state_cur.q := state_cur.U * A_stack * (state_cur.T_h - state_cur.T_c);      
+    state_cell[1].f_h := 1.0; //(15.78 + fit_const_a * state_cell[1].Re_h ^ fit_const_b ) / state_cell[1].Re_h;
+    state_cell[1].f_c := 1.0; //(15.78 + fit_const_a * state_cell[1].Re_c ^ fit_const_b ) / state_cell[1].Re_c;
+    /*
+    if state_cell[1].T_h > state_cell[1].T_c then
+      state_cell[1].q := state_cell[1].U * A_stack * (state_cell[1].T_h - state_cell[1].T_c);      
     else
-      state_cur.q := 0;
+      state_cell[1].q := 0;
+    end if;
+    */
+    state_cell[1].q := 0;
+    
+    state_cell[1].dp_h := 0.1; // state_cell[1].f_h * state_cell[1].length * state_cell[1].rho_h *  (state_cell[1].u_h ^ 2) / d_h;
+    state_cell[1].dp_c := 0.1; // state_cell[1].f_c * state_cell[1].length * state_cell[1].rho_c *  (state_cell[1].u_c ^ 2) / d_c;
+    
+    // no use of following parameters, use default value
+    state_cell[1].Pr_c := 0;
+    state_cell[1].Pr_h := 0;    
+    
+    /*
+    // Calculate state for next cell
+    if i == N_seg then
+      break;
     end if;
     
-    state_cur.dp_h := state_cur.f_h * state_cur.length * state_cur.rho_h *  (state_cur.u_h ^ 2) / d_h;
-    state_cur.dp_c := state_cur.f_c * state_cur.length * state_cur.rho_c *  (state_cur.u_c ^ 2) / d_c;
+    state_cell[i + 1].h_mass_h := (state_cell[1].h_mass_h * inlet_hot.m_flow - state_cell[1].q) / inlet_hot.m_flow;
+    state_cell[i + 1].h_mass_c := (state_cell[1].h_mass_c * inlet_cool.m_flow - state_cell[1].q) / inlet_cool.m_flow;
     
-    // Calculate state for next cell
-    state_next.h_mass_h := (state_cur.h_mass_h * m_dot_hot - state_cur.q) / m_dot_hot;
-    state_next.h_mass_c := (state_cur.h_mass_c * m_dot_cool - state_cur.q) / m_dot_cool;
+    state_cell[i + 1].p_h := state_cell[1].p_h - state_cell[1].dp_h;
+    state_cell[i + 1].p_c := state_cell[1].p_c - state_cell[1].dp_c;
     
-    state_next.p_h := state_cur.p_h - state_cur.dp_h;
-    state_next.p_c := state_cur.p_c - state_cur.dp_c;
-    
-    state_next.T_h := CP.PropsSI("T", "P",state_next.p_h, "H", state_next.h_mass_h, medium_hot_in.mediumName);
-    state_next.T_c := CP.PropsSI("T", "P",state_next.p_c, "H", state_next.h_mass_c, medium_cool_in.mediumName);
-    
-  end for;
+    state_cell[i + 1].T_h := CP.PropsSI("T", "P",state_cell[i + 1].p_h, "H", state_cell[i + 1].h_mass_h, medium_hot_in.mediumName);
+    state_cell[i + 1].T_c := CP.PropsSI("T", "P",state_cell[i + 1].p_c, "H", state_cell[i + 1].h_mass_c, medium_cool_in.mediumName);
+    */
+  else 
+    for i in 1 : N_seg loop // index out of range??
+      state_cell[i].length := length_cell;
+        
+      state_cell[i].mu_h := CP.PropsSI("V", "P", state_cell[i].p_h, "T", state_cell[i].T_h, medium_hot_in.mediumName);
+      state_cell[i].mu_c := CP.PropsSI("V", "P", state_cell[i].p_c, "T", state_cell[i].T_c, medium_cool_in.mediumName);
+      
+      state_cell[i].k_h := CP.PropsSI("L", "P", state_cell[i].p_h, "T", state_cell[i].T_h, medium_hot_in.mediumName);
+      state_cell[i].k_c := CP.PropsSI("L", "P", state_cell[i].p_c, "T", state_cell[i].T_c, medium_cool_in.mediumName);  
+      
+      state_cell[i].Re_h := G_h * d_h / state_cell[i].mu_h;
+      state_cell[i].Re_c := G_c * d_h / state_cell[i].mu_c; 
+      
+      state_cell[i].rho_h := CP.PropsSI("D", "P", state_cell[i].p_h, "T", state_cell[i].T_h, medium_hot_in.mediumName);
+      state_cell[i].rho_c := CP.PropsSI("D", "P", state_cell[i].p_c, "T", state_cell[i].T_c, medium_cool_in.mediumName);   
+      
+      state_cell[i].u_h := inlet_hot.m_flow / A_stack / state_cell[i].rho_h;   
+      state_cell[i].u_c := inlet_cool.m_flow / A_stack / state_cell[i].rho_c; 
+      
+      state_cell[i].Nu_h := 4.089 + fit_const_c * (state_cell[i].Re_h^ fit_const_d);
+      state_cell[i].Nu_c := 4.089 + fit_const_c * (state_cell[i].Re_c^ fit_const_d);
+      
+      state_cell[i].k_wall := thermal_conductivity(name_material, (state_cell[i].T_h + state_cell[i].T_c) / 2);
+      
+      state_cell[i].h_h := state_cell[i].Nu_h * state_cell[i].k_h / d_h;
+      state_cell[i].h_c := state_cell[i].Nu_c * state_cell[i].k_c / d_h;
+      
+      state_cell[i].U := 1 / ( 1 / state_cell[i].h_h + 1 / state_cell[i].h_c + t_wall / state_cell[i].k_wall);
+      
+      state_cell[i].f_h := (15.78 + fit_const_a * state_cell[i].Re_h ^ fit_const_b ) / state_cell[i].Re_h;
+      state_cell[i].f_c := (15.78 + fit_const_a * state_cell[i].Re_c ^ fit_const_b ) / state_cell[i].Re_c;
+      
+      if state_cell[i].T_h > state_cell[i].T_c then
+        state_cell[i].q := state_cell[i].U * A_stack * (state_cell[i].T_h - state_cell[i].T_c);      
+      else
+        state_cell[i].q := 0;
+      end if;
+      
+      state_cell[i].dp_h := state_cell[i].f_h * state_cell[i].length * state_cell[i].rho_h *  (state_cell[i].u_h ^ 2) / d_h;
+      state_cell[i].dp_c := state_cell[i].f_c * state_cell[i].length * state_cell[i].rho_c *  (state_cell[i].u_c ^ 2) / d_c;
+      
+      // no use of following parameters, use default value
+      state_cell[i].Pr_c := 0;
+      state_cell[i].Pr_h := 0;    
+      
+      // Calculate state for next cell
+      if i == N_seg then
+        break;
+      end if;
+      
+      state_cell[i + 1].h_mass_h := (state_cell[i].h_mass_h * inlet_hot.m_flow - state_cell[i].q) / inlet_hot.m_flow;
+      state_cell[i + 1].h_mass_c := (state_cell[i].h_mass_c * inlet_cool.m_flow - state_cell[i].q) / inlet_cool.m_flow;
+      
+      state_cell[i + 1].p_h := state_cell[i].p_h - state_cell[i].dp_h;
+      state_cell[i + 1].p_c := state_cell[i].p_c - state_cell[i].dp_c;
+      
+      state_cell[i + 1].T_h := CP.PropsSI("T", "P",state_cell[i + 1].p_h, "H", state_cell[i + 1].h_mass_h, medium_hot_in.mediumName);
+      state_cell[i + 1].T_c := CP.PropsSI("T", "P",state_cell[i + 1].p_c, "H", state_cell[i + 1].h_mass_c, medium_cool_in.mediumName);
+      
+    end for;
+  end if;
   
 equation 
   
   // for out_cool
-  medium_cool_out.state = PBMedia.setState_pTX(p = state_cell[N_seg].p_h, T = state_cell[N_seg].T_h);
+  medium_cool_out.state = PBMedia.setState_phX(p = state_cell[N_seg].p_c,  h = state_cell[N_seg].h_mass_h);
   outlet_cool.T = medium_cool_out.T;
   outlet_cool.p = medium_cool_out.p;
-  outlet_cool.m_flow + inlet_cool.m_flow = 0;
   outlet_cool.h_outflow = medium_cool_out.h;  
-  inlet_cool.h_outflow = inStream(outlet_cool.h_outflow);
   
-  // for outlet_hot = outlet_main
-  medium_hot_out.state = PBMedia.setState_pTX(p = state_cell[N_seg].p_c, T = state_cell[N_seg].T_c); 
+  inlet_cool.h_outflow = inStream(outlet_cool.h_outflow);    
+  outlet_cool.m_flow + inlet_cool.m_flow = 0;
+  
+  // for outlet_hot
+  medium_hot_out.state = PBMedia.setState_phX(p = state_cell[N_seg].p_h, h = state_cell[N_seg].h_mass_c); 
   outlet_hot.T = medium_hot_out.T;
   outlet_hot.p = medium_hot_out.p;
-  outlet_hot.m_flow + inlet_hot.m_flow = 0;
   outlet_hot.h_outflow = medium_hot_out.h;  
-  inlet_hot.h_outflow = inStream(outlet_hot.h_outflow);
+  
+  inlet_hot.h_outflow = inStream(outlet_hot.h_outflow);  
+  outlet_hot.m_flow + inlet_hot.m_flow = 0;
 
 end PCHeatExchanger;

@@ -27,9 +27,9 @@ package SCO2 "supercritical CO2"
   equation
       state.p = p;
       state.T = T;     
-      d = CP.PropsSI("D", "P", state.p, "T", state.T, mediumName);
-      h = CP.PropsSI("H", "P", state.p, "T", state.T, mediumName);
-      s = CP.PropsSI("S", "P", state.p, "T", state.T, mediumName);
+      d = CP.PropsSI("D", "P", p, "T", T, mediumName);
+      h = CP.PropsSI("H", "P", p, "T", T, mediumName);
+      s = CP.PropsSI("S", "P", p, "T", T, mediumName);
       u = h - p / d;
       MM = 0.044;
       R = 8.3144 / MM; 

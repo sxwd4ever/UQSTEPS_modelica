@@ -1,10 +1,11 @@
 within Steps.Components;
 
-model EndPoint 
+model Source 
   "EndPoint for component test with fixed inlet/outlet temperature and pressure"
-  extends Steps.Components.TwoPorts;
+  //extends Steps.Components.TwoPorts;
   
   import CP = Steps.Utilities.CoolProp;  
+  replaceable package PBMedia = Steps.Media.SCO2;
   
   // fixed inlet temperature and pressure    
   //parameter Modelica.SIunits.AbsolutePressure p_inlet;
@@ -12,11 +13,13 @@ model EndPoint
   
   // fixed outlet temperautre and pressure
   parameter Modelica.SIunits.AbsolutePressure p_outlet(start = 9 * 1e6);
-  parameter Modelica.SIunits.Temperature T_outlet(start = 400);
+  parameter Modelica.SIunits.AbsolutePressure T_outlet(start = 400);
 
-	// fixed mass flow
-  parameter Modelica.SIunits.MassFlowRate m_dot_flow(start = 8.3);     
+  // fixed mass flow
+  parameter Modelica.SIunits.MassFlowRate m_dot_flow(start = 8.3);
+  //PBMedia.CO2_pT medium_out;    
   
+  replaceable Steps.Interfaces.PBFluidPort_b outlet(redeclare package Medium = PBMedia) "Outlet port, next component";  
   
   //parameter Boolean IsSource = true;
   
@@ -27,8 +30,8 @@ model EndPoint
 
 initial equation
   // use initial equation to set initial fixed value for the cross variable in connector
-  outlet.T = T_outlet;
   outlet.p = p_outlet;
+  outlet.T = T_outlet;
   outlet.m_flow = - m_dot_flow;
   /*
   if IsSource == true then
@@ -41,17 +44,17 @@ algorithm
   */ 
 equation  
 
-  medium_in.state = PBMedia.setState_phX(p = inlet.p, h = inStream(inlet.h_outflow));
-  medium_out.state = PBMedia.setState_pTX(p = p_outlet, T = T_outlet); 
+  //medium_in.state = PBMedia.setState_phX(p = inlet.p, h = inStream(inlet.h_outflow));
+  //medium_out.state = PBMedia.setState_pTX(p = p_outlet, T = T_outlet); 
   
   //outlet.m_flow = - m_dot_flow;
   //outlet.h_outflow = CP.PropsSI("H", "P", outlet.p, "T", outlet.T, "CO2");    
   
-  outlet.p = medium_out.p;
-  outlet.T = medium_out.T;
+  outlet.p = p_outlet;
+  outlet.T = T_outlet;
   outlet.m_flow = - m_dot_flow;
-  outlet.h_outflow = medium_out.h;
-  inlet.h_outflow = inStream(outlet.h_outflow);
+  outlet.h_outflow = - CP.PropsSI("H", "P", p_outlet, "T", T_outlet, PBMedia.mediumName);
+  //inlet.h_outflow = inStream(outlet.h_outflow);
     
   //outlet.m_flow + inlet.m_flow = 0;  
 
@@ -61,4 +64,4 @@ equation
   //inlet.m_flow = m_dot_flow;
   //inlet.h_outflow = inStream(outlet.h_outflow);
 
-end EndPoint;
+end Source;
