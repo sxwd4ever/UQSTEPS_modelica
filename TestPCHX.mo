@@ -40,12 +40,23 @@ model TestPCHX
     T_inlet = Modelica.SIunits.Conversions.from_degC(332.9),
     fix_sink = false
   );
-
+ 
+  Components.MockPCHeatExchanger pchx(
+    phi = Modelica.SIunits.Conversions.from_deg(45), 
+    Re_design = 5000,
+    d_c = 1.51 * 1e-3,
+    T_hot_in = Modelica.SIunits.Conversions.from_degC(451),
+    T_cool_in = Modelica.SIunits.Conversions.from_degC(41),
+    p_hot = 9 * 1e6,
+    p_cool = 20 * 1e6,
+    pitch = 24.6 * 1e-3
+  );
+  
   /*
   Components.PCHeatExchanger pchx(
     phi = Modelica.Constants.pi / 4, 
     Re_design = 5000,
-    d_c = 0.8493,
+    d_c = 1.51 * 1e-3,
     T_hot_in = Modelica.SIunits.Conversions.from_degC(451),
     T_cool_in = Modelica.SIunits.Conversions.from_degC(41),
     p_hot = 9 * 1e6,
@@ -53,9 +64,11 @@ model TestPCHX
   );
   */
   
+  /*
   Components.Recuperator pchx(
     eta = 0.99  
   );
+  */
   
 equation
   /*

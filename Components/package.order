@@ -3,6 +3,7 @@ EndPoint
 FanCooler
 HXCellState
 Merger
+MockPCHeatExchanger
 OilHeater
 PCHeatExchanger
 PCMHeater
