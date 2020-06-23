@@ -19,6 +19,41 @@ model MockPCHeatExchanger
       same := abs(c1 - c2) <= 1e-3;
   end sameValue;  
   
+  function debugInfo "Generate debug info for output"
+    extends Modelica.Icons.Function;
+    input String keys[:];
+    input Real values[:];
+    output String info;
+    
+    protected
+    
+      String buff;
+    
+    algorithm
+      buff := ""; // initialization required. 
+      
+      for i in 1:size(keys, 1) loop
+        buff := buff + keyvalStr(keys[i],values[i]); 
+        if i <> size(keys, 1) then
+          buff := buff + ",";
+        end if;
+      end for;
+      
+      info := buff;
+    
+  end debugInfo;
+  
+  function keyvalStr "generate a key=value string"
+    extends Modelica.Icons.Function;
+    
+    input String key;
+    input Real value;
+    output String out;
+    
+    algorithm
+      out := key + " = " + String(value); // intrim " = " required  
+  end keyvalStr;
+  
   function thermal_conductivity "cal thermal conductivity of a material"
     extends Modelica.Icons.Function;
     
@@ -38,8 +73,8 @@ protected
       k := 16.2;
     end if;
     
-  end thermal_conductivity;   
-
+  end thermal_conductivity;  
+ 
   inner Modelica.Blocks.Types.ExternalCombiTable1D table_4a_a = Modelica.Blocks.Types.ExternalCombiTable1D(tableName = "4a_a", fileName = Modelica.Utilities.Files.loadResource("modelica://Steps/Resources/Data/kim_2012.txt"), table = fill(0.0, 9, 2), smoothness = Modelica.Blocks.Types.Smoothness.LinearSegments, columns = 2:2) "Table 4a - column a in Kim[2012] for pitch=24.6, dh=0.922 (dc=1.3 mm))";
 
   inner Modelica.Blocks.Types.ExternalCombiTable1D table_4a_b = Modelica.Blocks.Types.ExternalCombiTable1D(tableName = "4a_b", fileName = Modelica.Utilities.Files.loadResource("modelica://Steps/Resources/Data/kim_2012.txt"), table = fill(0.0, 9, 2), smoothness = Modelica.Blocks.Types.Smoothness.LinearSegments, columns = 2:2) "Table 4a - column b in Kim[2012] for pitch=12.3, dh=0.922 (dc=1.3 mm))";
@@ -52,9 +87,6 @@ protected
 
   inner Modelica.Blocks.Types.ExternalCombiTable1D table_4c_b = Modelica.Blocks.Types.ExternalCombiTable1D(tableName = "4c_b", fileName = Modelica.Utilities.Files.loadResource("modelica://Steps/Resources/Data/kim_2012.txt"), table = fill(0.0, 9, 2), smoothness = Modelica.Blocks.Types.Smoothness.LinearSegments, columns = 2:2) "Table 4c - column b in Kim[2012] for pitch=12.3, dh=0.922 (dc=1.3 mm))";
   
-  inner Modelica.Blocks.Types.ExternalCombiTable1D table_4d_a = Modelica.Blocks.Types.ExternalCombiTable1D(tableName = "4d_a", fileName = Modelica.Utilities.Files.loadResource("modelica://Steps/Resources/Data/kim_2012.txt"), table = fill(0.0, 9, 2), smoothness = Modelica.Blocks.Types.Smoothness.LinearSegments, columns = 2:2) "Table 4d - column a in Kim[2012] for pitch=24.6, dh=1.222 (dc=1.3 mm))";  
-  
-  inner Modelica.Blocks.Types.ExternalCombiTable1D table_4d_b = Modelica.Blocks.Types.ExternalCombiTable1D(tableName = "4d_b", fileName = Modelica.Utilities.Files.loadResource("modelica://Steps/Resources/Data/kim_2012.txt"), table = fill(0.0, 9, 2), smoothness = Modelica.Blocks.Types.Smoothness.LinearSegments, columns = 2:2) "Table 4d - column b default table"; 
 
   inner Modelica.Blocks.Types.ExternalCombiTable1D table_5a_c = Modelica.Blocks.Types.ExternalCombiTable1D(tableName = "5a_c", fileName = Modelica.Utilities.Files.loadResource("modelica://Steps/Resources/Data/kim_2012.txt"), table = fill(0.0, 9, 2), smoothness = Modelica.Blocks.Types.Smoothness.LinearSegments, columns = 2:2) "Table 5a - column c in Kim[2012] for pitch=24.6, dh=0.922 (dc=1.3 mm))";
 
@@ -67,20 +99,16 @@ protected
   inner Modelica.Blocks.Types.ExternalCombiTable1D table_5c_c = Modelica.Blocks.Types.ExternalCombiTable1D(tableName = "5c_c", fileName = Modelica.Utilities.Files.loadResource("modelica://Steps/Resources/Data/kim_2012.txt"), table = fill(0.0, 9, 2), smoothness = Modelica.Blocks.Types.Smoothness.LinearSegments, columns = 2:2) "Table 5c - column c in Kim[2012] for pitch=24.6, dh=0.922 (dc=1.3 mm))";
 
   inner Modelica.Blocks.Types.ExternalCombiTable1D table_5c_d = Modelica.Blocks.Types.ExternalCombiTable1D(tableName = "5c_d", fileName = Modelica.Utilities.Files.loadResource("modelica://Steps/Resources/Data/kim_2012.txt"), table = fill(0.0, 9, 2), smoothness = Modelica.Blocks.Types.Smoothness.LinearSegments, columns = 2:2) "Table 5c - column d in Kim[2012] for pitch=12.3, dh=0.922 (dc=1.3 mm))";
-  
-  inner Modelica.Blocks.Types.ExternalCombiTable1D table_5d_c = Modelica.Blocks.Types.ExternalCombiTable1D(tableName = "5d_c", fileName = Modelica.Utilities.Files.loadResource("modelica://Steps/Resources/Data/kim_2012.txt"), table = fill(0.0, 9, 2), smoothness = Modelica.Blocks.Types.Smoothness.LinearSegments, columns = 2:2) "Table 5d - column c in Kim[2012] for pitch=24.6, dh=1.222 (dc=1.3 mm))";
-  
-  inner Modelica.Blocks.Types.ExternalCombiTable1D table_5d_d = Modelica.Blocks.Types.ExternalCombiTable1D(tableName = "5d_d", fileName = Modelica.Utilities.Files.loadResource("modelica://Steps/Resources/Data/kim_2012.txt"), table = fill(0.0, 9, 2), smoothness = Modelica.Blocks.Types.Smoothness.LinearSegments, columns = 2:2) "Table 5d - column d default table";
-  
-  inner Modelica.Blocks.Types.ExternalCombiTable1D table_a = table_4d_a;
-  inner Modelica.Blocks.Types.ExternalCombiTable1D table_b = table_4d_b;
-  inner Modelica.Blocks.Types.ExternalCombiTable1D table_c = table_5d_c;
-  inner Modelica.Blocks.Types.ExternalCombiTable1D table_d = table_5d_d;
+    
+  inner Modelica.Blocks.Types.ExternalCombiTable1D table_a = Modelica.Blocks.Types.ExternalCombiTable1D(tableName = "4d_a", fileName = Modelica.Utilities.Files.loadResource("modelica://Steps/Resources/Data/kim_2012.txt"), table = fill(0.0, 9, 2), smoothness = Modelica.Blocks.Types.Smoothness.LinearSegments, columns = 2:2);
+  inner Modelica.Blocks.Types.ExternalCombiTable1D table_b = Modelica.Blocks.Types.ExternalCombiTable1D(tableName = "4d_b", fileName = Modelica.Utilities.Files.loadResource("modelica://Steps/Resources/Data/kim_2012.txt"), table = fill(0.0, 9, 2), smoothness = Modelica.Blocks.Types.Smoothness.LinearSegments, columns = 2:2);
+  inner Modelica.Blocks.Types.ExternalCombiTable1D table_c = Modelica.Blocks.Types.ExternalCombiTable1D(tableName = "5d_c", fileName = Modelica.Utilities.Files.loadResource("modelica://Steps/Resources/Data/kim_2012.txt"), table = fill(0.0, 9, 2), smoothness = Modelica.Blocks.Types.Smoothness.LinearSegments, columns = 2:2);
+  inner Modelica.Blocks.Types.ExternalCombiTable1D table_d = Modelica.Blocks.Types.ExternalCombiTable1D(tableName = "5d_d", fileName = Modelica.Utilities.Files.loadResource("modelica://Steps/Resources/Data/kim_2012.txt"), table = fill(0.0, 9, 2), smoothness = Modelica.Blocks.Types.Smoothness.LinearSegments, columns = 2:2);
 
   // length of one pipe in HeatExchanger
   parameter Modelica.SIunits.Length length = 1.0 "unit m";
   
-  parameter Integer N_seg = 1 "Number of segments in a tube";
+  parameter Integer N_seg = 100 "Number of segments in a tube";
   
   parameter Modelica.SIunits.Angle phi = 0.0 "unit rad";
   
@@ -187,12 +215,6 @@ algorithm
       table_b := table_4c_b;
       table_c := table_5c_c;
       table_d := table_5c_d;
-    else  
-      table_select := 4;
-      table_a := table_4d_a;
-      table_b := table_4d_b;
-      table_c := table_5d_c;
-      table_d := table_5d_d;
     end if;
     
     fit_const_a := TB.CombiTable1D.getTableValue(table_a, icol = 1, u = Modelica.SIunits.Conversions.to_deg(phi), tableAvailable = 0.0);
@@ -224,66 +246,84 @@ algorithm
   state_cell[1].h_mass_h := CP.PropsSI("H", "P", medium_hot_in.p, "T", medium_hot_in.T, medium_hot_in.mediumName);
   state_cell[1].h_mass_c := CP.PropsSI("H", "P", medium_cool_in.p, "T", medium_cool_in.T, medium_cool_in.mediumName);  
   
-  state_cell[1].length := length_cell;
-        
-  state_cell[1].mu_h := CP.PropsSI("V", "P", state_cell[1].p_h, "T", state_cell[1].T_h, medium_hot_in.mediumName);
-  state_cell[1].mu_c := CP.PropsSI("V", "P", state_cell[1].p_c, "T", state_cell[1].T_c, medium_cool_in.mediumName);
-  
-  state_cell[1].k_h := CP.PropsSI("L", "P", state_cell[1].p_h, "T", state_cell[1].T_h, medium_hot_in.mediumName);
-  state_cell[1].k_c := CP.PropsSI("L", "P", state_cell[1].p_c, "T", state_cell[1].T_c, medium_cool_in.mediumName);  
-  
-  state_cell[1].Re_h := 2300; // G_h * d_h / state_cell[1].mu_h;
-  state_cell[1].Re_c := 2300; // G_c * d_h / state_cell[1].mu_c; 
-  
-  state_cell[1].rho_h := CP.PropsSI("D", "P", state_cell[1].p_h, "T", state_cell[1].T_h, medium_hot_in.mediumName);
-  state_cell[1].rho_c := CP.PropsSI("D", "P", state_cell[1].p_c, "T", state_cell[1].T_c, medium_cool_in.mediumName);   
-  
-  state_cell[1].u_h := 1.0; // inlet_hot.m_flow / A_stack / state_cell[1].rho_h;   
-  state_cell[1].u_c := 1.0; // inlet_cool.m_flow / A_stack / state_cell[1].rho_c; 
-  
-  state_cell[1].Nu_h := 1.0; // 4.089 + fit_const_c * (state_cell[1].Re_h^ fit_const_d);
-  state_cell[1].Nu_c := 1.0; // 4.089 + fit_const_c * (state_cell[1].Re_c^ fit_const_d);
-  
-  state_cell[1].k_wall := 1.0; // thermal_conductivity(name_material, (state_cell[1].T_h + state_cell[1].T_c) / 2);
-  
-  state_cell[1].h_h := 1.0; //state_cell[1].Nu_h * state_cell[1].k_h / d_h;
-  state_cell[1].h_c := 1.0; //state_cell[1].Nu_c * state_cell[1].k_c / d_h;
-  
-  state_cell[1].U := 1.0; //1 / ( 1 / state_cell[1].h_h + 1 / state_cell[1].h_c + t_wall / state_cell[1].k_wall);
-  
-  state_cell[1].f_h := 1.0; //(15.78 + fit_const_a * state_cell[1].Re_h ^ fit_const_b ) / state_cell[1].Re_h;
-  state_cell[1].f_c := 1.0; //(15.78 + fit_const_a * state_cell[1].Re_c ^ fit_const_b ) / state_cell[1].Re_c;
-  /*
-  if state_cell[1].T_h > state_cell[1].T_c then
-    state_cell[1].q := state_cell[1].U * A_stack * (state_cell[1].T_h - state_cell[1].T_c);      
-  else
-    state_cell[1].q := 0;
-  end if;
-  */
-  state_cell[1].q := 0;
-  
-  state_cell[1].dp_h := 0.1; // state_cell[1].f_h * state_cell[1].length * state_cell[1].rho_h *  (state_cell[1].u_h ^ 2) / d_h;
-  state_cell[1].dp_c := 0.1; // state_cell[1].f_c * state_cell[1].length * state_cell[1].rho_c *  (state_cell[1].u_c ^ 2) / d_c;
-  
-  // no use of following parameters, use default value
-  state_cell[1].Pr_c := 0;
-  state_cell[1].Pr_h := 0;    
-  
-  /*
-  // Calculate state for next cell
-  if i == N_seg then
-    break;
-  end if;
-  
-  state_cell[i + 1].h_mass_h := (state_cell[1].h_mass_h * inlet_hot.m_flow - state_cell[1].q) / inlet_hot.m_flow;
-  state_cell[i + 1].h_mass_c := (state_cell[1].h_mass_c * inlet_cool.m_flow - state_cell[1].q) / inlet_cool.m_flow;
-  
-  state_cell[i + 1].p_h := state_cell[1].p_h - state_cell[1].dp_h;
-  state_cell[i + 1].p_c := state_cell[1].p_c - state_cell[1].dp_c;
-  
-  state_cell[i + 1].T_h := CP.PropsSI("T", "P",state_cell[i + 1].p_h, "H", state_cell[i + 1].h_mass_h, medium_hot_in.mediumName);
-  state_cell[i + 1].T_c := CP.PropsSI("T", "P",state_cell[i + 1].p_c, "H", state_cell[i + 1].h_mass_c, medium_cool_in.mediumName);
-  */
+  for i in 1 : N_seg loop // index out of range??
+    state_cell[i].length := length_cell;
+      
+    state_cell[i].mu_h := CP.PropsSI("V", "P", state_cell[i].p_h, "T", state_cell[i].T_h, medium_hot_in.mediumName);
+    state_cell[i].mu_c := CP.PropsSI("V", "P", state_cell[i].p_c, "T", state_cell[i].T_c, medium_cool_in.mediumName);
+    
+    state_cell[i].k_h := CP.PropsSI("L", "P", state_cell[i].p_h, "T", state_cell[i].T_h, medium_hot_in.mediumName);
+    state_cell[i].k_c := CP.PropsSI("L", "P", state_cell[i].p_c, "T", state_cell[i].T_c, medium_cool_in.mediumName);  
+    
+    state_cell[i].Re_h := G_h * d_h / state_cell[i].mu_h;
+    state_cell[i].Re_c := G_c * d_h / state_cell[i].mu_c; 
+    
+    state_cell[i].rho_h := CP.PropsSI("D", "P", state_cell[i].p_h, "T", state_cell[i].T_h, medium_hot_in.mediumName);
+    state_cell[i].rho_c := CP.PropsSI("D", "P", state_cell[i].p_c, "T", state_cell[i].T_c, medium_cool_in.mediumName);   
+    
+    state_cell[i].u_h := inlet_hot.m_flow / A_stack / state_cell[i].rho_h;   
+    state_cell[i].u_c := inlet_cool.m_flow / A_stack / state_cell[i].rho_c; 
+    
+    state_cell[i].Nu_h := 4.089 + fit_const_c * (state_cell[i].Re_h^ fit_const_d);
+    state_cell[i].Nu_c := 4.089 + fit_const_c * (state_cell[i].Re_c^ fit_const_d);
+    
+    state_cell[i].k_wall := thermal_conductivity(name_material, (state_cell[i].T_h + state_cell[i].T_c) / 2);
+    
+    assert(state_cell[i].k_c > 0 and state_cell[i].k_c < 1e5, 
+    "outside range " + keyvalStr("k_h", state_cell[i].k_c) + 
+    " at " + debugInfo({"i", "T", "P"}, {i, state_cell[i].T_h, state_cell[i].p_h}));
+    /*
+    i = " + String(i) + 
+    " T = " + String(state_cell[i].T_h) +
+    " P = " + String(state_cell[i].p_h));*/
+    
+    assert(state_cell[i].k_c > 0 and state_cell[i].k_h < 1e5, "k_c outside range" + String(state_cell[i].k_h) + " for i = " + String(i));
+    
+    state_cell[i].h_h := state_cell[i].Nu_h * state_cell[i].k_h / d_h;
+    state_cell[i].h_c := state_cell[i].Nu_c * state_cell[i].k_c / d_h;
+    
+    state_cell[i].U := 1 / state_cell[i].h_h + 1 / state_cell[i].h_c + t_wall / state_cell[i].k_wall;
+    
+    state_cell[i].f_h := (15.78 + fit_const_a * state_cell[i].Re_h ^ fit_const_b ) / state_cell[i].Re_h;
+    state_cell[i].f_c := (15.78 + fit_const_a * state_cell[i].Re_c ^ fit_const_b ) / state_cell[i].Re_c;
+    
+    if state_cell[i].T_h > state_cell[i].T_c then
+      state_cell[i].q := state_cell[i].U * A_stack * (state_cell[i].T_h - state_cell[i].T_c);      
+    else
+      state_cell[i].q := 0;
+    end if;
+    
+    state_cell[i].dp_h := state_cell[i].f_h * state_cell[i].length * state_cell[i].rho_h *  (state_cell[i].u_h ^ 2) / d_h;
+    state_cell[i].dp_c := state_cell[i].f_c * state_cell[i].length * state_cell[i].rho_c *  (state_cell[i].u_c ^ 2) / d_h;
+    
+    // no use of following parameters, use default value
+    state_cell[i].Pr_c := 0;
+    state_cell[i].Pr_h := 0;    
+    
+    // Calculate state for next cell
+    if i == N_seg then
+      break;
+    end if;
+    
+    state_cell[i + 1].h_mass_h := (state_cell[i].h_mass_h * inlet_hot.m_flow - state_cell[i].q) / inlet_hot.m_flow;
+    
+    assert(state_cell[i+1].h_mass_h > 0 and state_cell[i+1].h_mass_h < 1e6,
+    "out of range " + keyvalStr("h_mass_h", state_cell[i+1].h_mass_h) + " at " + 
+    debugInfo({"i+1","h_mass_h[i]","m_dot_inlet_hot","q[i]"},{i+1,state_cell[i].h_mass_h,inlet_hot.m_flow, state_cell[i].q})); 
+ 
+    state_cell[i + 1].h_mass_c := (state_cell[i].h_mass_c * inlet_cool.m_flow - state_cell[i].q) / inlet_cool.m_flow;
+    
+    state_cell[i + 1].p_h := state_cell[i].p_h - state_cell[i].dp_h;
+    state_cell[i + 1].p_c := state_cell[i].p_c - state_cell[i].dp_c;
+    
+    state_cell[i + 1].T_h := CP.PropsSI("T", "P",state_cell[i + 1].p_h, "H", state_cell[i + 1].h_mass_h, medium_hot_in.mediumName);
+    
+    assert(state_cell[i+1].T_h > 0 and state_cell[i+1].T_h < 1e6, 
+    "out of range " + keyvalStr("T", state_cell[i+1].T_h) + " at " + debugInfo({"i","P","h_mass_h"},{i+1,state_cell[i + 1].p_h,state_cell[i + 1].h_mass_h}));
+    
+    state_cell[i + 1].T_c := CP.PropsSI("T", "P",state_cell[i + 1].p_c, "H", state_cell[i + 1].h_mass_c, medium_cool_in.mediumName);
+      
+  end for;
   
 equation 
   
