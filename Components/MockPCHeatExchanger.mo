@@ -59,16 +59,13 @@ model MockPCHeatExchanger
     
     input String name "material name";
     input Modelica.SIunits.Temp_C temperature;
+    input Modelica.Blocks.Types.ExternalCombiTable1D tableID;
     output Modelica.SIunits.ThermalConductivity k;
-
-protected
-    
-    inner Modelica.Blocks.Types.ExternalCombiTable1D table_th_inconel_750 = Modelica.Blocks.Types.ExternalCombiTable1D(tableName = "inconel_750", fileName = Modelica.Utilities.Files.loadResource("modelica://Steps/Resources/Data/th_conductivity.txt"), table = fill(0.0, 6, 2), smoothness = Modelica.Blocks.Types.Smoothness.LinearSegments, columns = 2:2) "thermal conductivity for inconel_750";
     
   algorithm
     if(UTIL.Strings.compare(name, "inconel_75") == Modelica.Utilities.Types.Compare.Equal) then
       // FIX IT: icol = 0， 1？ 
-      k := TB.CombiTable1D.getTableValue(table_th_inconel_750, icol = 1, u = temperature, tableAvailable = 0.0); 
+      k := TB.Internal.getTable1DValue(tableID, icol = 1, u = temperature); 
     else
       k := 16.2;
     end if;
@@ -104,6 +101,8 @@ protected
   inner Modelica.Blocks.Types.ExternalCombiTable1D table_b = Modelica.Blocks.Types.ExternalCombiTable1D(tableName = "4d_b", fileName = Modelica.Utilities.Files.loadResource("modelica://Steps/Resources/Data/kim_2012.txt"), table = fill(0.0, 9, 2), smoothness = Modelica.Blocks.Types.Smoothness.LinearSegments, columns = 2:2);
   inner Modelica.Blocks.Types.ExternalCombiTable1D table_c = Modelica.Blocks.Types.ExternalCombiTable1D(tableName = "5d_c", fileName = Modelica.Utilities.Files.loadResource("modelica://Steps/Resources/Data/kim_2012.txt"), table = fill(0.0, 9, 2), smoothness = Modelica.Blocks.Types.Smoothness.LinearSegments, columns = 2:2);
   inner Modelica.Blocks.Types.ExternalCombiTable1D table_d = Modelica.Blocks.Types.ExternalCombiTable1D(tableName = "5d_d", fileName = Modelica.Utilities.Files.loadResource("modelica://Steps/Resources/Data/kim_2012.txt"), table = fill(0.0, 9, 2), smoothness = Modelica.Blocks.Types.Smoothness.LinearSegments, columns = 2:2);
+
+  inner Modelica.Blocks.Types.ExternalCombiTable1D table_th_inconel_750 = Modelica.Blocks.Types.ExternalCombiTable1D(tableName = "inconel_750", fileName = Modelica.Utilities.Files.loadResource("modelica://Steps/Resources/Data/th_conductivity.txt"), table = fill(0.0, 6, 2), smoothness = Modelica.Blocks.Types.Smoothness.LinearSegments, columns = 2:2) "thermal conductivity for inconel_750";
 
   // length of one pipe in HeatExchanger
   parameter Modelica.SIunits.Length length = 1.0 "unit m";
@@ -217,10 +216,10 @@ algorithm
       table_d := table_5c_d;
     end if;
     
-    fit_const_a := TB.CombiTable1D.getTableValue(table_a, icol = 1, u = Modelica.SIunits.Conversions.to_deg(phi), tableAvailable = 0.0);
-    fit_const_b := TB.CombiTable1D.getTableValue(table_b, icol = 1, u = Modelica.SIunits.Conversions.to_deg(phi), tableAvailable = 0.0);
-    fit_const_c := TB.CombiTable1D.getTableValue(table_c, icol = 1, u = Modelica.SIunits.Conversions.to_deg(phi), tableAvailable = 0.0);
-    fit_const_d := TB.CombiTable1D.getTableValue(table_d, icol = 1, u = Modelica.SIunits.Conversions.to_deg(phi), tableAvailable = 0.0);  
+    fit_const_a := TB.Internal.getTable1DValue(table_a, icol = 1, u = Modelica.SIunits.Conversions.to_deg(phi));
+    fit_const_b := TB.Internal.getTable1DValue(table_b, icol = 1, u = Modelica.SIunits.Conversions.to_deg(phi));
+    fit_const_c := TB.Internal.getTable1DValue(table_c, icol = 1, u = Modelica.SIunits.Conversions.to_deg(phi));
+    fit_const_d := TB.Internal.getTable1DValue(table_d, icol = 1, u = Modelica.SIunits.Conversions.to_deg(phi));  
   
   end when;
     
@@ -267,7 +266,7 @@ algorithm
     state_cell[i].Nu_h := 4.089 + fit_const_c * (state_cell[i].Re_h^ fit_const_d);
     state_cell[i].Nu_c := 4.089 + fit_const_c * (state_cell[i].Re_c^ fit_const_d);
     
-    state_cell[i].k_wall := thermal_conductivity(name_material, (state_cell[i].T_h + state_cell[i].T_c) / 2);
+    state_cell[i].k_wall := thermal_conductivity(tableID = table_th_inconel_750, name = name_material, temperature = (state_cell[i].T_h + state_cell[i].T_c) / 2);
     
     assert(state_cell[i].k_c > 0 and state_cell[i].k_c < 1e5, 
     "outside range " + keyvalStr("k_h", state_cell[i].k_c) + 

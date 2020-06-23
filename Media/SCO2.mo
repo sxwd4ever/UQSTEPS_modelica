@@ -2,6 +2,7 @@ within Steps.Media;
 package SCO2 "supercritical CO2"
 
   extends Modelica.Media.Interfaces.PartialMedium(ThermoStates = Modelica.Media.Interfaces.Choices.IndependentVariables.ph, final mediumName = "CO2", final substanceNames = {"CO2"}, final singleState = false, final reducedX = true, final fixedX = true, Temperature(min = 0, max = 1200, start = 500));
+  
   import CP = Steps.Utilities.CoolProp;  
   import SI = Modelica.SIunits;
   
@@ -21,8 +22,8 @@ package SCO2 "supercritical CO2"
       Temperature T "Temperature of PBMedia";
   end ThermodynamicState;
   
-  model CO2_pT "Base properties of medium"
-    extends BaseProperties(final standardOrderComponents = true);
+  replaceable model CO2_pT "Base properties of medium"
+     extends BaseProperties(final standardOrderComponents = true);
     Modelica.SIunits.SpecificEntropy s;
   equation
       state.p = p;
