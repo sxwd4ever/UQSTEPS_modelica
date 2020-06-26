@@ -65,7 +65,7 @@ model MockPCHeatExchanger
   algorithm
     if(UTIL.Strings.compare(name, "inconel_75") == Modelica.Utilities.Types.Compare.Equal) then
       // FIX IT: icol = 0， 1？ 
-      k := TB.Internal.getTable1DValue(tableID, icol = 1, u = temperature); 
+      k := TB.CombiTable1D.getTableValue(tableID, icol = 1, u = temperature, tableAvailable = 1.0); 
     else
       k := 16.2;
     end if;
@@ -82,8 +82,7 @@ model MockPCHeatExchanger
   
   inner Modelica.Blocks.Types.ExternalCombiTable1D table_4c_a = Modelica.Blocks.Types.ExternalCombiTable1D(tableName = "4c_a", fileName = Modelica.Utilities.Files.loadResource("modelica://Steps/Resources/Data/kim_2012.txt"), table = fill(0.0, 9, 2), smoothness = Modelica.Blocks.Types.Smoothness.LinearSegments, columns = 2:2) "Table 4c - column a in Kim[2012] for pitch=24.6, dh=0.922 (dc=1.3 mm))";
 
-  inner Modelica.Blocks.Types.ExternalCombiTable1D table_4c_b = Modelica.Blocks.Types.ExternalCombiTable1D(tableName = "4c_b", fileName = Modelica.Utilities.Files.loadResource("modelica://Steps/Resources/Data/kim_2012.txt"), table = fill(0.0, 9, 2), smoothness = Modelica.Blocks.Types.Smoothness.LinearSegments, columns = 2:2) "Table 4c - column b in Kim[2012] for pitch=12.3, dh=0.922 (dc=1.3 mm))";
-  
+  inner Modelica.Blocks.Types.ExternalCombiTable1D table_4c_b = Modelica.Blocks.Types.ExternalCombiTable1D(tableName = "4c_b", fileName = Modelica.Utilities.Files.loadResource("modelica://Steps/Resources/Data/kim_2012.txt"), table = fill(0.0, 9, 2), smoothness = Modelica.Blocks.Types.Smoothness.LinearSegments, columns = 2:2) "Table 4c - column b in Kim[2012] for pitch=12.3, dh=0.922 (dc=1.3 mm))";  
 
   inner Modelica.Blocks.Types.ExternalCombiTable1D table_5a_c = Modelica.Blocks.Types.ExternalCombiTable1D(tableName = "5a_c", fileName = Modelica.Utilities.Files.loadResource("modelica://Steps/Resources/Data/kim_2012.txt"), table = fill(0.0, 9, 2), smoothness = Modelica.Blocks.Types.Smoothness.LinearSegments, columns = 2:2) "Table 5a - column c in Kim[2012] for pitch=24.6, dh=0.922 (dc=1.3 mm))";
 
@@ -98,8 +97,11 @@ model MockPCHeatExchanger
   inner Modelica.Blocks.Types.ExternalCombiTable1D table_5c_d = Modelica.Blocks.Types.ExternalCombiTable1D(tableName = "5c_d", fileName = Modelica.Utilities.Files.loadResource("modelica://Steps/Resources/Data/kim_2012.txt"), table = fill(0.0, 9, 2), smoothness = Modelica.Blocks.Types.Smoothness.LinearSegments, columns = 2:2) "Table 5c - column d in Kim[2012] for pitch=12.3, dh=0.922 (dc=1.3 mm))";
     
   inner Modelica.Blocks.Types.ExternalCombiTable1D table_a = Modelica.Blocks.Types.ExternalCombiTable1D(tableName = "4d_a", fileName = Modelica.Utilities.Files.loadResource("modelica://Steps/Resources/Data/kim_2012.txt"), table = fill(0.0, 9, 2), smoothness = Modelica.Blocks.Types.Smoothness.LinearSegments, columns = 2:2);
+  
   inner Modelica.Blocks.Types.ExternalCombiTable1D table_b = Modelica.Blocks.Types.ExternalCombiTable1D(tableName = "4d_b", fileName = Modelica.Utilities.Files.loadResource("modelica://Steps/Resources/Data/kim_2012.txt"), table = fill(0.0, 9, 2), smoothness = Modelica.Blocks.Types.Smoothness.LinearSegments, columns = 2:2);
+  
   inner Modelica.Blocks.Types.ExternalCombiTable1D table_c = Modelica.Blocks.Types.ExternalCombiTable1D(tableName = "5d_c", fileName = Modelica.Utilities.Files.loadResource("modelica://Steps/Resources/Data/kim_2012.txt"), table = fill(0.0, 9, 2), smoothness = Modelica.Blocks.Types.Smoothness.LinearSegments, columns = 2:2);
+  
   inner Modelica.Blocks.Types.ExternalCombiTable1D table_d = Modelica.Blocks.Types.ExternalCombiTable1D(tableName = "5d_d", fileName = Modelica.Utilities.Files.loadResource("modelica://Steps/Resources/Data/kim_2012.txt"), table = fill(0.0, 9, 2), smoothness = Modelica.Blocks.Types.Smoothness.LinearSegments, columns = 2:2);
 
   inner Modelica.Blocks.Types.ExternalCombiTable1D table_th_inconel_750 = Modelica.Blocks.Types.ExternalCombiTable1D(tableName = "inconel_750", fileName = Modelica.Utilities.Files.loadResource("modelica://Steps/Resources/Data/th_conductivity.txt"), table = fill(0.0, 6, 2), smoothness = Modelica.Blocks.Types.Smoothness.LinearSegments, columns = 2:2) "thermal conductivity for inconel_750";
@@ -107,7 +109,7 @@ model MockPCHeatExchanger
   // length of one pipe in HeatExchanger
   parameter Modelica.SIunits.Length length = 1.0 "unit m";
   
-  parameter Integer N_seg = 100 "Number of segments in a tube";
+  parameter Integer N_seg = 10 "Number of segments in a tube";
   
   parameter Modelica.SIunits.Angle phi = 0.0 "unit rad";
   
@@ -216,17 +218,17 @@ algorithm
       table_d := table_5c_d;
     end if;
     
-    fit_const_a := TB.Internal.getTable1DValue(table_a, icol = 1, u = Modelica.SIunits.Conversions.to_deg(phi));
-    fit_const_b := TB.Internal.getTable1DValue(table_b, icol = 1, u = Modelica.SIunits.Conversions.to_deg(phi));
-    fit_const_c := TB.Internal.getTable1DValue(table_c, icol = 1, u = Modelica.SIunits.Conversions.to_deg(phi));
-    fit_const_d := TB.Internal.getTable1DValue(table_d, icol = 1, u = Modelica.SIunits.Conversions.to_deg(phi));  
+    fit_const_a := TB.CombiTable1D.getTableValue(table_a, icol = 1, u = Modelica.SIunits.Conversions.to_deg(phi), tableAvailable = 1.0);
+    fit_const_b := TB.CombiTable1D.getTableValue(table_b, icol = 1, u = Modelica.SIunits.Conversions.to_deg(phi), tableAvailable = 1.0);
+    fit_const_c := TB.CombiTable1D.getTableValue(table_c, icol = 1, u = Modelica.SIunits.Conversions.to_deg(phi), tableAvailable = 1.0);
+    fit_const_d := TB.CombiTable1D.getTableValue(table_d, icol = 1, u = Modelica.SIunits.Conversions.to_deg(phi), tableAvailable = 1.0);  
   
   end when;
     
 equation
 
   medium_hot_in.state = PBMedia.setState_pTX(p = inlet_hot.p, T = inlet_hot.T);
-  medium_cool_in.state = PBMedia.setState_pTX(p = inlet_cool.p, T = inlet_cool.T);   
+  medium_cool_in.state = PBMedia.setState_pTX(p = inlet_cool.p, T = inlet_cool.T);
   
 algorithm  
 
@@ -281,7 +283,7 @@ algorithm
     state_cell[i].h_h := state_cell[i].Nu_h * state_cell[i].k_h / d_h;
     state_cell[i].h_c := state_cell[i].Nu_c * state_cell[i].k_c / d_h;
     
-    state_cell[i].U := 1 / state_cell[i].h_h + 1 / state_cell[i].h_c + t_wall / state_cell[i].k_wall;
+    state_cell[i].U := 1 / ( 1 / state_cell[i].h_h + 1 / state_cell[i].h_c + t_wall / state_cell[i].k_wall);
     
     state_cell[i].f_h := (15.78 + fit_const_a * state_cell[i].Re_h ^ fit_const_b ) / state_cell[i].Re_h;
     state_cell[i].f_c := (15.78 + fit_const_a * state_cell[i].Re_c ^ fit_const_b ) / state_cell[i].Re_c;
@@ -326,20 +328,19 @@ algorithm
   
 equation 
   
-  // for out_cool
-  medium_cool_out.state = PBMedia.setState_phX(p = state_cell[N_seg].p_c,  h = state_cell[N_seg].h_mass_h);
+  medium_cool_out.state = PBMedia.setState_phX(p = state_cell[N_seg].p_c, h = state_cell[N_seg].h_mass_c);   
   outlet_cool.T = medium_cool_out.T;
   outlet_cool.p = medium_cool_out.p;
-  outlet_cool.h_outflow = medium_cool_out.h;  
+  outlet_cool.h_outflow = -state_cell[N_seg].h_mass_c;
   
   inlet_cool.h_outflow = inStream(outlet_cool.h_outflow);    
   outlet_cool.m_flow + inlet_cool.m_flow = 0;
   
   // for outlet_hot
-  medium_hot_out.state = PBMedia.setState_phX(p = state_cell[N_seg].p_h, h = state_cell[N_seg].h_mass_c); 
+  medium_hot_out.state = PBMedia.setState_phX(p = state_cell[N_seg].p_h, h = state_cell[N_seg].h_mass_h); 
   outlet_hot.T = medium_hot_out.T;
   outlet_hot.p = medium_hot_out.p;
-  outlet_hot.h_outflow = medium_hot_out.h;  
+  outlet_hot.h_outflow = - state_cell[N_seg].h_mass_h;  
   
   inlet_hot.h_outflow = inStream(outlet_hot.h_outflow);  
   outlet_hot.m_flow + inlet_hot.m_flow = 0;

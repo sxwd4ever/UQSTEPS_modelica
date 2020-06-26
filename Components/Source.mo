@@ -16,7 +16,7 @@ model Source
   parameter Modelica.SIunits.AbsolutePressure T_outlet(start = 400);
 
   // fixed mass flow
-  parameter Modelica.SIunits.MassFlowRate m_dot_flow(start = 8.3);
+  parameter Modelica.SIunits.MassFlowRate mdot_init(start = 8.3);
   //PBMedia.CO2_pT medium_out;    
   
   replaceable Steps.Interfaces.PBFluidPort_b outlet(redeclare package Medium = PBMedia) "Outlet port, next component";  
@@ -27,12 +27,18 @@ model Source
  
   //replaceable Steps.Interfaces.PBFluidPort_a inlet(redeclare package Medium = PBMedia) "Inlet port, previous component";
   //replaceable Steps.Interfaces.PBFluidPort_b outlet(redeclare package Medium = PBMedia) "Outlet port, next component";
-
+  parameter Boolean fix_state = true;
+  
 initial equation
   // use initial equation to set initial fixed value for the cross variable in connector
-  outlet.p = p_outlet;
-  outlet.T = T_outlet;
-  outlet.m_flow = - m_dot_flow;
+  /*
+  if fix_state then
+    outlet.p = p_outlet;
+    outlet.T = T_outlet;
+    outlet.m_flow = - mdot_init;
+    outlet.h_outflow = - CP.PropsSI("H", "P", p_outlet, "T", T_outlet, PBMedia.mediumName);
+  end if;
+  */
   /*
   if IsSource == true then
     outlet.m_flow = - m_dot_flow;
@@ -48,12 +54,16 @@ equation
   //medium_out.state = PBMedia.setState_pTX(p = p_outlet, T = T_outlet); 
   
   //outlet.m_flow = - m_dot_flow;
-  //outlet.h_outflow = CP.PropsSI("H", "P", outlet.p, "T", outlet.T, "CO2");    
+  //outlet.h_outflow = CP.PropsSI("H", "P", outlet.p, "T", outlet.T, "CO2"); 
   
-  outlet.p = p_outlet;
-  outlet.T = T_outlet;
-  outlet.m_flow = - m_dot_flow;
-  outlet.h_outflow = - CP.PropsSI("H", "P", p_outlet, "T", T_outlet, PBMedia.mediumName);
+  if fix_state then
+    outlet.p = p_outlet;
+    outlet.T = T_outlet;
+    outlet.m_flow = - mdot_init;
+    outlet.h_outflow = - CP.PropsSI("H", "P", p_outlet, "T", T_outlet, PBMedia.mediumName);
+  else
+    outlet.h_outflow = - CP.PropsSI("H", "P", outlet.p, "T", outlet.T, PBMedia.mediumName);
+  end if;
   //inlet.h_outflow = inStream(outlet.h_outflow);
     
   //outlet.m_flow + inlet.m_flow = 0;  

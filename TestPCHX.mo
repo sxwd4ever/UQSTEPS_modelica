@@ -20,25 +20,28 @@ model TestPCHX
   Components.Source source_hot(
     p_outlet = 9 * 1e6,
     T_outlet = Modelica.SIunits.Conversions.from_degC(451),
-    m_dot_flow = 8.3
+    mdot_init = 8.3,
+    fix_state = true
   );
 
   Components.Source source_cool(
     p_outlet = 20 * 1e6,
     T_outlet = Modelica.SIunits.Conversions.from_degC(41),
-    m_dot_flow = 8.3
+    mdot_init = 8.3,
+    fix_state = false
   );
 
   Components.Sink sink_hot(
     p_inlet = 8.88 * 1e6,
     T_inlet = Modelica.SIunits.Conversions.from_degC(51),
-    fix_sink = false
+    fix_state = false
   );
 
   Components.Sink sink_cool(
     p_inlet = 20 * 1e6,
     T_inlet = Modelica.SIunits.Conversions.from_degC(332.9),
-    fix_sink = false
+    mdot_init = 8.3,
+    fix_state = true
   );
  
   Components.MockPCHeatExchanger pchx(
