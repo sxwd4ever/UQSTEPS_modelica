@@ -2,6 +2,7 @@ BaseExchanger
 EndPoint
 FanCooler
 HXCellState
+PipeType
 Merger
 MockPCHeatExchanger
 OilHeater

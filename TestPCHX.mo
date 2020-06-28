@@ -34,6 +34,7 @@ model TestPCHX
   Components.Sink sink_hot(
     p_inlet = 8.88 * 1e6,
     T_inlet = Modelica.SIunits.Conversions.from_degC(51),
+    mdot_init = 8.3,
     fix_state = false
   );
 

@@ -22,6 +22,17 @@ package SCO2 "supercritical CO2"
       Temperature T "Temperature of PBMedia";
   end ThermodynamicState;
   
+  record FullThermodynamicState
+    "Full state info for a medium, for data transfer purpose"
+    
+    Modelica.SIunits.Temperature T;
+    Modelica.SIunits.AbsolutePressure p;
+    Modelica.SIunits.SpecificEnthalpy h;    
+    Modelica.SIunits.SpecificEntropy s;
+    Modelica.SIunits.Density d;
+    
+  end FullThermodynamicState;
+  
   replaceable model CO2_pT "Base properties of medium"
      extends BaseProperties(final standardOrderComponents = true);
     Modelica.SIunits.SpecificEntropy s;
@@ -35,6 +46,20 @@ package SCO2 "supercritical CO2"
       MM = 0.044;
       R = 8.3144 / MM; 
   end CO2_pT;
+    
+  function getFullState
+    "get the full state of this medium"
+    input BaseProperties prop;
+    output FullThermodynamicState state;
+    algorithm
+    
+    state.T := prop.T;
+    state.p := prop.p;
+    state.h := prop.h;
+    state.d := prop.d;
+    state.s := prop.s;
+    
+  end getFullState;
     
   redeclare function setState_pTX "Return thermodynamic state from p, T, and X or Xi"
     extends Modelica.Icons.Function;
