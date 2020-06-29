@@ -176,12 +176,8 @@ model MockPCHeatExchanger
   
   Real fit_const_d "fitting constant d in Eq[4] of [kim, 2011] ";
   
-  Modelica.SIunits.MassFlowRate G_c "Mass flux of each cold channel";  
-  Modelica.SIunits.MassFlowRate G_h "Mass flux of each cold channel";    
+  Integer table_select;
   
-  Integer table_select;   
-    
-  /*
   constant Integer num_pipes = 2;
   
   PipeType pipes[num_pipes] = {PipeType.Hot, PipeType.Cold};  
@@ -191,10 +187,12 @@ model MockPCHeatExchanger
   Modelica.SIunits.MassFlowRate mdot_pipes[num_pipes];
 
   Modelica.SIunits.MassFlowRate G[num_pipes] "Mass flux of each hot channel";
-  
+  /*
+  Modelica.SIunits.MassFlowRate G_c "Mass flux of each cold channel";   
+  */
  
   Integer idx;
-  */
+  
 algorithm
 
   when initial() then
@@ -256,82 +254,68 @@ equation
 algorithm  
   // initialize the state for the hot side and cold side in all the cells
   // using the hot inlet and cool outlet.    
+  
+  mediums[E2I(PipeType.Hot)].state := PBMedia.setState_pTX(p = medium_hot_in.p, T = medium_hot_in.T);
+  mediums[E2I(PipeType.Cold)].state := PBMedia.setState_pTX(p = medium_cool_out.p, T = medium_cool_out.T);
+  mdot_pipes[E2I(PipeType.Hot)] :=  inlet_hot.m_flow;
+  mdot_pipes[E2I(PipeType.Cold)] := outlet_cool.m_flow;
 
-  state_cell[1].T_c := medium_cool_out.T;
-  state_cell[1].T_h := medium_hot_in.T;
-  
-  state_cell[1].p_c := medium_cool_out.p;
-  state_cell[1].p_h := medium_hot_in.p;  
-  
-  state_cell[1].mdot_c := - outlet_cool.m_flow;
-  state_cell[1].mdot_h := inlet_hot.m_flow;  
-
-  state_cell[1].medium_name_c := medium_cool_out.mediumName;
-  state_cell[1].medium_name_h := medium_hot_in.mediumName;  
-  
-  state_cell[1].h_mass_c := medium_cool_out.h;
-  state_cell[1].h_mass_h := medium_hot_in.h;  
-  
-  G_c := state_cell[1].mdot_c / N_channel / A_c;
-  G_h := state_cell[1].mdot_h / N_channel / A_c;
+  for i in 1 : size(pipes, 1) loop  
+    //pipe_type := pipes[i];
+    idx := E2I(pipes[i]);
+    
+    // mass flux
+    G[idx] := mdot_pipes[idx] / N_channel / A_c;
+      
+    state_cell[1].status[idx].T := mediums[idx].T;
+    state_cell[1].status[idx].p := mediums[idx].p;
+    state_cell[1].status[idx].mdot := mdot_pipes[idx];
+    state_cell[1].status[idx].medium_name := mediums[idx].mediumName;
+    state_cell[1].status[idx].h_mass := CP.PropsSI("H", "P", mediums[idx].p, "T", mediums[idx].T, mediums[idx].mediumName);
+     
+  end for;
   
   for i in 1 : N_seg loop // index out of range??
     state_cell[i].length := length_cell;
    
-    //Debug from this point
-    state_cell[i].mu_c := CP.PropsSI("V", "P", state_cell[i].p_c, "T", state_cell[i].T_c, state_cell[i].medium_name_c);
-    state_cell[i].mu_h := CP.PropsSI("V", "P", state_cell[i].p_h, "T", state_cell[i].T_h, state_cell[i].medium_name_h);
+    for j in 1 : size(pipes, 1) loop   
+      idx := E2I(pipes[j]);
       
-    state_cell[i].k_c := CP.PropsSI("L", "P", state_cell[i].p_c, "T", state_cell[i].T_c, state_cell[i].medium_name_c);  
-    
-    assert(state_cell[i].k_c > 0 and state_cell[i].k_c < 1e5, 
-    "outside range " + keyvalStr("k_c", state_cell[i].k_c) + 
-    " at " + debugInfo({"i", "T", "P"}, {i, state_cell[i].T_c, state_cell[i].p_c}));
+      //Debug from this point
+      state_cell[i].status[idx].mu := CP.PropsSI("V", "P", state_cell[i].status[idx].p, "T", state_cell[i].status[idx].T, state_cell[i].status[idx].medium_name);
       
-    state_cell[i].k_h := CP.PropsSI("L", "P", state_cell[i].p_h, "T", state_cell[i].T_h, state_cell[i].medium_name_h);  
+      state_cell[i].status[idx].k := CP.PropsSI("L", "P", state_cell[i].status[idx].p, "T", state_cell[i].status[idx].T, state_cell[i].status[idx].medium_name);
       
-    state_cell[i].Re_c := G_c * d_h / state_cell[i].mu_c;
-    state_cell[i].Re_h := G_h * d_h / state_cell[i].mu_h;
+      state_cell[i].status[idx].Re := G[idx] * d_h / state_cell[i].status[idx].mu;
       
-    state_cell[i].rho_c := CP.PropsSI("D", "P", state_cell[i].p_c, "T", state_cell[i].T_c, state_cell[i].medium_name_c);
-    state_cell[i].rho_h := CP.PropsSI("D", "P", state_cell[i].p_h, "T", state_cell[i].T_h, state_cell[i].medium_name_h);
+      state_cell[i].status[idx].rho := CP.PropsSI("D", "P", state_cell[i].status[idx].p, "T", state_cell[i].status[idx].T, state_cell[i].status[idx].medium_name);
       
-    state_cell[i].u_c := state_cell[i].mdot_c / A_stack / state_cell[i].rho_c;  
-    state_cell[i].u_h := state_cell[i].mdot_h / A_stack / state_cell[i].rho_h;  
+      state_cell[i].status[idx].u := mdot_pipes[idx]/ A_stack / state_cell[i].status[idx].rho;     
     
-    
-    assert(state_cell[i].Re_c > 0 and state_cell[i].Re_c < 1e6,
-    "out of range " + keyvalStr("Re_c", state_cell[i].Re_c) + " at " + 
-    debugInfo({"i","G","d_h","mu"},{i, G_c, d_h, state_cell[i].mu_c}));  
-    
-    state_cell[i].Nu_c := 4.089 + fit_const_c * (state_cell[i].Re_c ^ fit_const_d);
-    
-    assert(state_cell[i].Re_h > 0 and state_cell[i].Re_h < 1e6,
-    "out of range " + keyvalStr("Re_h", state_cell[i].Re_h) + " at " + 
-    debugInfo({"i","G","d_h","mu"},{i, G_h, d_h, state_cell[i].mu_h}));       
-    
-    state_cell[i].Nu_h := 4.089 + fit_const_c * (state_cell[i].Re_h ^ fit_const_d);
+      state_cell[i].status[idx].Nu := 4.089 + fit_const_c * (state_cell[i].status[idx].Re ^ fit_const_d);
       
-    state_cell[i].h_c := state_cell[i].Nu_c * state_cell[i].k_c / d_h;
-    state_cell[i].h_h := state_cell[i].Nu_h * state_cell[i].k_h / d_h;
+      /*
+      assert(state_cell[i].status[idx].k > 0 and state_cell[i].status[idx].k < 1e5, 
+    "outside range " + keyvalStr("k_h", state_cell[i].status[idx].k) + 
+    " at " + debugInfo({"i", "T", "P"}, {i, state_cell[i].status[idx].T, state_cell[i].status[idx].p}));
+      */
       
-    state_cell[i].f_c := (15.78 + fit_const_a * state_cell[i].Re_c ^ fit_const_b ) / state_cell[i].Re_c;      
-    state_cell[i].f_h := (15.78 + fit_const_a * state_cell[i].Re_h ^ fit_const_b ) / state_cell[i].Re_h;      
+      state_cell[i].status[idx].h := state_cell[i].status[idx].Nu * state_cell[i].status[idx].k / d_h;
+      
+      state_cell[i].status[idx].f := (15.78 + fit_const_a * state_cell[i].status[idx].Re ^ fit_const_b ) / state_cell[i].status[idx].Re;      
+      
+      state_cell[i].status[idx].dp := state_cell[i].status[idx].f * state_cell[i].length * state_cell[i].status[idx].rho *  (state_cell[i].status[idx].u ^ 2) / d_h;    
+      // no use of following parameters, use default value
+      state_cell[i].status[idx].Pr := 1.0;
+    end for;
     
-    state_cell[i].dp_c := state_cell[i].f_c * state_cell[i].length * state_cell[i].rho_c *  (state_cell[i].u_c ^ 2) / d_h;    
-    state_cell[i].dp_h := state_cell[i].f_h * state_cell[i].length * state_cell[i].rho_h *  (state_cell[i].u_h ^ 2) / d_h;
+    state_cell[i].k_wall := thermal_conductivity(tableID = table_th_inconel_750, name = name_material, temperature = (state_cell[i].status[E2I(PipeType.Hot)].T + state_cell[i].status[E2I(PipeType.Cold)].T) / 2);
     
-    // no use of following parameters, use default value
-    state_cell[i].Pr_c := 1.0;
-    state_cell[i].Pr_h := 1.0;
-    
-    state_cell[i].k_wall := thermal_conductivity(tableID = table_th_inconel_750, name = name_material, temperature = (state_cell[i].T_c + state_cell[i].T_h) / 2);
-    
-    state_cell[i].U := 1 / ( 1 / state_cell[i].h_h + 1 / state_cell[i].h_c + t_wall / state_cell[i].k_wall);    
+    state_cell[i].U := 1 / ( 1 / state_cell[i].status[E2I(PipeType.Hot)].h + 1 / state_cell[i].status[E2I(PipeType.Cold)].h + t_wall / state_cell[i].k_wall);    
 
     
-    if state_cell[i].T_h > state_cell[i].T_c then
-      state_cell[i].q := state_cell[i].U * A_stack * (state_cell[i].T_h - state_cell[i].T_c);      
+    if state_cell[i].status[E2I(PipeType.Hot)].T > state_cell[i].status[E2I(PipeType.Cold)].T then
+      state_cell[i].q := state_cell[i].U * A_stack * (state_cell[i].status[E2I(PipeType.Hot)].T - state_cell[i].status[E2I(PipeType.Cold)].T);      
     else
       state_cell[i].q := 0;
     end if;  
@@ -342,48 +326,54 @@ algorithm
     end if;
     
     // set parameter for next cell of hot and cold pipe
-    state_cell[i + 1].medium_name_c := state_cell[i].medium_name_c;      
-    state_cell[i + 1].medium_name_h := state_cell[i].medium_name_h;      
+    for j in 1 : size(pipes, 1) loop   
+      idx := E2I(pipes[j]);
       
-    state_cell[i + 1].mdot_c := state_cell[i].mdot_c;
-    state_cell[i + 1].mdot_h := state_cell[i].mdot_h;
+      state_cell[i + 1].status[idx].medium_name := state_cell[i].status[idx].medium_name;      
       
-    state_cell[i + 1].h_mass_c := (state_cell[i].h_mass_c * state_cell[i].mdot_c - state_cell[i].q) / state_cell[i].mdot_c;
-    
-    assert(state_cell[i+1].h_mass_c > 0 and state_cell[i+1].h_mass_c < 1e6,
-    "out of range " + keyvalStr("h_mass_c", state_cell[i+1].h_mass_c) + " at " + 
-    debugInfo({"i+1","h_mass_c[i]","m_dot_inlet_cold","q[i]"},{i+1,state_cell[i].h_mass_c, state_cell[i].mdot_c, state_cell[i].q})); 
-    
-    state_cell[i + 1].h_mass_h := (state_cell[i].h_mass_h * state_cell[i].mdot_h - state_cell[i].q) / state_cell[i].mdot_h; 
-     
-    state_cell[i + 1].p_c := state_cell[i].p_c - state_cell[i].dp_c;
-    state_cell[i + 1].p_h := state_cell[i].p_h - state_cell[i].dp_h;
+      state_cell[i + 1].status[idx].mdot := state_cell[i].status[idx].mdot;
       
-    state_cell[i + 1].T_c := CP.PropsSI("T", "P",state_cell[i + 1].p_c, "H", state_cell[i + 1].h_mass_c, state_cell[i].medium_name_c);
-    
-    assert(state_cell[i+1].T_c > 0 and state_cell[i+1].T_c < 1e6, 
-    "out of range " + keyvalStr("T_c", state_cell[i+1].T_c) + " at " + debugInfo({"i","P","h_mass_c"},{i+1,state_cell[i + 1].p_c,state_cell[i + 1].h_mass_c}));     
-    
-    state_cell[i + 1].T_h := CP.PropsSI("T", "P",state_cell[i + 1].p_h, "H", state_cell[i + 1].h_mass_h, state_cell[i].medium_name_h);
-
+      state_cell[i + 1].status[idx].h_mass := (state_cell[i].status[idx].h_mass * state_cell[i].status[idx].mdot - state_cell[i].q) / state_cell[i].status[idx].mdot;
+      
+      /*
+      assert(state_cell[i+1].status[idx].h_mass > 0 and state_cell[i+1].status[idx].h_mass < 1e6,
+      "out of range " + keyvalStr("h_mass_h", state_cell[i+1].status[idx].h_mass) + " at " + 
+      debugInfo({"i+1","h_mass_h[i]","m_dot_inlet_hot","q[i]"},{i+1,state_cell[i].status[idx].h_mass, state_cell[i].status[idx].mdot, state_cell[i].q}));  
+      */
+      
+      state_cell[i + 1].status[idx].p := state_cell[i].status[idx].p - state_cell[i].status[idx].dp;
+      
+      state_cell[i + 1].status[idx].T := CP.PropsSI("T", "P",state_cell[i + 1].status[idx].p, "H", state_cell[i + 1].status[idx].h_mass, state_cell[i].status[idx].medium_name);
+      
+      /*
+      assert(state_cell[i+1].status[idx].T > 0 and state_cell[i+1].status[idx].T < 1e6, 
+      "out of range " + keyvalStr("T", state_cell[i+1].status[idx].T) + " at " + debugInfo({"i","P","h_mass_h"},{i+1,state_cell[i + 1].status[idx].p,state_cell[i + 1].status[idx].h_mass}));     
+      */
+      
+    end for;
+          
   end for;
   
 equation 
   
-  medium_cool_in.state = PBMedia.setState_phX(p = state_cell[N_seg].p_c, h = state_cell[N_seg].h_mass_c);   
+  medium_cool_in.state = PBMedia.setState_phX(
+    p = state_cell[N_seg].status[E2I(PipeType.Cold)].p, 
+    h = state_cell[N_seg].status[E2I(PipeType.Cold)].h_mass);   
   inlet_cool.T = outlet_cool.T; // medium_cool_in.T;
   inlet_cool.p = outlet_cool.p; //medium_cool_in.p;
-  inlet_cool.h_outflow = state_cell[N_seg].h_mass_c;  
+  inlet_cool.h_outflow = state_cell[N_seg].status[E2I(PipeType.Cold)].h_mass;  
   //inlet_cool.h_outflow = inStream(outlet_cool.h_outflow);  
   //outlet_cool.h_outflow = - medium_cool_out.h;  
   inlet_cool.h_outflow = - outlet_cool.h_outflow;
   outlet_cool.m_flow + inlet_cool.m_flow = 0;
   
   // for outlet_hot
-  medium_hot_out.state = PBMedia.setState_phX(p = state_cell[N_seg].p_h, h = state_cell[N_seg].h_mass_h); 
+  medium_hot_out.state = PBMedia.setState_phX(
+    p = state_cell[N_seg].status[E2I(PipeType.Hot)].p, 
+    h = state_cell[N_seg].status[E2I(PipeType.Hot)].h_mass); 
   outlet_hot.T = inlet_hot.T; //medium_hot_out.T;
   outlet_hot.p = inlet_hot.p; //medium_hot_out.p;
-  outlet_hot.h_outflow = - state_cell[N_seg].h_mass_h;    
+  outlet_hot.h_outflow = - state_cell[N_seg].status[E2I(PipeType.Hot)].h_mass;    
   inlet_hot.h_outflow = inStream(outlet_hot.h_outflow);  
   outlet_hot.m_flow + inlet_hot.m_flow = 0;
 

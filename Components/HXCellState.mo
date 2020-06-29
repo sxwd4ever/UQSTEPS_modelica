@@ -5,55 +5,65 @@ record HXCellState
   
   import SI = Modelica.SIunits;
   
-  record CellStatus
-    "Cell Status for one cell in the hot-cell and cool-cell pair"
-    
-    //Local temperature
-    Modelica.SIunits.Temperature T;
+  //Local temperature
+  Modelica.SIunits.Temperature T_c;
+  Modelica.SIunits.Temperature T_h;
   
-    //Local pressure
-    Modelica.SIunits.Pressure p;
+  //Local pressure
+  Modelica.SIunits.Pressure p_c;
+  Modelica.SIunits.Pressure p_h;
   
-    // Local velocity of fluid
-    Modelica.SIunits.Velocity u;
-    
-    // mass flow rate
-    Modelica.SIunits.MassFlowRate mdot;
-    
-    //local parameters of this cell listed as following
-    //Local Dynamic Viscosity
-    Modelica.SIunits.DynamicViscosity mu;
-        
-    // Local Conductivity
-    Modelica.SIunits.ThermalConductivity k;
-    
-    // Local Reynolds Number
-    Modelica.SIunits.ReynoldsNumber Re;
-    
-    // Local Density
-    Modelica.SIunits.Density rho;
-    
-    // Local Nusselt Number
-    Modelica.SIunits.NusseltNumber Nu;
-    
-    // Local PrandtlNumber
-    Modelica.SIunits.PrandtlNumber Pr;
-    
-    // local Thermal Conductance
-    Modelica.SIunits.CoefficientOfHeatTransfer h;
-    
-    // Fanning Friction Factor - used to calculate pressure drop
-    Real f; 
-    
-    // Pressure drop
-    Modelica.SIunits.PressureDifference dp;
-    
-    // specific enthalpy to cal Heat flux
-    Modelica.SIunits.SpecificEnthalpy h_mass;
-    
-    String medium_name;
-    
-  end CellStatus;
+  // Local velocity of fluid
+  Modelica.SIunits.Velocity u_c;
+  Modelica.SIunits.Velocity u_h;
+  
+  // mass flow rate
+  Modelica.SIunits.MassFlowRate mdot_c;
+  Modelica.SIunits.MassFlowRate mdot_h;
+  
+  //local parameters of this cell listed as following
+  //Local Dynamic Viscosity
+  Modelica.SIunits.DynamicViscosity mu_c;
+  Modelica.SIunits.DynamicViscosity mu_h;
+      
+  // Local Conductivity
+  Modelica.SIunits.ThermalConductivity k_c;
+  Modelica.SIunits.ThermalConductivity k_h;
+  
+  // Local Reynolds Number
+  Modelica.SIunits.ReynoldsNumber Re_c;
+  Modelica.SIunits.ReynoldsNumber Re_h;
+  
+  // Local Density
+  Modelica.SIunits.Density rho_c;
+  Modelica.SIunits.Density rho_h;
+  
+  // Local Nusselt Number
+  Modelica.SIunits.NusseltNumber Nu_c;
+  Modelica.SIunits.NusseltNumber Nu_h;
+  
+  // Local PrandtlNumber
+  Modelica.SIunits.PrandtlNumber Pr_c;
+  Modelica.SIunits.PrandtlNumber Pr_h;
+  
+  // local Thermal Conductance
+  Modelica.SIunits.CoefficientOfHeatTransfer h_c;
+  Modelica.SIunits.CoefficientOfHeatTransfer h_h;
+  
+  // Fanning Friction Factor - used to calculate pressure drop
+  Real f_c; 
+  Real f_h; 
+  
+  // Pressure drop
+  Modelica.SIunits.PressureDifference dp_c;
+  Modelica.SIunits.PressureDifference dp_h;
+  
+  // specific enthalpy to cal Heat flux
+  Modelica.SIunits.SpecificEnthalpy h_mass_c;
+  Modelica.SIunits.SpecificEnthalpy h_mass_h;
+  
+  String medium_name_c;
+  String medium_name_h;
   
   // length of this cell
   Modelica.SIunits.Length length "unit m";   
@@ -66,9 +76,5 @@ record HXCellState
   
   // overall Heat transfer coefficient
   Modelica.SIunits.CoefficientOfHeatTransfer U;
-  
-  // Status of the hot /cold cell in a pair
-  
-  CellStatus status[2];  
  
 end HXCellState;
