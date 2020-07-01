@@ -383,8 +383,8 @@ algorithm
 equation 
   
   medium_cool_in.state = PBMedia.setState_phX(p = state_cell[N_seg].p_c, h = state_cell[N_seg].h_mass_c);   
-  inlet_cool.T = outlet_cool.T; // medium_cool_in.T;
-  inlet_cool.p = outlet_cool.p; //medium_cool_in.p;
+  inlet_cool.T = medium_cool_in.T;
+  inlet_cool.p = medium_cool_in.p;
   inlet_cool.h_outflow = state_cell[N_seg].h_mass_c;  
   //inlet_cool.h_outflow = inStream(outlet_cool.h_outflow);  
   //outlet_cool.h_outflow = - medium_cool_out.h;  
@@ -393,8 +393,8 @@ equation
   
   // for outlet_hot
   medium_hot_out.state = PBMedia.setState_phX(p = state_cell[N_seg].p_h, h = state_cell[N_seg].h_mass_h); 
-  outlet_hot.T = inlet_hot.T; //medium_hot_out.T;
-  outlet_hot.p = inlet_hot.p; //medium_hot_out.p;
+  outlet_hot.T = medium_hot_out.T;
+  outlet_hot.p = medium_hot_out.p;
   outlet_hot.h_outflow = - state_cell[N_seg].h_mass_h;    
   inlet_hot.h_outflow = inStream(outlet_hot.h_outflow);  
   outlet_hot.m_flow + inlet_hot.m_flow = 0;
