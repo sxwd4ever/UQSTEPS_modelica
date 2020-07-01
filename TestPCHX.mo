@@ -53,7 +53,11 @@ model TestPCHX
     T_cool_in = Modelica.SIunits.Conversions.from_degC(41),
     p_hot = 9 * 1e6,
     p_cool = 20 * 1e6,
-    pitch = 24.6 * 1e-3
+    m_dot_hot = 8.3,
+    m_dot_cool = 8.3,
+    pitch = 24.6 * 1e-3,
+    length_cell = 3e-3,
+    N_seg = 10000
   );
   
   /*
