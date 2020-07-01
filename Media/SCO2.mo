@@ -33,8 +33,8 @@ package SCO2 "supercritical CO2"
     
   end FullThermodynamicState;
   
-  replaceable model CO2_pT "Base properties of medium"
-     extends BaseProperties(final standardOrderComponents = true);
+  replaceable model CO2_pT "Base properties of medium" 
+    extends BaseProperties(final standardOrderComponents = true);
     Modelica.SIunits.SpecificEntropy s;
   equation
       state.p = p;

@@ -30,6 +30,7 @@ model RCBCycle
   parameter Real splitter_split_ratio = 0.4; 
 
   Steps.Components.Regulator regulator(
+    T_init = Modelica.SIunits.Conversions.from_degC(10),
     p_init = P_PUMP_E,   
     m_flow_init = M_CO2
   );
@@ -52,6 +53,7 @@ model RCBCycle
     eta = eta_bypass_compressor
   );
   
+  /*
   //high temperature recuperator
   Steps.Components.Recuperator recup_high(
     eta = eta_recuperator_high  
@@ -61,11 +63,38 @@ model RCBCycle
   Steps.Components.Recuperator recup_low(
     eta = eta_recuperator_low   
   );
+  */
   
-  // off-design heat exchanger
-  Steps.Components.PCHeatExchanger recup_high_offdesign(
+  Components.MockPCHeatExchanger recup_high(
+    phi = Modelica.SIunits.Conversions.from_deg(45), 
+    Re_design = 5000,
+    d_c = 1.51 * 1e-3,
+    T_hot_in = Modelica.SIunits.Conversions.from_degC(451),
+    T_cool_in = Modelica.SIunits.Conversions.from_degC(41),
+    p_hot = 9 * 1e6,
+    p_cool = 20 * 1e6,
+    m_dot_hot = 8.3,
+    m_dot_cool = 8.3,
+    pitch = 24.6 * 1e-3,
+    length_cell = 3e-3,
+    N_seg = 2
   );
   
+  Components.MockPCHeatExchanger recup_low(
+    phi = Modelica.SIunits.Conversions.from_deg(45), 
+    Re_design = 5000,
+    d_c = 1.51 * 1e-3,
+    T_hot_in = Modelica.SIunits.Conversions.from_degC(451),
+    T_cool_in = Modelica.SIunits.Conversions.from_degC(41),
+    p_hot = 9 * 1e6,
+    p_cool = 20 * 1e6,
+    m_dot_hot = 8.3,
+    m_dot_cool = 8.3,
+    pitch = 24.6 * 1e-3,
+    length_cell = 3e-3,
+    N_seg = 2
+  );
+ 
   parameter Real dT_pcm = 10.0;
 
   Steps.Components.TemperatureOutput temp_out(
