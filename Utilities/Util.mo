@@ -1,7 +1,8 @@
 within Steps.Utilities;
 
 model Util
-
+  import Steps.Interfaces.PortType;
+  
 	function ToK
 	  input Real DegC "celsious Degree";
 	  output Real DegK "Degree in Kelvin";
@@ -101,4 +102,22 @@ model Util
     algorithm
       index := Integer(enum);
   end E2I;  
+  
+  function checkPortType
+    input PortType PT_from;
+    input PortType PT_to;
+    input String name_conn = "default connection";
+    
+    algorithm
+      if PT_from == PortType.p_fixed then
+        assert(PT_to <> PortType.p_fixed and PT_to <> PortType.pT_fixed , "error in connecting " + name_conn);
+      elseif PT_from == PortType.T_fixed then
+        assert(PT_to <> PortType.T_fixed and PT_to <> PortType.pT_fixed , "error in connecting " + name_conn);
+      elseif PT_from == PortType.pT_fixed then
+        assert(PT_to <> PortType.p_fixed and PT_to <> PortType.T_fixed and PT_to <> PortType.pT_fixed , "error in connecting " + name_conn);
+      end if;
+      
+      //connect(from, to);
+  end checkPortType;
+  
 end Util;

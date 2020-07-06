@@ -3,6 +3,13 @@ within Steps.Interfaces;
 connector PBFluidPort_a
   extends Modelica.Fluid.Interfaces.FluidPort_a;
   Modelica.SIunits.ThermodynamicTemperature T "absolute temperature of the port";
+  
+  
+  // Port type of the ports
+  // To specify if the value(pressure, Temperature) of a port should be fixed by preset value or
+  // determined by conncted port.
+  parameter PortType PT = PortType.free;
+  
   /*
     replaceable package Medium = Modelica.Media.Interfaces.PartialMedium
       "Medium model" annotation (choicesAllMatching=true);

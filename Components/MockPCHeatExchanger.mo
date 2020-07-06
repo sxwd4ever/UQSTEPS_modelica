@@ -72,8 +72,6 @@ model MockPCHeatExchanger
   
   parameter String name_material = "inconel 750";
   
-  parameter Boolean debug_mode = false;
-  
   Modelica.SIunits.Diameter d_h "Hydraulic Diameter";
   
   Modelica.SIunits.Length peri_c "perimeter of semi-circular";
@@ -208,71 +206,73 @@ algorithm
   state_cell[1].mdot_c := - outlet_cool.m_flow;
   state_cell[1].mdot_h := inlet_hot.m_flow;
 
-  state_cell[1].medium_name_c := medium_cool_out.mediumName;
-  state_cell[1].medium_name_h := medium_hot_in.mediumName;  
+  state_cell[1].medium_name_c := "CO2"; // medium_cool_out.mediumName;
+  state_cell[1].medium_name_h := "CO2"; //medium_hot_in.mediumName;  
   
   state_cell[1].h_mass_c := medium_cool_out.h;
   state_cell[1].h_mass_h := medium_hot_in.h;  
   
   G_c := state_cell[1].mdot_c / N_channel / A_c;
   G_h := state_cell[1].mdot_h / N_channel / A_c;
+  
+algorithm
 
   for i in 1 : N_seg loop // index out of range??
     state_cell[i].length := length_cell;
    
     //Debug from this point
-    state_cell[i].mu_c := CP.PropsSI("V", "P", state_cell[i].p_c, "T", state_cell[i].T_c, state_cell[i].medium_name_c);
-    state_cell[i].mu_h := CP.PropsSI("V", "P", state_cell[i].p_h, "T", state_cell[i].T_h, state_cell[i].medium_name_h);
+    state_cell[i].mu_c := 1.0; //CP.PropsSI("V", "P", state_cell[i].p_c, "T", state_cell[i].T_c, state_cell[i].medium_name_c);
+    state_cell[i].mu_h := 1.0; //CP.PropsSI("V", "P", state_cell[i].p_h, "T", state_cell[i].T_h, state_cell[i].medium_name_h);
       
-    state_cell[i].k_c := CP.PropsSI("L", "P", state_cell[i].p_c, "T", state_cell[i].T_c, state_cell[i].medium_name_c);  
+    state_cell[i].k_c := 1.0; //CP.PropsSI("L", "P", state_cell[i].p_c, "T", state_cell[i].T_c, state_cell[i].medium_name_c);  
     
     MyUtil.myAssert(debug = debug_mode, val_test = state_cell[i].k_c, min = 0, max = 1e5, name_val = "k_c", val_ref = {i, state_cell[i].T_c, state_cell[i].p_c}, name_val_ref = {"i", "T", "P"});    
 
       
-    state_cell[i].k_h := CP.PropsSI("L", "P", state_cell[i].p_h, "T", state_cell[i].T_h, state_cell[i].medium_name_h);  
+    state_cell[i].k_h := 1.0; //CP.PropsSI("L", "P", state_cell[i].p_h, "T", state_cell[i].T_h, state_cell[i].medium_name_h);  
       
-    state_cell[i].Re_c := G_c * d_h / state_cell[i].mu_c;
-    state_cell[i].Re_h := G_h * d_h / state_cell[i].mu_h;
+    state_cell[i].Re_c := 1.0; //G_c * d_h / state_cell[i].mu_c;
+    state_cell[i].Re_h := 1.0; //G_h * d_h / state_cell[i].mu_h;
       
-    state_cell[i].rho_c := CP.PropsSI("D", "P", state_cell[i].p_c, "T", state_cell[i].T_c, state_cell[i].medium_name_c);
-    state_cell[i].rho_h := CP.PropsSI("D", "P", state_cell[i].p_h, "T", state_cell[i].T_h, state_cell[i].medium_name_h);
+    state_cell[i].rho_c := 1.0; //CP.PropsSI("D", "P", state_cell[i].p_c, "T", state_cell[i].T_c, state_cell[i].medium_name_c);
+    state_cell[i].rho_h := 1.0; //CP.PropsSI("D", "P", state_cell[i].p_h, "T", state_cell[i].T_h, state_cell[i].medium_name_h);
       
-    state_cell[i].u_c := state_cell[i].mdot_c / A_flow / state_cell[i].rho_c;  
-    state_cell[i].u_h := state_cell[i].mdot_h / A_flow / state_cell[i].rho_h;     
+    state_cell[i].u_c := 1.0; //state_cell[i].mdot_c / A_flow / state_cell[i].rho_c;  
+    state_cell[i].u_h := 1.0; //state_cell[i].mdot_h / A_flow / state_cell[i].rho_h;     
     
     
     MyUtil.myAssert(debug = debug_mode, val_test = state_cell[i].Re_c, min = 0, max = 1e6, name_val = "Re_c", 
     name_val_ref = {"i","G","d_h","mu"},
     val_ref = {i, G_c, d_h, state_cell[i].mu_c});
         
-    state_cell[i].Nu_c := 4.089 + fit_const_c * (state_cell[i].Re_c ^ fit_const_d);
+    state_cell[i].Nu_c := 1.0; //4.089 + fit_const_c * (state_cell[i].Re_c ^ fit_const_d);
     
     MyUtil.myAssert(debug = debug_mode, val_test = state_cell[i].Re_h, min = 0, max = 1e6, name_val = "Re_h", 
     name_val_ref = {"i","G","d_h","mu"},
     val_ref = {i, G_h, d_h, state_cell[i].mu_h});      
     
-    state_cell[i].Nu_h := 4.089 + fit_const_c * (state_cell[i].Re_h ^ fit_const_d);
+    state_cell[i].Nu_h := 1.0; //4.089 + fit_const_c * (state_cell[i].Re_h ^ fit_const_d);
       
-    state_cell[i].h_c := state_cell[i].Nu_c * state_cell[i].k_c / d_h;
-    state_cell[i].h_h := state_cell[i].Nu_h * state_cell[i].k_h / d_h;
+    state_cell[i].h_c := 1.0; //state_cell[i].Nu_c * state_cell[i].k_c / d_h;
+    state_cell[i].h_h := 1.0; //state_cell[i].Nu_h * state_cell[i].k_h / d_h;
       
-    state_cell[i].f_c := (15.78 + fit_const_a * state_cell[i].Re_c ^ fit_const_b ) / state_cell[i].Re_c;      
-    state_cell[i].f_h := (15.78 + fit_const_a * state_cell[i].Re_h ^ fit_const_b ) / state_cell[i].Re_h;      
+    state_cell[i].f_c := 1.0; //(15.78 + fit_const_a * state_cell[i].Re_c ^ fit_const_b ) / state_cell[i].Re_c;      
+    state_cell[i].f_h := 1.0; //(15.78 + fit_const_a * state_cell[i].Re_h ^ fit_const_b ) / state_cell[i].Re_h;      
     
-    state_cell[i].dp_c := state_cell[i].f_c * state_cell[i].length * state_cell[i].rho_c *  (state_cell[i].u_c ^ 2) / d_h;    
-    state_cell[i].dp_h := state_cell[i].f_h * state_cell[i].length * state_cell[i].rho_h *  (state_cell[i].u_h ^ 2) / d_h;
+    state_cell[i].dp_c := 1.0; //state_cell[i].f_c * state_cell[i].length * state_cell[i].rho_c *  (state_cell[i].u_c ^ 2) / d_h;    
+    state_cell[i].dp_h := 1.0; //state_cell[i].f_h * state_cell[i].length * state_cell[i].rho_h *  (state_cell[i].u_h ^ 2) / d_h;
     
     // no use of following parameters, use default value
     state_cell[i].Pr_c := 1.0;
     state_cell[i].Pr_h := 1.0;
     
-    state_cell[i].k_wall := MyUtil.thermal_conductivity(tableID = table_th_inconel_750, name = name_material, temperature = (state_cell[i].T_c + state_cell[i].T_h) / 2);
+    state_cell[i].k_wall := 1.0; //MyUtil.thermal_conductivity(tableID = table_th_inconel_750, name = name_material, temperature = (state_cell[i].T_c + state_cell[i].T_h) / 2);
     
-    state_cell[i].U := 1 / ( 1 / state_cell[i].h_h + 1 / state_cell[i].h_c + t_wall / state_cell[i].k_wall);    
+    state_cell[i].U := 1.0; //1 / ( 1 / state_cell[i].h_h + 1 / state_cell[i].h_c + t_wall / state_cell[i].k_wall);    
 
     
     if state_cell[i].T_h > state_cell[i].T_c then
-      state_cell[i].q := state_cell[i].U * A_stack * (state_cell[i].T_h - state_cell[i].T_c);      
+      state_cell[i].q := 1.0; //state_cell[i].U * A_stack * (state_cell[i].T_h - state_cell[i].T_c);      
     else
       state_cell[i].q := 0;
     end if;  
@@ -283,13 +283,13 @@ algorithm
     end if;
     
     // set parameter for next cell of hot and cold pipe
-    state_cell[i + 1].medium_name_c := state_cell[i].medium_name_c;      
-    state_cell[i + 1].medium_name_h := state_cell[i].medium_name_h;      
+    state_cell[i + 1].medium_name_c := "CO2"; //state_cell[i].medium_name_c;      
+    state_cell[i + 1].medium_name_h := "CO2"; //state_cell[i].medium_name_h;      
       
-    state_cell[i + 1].mdot_c := state_cell[i].mdot_c;
-    state_cell[i + 1].mdot_h := state_cell[i].mdot_h;
+    state_cell[i + 1].mdot_c := 1.0; //state_cell[i].mdot_c;
+    state_cell[i + 1].mdot_h := 1.0; //state_cell[i].mdot_h;
       
-    state_cell[i + 1].h_mass_c := (state_cell[i].h_mass_c * state_cell[i].mdot_c - state_cell[i].q) / state_cell[i].mdot_c;
+    state_cell[i + 1].h_mass_c := 1.0; //(state_cell[i].h_mass_c * state_cell[i].mdot_c - state_cell[i].q) / state_cell[i].mdot_c;
     /*
     assert(i <> 1,
     "out of range " + keyvalStr("h_mass_c", state_cell[i+1].h_mass_c) + " at " + 
@@ -300,37 +300,37 @@ algorithm
     name_val_ref = {"i+1","h_mass_c[i]","m_dot_inlet_cold","q[i]"},
     val_ref = {i+1,state_cell[i].h_mass_c, state_cell[i].mdot_c, state_cell[i].q});  
     
-    state_cell[i + 1].h_mass_h := (state_cell[i].h_mass_h * state_cell[i].mdot_h - state_cell[i].q) / state_cell[i].mdot_h; 
+    state_cell[i + 1].h_mass_h := 1.0; //(state_cell[i].h_mass_h * state_cell[i].mdot_h - state_cell[i].q) / state_cell[i].mdot_h; 
      
-    state_cell[i + 1].p_c := state_cell[i].p_c - state_cell[i].dp_c;
-    state_cell[i + 1].p_h := state_cell[i].p_h - state_cell[i].dp_h;
+    state_cell[i + 1].p_c := 1.0; //state_cell[i].p_c - state_cell[i].dp_c;
+    state_cell[i + 1].p_h := 1.0; //state_cell[i].p_h - state_cell[i].dp_h;
       
-    state_cell[i + 1].T_c := CP.PropsSI("T", "P",state_cell[i + 1].p_c, "H", state_cell[i + 1].h_mass_c, state_cell[i].medium_name_c);
+    state_cell[i + 1].T_c := 1.0; //CP.PropsSI("T", "P",state_cell[i + 1].p_c, "H", state_cell[i + 1].h_mass_c, state_cell[i].medium_name_c);
     
     MyUtil.myAssert(debug = debug_mode, val_test = state_cell[i+1].T_c, min = 0, max = 1e6, name_val = "T_c", 
     name_val_ref = {"i","P","h_mass_c"},
     val_ref = {i,state_cell[i + 1].p_c,state_cell[i + 1].h_mass_c});    
     
-    state_cell[i + 1].T_h := CP.PropsSI("T", "P",state_cell[i + 1].p_h, "H", state_cell[i + 1].h_mass_h, state_cell[i].medium_name_h);
+    state_cell[i + 1].T_h := 1.0; //CP.PropsSI("T", "P",state_cell[i + 1].p_h, "H", state_cell[i + 1].h_mass_h, state_cell[i].medium_name_h);
 
   end for;
 
 equation 
   
-  medium_cool_in.state = PBMedia.setState_phX(p = state_cell[N_seg].p_c, h = state_cell[N_seg].h_mass_c);   
-  inlet_cool.T = medium_cool_in.T;
-  inlet_cool.p = medium_cool_in.p;
-  inlet_cool.h_outflow = state_cell[N_seg].h_mass_c;  
-  //inlet_cool.h_outflow = inStream(outlet_cool.h_outflow);  
+  medium_cool_in.state = PBMedia.setState_phX(p = inlet_cool.p, h = inlet_cool.h_outflow); //= state_cell[N_seg].p_c, h = state_cell[N_seg].h_mass_c);   
+  //inlet_cool.T = medium_cool_in.T;
+  //inlet_cool.p = medium_cool_in.p;
+  //inlet_cool.h_outflow = 1.0; //state_cell[N_seg].h_mass_c;  
+  inlet_cool.h_outflow = inStream(outlet_cool.h_outflow);  
   //outlet_cool.h_outflow = - medium_cool_out.h;  
-  inlet_cool.h_outflow = - outlet_cool.h_outflow;
+  //inlet_cool.h_outflow = - outlet_cool.h_outflow;
   outlet_cool.m_flow + inlet_cool.m_flow = 0;
   
   // for outlet_hot
   medium_hot_out.state = PBMedia.setState_phX(p = state_cell[N_seg].p_h, h = state_cell[N_seg].h_mass_h); 
   outlet_hot.T = medium_hot_out.T;
   outlet_hot.p = medium_hot_out.p;
-  outlet_hot.h_outflow = - state_cell[N_seg].h_mass_h;    
+  outlet_hot.h_outflow = medium_hot_out.h; //- state_cell[N_seg].h_mass_h;    
   inlet_hot.h_outflow = inStream(outlet_hot.h_outflow);  
   outlet_hot.m_flow + inlet_hot.m_flow = 0;
 

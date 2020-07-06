@@ -17,8 +17,8 @@ equation
   
   outlet.p = medium_out.p;
   outlet.m_flow = - m_flow_init;
-  outlet.h_outflow = medium_out.h;
-  outlet.T = medium_in.T;
+  outlet.h_outflow = - medium_out.h;
+  outlet.T = medium_out.T;
   
   inlet.h_outflow = medium_in.h;
 end Regulator;

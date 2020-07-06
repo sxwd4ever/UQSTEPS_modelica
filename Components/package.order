@@ -2,11 +2,13 @@ BaseExchanger
 EndPoint
 FanCooler
 HXCellState
+HXState
 PipeType
 Merger
 MockPCHeatExchanger
 OilHeater
 PCHeatExchanger
+PCHeatExchangerV2
 PCMHeater
 Pump
 Recuperator
@@ -19,3 +21,4 @@ Turbine
 TemperatureOutput
 Valve
 WaterCooler
+ScopeTest

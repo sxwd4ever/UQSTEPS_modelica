@@ -3,9 +3,15 @@ within Steps.Components;
 model FanCooler
   extends TwoPorts;
   
+  import Steps.Interfaces.PortType;
+  
   Modelica.SIunits.TemperatureDifference delta_T "Incoming temperature difference";  
   
   Modelica.SIunits.Temperature T_amb "ambinent temperature";
+  
+algorithm
+
+  //assert(outlet.PT == PortType.free, "error port type");
   
 equation
   // Note that, no matter what the CO2 inlet conditions are, the fan cooler CO2 

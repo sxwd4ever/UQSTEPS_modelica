@@ -5,14 +5,15 @@ model Pump
   extends TwoPorts;
   
   import SI = Modelica.SIunits;   
-
+  import Steps.Interfaces.PortType;
+  
+  
   input Real eta  "efficiency of this pump";   
   input SI.AbsolutePressure p_outlet "fixed outlet pressure of pump"; 
   SI.Power W_comp "power input";
     
   PBMedia.CO2_pT medium_isen;
   
-     
 equation
  
   medium_in.state = PBMedia.setState_phX(p = inlet.p, h = inStream(inlet.h_outflow));

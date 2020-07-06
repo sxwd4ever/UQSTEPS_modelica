@@ -2,9 +2,7 @@ within Steps.Components;
 
 model PCHeatExchanger
   "Printed Circuit based Heat Exchanger"
-  extends BaseExchanger;
-  
-  extends BaseExchanger;
+  extends BaseExchanger;  
   
   import CP = Steps.Utilities.CoolProp; 
   import TB = Modelica.Blocks.Tables;  

@@ -3,6 +3,8 @@ within Steps.Components;
 model Recuperator
   "Recuperator to regenerate heat"
   extends Steps.Components.BaseExchanger;
+  
+  import Steps.Utilities.Util.myAssert;
 
   Real eta "heat exchange efficiency";
   
@@ -31,6 +33,9 @@ equation
   
   // for out_cool
   medium_cool_out.state = PBMedia.setState_phX(p = inlet_cool.p, h = medium_cool_in.h + Q_actual / inlet_cool.m_flow);
+  
+  myAssert(debug = true, val_test = medium_cool_out.h, min = 0, max = 1e5, name_val = "h_cool_out", val_ref = {medium_cool_in.h, inlet_cool.p, inlet_cool.m_flow, Q_actual}, name_val_ref = {"medium_cool_in.h", "inlet_cool.p", "inlet_cool.m_flow", "Q_actual"});  
+  
   outlet_cool.T = medium_cool_out.T;
   outlet_cool.p = medium_cool_out.p;
   outlet_cool.m_flow + inlet_cool.m_flow = 0;

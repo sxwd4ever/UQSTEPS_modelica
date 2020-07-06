@@ -45,7 +45,7 @@ model TestPCHX
     fix_state = true
   );
  
-  Components.PCHeatExchanger pchx(
+  Components.PCHeatExchangerV2 pchx(
     phi = Modelica.SIunits.Conversions.from_deg(45), 
     Re_design = 5000,
     d_c = 1.51 * 1e-3,
@@ -57,8 +57,25 @@ model TestPCHX
     m_dot_cool = 8.3,
     pitch = 24.6 * 1e-3,
     length_cell = 3e-3,
-    N_seg = 20
+    N_seg = 1
   );
+  
+  /*
+  Components.PCHeatExchangerV2 pchx(
+    phi = Modelica.SIunits.Conversions.from_deg(45), 
+    Re_design = 5000,
+    d_c = 1.51 * 1e-3,
+    T_hot_in = Modelica.SIunits.Conversions.from_degC(451),
+    T_cool_in = Modelica.SIunits.Conversions.from_degC(41),
+    p_hot = 9 * 1e6,
+    p_cool = 20 * 1e6,
+    m_dot_hot = 8.3,
+    m_dot_cool = 8.3,
+    pitch = 24.6 * 1e-3,
+    length_cell = 3e-3,
+    N_seg = 2
+  );
+  */
   
   /*
   Components.PCHeatExchanger pchx(
@@ -79,18 +96,10 @@ model TestPCHX
   */
   
 equation
-  /*
-  connect(source.outlet, pchx.inlet_hot);
-  connect(pchx.outlet_hot, sink.inlet);
-  connect(sink.outlet, pchx.inlet_cool);
-  connect(pchx.outlet_cool, source.inlet);
-  */
   
   connect(source_hot.outlet, pchx.inlet_hot);
   connect(pchx.outlet_hot, sink_hot.inlet);
   connect(source_cool.outlet, pchx.inlet_cool);
-  connect(pchx.outlet_cool, sink_cool.inlet);
-  
-  //connect(source_hot.outlet, sink_hot.inlet);
+  connect(pchx.outlet_cool, sink_cool.inlet);  
   
 end TestPCHX;
