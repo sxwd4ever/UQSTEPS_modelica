@@ -1,11 +1,13 @@
 BaseExchanger
 EndPoint
+ExchangerContainer
 FanCooler
 HXCellState
 HXState
 PipeType
 Merger
 MockPCHeatExchanger
+MockPCHeatExchangerV2
 OilHeater
 PCHeatExchanger
 PCHeatExchangerV2
