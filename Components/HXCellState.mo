@@ -47,8 +47,8 @@ record HXCellState
   Modelica.SIunits.PrandtlNumber Pr_h;
   
   // local Thermal Conductance
-  Modelica.SIunits.CoefficientOfHeatTransfer h_c;
-  Modelica.SIunits.CoefficientOfHeatTransfer h_h;
+  Modelica.SIunits.CoefficientOfHeatTransfer hc_c;
+  Modelica.SIunits.CoefficientOfHeatTransfer hc_h;
   
   // Fanning Friction Factor - used to calculate pressure drop
   Real f_c; 
@@ -59,8 +59,8 @@ record HXCellState
   Modelica.SIunits.PressureDifference dp_h;
   
   // specific enthalpy to cal Heat flux
-  Modelica.SIunits.SpecificEnthalpy h_mass_c;
-  Modelica.SIunits.SpecificEnthalpy h_mass_h;
+  Modelica.SIunits.SpecificEnthalpy h_c;
+  Modelica.SIunits.SpecificEnthalpy h_h;
   
   String medium_name_c;
   String medium_name_h;

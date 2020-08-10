@@ -4,44 +4,11 @@ model PCHeatExchangerV2
   "Printed Circuit based Heat Exchanger - version 2"
   extends BaseExchanger;  
 
-  import CP = Steps.Utilities.CoolProp; 
-  import TB = Modelica.Blocks.Tables;  
+  import CP = Steps.Utilities.CoolProp;  
   import UTIL = Modelica.Utilities;
   import MyUtil = Steps.Utilities.Util;
   
-  replaceable package PBMedia = Steps.Media.SCO2; 
-  
-  Modelica.Blocks.Types.ExternalCombiTable1D table_4a_a = Modelica.Blocks.Types.ExternalCombiTable1D(tableName = "4a_a", fileName = Modelica.Utilities.Files.loadResource("modelica://Steps/Resources/Data/kim_2012.txt"), table = fill(0.0, 9, 2), smoothness = Modelica.Blocks.Types.Smoothness.LinearSegments, columns = 2:2) "Table 4a - column a in Kim[2012] for pitch=24.6, dh=0.922 (dc=1.3 mm))";
-
-  Modelica.Blocks.Types.ExternalCombiTable1D table_4a_b = Modelica.Blocks.Types.ExternalCombiTable1D(tableName = "4a_b", fileName = Modelica.Utilities.Files.loadResource("modelica://Steps/Resources/Data/kim_2012.txt"), table = fill(0.0, 9, 2), smoothness = Modelica.Blocks.Types.Smoothness.LinearSegments, columns = 2:2) "Table 4a - column b in Kim[2012] for pitch=12.3, dh=0.922 (dc=1.3 mm))";
-  
-  Modelica.Blocks.Types.ExternalCombiTable1D table_4b_a = Modelica.Blocks.Types.ExternalCombiTable1D(tableName = "4b_a", fileName = Modelica.Utilities.Files.loadResource("modelica://Steps/Resources/Data/kim_2012.txt"), table = fill(0.0, 9, 2), smoothness = Modelica.Blocks.Types.Smoothness.LinearSegments, columns = 2:2) "Table 4b - column a in Kim[2012] for pitch=24.6, dh=1.222 (dc=1.3 mm))";  
-  
-  Modelica.Blocks.Types.ExternalCombiTable1D table_4b_b = Modelica.Blocks.Types.ExternalCombiTable1D(tableName = "4b_b", fileName = Modelica.Utilities.Files.loadResource("modelica://Steps/Resources/Data/kim_2012.txt"), table = fill(0.0, 9, 2), smoothness = Modelica.Blocks.Types.Smoothness.LinearSegments, columns = 2:2) "Table 4b - column b default table";  
-  
-  Modelica.Blocks.Types.ExternalCombiTable1D table_4c_a = Modelica.Blocks.Types.ExternalCombiTable1D(tableName = "4c_a", fileName = Modelica.Utilities.Files.loadResource("modelica://Steps/Resources/Data/kim_2012.txt"), table = fill(0.0, 9, 2), smoothness = Modelica.Blocks.Types.Smoothness.LinearSegments, columns = 2:2) "Table 4c - column a in Kim[2012] for pitch=24.6, dh=0.922 (dc=1.3 mm))";
-
-  Modelica.Blocks.Types.ExternalCombiTable1D table_4c_b = Modelica.Blocks.Types.ExternalCombiTable1D(tableName = "4c_b", fileName = Modelica.Utilities.Files.loadResource("modelica://Steps/Resources/Data/kim_2012.txt"), table = fill(0.0, 9, 2), smoothness = Modelica.Blocks.Types.Smoothness.LinearSegments, columns = 2:2) "Table 4c - column b in Kim[2012] for pitch=12.3, dh=0.922 (dc=1.3 mm))";  
-
-  Modelica.Blocks.Types.ExternalCombiTable1D table_5a_c = Modelica.Blocks.Types.ExternalCombiTable1D(tableName = "5a_c", fileName = Modelica.Utilities.Files.loadResource("modelica://Steps/Resources/Data/kim_2012.txt"), table = fill(0.0, 9, 2), smoothness = Modelica.Blocks.Types.Smoothness.LinearSegments, columns = 2:2) "Table 5a - column c in Kim[2012] for pitch=24.6, dh=0.922 (dc=1.3 mm))";
-
-  Modelica.Blocks.Types.ExternalCombiTable1D table_5a_d = Modelica.Blocks.Types.ExternalCombiTable1D(tableName = "5a_d", fileName = Modelica.Utilities.Files.loadResource("modelica://Steps/Resources/Data/kim_2012.txt"), table = fill(0.0, 9, 2), smoothness = Modelica.Blocks.Types.Smoothness.LinearSegments, columns = 2:2) "Table 5a - column d in Kim[2012] for pitch=12.3, dh=0.922 (dc=1.3 mm))";
-  
-  Modelica.Blocks.Types.ExternalCombiTable1D table_5b_c = Modelica.Blocks.Types.ExternalCombiTable1D(tableName = "5b_c", fileName = Modelica.Utilities.Files.loadResource("modelica://Steps/Resources/Data/kim_2012.txt"), table = fill(0.0, 9, 2), smoothness = Modelica.Blocks.Types.Smoothness.LinearSegments, columns = 2:2) "Table 5b - column c in Kim[2012] for pitch=24.6, dh=1.222 (dc=1.3 mm))";
-  
-  Modelica.Blocks.Types.ExternalCombiTable1D table_5b_d = Modelica.Blocks.Types.ExternalCombiTable1D(tableName = "5b_d", fileName = Modelica.Utilities.Files.loadResource("modelica://Steps/Resources/Data/kim_2012.txt"), table = fill(0.0, 9, 2), smoothness = Modelica.Blocks.Types.Smoothness.LinearSegments, columns = 2:2) "Table 5b - column d default table";
-  
-  Modelica.Blocks.Types.ExternalCombiTable1D table_5c_c = Modelica.Blocks.Types.ExternalCombiTable1D(tableName = "5c_c", fileName = Modelica.Utilities.Files.loadResource("modelica://Steps/Resources/Data/kim_2012.txt"), table = fill(0.0, 9, 2), smoothness = Modelica.Blocks.Types.Smoothness.LinearSegments, columns = 2:2) "Table 5c - column c in Kim[2012] for pitch=24.6, dh=0.922 (dc=1.3 mm))";
-
-  Modelica.Blocks.Types.ExternalCombiTable1D table_5c_d = Modelica.Blocks.Types.ExternalCombiTable1D(tableName = "5c_d", fileName = Modelica.Utilities.Files.loadResource("modelica://Steps/Resources/Data/kim_2012.txt"), table = fill(0.0, 9, 2), smoothness = Modelica.Blocks.Types.Smoothness.LinearSegments, columns = 2:2) "Table 5c - column d in Kim[2012] for pitch=12.3, dh=0.922 (dc=1.3 mm))";
-    
-  Modelica.Blocks.Types.ExternalCombiTable1D table_a = Modelica.Blocks.Types.ExternalCombiTable1D(tableName = "4d_a", fileName = Modelica.Utilities.Files.loadResource("modelica://Steps/Resources/Data/kim_2012.txt"), table = fill(0.0, 9, 2), smoothness = Modelica.Blocks.Types.Smoothness.LinearSegments, columns = 2:2);
-  
-  Modelica.Blocks.Types.ExternalCombiTable1D table_b = Modelica.Blocks.Types.ExternalCombiTable1D(tableName = "4d_b", fileName = Modelica.Utilities.Files.loadResource("modelica://Steps/Resources/Data/kim_2012.txt"), table = fill(0.0, 9, 2), smoothness = Modelica.Blocks.Types.Smoothness.LinearSegments, columns = 2:2);
-  
-  Modelica.Blocks.Types.ExternalCombiTable1D table_c = Modelica.Blocks.Types.ExternalCombiTable1D(tableName = "5d_c", fileName = Modelica.Utilities.Files.loadResource("modelica://Steps/Resources/Data/kim_2012.txt"), table = fill(0.0, 9, 2), smoothness = Modelica.Blocks.Types.Smoothness.LinearSegments, columns = 2:2);
-  
-  Modelica.Blocks.Types.ExternalCombiTable1D table_d = Modelica.Blocks.Types.ExternalCombiTable1D(tableName = "5d_d", fileName = Modelica.Utilities.Files.loadResource("modelica://Steps/Resources/Data/kim_2012.txt"), table = fill(0.0, 9, 2), smoothness = Modelica.Blocks.Types.Smoothness.LinearSegments, columns = 2:2);
+  replaceable package PBMedia = Steps.Media.SCO2;   
   
   inner Modelica.Blocks.Types.ExternalCombiTable1D table_th_inconel_750 = Modelica.Blocks.Types.ExternalCombiTable1D(tableName = "inconel_750", fileName = Modelica.Utilities.Files.loadResource("modelica://Steps/Resources/Data/th_conductivity.txt"), table = fill(0.0, 6, 2), smoothness = Modelica.Blocks.Types.Smoothness.LinearSegments, columns = 2:2) "thermal conductivity for inconel_750";	
   
@@ -68,9 +35,14 @@ model PCHeatExchangerV2
   
   parameter Modelica.SIunits.Length pitch = 10 "pitch length of channel";
   
-  inner parameter String name_material = "inconel 750";
-  
   parameter Boolean debug_mode = false;  
+  
+  
+protected  
+  
+  inner KimCorrelations kim_cor(phi = phi, pitch = pitch, d_h = d_h);
+  
+  inner parameter String name_material = "inconel 750";  
   
   inner Modelica.SIunits.Diameter d_h = 4 * A_c / peri_c "Hydraulic Diameter";
   
@@ -98,15 +70,7 @@ model PCHeatExchangerV2
   HXSegment segment[N_seg] "heat exchange segment";
   
   // length of one pipe in HeatExchanger
-  Modelica.SIunits.Length length = length_cell * N_seg "length of a cell, unit m";
-  
-  inner Real fit_const_a "fitting constant a in Eq[3] of [kim, 2011] ";
-  
-  inner Real fit_const_b "fitting constant b in Eq[3] of [kim, 2011] ";
-  
-  inner Real fit_const_c "fitting constant c in Eq[4] of [kim, 2011] ";
-  
-  inner Real fit_const_d "fitting constant d in Eq[4] of [kim, 2011] ";
+  Modelica.SIunits.Length length = length_cell * N_seg "length of a cell, unit m";  
   
   //Modelica.SIunits.MassFlowRate G_c "Mass flux of each cold channel";  
   //Modelica.SIunits.MassFlowRate G_h "Mass flux of each cold channel";    
@@ -154,14 +118,8 @@ model PCHeatExchangerV2
       // Heat Flux
       outer Modelica.SIunits.HeatFlux q;  
       
-      outer Real fit_const_a "fitting constant a in Eq[3] of [kim, 2011] ";
-      
-      outer Real fit_const_b "fitting constant b in Eq[3] of [kim, 2011] ";
-      
-      outer Real fit_const_c "fitting constant c in Eq[4] of [kim, 2011] ";
-      
-      outer Real fit_const_d "fitting constant d in Eq[4] of [kim, 2011] ";
-      
+      outer KimCorrelations kim_cor;      
+     
       outer Modelica.SIunits.Area A_flow "Flow area of all channels";
       
       outer Modelica.SIunits.Area A_c "Area of semi-circular tube"; 
@@ -251,11 +209,11 @@ model PCHeatExchangerV2
       
       MyUtil.myAssert(debug = debug_mode, val_test = Re, min = 0, max = 1e6, name_val = "Re", name_val_ref = {"id", "G","d_h","mu"}, val_ref = {id, G, d_h, mu});
           
-      Nu := 4.089 + fit_const_c * (Re ^ fit_const_d);
+      Nu := 4.089 + kim_cor.c * (Re ^ kim_cor.d);
        
       h := Nu * k / d_h;
         
-      f := (15.78 + fit_const_a * Re ^ fit_const_b ) / Re;       
+      f := (15.78 + kim_cor.a * Re ^ kim_cor.b ) / Re;       
       
       dp := f * length_cell * rho *  (u ^ 2) / d_h;    
       
@@ -344,35 +302,8 @@ algorithm
       
       A_flow := N_channel * A_c;
       
-      A_stack := peri_c * length_cell * N_channel "surface area of all cells in a stack";    
-      
-      table_select := 4;
-    // determine fitting constant by pitch and hydraulic diameter
-      if (MyUtil.sameValue(pitch, 24.6 * 1e-3) and MyUtil.sameValue(d_h, 0.922 * 1e-3)) then
-        table_select := 1;
-        table_a := table_4a_a;
-        table_b := table_4a_b;
-        table_c := table_5a_c;
-        table_d := table_5a_d;
-      elseif (MyUtil.sameValue(pitch, 12.3 * 1e-3) and MyUtil.sameValue(d_h, 0.922 * 1e-3)) then
-        table_select := 2;
-        table_a := table_4b_a;
-        table_b := table_4b_b;
-        table_c := table_5b_c;
-        table_d := table_5b_d;
-      elseif (MyUtil.sameValue(pitch, 24.6 * 1e-3) and MyUtil.sameValue(d_h, 1.222 * 1e-3)) then
-        table_select := 3;
-        table_a := table_4c_a;
-        table_b := table_4c_b;
-        table_c := table_5c_c;
-        table_d := table_5c_d;
-      end if;
-      
-      fit_const_a := TB.CombiTable1D.getTableValue(table_a, icol = 1, u = Modelica.SIunits.Conversions.to_deg(phi), tableAvailable = 1.0);
-      fit_const_b := TB.CombiTable1D.getTableValue(table_b, icol = 1, u = Modelica.SIunits.Conversions.to_deg(phi), tableAvailable = 1.0);
-      fit_const_c := TB.CombiTable1D.getTableValue(table_c, icol = 1, u = Modelica.SIunits.Conversions.to_deg(phi), tableAvailable = 1.0);
-      fit_const_d := TB.CombiTable1D.getTableValue(table_d, icol = 1, u = Modelica.SIunits.Conversions.to_deg(phi), tableAvailable = 1.0);   
-    
+      A_stack := peri_c * length_cell * N_channel "surface area of all cells in a stack";   
+       
    end when;
 
 equation 
