@@ -45,7 +45,7 @@ model TestPCHX
     fix_state = false
   );
  
-  Components.SimplePCHeatExchanger pchx(
+  Components.PCHeatExchanger pchx(
     phi = Modelica.SIunits.Conversions.from_deg(45), 
     Re_design = 5000,
     d_c = 1.51 * 1e-3,

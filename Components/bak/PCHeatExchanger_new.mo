@@ -3,7 +3,6 @@ within Steps.Components;
 model PCHeatExchanger
   "Printed Circuit based Heat Exchanger"
   //extends BaseExchanger;
-  
   import CP = Steps.Utilities.CoolProp; 
   import TB = Modelica.Blocks.Tables;  
   import UTIL = Modelica.Utilities;
@@ -46,7 +45,7 @@ model PCHeatExchanger
   parameter Boolean debug_mode = false;
   //protected
   inner KimCorrelations kim_cor(phi = phi, pitch = pitch, d_h = d_h);  
-
+  
   MaterialConductivity mc(name_material = name_material);
     
   inner Modelica.SIunits.Diameter d_h = 4 * A_c / peri_c "Hydraulic Diameter";
@@ -180,7 +179,7 @@ model PCHeatExchanger
     //h_mass = CP.PropsSI("H", "P", p, "T", T, PBMedia.mediumName);
     
     MyUtil.myAssert(debug = debug_mode, val_test = k, min = 0, max = 1e5, name_val = "k_c", val_ref = {T, p}, name_val_ref = {"T", "P"});    
-
+    
     Re = G * d_h / mu; 
     
     // Re = Re_design;
@@ -237,7 +236,8 @@ equation
   
   for i in 1 : N_seg loop
   
-    k_wall[i] = MyUtil.thermal_conductivity(tableID = mc.table_th_inconel_750, name = name_material, temperature = (cell_cold[i].T + cell_hot[i].T) / 2);
+    //mc.T = (cell_cold[i].T + cell_hot[i].T) / 2;
+    k_wall[i] = MyUtil.thermal_conductivity(tableID = mc.table_conductivity, name = name_material, temperature = (cell_cold[i].T + cell_hot[i].T) / 2);
  
     1 / U[i] =  1 / cell_hot[i].hc + 1 / cell_cold[i].hc + t_wall / k_wall[i];   
     
@@ -254,9 +254,6 @@ equation
     cell_hot[i].Q = -Q[i];  
   
   end for;
-  
- equation
-  
   cell_hot[1].outlet.h_outflow = inStream(outlet_hot.h_outflow);
   cell_cold[1].inlet.h_outflow = inStream(inlet_cool.h_outflow);
   cell_hot[N_seg].outlet.h_outflow = inStream(inlet_hot.h_outflow);
