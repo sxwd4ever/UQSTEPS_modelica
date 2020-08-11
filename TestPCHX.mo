@@ -45,7 +45,7 @@ model TestPCHX
     fix_state = false
   );
  
-  Components.PCHeatExchanger pchx(
+  Components.SimplePCHeatExchanger pchx(
     phi = Modelica.SIunits.Conversions.from_deg(45), 
     Re_design = 5000,
     d_c = 1.51 * 1e-3,
@@ -57,7 +57,7 @@ model TestPCHX
     m_dot_cool = 8.3,
     pitch = 24.6 * 1e-3,
     length_cell = 3e-2,
-    N_seg = 2
+    N_seg = 1
   );
   
   /*

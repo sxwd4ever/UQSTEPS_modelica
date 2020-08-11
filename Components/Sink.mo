@@ -22,12 +22,9 @@ model Sink
 equation   
 
   if fix_state then
-    //inlet.T = T_inlet;
     inlet.p = p_inlet;
     inlet.m_flow = mdot_init;
     inlet.h_outflow = CP.PropsSI("H", "P", p_inlet, "T", T_inlet, PBMedia.mediumName);
-  //else
-    //inlet.h_outflow = CP.PropsSI("H", "P", inlet.p, "T", T_inlet, PBMedia.mediumName);     
   end if;
   
   T = CP.PropsSI("T", "P", inlet.p, "H", inStream(inlet.h_outflow), PBMedia.mediumName);  
