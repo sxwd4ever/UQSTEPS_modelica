@@ -29,6 +29,7 @@ equation
     outlet.h_outflow = CP.PropsSI("H", "P", p_outlet, "T", T_outlet, PBMedia.mediumName);
   end if;  
   
-  T = CP.PropsSI("T", "P", outlet.p, "H", inStream(outlet.h_outflow), PBMedia.mediumName);
+  //T = CP.PropsSI("T", "P", outlet.p, "H", inStream(outlet.h_outflow), PBMedia.mediumName);
+  T = CP.PropsSI("T", "P", p_outlet, "H", inStream(outlet.h_outflow), PBMedia.mediumName);
 
 end Source;

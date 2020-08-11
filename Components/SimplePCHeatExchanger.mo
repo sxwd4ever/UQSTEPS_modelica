@@ -77,15 +77,6 @@ model SimplePCHeatExchanger
   HXCell [N_seg] cell_cold;
   HXCell [N_seg] cell_hot;
 
-  // Heat Change
-  Modelica.SIunits.Heat Q[N_seg];  
-  
-  // wall thermal conductivity - determined by material of wall and local temperature
-  Modelica.SIunits.ThermalConductivity k_wall[N_seg];
-  
-  // overall Heat transfer coefficient
-  Modelica.SIunits.CoefficientOfHeatTransfer U[N_seg];      
-
   model HXCell    
     "One cell in a HX segment"
     
@@ -116,44 +107,11 @@ model SimplePCHeatExchanger
     
     outer Integer N_channel "number of channels";
     
-    outer Modelica.SIunits.ReynoldsNumber Re_design "On-design ReynoldsNumber";
-    
     //Local temperature
     Modelica.SIunits.Temperature T;
     
     //Local pressure
-    Modelica.SIunits.Pressure p;
-    
-    // Local velocity of fluid
-    Modelica.SIunits.Velocity u;
-    
-    // mass flow rate
-    //Modelica.SIunits.MassFlowRate mdot;
-    
-    //local parameters of this cell listed as following
-    //Local Dynamic Viscosity
-    Modelica.SIunits.DynamicViscosity mu;
-       
-    // Local Conductivity
-    Modelica.SIunits.ThermalConductivity k;
-    
-    // Local Reynolds Number
-    Modelica.SIunits.ReynoldsNumber Re(start=1200);
-    
-    // Local Density
-    Modelica.SIunits.Density rho;
-    
-    // Local Nusselt Number
-    Modelica.SIunits.NusseltNumber Nu;
-    
-    // Local PrandtlNumber
-    //Modelica.SIunits.PrandtlNumber Pr;
-    
-    // local Thermal Conductance
-    Modelica.SIunits.CoefficientOfHeatTransfer hc;
-    
-    // Fanning Friction Factor - used to calculate pressure drop
-    Real f;          
+    Modelica.SIunits.Pressure p;          
   
   equation   
     
@@ -169,40 +127,17 @@ model SimplePCHeatExchanger
     T = (CP.PropsSI("T", "P", inlet.p, "H", inStream(inlet.h_outflow), PBMedia.mediumName) + 
         CP.PropsSI("T", "P", outlet.p, "H", inStream(outlet.h_outflow), PBMedia.mediumName)) / 2 ;  
     
-    //Debug from this point
-    mu = CP.PropsSI("V", "P", p, "T", T, PBMedia.mediumName); 
-      
-    k = CP.PropsSI("L", "P", p, "T", T, PBMedia.mediumName);  
-    
-    rho = CP.PropsSI("D", "P", p, "T", T, PBMedia.mediumName); 
-    
-    //h_mass = CP.PropsSI("H", "P", p, "T", T, PBMedia.mediumName);
-    
-    MyUtil.myAssert(debug = debug_mode, val_test = k, min = 0, max = 1e5, name_val = "k_c", val_ref = {T, p}, name_val_ref = {"T", "P"});    
-
-    Re = G * d_h / mu; 
-    
-    // Re = Re_design;
-    
-    MyUtil.myAssert(debug = debug_mode, val_test = Re, min = 0.1, max = 1e5, name_val = "Re", val_ref = {G, d_h, mu}, name_val_ref = {"G", "d_h", "mu"});   
-      
-    u = inlet.m_flow / A_flow / rho;    //MyUtil.myAssert(debug = debug_mode, val_test = Re, min = 0, max = 1e6, name_val = "Re", name_val_ref = {"id", "G","d_h","mu"}, val_ref = {id, G, d_h, mu});
-    assert(Re > 1 and Re < 1e5, "Invalid Re value: " + String(Re));
-        
-    Nu = 4.089 + kim_cor.c * (Re ^ kim_cor.d);
-     
-    hc = Nu * k / d_h;
-      
-    f = (15.78 + kim_cor.a * Re ^ kim_cor.b ) / Re;          
-
     // mass balance
     inlet.m_flow + outlet.m_flow = 0;
     
     // energy balance
-    (outlet.h_outflow - inlet.h_outflow) * inlet.m_flow = Q; 
-
+    (outlet.h_outflow - inlet.h_outflow) * inlet.m_flow = Q;     
+    
+    //outlet.h_outflow * outlet.m_flow = inlet.h_outflow * inlet.m_flow;
+    //inlet.h_outflow = inStream(outlet.h_outflow);
+    
     //pressure drop
-    outlet.p - inlet.p = f * length_cell * rho *  (u ^ 2) / d_h;
+    outlet.p - inlet.p = 0;
       
   end HXCell;
 algorithm  
@@ -218,47 +153,36 @@ equation
     if i <> N_seg then
       // connect current segment's cool outlet with next segment's cool inlet
       connect(cell_cold[i].outlet, cell_cold[i+1].inlet);
+      cell_cold[i+1].inlet.h_outflow = cell_cold[i].outlet.h_outflow;
     end if;
     
     if i <> 1 then
     // connect current segment's hot outlet with previous segment's hot inlet
       connect(cell_hot[i].outlet, cell_hot[i-1].inlet);
+      cell_hot[i].outlet.h_outflow = cell_hot[i -1].inlet.h_outflow;
     end if;
         
   end for; 
   
-  // Now connect the end segement with my inlet and outlet
-  connect(inlet_cool, cell_cold[1].inlet);
-  connect(cell_cold[N_seg].outlet, outlet_cool);  
-      
-  connect(outlet_hot, cell_hot[1].outlet);    
-  connect(cell_hot[N_seg].inlet, inlet_hot);    
-  
   for i in 1 : N_seg loop
-  
-    k_wall[i] = MyUtil.thermal_conductivity(tableID = mc.table_th_inconel_750, name = name_material, temperature = (cell_cold[i].T + cell_hot[i].T) / 2);
- 
-    1 / U[i] =  1 / cell_hot[i].hc + 1 / cell_cold[i].hc + t_wall / k_wall[i];   
-    
-    if cell_hot[i].T > cell_cold[i].T then
-      Q[i] = U[i] * A_stack * (cell_hot[i].T - cell_cold[i].T);      
-    else
-      Q[i] = 0;
-    end if;
     
     cell_cold[i].G = inlet_cool.m_flow / N_channel / A_c;
     cell_hot[i].G = inlet_hot.m_flow / N_channel / A_c;    
     
-    cell_cold[i].Q = Q[i];
-    cell_hot[i].Q = -Q[i];  
+    cell_cold[i].Q = 20;
+    cell_hot[i].Q = -20;  
   
   end for;
   
- equation
-  
+  // Now connect the end segement with my inlet and outlet
+  connect(inlet_cool, cell_cold[1].inlet);
+  connect(cell_cold[N_seg].outlet, outlet_cool);  
+  cell_hot[N_seg].inlet.h_outflow = inStream(inlet_hot.h_outflow);
+  cell_cold[N_seg].outlet.h_outflow = inStream(outlet_cool.h_outflow);   
+    
+  connect(outlet_hot, cell_hot[1].outlet);    
+  connect(cell_hot[N_seg].inlet, inlet_hot);    
   cell_hot[1].outlet.h_outflow = inStream(outlet_hot.h_outflow);
   cell_cold[1].inlet.h_outflow = inStream(inlet_cool.h_outflow);
-  cell_hot[N_seg].outlet.h_outflow = inStream(inlet_hot.h_outflow);
-  cell_cold[N_seg].inlet.h_outflow = inStream(outlet_cool.h_outflow);  
   
 end SimplePCHeatExchanger;

@@ -219,11 +219,13 @@ equation
     if i <> N_seg then
       // connect current segment's cool outlet with next segment's cool inlet
       connect(cell_cold[i].outlet, cell_cold[i+1].inlet);
+      cell_cold[i+1].inlet.h_outflow = cell_cold[i].outlet.h_outflow;
     end if;
     
     if i <> 1 then
     // connect current segment's hot outlet with previous segment's hot inlet
       connect(cell_hot[i].outlet, cell_hot[i-1].inlet);
+      cell_hot[i].outlet.h_outflow = cell_hot[i -1].inlet.h_outflow;
     end if;
         
   end for; 
@@ -257,9 +259,15 @@ equation
   
  equation
   
+  // Now connect the end segement with my inlet and outlet
+  connect(inlet_cool, cell_cold[1].inlet);
+  connect(cell_cold[N_seg].outlet, outlet_cool);  
+  cell_hot[N_seg].inlet.h_outflow = inStream(inlet_hot.h_outflow);
+  cell_cold[N_seg].outlet.h_outflow = inStream(outlet_cool.h_outflow);   
+    
+  connect(outlet_hot, cell_hot[1].outlet);    
+  connect(cell_hot[N_seg].inlet, inlet_hot);    
   cell_hot[1].outlet.h_outflow = inStream(outlet_hot.h_outflow);
   cell_cold[1].inlet.h_outflow = inStream(inlet_cool.h_outflow);
-  cell_hot[N_seg].outlet.h_outflow = inStream(inlet_hot.h_outflow);
-  cell_cold[N_seg].inlet.h_outflow = inStream(outlet_cool.h_outflow);   
 
 end PCHeatExchanger;
