@@ -62,9 +62,6 @@ record HXCellState
   Modelica.SIunits.SpecificEnthalpy h_c;
   Modelica.SIunits.SpecificEnthalpy h_h;
   
-  String medium_name_c;
-  String medium_name_h;
-  
   // length of this cell
   Modelica.SIunits.Length length "unit m";   
   

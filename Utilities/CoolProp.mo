@@ -12,7 +12,7 @@ model CoolProp
     output Real  OutputValue;
   
     external "C" OutputValue = PropsSI(OutputType, Input1Type, Input1Value, Input2Type, Input2Value, FluidName)
-    annotation(Library={"CoolProp"}, LibraryDirectory="modelica://Steps/Resources/Library"); 
+    annotation(Library={"CoolProp"}, LibraryDirectory="modelica://Steps/Resources/Library", IncludeDirectory="modelica://Steps/Resources/Include"); 
     
   end PropsSI;
 end CoolProp;

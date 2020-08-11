@@ -21,28 +21,28 @@ model TestPCHX
     p_outlet = 9 * 1e6,
     T_outlet = Modelica.SIunits.Conversions.from_degC(451),
     mdot_init = 8.3,
-    fix_state = true
+    fix_state = false
   );
 
   Components.Source source_cool(
     p_outlet = 20 * 1e6,
     T_outlet = Modelica.SIunits.Conversions.from_degC(41),
     mdot_init = 8.3,
-    fix_state = false
+    fix_state = true
   );
 
   Components.Sink sink_hot(
     p_inlet = 8.88 * 1e6,
     T_inlet = Modelica.SIunits.Conversions.from_degC(51),
     mdot_init = 8.3,
-    fix_state = false
+    fix_state = true
   );
 
   Components.Sink sink_cool(
     p_inlet = 20 * 1e6,
     T_inlet = Modelica.SIunits.Conversions.from_degC(332.9),
     mdot_init = 8.3,
-    fix_state = true
+    fix_state = false
   );
  
   Components.PCHeatExchanger pchx(
@@ -56,8 +56,8 @@ model TestPCHX
     m_dot_hot = 8.3,
     m_dot_cool = 8.3,
     pitch = 24.6 * 1e-3,
-    length_cell = 3e-3,
-    N_seg = 100
+    length_cell = 3e-2,
+    N_seg = 2
   );
   
   /*

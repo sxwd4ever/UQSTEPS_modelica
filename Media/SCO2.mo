@@ -22,6 +22,7 @@ package SCO2 "supercritical CO2"
       Temperature T "Temperature of PBMedia";
   end ThermodynamicState;
   
+  /*
   record FullThermodynamicState
     "Full state info for a medium, for data transfer purpose"
     
@@ -32,6 +33,7 @@ package SCO2 "supercritical CO2"
     Modelica.SIunits.Density d;
     
   end FullThermodynamicState;
+  */
   
   replaceable model CO2_pT "Base properties of medium" 
     extends BaseProperties(final standardOrderComponents = true);

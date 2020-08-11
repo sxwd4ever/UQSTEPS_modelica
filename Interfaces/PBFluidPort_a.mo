@@ -2,7 +2,7 @@ within Steps.Interfaces;
 
 connector PBFluidPort_a
   extends Modelica.Fluid.Interfaces.FluidPort_a;
-  Modelica.SIunits.ThermodynamicTemperature T "absolute temperature of the port";
+  //Modelica.SIunits.ThermodynamicTemperature T "absolute temperature of the port";
   
   
   // Port type of the ports
