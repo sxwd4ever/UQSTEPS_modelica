@@ -9,10 +9,10 @@ model PCHeatExchanger
   import UTIL = Modelica.Utilities;
   import MyUtil = Steps.Utilities.Util;
   
-  replaceable Steps.Interfaces.PBFluidPort_a inlet_hot(redeclare package Medium = PBMedia, p(start= 1e6)) "Inlet port, previous component";
-  replaceable Steps.Interfaces.PBFluidPort_b outlet_hot(redeclare package Medium = PBMedia, p(start= 1e6)) "Outlet port, next component";
-  replaceable Steps.Interfaces.PBFluidPort_a inlet_cool(redeclare package Medium = PBMedia, p(start= 1e6)) "Recuperator inlet";
-  replaceable Steps.Interfaces.PBFluidPort_b outlet_cool(redeclare package Medium = PBMedia, p(start= 1e6)) "Recuperator outlet";
+  replaceable Steps.Interfaces.PBFluidPort_a inlet_hot(redeclare package Medium = PBMedia, p(start= 9e6)) "Inlet port, previous component";
+  replaceable Steps.Interfaces.PBFluidPort_b outlet_hot(redeclare package Medium = PBMedia, p(start= 9e6)) "Outlet port, next component";
+  replaceable Steps.Interfaces.PBFluidPort_a inlet_cool(redeclare package Medium = PBMedia, p(start= 20e6)) "Recuperator inlet";
+  replaceable Steps.Interfaces.PBFluidPort_b outlet_cool(redeclare package Medium = PBMedia, p(start= 20e6)) "Recuperator outlet";
   
   replaceable package PBMedia = Steps.Media.SCO2;  
   
@@ -75,8 +75,8 @@ model PCHeatExchanger
   String hot_stream_name, cold_stream_name;
 
   // two sequences of the hx cells
-  HXCell [N_seg] cell_cold(each inlet.p(start = 8e6), T(start = Modelica.SIunits.Conversions.from_degC(27.15))); // = {HXCell[i](inlet.p(start = 1e6)) for i in 1:N_seg} ;
-  HXCell [N_seg] cell_hot(each inlet.p(start = 8e6), T(start = Modelica.SIunits.Conversions.from_degC(27.15)));
+  HXCell [N_seg] cell_cold(each ByInlet = true, each inlet.p.start = 8e6, each T.start = Modelica.SIunits.Conversions.from_degC(27.15)); // = {HXCell[i](inlet.p(start = 1e6)) for i in 1:N_seg} ;
+  HXCell [N_seg] cell_hot(each ByInlet = false, each inlet.p.start = 20e6, each T.start = Modelica.SIunits.Conversions.from_degC(700));
 
   // Heat Change
   Modelica.SIunits.Heat Q[N_seg];  
@@ -95,7 +95,9 @@ model PCHeatExchanger
     replaceable Steps.Interfaces.PBFluidPort_a inlet(redeclare package Medium = Steps.Media.SCO2) "Inlet port, previous component";
     replaceable Steps.Interfaces.PBFluidPort_b outlet(redeclare package Medium = Steps.Media.SCO2) "Outlet port, next component";    
    
-    parameter Boolean debug_mode = true;
+    parameter Boolean debug_mode = false;
+    
+    parameter Boolean ByInlet = true;
     
     // Heat Flux
     Modelica.SIunits.Heat Q; 
@@ -155,46 +157,35 @@ model PCHeatExchanger
     
     // Fanning Friction Factor - used to calculate pressure drop
     Real f;          
-  
+    
+    Modelica.SIunits.PressureDifference dp;    
+    
   equation   
     
-    p = (inlet.p + outlet.p) / 2;
-    //p = inlet.p;    
-    /*
-    if inlet.m_flow > 0 then
+    if ByInlet then
+      p = inlet.p;
       T = CP.PropsSI("T", "P", inlet.p, "H", inStream(inlet.h_outflow), PBMedia.mediumName);
     else
+      p = outlet.p;
       T = CP.PropsSI("T", "P", outlet.p, "H", inStream(outlet.h_outflow), PBMedia.mediumName);
-    end if;
-    */
-    T = (CP.PropsSI("T", "P", inlet.p, "H", inStream(inlet.h_outflow), PBMedia.mediumName) + 
-        CP.PropsSI("T", "P", outlet.p, "H", inStream(outlet.h_outflow), PBMedia.mediumName)) / 2 ;  
-    
+    end if;    
+
     //Debug from this point
     mu = CP.PropsSI("V", "P", p, "T", T, PBMedia.mediumName); 
-      
+    
     k = CP.PropsSI("L", "P", p, "T", T, PBMedia.mediumName);  
     
-    rho = CP.PropsSI("D", "P", p, "T", T, PBMedia.mediumName); 
-    
-    //h_mass = CP.PropsSI("H", "P", p, "T", T, PBMedia.mediumName);
-    
-    MyUtil.myAssert(debug = debug_mode, val_test = k, min = 0, max = 1e5, name_val = "k_c", val_ref = {T, p}, name_val_ref = {"T", "P"});    
+    rho = CP.PropsSI("D", "P", p, "T", T, PBMedia.mediumName);     
 
     Re = G * d_h / mu; 
-    
-    // Re = Re_design;
-    
-    MyUtil.myAssert(debug = debug_mode, val_test = Re, min = 0.1, max = 1e5, name_val = "Re", val_ref = {G, d_h, mu}, name_val_ref = {"G", "d_h", "mu"});   
       
-    u = inlet.m_flow / A_flow / rho;    //MyUtil.myAssert(debug = debug_mode, val_test = Re, min = 0, max = 1e6, name_val = "Re", name_val_ref = {"id", "G","d_h","mu"}, val_ref = {id, G, d_h, mu});
-    assert(Re > 1 and Re < 1e5, "Invalid Re value: " + String(Re));
-        
+    u = inlet.m_flow / A_flow / rho;    
+         
     Nu = 4.089 + kim_cor.c * (Re ^ kim_cor.d);
-     
+    
     hc = Nu * k / d_h;
-      
-    f = (15.78 + kim_cor.a * Re ^ kim_cor.b ) / Re;          
+    
+    f = (15.78 + kim_cor.a * Re ^ kim_cor.b ) / Re;  
 
     // mass balance
     inlet.m_flow + outlet.m_flow = 0;
@@ -203,12 +194,25 @@ model PCHeatExchanger
     (outlet.h_outflow - inlet.h_outflow) * inlet.m_flow = Q; 
 
     //pressure drop
-    outlet.p - inlet.p = f * length_cell * rho *  (u ^ 2) / d_h;
+  algorithm
+    // use algorithm for debug purpose
+    dp := f * length_cell * rho *  (u ^ 2); // / d_h;
+    
+    MyUtil.myAssert(
+    debug = false, 
+    val_test = dp, min = 0, max = 1e5, 
+    name_val = "dp", 
+    val_ref = {dp, f, length_cell, rho, u, d_h}, 
+    name_val_ref = {"dp", "f", "length_cell", "rho", "u", "d_h"}); 
+  equation
+
+    outlet.p - inlet.p = dp;
       
   end HXCell;
+  
 algorithm  
   // initialize the state for the hot side and cold side in all the cells
-// using the hot inlet and cool outlet.
+  // using the hot inlet and cool outlet.
   hot_stream_name := PBMedia.mediumName;
   cold_stream_name := PBMedia.mediumName; 
 
@@ -256,18 +260,16 @@ equation
     cell_hot[i].Q = -Q[i];  
   
   end for;
-  
- equation
-  
+
   // Now connect the end segement with my inlet and outlet
   connect(inlet_cool, cell_cold[1].inlet);
   connect(cell_cold[N_seg].outlet, outlet_cool);  
-  cell_hot[N_seg].inlet.h_outflow = inStream(inlet_hot.h_outflow);
+  cell_cold[1].inlet.h_outflow = inStream(inlet_cool.h_outflow);
   cell_cold[N_seg].outlet.h_outflow = inStream(outlet_cool.h_outflow);   
     
   connect(outlet_hot, cell_hot[1].outlet);    
   connect(cell_hot[N_seg].inlet, inlet_hot);    
   cell_hot[1].outlet.h_outflow = inStream(outlet_hot.h_outflow);
-  cell_cold[1].inlet.h_outflow = inStream(inlet_cool.h_outflow);
+  cell_hot[N_seg].inlet.h_outflow = inStream(inlet_hot.h_outflow);  
 
 end PCHeatExchanger;
