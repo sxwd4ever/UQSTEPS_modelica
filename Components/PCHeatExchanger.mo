@@ -75,8 +75,8 @@ model PCHeatExchanger
   String hot_stream_name, cold_stream_name;
 
   // two sequences of the hx cells
-  HXCell [N_seg] cell_cold;
-  HXCell [N_seg] cell_hot;
+  HXCell [N_seg] cell_cold(each inlet.p(start = 8e6), T(start = Modelica.SIunits.Conversions.from_degC(27.15))); // = {HXCell[i](inlet.p(start = 1e6)) for i in 1:N_seg} ;
+  HXCell [N_seg] cell_hot(each inlet.p(start = 8e6), T(start = Modelica.SIunits.Conversions.from_degC(27.15)));
 
   // Heat Change
   Modelica.SIunits.Heat Q[N_seg];  

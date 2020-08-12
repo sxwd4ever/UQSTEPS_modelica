@@ -56,7 +56,7 @@ model TestPCHX
     m_dot_hot = 8.3,
     m_dot_cool = 8.3,
     pitch = 24.6 * 1e-3,
-    length_cell = 3e-2,
+    length_cell = 3e-1,
     N_seg = 20
   );
   
