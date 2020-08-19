@@ -49,29 +49,61 @@ model KimCorrelations  "Correlation constants in Kim [2012]"
 algorithm
 
     // determine fitting constant by pitch and hydraulic diameter
-      if (MyUtil.sameValue(pitch, 24.6 * 1e-3) and MyUtil.sameValue(d_h, 0.922 * 1e-3)) then
-        table_a := table_4a_a;
-        table_b := table_4a_b;
-        table_c := table_5a_c;
-        table_d := table_5a_d;
-      elseif (MyUtil.sameValue(pitch, 12.3 * 1e-3) and MyUtil.sameValue(d_h, 0.922 * 1e-3)) then
+    if(abs(pitch - 12.3e-3) <= abs(pitch - 24.6e-3)) then //close to pitch = 12.3
+      
+      if(abs(d_h - 0.922e-3) <= abs(d_h - 1.222e-3)) then // clost to d_h 0.922
         table_a := table_4b_a;
         table_b := table_4b_b;
         table_c := table_5b_c;
         table_d := table_5b_d;
-      elseif (MyUtil.sameValue(pitch, 24.6 * 1e-3) and MyUtil.sameValue(d_h, 1.222 * 1e-3)) then
+      else
+        //default value - table_4d, 5d should be used here
+        table_a := table_4b_a;
+        table_b := table_4b_b;
+        table_c := table_5b_c;
+        table_d := table_5b_d;        
+      end if;
+      
+    else
+    
+      if(abs(d_h - 0.922e-3) <= abs(d_h - 1.222e-3)) then
+        table_a := table_4a_a;
+        table_b := table_4a_b;
+        table_c := table_5a_c;
+        table_d := table_5a_d;
+      else
         table_a := table_4c_a;
         table_b := table_4c_b;
         table_c := table_5c_c;
         table_d := table_5c_d;
-      end if;      
+      end if;       
       
-      a := TB.CombiTable1D.getTableValue(table_a, icol = 1, u = Modelica.SIunits.Conversions.to_deg(phi), tableAvailable = 1.0);
-      
-      b := TB.CombiTable1D.getTableValue(table_b, icol = 1, u = Modelica.SIunits.Conversions.to_deg(phi), tableAvailable = 1.0);
-      
-      c := TB.CombiTable1D.getTableValue(table_c, icol = 1, u = Modelica.SIunits.Conversions.to_deg(phi), tableAvailable = 1.0);
-      
-      d := TB.CombiTable1D.getTableValue(table_d, icol = 1, u = Modelica.SIunits.Conversions.to_deg(phi), tableAvailable = 1.0);  
+    end if;
+    
+    /*
+    if (MyUtil.sameValue(pitch, 24.6 * 1e-3) and MyUtil.sameValue(d_h, 0.922 * 1e-3)) then
+      table_a := table_4a_a;
+      table_b := table_4a_b;
+      table_c := table_5a_c;
+      table_d := table_5a_d;
+    elseif (MyUtil.sameValue(pitch, 12.3 * 1e-3) and MyUtil.sameValue(d_h, 0.922 * 1e-3)) then
+      table_a := table_4b_a;
+      table_b := table_4b_b;
+      table_c := table_5b_c;
+      table_d := table_5b_d;
+    elseif (MyUtil.sameValue(pitch, 24.6 * 1e-3) and MyUtil.sameValue(d_h, 1.222 * 1e-3)) then
+      table_a := table_4c_a;
+      table_b := table_4c_b;
+      table_c := table_5c_c;
+      table_d := table_5c_d;
+    end if;      
+    */
+    a := TB.CombiTable1D.getTableValue(table_a, icol = 1, u = Modelica.SIunits.Conversions.to_deg(phi), tableAvailable = 1.0);
+    
+    b := TB.CombiTable1D.getTableValue(table_b, icol = 1, u = Modelica.SIunits.Conversions.to_deg(phi), tableAvailable = 1.0);
+    
+    c := TB.CombiTable1D.getTableValue(table_c, icol = 1, u = Modelica.SIunits.Conversions.to_deg(phi), tableAvailable = 1.0);
+    
+    d := TB.CombiTable1D.getTableValue(table_d, icol = 1, u = Modelica.SIunits.Conversions.to_deg(phi), tableAvailable = 1.0);  
 
 end KimCorrelations;
