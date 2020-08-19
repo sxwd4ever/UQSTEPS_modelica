@@ -1,4 +1,4 @@
-within Steps;
+within Steps.Cycle;
 
 model SimpleCycle
   "Simplest Cycle with pump - oilheater - valve - Water cooler - pump"   

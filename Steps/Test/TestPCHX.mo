@@ -1,4 +1,4 @@
-within Steps;
+within Steps.Test;
 
 model TestPCHX
   "Simple cycle to test PC Heat Exchange"     
