@@ -1,4 +1,4 @@
-within Steps;
+within Steps.Cycle;
 
 model RCBCycle
   "Brayton Cycle with Recuperator + Recompression"  

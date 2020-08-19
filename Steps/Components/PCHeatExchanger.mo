@@ -22,7 +22,7 @@ model PCHeatExchanger
   
   parameter String name_material = "inconel 750";  
   
-  parameter Modelica.SIunits.Angle phi = 0.0 "unit rad";
+  inner parameter Modelica.SIunits.Angle phi = 1.0 "unit rad";
   
   inner parameter Modelica.SIunits.ReynoldsNumber Re_design = 1200 "On-design ReynoldsNumber";
   
@@ -41,7 +41,7 @@ model PCHeatExchanger
   parameter Modelica.SIunits.MassFlowRate m_dot_hot = 5;
   parameter Modelica.SIunits.MassFlowRate m_dot_cool = 5;
   
-  parameter Modelica.SIunits.Length pitch = 10 "pitch length of channel";
+  inner parameter Modelica.SIunits.Length pitch = 10 "pitch length of channel";
   
   parameter Boolean debug_mode = false;
   //protected
@@ -51,11 +51,12 @@ model PCHeatExchanger
     
   inner Modelica.SIunits.Diameter d_h = 4 * A_c / peri_c "Hydraulic Diameter";
   
-  inner Modelica.SIunits.Length peri_c = d_c * Modelica.Constants.pi /2 + d_c "perimeter of semi-circular";
+  inner Modelica.SIunits.Length peri_c = d_c * Modelica.Constants.pi / 2 + d_c "perimeter of semi-circular";
   
   inner Modelica.SIunits.Length t_wall = (2 - Modelica.Constants.pi  / 4) * (d_c / 2) "thickness of wall between two neighboring hot and cold";
   
-  inner Integer N_channel = integer(A_fmax / A_c) "number of channels";
+  // use ceil to avoid integer(0.01) = 0 so that we have one channel at least
+  inner Integer N_channel = integer(ceil(A_fmax / A_c)) "number of channels"; 
   
   inner Modelica.SIunits.Area A_c = Modelica.Constants.pi * d_c * d_c / 8 "Area of semi-circular tube";    
   
@@ -75,8 +76,19 @@ model PCHeatExchanger
   String hot_stream_name, cold_stream_name;
 
   // two sequences of the hx cells
-  HXCell [N_seg] cell_cold(each ByInlet = true, each inlet.p.start = 8e6, each T.start = Modelica.SIunits.Conversions.from_degC(27.15)); // = {HXCell[i](inlet.p(start = 1e6)) for i in 1:N_seg} ;
-  HXCell [N_seg] cell_hot(each ByInlet = false, each inlet.p.start = 20e6, each T.start = Modelica.SIunits.Conversions.from_degC(700));
+  HXCell [N_seg] cell_cold(
+    each cellType = CellType.Cold,
+    each ByInlet = true, 
+    each inlet.p.start = 8e6, 
+    each T.start = Modelica.SIunits.Conversions.from_degC(27.15), 
+    id = {i for i in 1 : N_seg}); 
+    
+  HXCell [N_seg] cell_hot(
+    each cellType = CellType.Hot,
+    each ByInlet = false, 
+    each inlet.p.start = 20e6, 
+    each T.start = Modelica.SIunits.Conversions.from_degC(700), 
+    id = {i for i in 1 : N_seg});
 
   // Heat Change
   Modelica.SIunits.Heat Q[N_seg];  
@@ -85,7 +97,11 @@ model PCHeatExchanger
   Modelica.SIunits.ThermalConductivity k_wall[N_seg];
   
   // overall Heat transfer coefficient
-  Modelica.SIunits.CoefficientOfHeatTransfer U[N_seg];      
+  Modelica.SIunits.CoefficientOfHeatTransfer U[N_seg];     
+  
+  parameter Real testVal = 1; 
+
+  type CellType = enumeration(Cold, Hot);
 
   model HXCell    
     "One cell in a HX segment"
@@ -98,6 +114,10 @@ model PCHeatExchanger
     parameter Boolean debug_mode = false;
     
     parameter Boolean ByInlet = true;
+    
+    parameter Integer id = 0;
+    
+    parameter CellType cellType = CellType.Cold;
     
     // Heat Flux
     Modelica.SIunits.Heat Q; 
@@ -114,12 +134,20 @@ model PCHeatExchanger
     
     outer Modelica.SIunits.Area A_c "Area of semi-circular tube"; 
     
+    outer Modelica.SIunits.Area A_fc;
+    
+    outer Modelica.SIunits.Area A_fh;
+    
     // length of this cell
     outer Modelica.SIunits.Length length_cell "unit m";  
     
     outer Integer N_channel "number of channels";
     
-    outer Modelica.SIunits.ReynoldsNumber Re_design "On-design ReynoldsNumber";
+    outer parameter Modelica.SIunits.ReynoldsNumber Re_design "On-design ReynoldsNumber";
+    
+    outer parameter Modelica.SIunits.Angle phi;
+    
+    outer parameter Modelica.SIunits.Length pitch;
     
     //Local temperature
     Modelica.SIunits.Temperature T;
@@ -130,9 +158,6 @@ model PCHeatExchanger
     // Local velocity of fluid
     Modelica.SIunits.Velocity u;
     
-    // mass flow rate
-    //Modelica.SIunits.MassFlowRate mdot;
-    
     //local parameters of this cell listed as following
     //Local Dynamic Viscosity
     Modelica.SIunits.DynamicViscosity mu;
@@ -141,7 +166,7 @@ model PCHeatExchanger
     Modelica.SIunits.ThermalConductivity k;
     
     // Local Reynolds Number
-    Modelica.SIunits.ReynoldsNumber Re(start=1200);
+    Modelica.SIunits.ReynoldsNumber Re(start=Re_design);
     
     // Local Density
     Modelica.SIunits.Density rho;
@@ -176,13 +201,37 @@ model PCHeatExchanger
     k = CP.PropsSI("L", "P", p, "T", T, PBMedia.mediumName);  
     
     rho = CP.PropsSI("D", "P", p, "T", T, PBMedia.mediumName);     
-
+  
     Re = G * d_h / mu; 
+/*    
+algorithm    
+    // For debug purpose
+    MyUtil.myAssertNotEqual(
+    debug = false, 
+    val_test = id, compared = 10, 
+    name_val = "id", 
+    val_ref = {Re, G, d_h, mu, p , T, phi, pitch, kim_cor.c, kim_cor.d}, 
+    name_val_ref = {"Re", "G", "d_h", "mu", "p" , "T", "phi", "pitch", "c", "d"}); 
+
+equation
+*/    
+
+    u = inlet.m_flow / A_flow / rho;  
       
-    u = inlet.m_flow / A_flow / rho;    
-         
     Nu = 4.089 + kim_cor.c * (Re ^ kim_cor.d);
     
+/*
+algorithm
+  // For debug purpose
+    MyUtil.myAssert(
+    debug = false, 
+    val_test = Nu, min = -1e5, max = 0, 
+    name_val = "Nu", 
+    val_ref = {id, Re, G, d_h, mu, p , T}, 
+    name_val_ref = {"id", "Re", "G", "d_h", "mu", "p" , "T"});     
+    
+equation
+*/    
     hc = Nu * k / d_h;
     
     f = (15.78 + kim_cor.a * Re ^ kim_cor.b ) / Re;  
@@ -194,17 +243,7 @@ model PCHeatExchanger
     (outlet.h_outflow - inlet.h_outflow) * inlet.m_flow = Q; 
 
     //pressure drop
-  algorithm
-    // use algorithm for debug purpose
-    dp := f * length_cell * rho *  (u ^ 2); // / d_h;
-    
-    MyUtil.myAssert(
-    debug = false, 
-    val_test = dp, min = 0, max = 1e5, 
-    name_val = "dp", 
-    val_ref = {dp, f, length_cell, rho, u, d_h}, 
-    name_val_ref = {"dp", "f", "length_cell", "rho", "u", "d_h"}); 
-  equation
+    dp = f * length_cell * rho *  (u ^ 2) / d_h;
 
     outlet.p - inlet.p = dp;
       
@@ -239,7 +278,24 @@ equation
   connect(cell_cold[N_seg].outlet, outlet_cool);  
       
   connect(outlet_hot, cell_hot[1].outlet);    
-  connect(cell_hot[N_seg].inlet, inlet_hot);    
+  connect(cell_hot[N_seg].inlet, inlet_hot);   
+  
+/*  
+algorithm
+
+  testVal := 1;
+
+
+  MyUtil.myAssert(
+  debug = true, 
+  val_test = testVal, min = -1e5, max = -1, 
+  name_val = "testVal", 
+  val_ref = {inlet_cool.m_flow, N_channel, A_c}, 
+  name_val_ref = {"inlet_cool.m_flow", "N_channel", "A_c"}); 
+
+  testVal := inlet_cool.m_flow / N_channel / A_c;
+*/
+equation
   
   for i in 1 : N_seg loop
   
@@ -252,15 +308,16 @@ equation
     else
       Q[i] = 0;
     end if;
-    
-    cell_cold[i].G = inlet_cool.m_flow / N_channel / A_c;
-    cell_hot[i].G = inlet_hot.m_flow / N_channel / A_c;    
-    
+        
     cell_cold[i].Q = Q[i];
     cell_hot[i].Q = -Q[i];  
+    
+    cell_cold[i].G = inlet_cool.m_flow / N_channel / A_c;
+    cell_hot[i].G = inlet_hot.m_flow / N_channel / A_c;   
   
   end for;
 
+equation
   // Now connect the end segement with my inlet and outlet
   connect(inlet_cool, cell_cold[1].inlet);
   connect(cell_cold[N_seg].outlet, outlet_cool);  

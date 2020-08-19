@@ -49,15 +49,55 @@ model Util
         assert(val_test > min and val_test < max, "outside range " + keyvalStr(name_val, val_test) + " at " + debugInfo(name_val_ref, val_ref));
       end if;
       
-  end myAssert;
+  end myAssert;  
+  
+  function myAssertNotEqual "customerized assert function to generate more detailed information"
+    input Boolean debug = false;
+    input Real val_test;
+    input Real compared;
+    input Real err = 0.1;
+    
+    input String name_val;
+    
+    input Real [:] val_ref;
+    input String [:] name_val_ref;
+    
+    algorithm
+    
+      if not debug then
+        assert(not sameValue(val_test, compared), keyvalStr(name_val, val_test) + " equal to " + String(compared) + " at " + debugInfo(name_val_ref, val_ref));
+      end if;
+      
+  end myAssertNotEqual;
+  
+  function myAssertEqual "customerized assert function to generate more detailed information"
+    input Boolean debug = false;
+    input Real val_test;
+    input Real compared;
+    input Real err = 0.1;
+    
+    input String name_val;
+    
+    input Real [:] val_ref;
+    input String [:] name_val_ref;
+    
+    algorithm
+    
+      if not debug then
+        assert(sameValue(val_test, compared), keyvalStr(name_val, val_test) + " NOT equal to " + String(compared) + " at " + debugInfo(name_val_ref, val_ref));
+      end if;
+      
+  end myAssertEqual;  
+  
   
   function sameValue "Return if two floats (almost) equal to each other"
     extends Modelica.Icons.Function;
     input Real c1 "compared number 1";
-    input Real c2 "compared number 2";    
+    input Real c2 "compared number 2";   
+    input Real err = 1e-3; 
     output Boolean same;
   algorithm
-      same := abs(c1 - c2) <= 1e-3;
+      same := abs(c1 - c2) <= err;
   end sameValue;  
   
   function debugInfo "Generate debug info for output"
