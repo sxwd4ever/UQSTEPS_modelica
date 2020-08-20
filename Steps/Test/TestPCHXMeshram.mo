@@ -39,7 +39,7 @@ model TestPCHXMeshram
     p_outlet = p_cold_in[scenario],
     T_outlet = T_cold_in[scenario],
     mdot_init = mdot_init,
-    fix_state = false
+    fix_state = true
   );
 
   Components.Sink sink_hot(
@@ -53,7 +53,7 @@ model TestPCHXMeshram
     p_inlet = p_cold_out[scenario],
     T_inlet = T_cold_out[scenario],
     mdot_init = mdot_init,
-    fix_state = true
+    fix_state = false
   );
  
   Components.PCHeatExchanger pchx(
@@ -70,41 +70,6 @@ model TestPCHXMeshram
     length_cell = 12e-3,
     N_seg = 10
   );
-  
-  /*
-  Components.PCHeatExchangerV2 pchx(
-    phi = Modelica.SIunits.Conversions.from_deg(45), 
-    Re_design = 5000,
-    d_c = 1.51 * 1e-3,
-    T_hot_in = Modelica.SIunits.Conversions.from_degC(451),
-    T_cool_in = Modelica.SIunits.Conversions.from_degC(41),
-    p_hot = 9 * 1e6,
-    p_cool = 20 * 1e6,
-    m_dot_hot = 8.3,
-    m_dot_cool = 8.3,
-    pitch = 24.6 * 1e-3,
-    length_cell = 3e-3,
-    N_seg = 2
-  );
-  */
-  
-  /*
-  Components.PCHeatExchanger pchx(
-    phi = Modelica.Constants.pi / 4, 
-    Re_design = 5000,
-    d_c = 1.51 * 1e-3,
-    T_hot_in = Modelica.SIunits.Conversions.from_degC(451),
-    T_cool_in = Modelica.SIunits.Conversions.from_degC(41),
-    p_hot = 9 * 1e6,
-    p_cool = 20 * 1e6
-  );
-  */
-  
-  /*
-  Components.Recuperator pchx(
-    eta = 0.99  
-  );
-  */
   
 equation
   
