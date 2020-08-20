@@ -10,10 +10,7 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "justMyCode": true,
-            "env":{
-                "PYTHONPATH": "C:/Users/uqxsui/AppData/Local/Continuum/anaconda3/envs/steps/Lib/site-packages/OMPython"
-            }
+            "justMyCode": true
         }
     ]
 }

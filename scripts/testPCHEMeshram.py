@@ -2,164 +2,287 @@ from OMPython import OMCSessionZMQ
 from OMPython import OMCSession
 from OMPython import ModelicaSystem
 from datetime import datetime as dt
+
 import inspect
-
 import csv
+import os
 
-def gen_result_dict():
-    
-    # dict to store solutions under 
-    result_dict = {}
+from plot_lib import imgplot
 
-    # for all the component's inlet/outlet that needs to be analyzed.
-    ports_keys = [
-        'source_hot.outlet', 
-        'source_cold.outlet', 
-        'sink_hot.inlet', 
-        'sink_cold.inlet', 
-        'pchx.inlet_hot',
-        'pchx.outlet_hot',
-        'pchx.inlet_cool',
-        'pchx.outlet_cool'        
-        ]
-    
-    # common variables for these port
-    var_keys = ['h_outflow', 'p', 'm_flow']
+class TestPCHEMeshram(object):
+        
+    def __init__(self, work_root):
+        super().__init__()
+        # common variable defination
+        self.path_pics = "pics"
+        self.path_out = "out"
 
-    # fill in keys of result dict with above 
-    for p_key in ports_keys:
-        for val_key in var_keys:
-            sol_key = p_key + '.' + val_key
-            result_dict[sol_key] = []
+        self.work_root = work_root
+        self.model_path_root = work_root + r"/Steps" 
+        
+        self.prepare_workspace()
 
-    # for each HX cell in PCHE
-    N_seg = 10 
-    var_keys = ['T', 'dp','Re', 'Nu', 'f']
-    node_keys = ['cell_cold', 'cell_hot']
-    for var_key in var_keys:
-        for node_key in node_keys:
-            for i in range(1, N_seg + 1):        
-                result_dict["pchx.{node}[{idx}].{var}".format(idx = i, var = var_key, node = node_key)] = []
+    def prepare_workspace(self):
+        '''
+        prepare the workspace for simulation, the directory structure is
+        - Steps (currernt work directory)
+        |--.vscode  - directory for vscode's configurations
+        |--docs     - documents
+        |--build    - workspace for modelica simulation
+        |--scripts  - python scripts for test or parameter sweep
+        |--Steps    - Directory for modelica models codes
+        |.env       - configuration file for vs python extension
+        |.gitignore - git ignore file
+        ''' 
 
-    # some special varible in the model, specify them explicitly
-    # result_dict['eta_total'] = []
-    return result_dict   
+        import os
+        import shutil      
 
-def cal_row( vals = [], eval_str = 'x + y'):
+        os.chdir(self.work_root)
 
-    real_eval_str = eval_str.replace('x','op1').replace('y','op2').replace('z', 'op3')
+        # setup working directory
+        pwd = "build" 
+        if not os.path.exists(pwd):    
+            os.mkdir(pwd)
 
-    r = []
-    
-    for i in range(0, len(vals[0])):
-        op1,op2 = vals[0][i], vals[1][i]
+        os.chdir(pwd)        
 
-        if(len(vals) == 3):
-            op3 = vals[2][i]
-        r.append(eval(real_eval_str))
+        if os.path.exists(self.path_pics):
+            shutil.rmtree(self.path_pics)
+        
+        # os.mkdir(self.path_pics)
 
-    return r
+        # copy pics for plot use
+        shutil.copytree("../scripts/pics", self.path_pics)
 
-def gen_cal_map():
+        # directory for output
+        if not os.path.exists(self.path_out):
+            os.mkdir(self.path_out)
 
-    # map for calculated values
-    cal_map = []
-    # recheck efficiency 
-    cal_map.append({'key' : 'Q_in', 'vals':['pcm_heater.h_e', 'pcm_heater.h_i', 'pcm_heater.inlet.m_flow'], 'eval_str': 'z * (x - y)'})
-    cal_map.append({'key' : 'W_turbine', 'vals':['turbine.h_i', 'turbine.h_ea', 'turbine.inlet.m_flow'], 'eval_str': 'z * (x - y)'})
-    cal_map.append({'key' : 'W_comp', 'vals':['pump.h_ea', 'pump.h_i', 'pump.inlet.m_flow'], 'eval_str': 'z * (x - y)'})
-    cal_map.append({'key' : 'W_comp_recom', 'vals':['recom_pump.h_ea', 'recom_pump.h_i', 'recom_pump.inlet.m_flow'], 'eval_str': 'z * (x - y)'})
-    cal_map.append({'key' : 'W_net', 'vals':['W_turbine', 'W_comp', 'W_comp_recom'], 'eval_str': 'x - y - z'})
-    cal_map.append({'key' : 'eta_all_recal', 'vals':['W_net', 'Q_in'], 'eval_str': 'x / y * 100'})
-    cal_map.append({'key' : 'eta_all_recal', 'vals':['W_net', 'Q_in'], 'eval_str': 'x / y * 100'})
+        # copy cool prop lib
+        libs = ["libCoolProp.a", 'libCoolProp.dll']
+        for lib in libs:            
+            if not os.path.exists(lib):
+                shutil.copyfile(self.model_path_root + r"\Resources\Library\\" + lib, ".\\" + lib) # completa target name needed
 
-    # performance
-    # LTR
-    cal_map.append({'key' : 'LTR_cool_dt', 'vals':['recup_low.crec_out.T','recup_low.crec_in.T'], 'eval_str': 'x - y'})
-    cal_map.append({'key' : 'LTR_hot_dt', 'vals':['recup_low.inlet.T','recup_low.outlet.T'], 'eval_str': 'x - y'})
-    cal_map.append({'key' : 'LTR_cool_dQ', 'vals':['recup_low.h_cool_e','recup_low.h_cool_i', 'recup_low.crec_in.m_flow'], 'eval_str': '(x - y) * z'})
-    cal_map.append({'key' : 'LTR_hot_dQ', 'vals':['recup_low.h_hot_i','recup_low.h_hot_e', 'recup_low.inlet.m_flow'], 'eval_str': '(x - y) * z'})
+    def __gen_result_dict(self):
+        
+        # dict to store solutions under 
+        result_dict = {}
 
-    # HTR
-    cal_map.append({'key' : 'HTR_cool_dt', 'vals':['recup_high.crec_out.T','recup_high.crec_in.T'], 'eval_str': 'x - y'})
-    cal_map.append({'key' : 'HTR_hot_dt', 'vals':['recup_high.inlet.T','recup_high.outlet.T'], 'eval_str': 'x - y'})
-    cal_map.append({'key' : 'HTR_cool_dQ', 'vals':['recup_high.h_cool_e','recup_high.h_cool_i', 'recup_high.crec_in.m_flow'], 'eval_str': '(x - y) * z'})
-    cal_map.append({'key' : 'HTR_hot_dQ', 'vals':['recup_high.h_hot_i','recup_high.h_hot_e', 'recup_high.inlet.m_flow'], 'eval_str': '(x - y) * z'})
+        # for all the component's inlet/outlet that needs to be analyzed.
+        ports_keys = [
+            'source_hot.outlet', 
+            'source_cold.outlet', 
+            'sink_hot.inlet', 
+            'sink_cold.inlet', 
+            'pchx.inlet_hot',
+            'pchx.outlet_hot',
+            'pchx.inlet_cool',
+            'pchx.outlet_cool'        
+            ]
+        
+        # common variables for these port
+        var_keys = ['h_outflow', 'p', 'm_flow']
 
-    return cal_map
+        # fill in keys of result dict with above 
+        for p_key in ports_keys:
+            for val_key in var_keys:
+                sol_key = p_key + '.' + val_key
+                result_dict[sol_key] = []
 
-def update_cal_fields(result_dict):
-    # fill calculated fields into the result_dict
-    cal_map = gen_cal_map()
-    # fill in the calculated value by python's eval
-    for item in cal_map:
-        vals = item['vals']
+        # for each HX cell in PCHE
+        N_seg = 10 
+        var_keys = ['T', 'dp','Re', 'Nu', 'f']
+        node_keys = ['cell_cold', 'cell_hot']
+        for var_key in var_keys:
+            for node_key in node_keys:
+                for i in range(1, N_seg + 1):        
+                    result_dict["pchx.{node}[{idx}].{var}".format(idx = i, var = var_key, node = node_key)] = []
 
-        data = result_dict
+        # some special varible in the model, specify them explicitly like
+        # result_dict['eta_total'] = []  
 
-        if len(vals) == 2:
-            result_dict[item['key']] = cal_row([data[vals[0]], data[vals[1]]], eval_str=item['eval_str'])
-        elif len(vals) == 3:
-            result_dict[item['key']] = cal_row([data[vals[0]], data[vals[1]], data[vals[2]]], eval_str=item['eval_str'])      
+        return result_dict
 
-def save_to_file(result_dict):
-# save the simulation result into files
-    with open(dt.now().strftime("result_%Y_%m_%d_%H_%M_%S.csv") ,mode='w') as csv_file:
-        field_names = ['name']
+    def __cal_row(self, vals = [], eval_str = 'x + y'):
 
-        writer = csv.writer(csv_file, delimiter=',', quotechar='"', lineterminator="\n")
+        real_eval_str = eval_str.replace('x','op1').replace('y','op2').replace('z', 'op3')
 
-        writer.writerow(field_names)
+        r = []
+        
+        for i in range(0, len(vals[0])):
+            op1,op2 = vals[0][i], vals[1][i]
 
-        for k,v in result_dict.items():
-            buf = [k]
-            buf.extend(v)
-            writer.writerow(buf)
+            if(len(vals) == 3):
+                op3 = vals[2][i]
+            r.append(eval(real_eval_str))
 
-def main():
-    
-    model_path = r"D:\Workspace\Steps\Steps"
+        return r
 
-    import os
-    from shutil import copyfile
-    # print(os.curdir)
-    # os.chdir("..")
-    pwd = "build" # setup working directory
-    if not os.path.exists(pwd):    
-        os.mkdir("build")
-    os.chdir("build")
+    def __gen_cal_map(self):
+        '''
+        map containing all the calculated fields, which are calculated 
+        according to the solutions of model
+        '''
+        # map for calculated values
+        cal_map = []
+        # recheck efficiency 
+        cal_map.append({'key' : 'Q_in', 'vals':['pcm_heater.h_e', 'pcm_heater.h_i', 'pcm_heater.inlet.m_flow'], 'eval_str': 'z * (x - y)'})
+        cal_map.append({'key' : 'W_turbine', 'vals':['turbine.h_i', 'turbine.h_ea', 'turbine.inlet.m_flow'], 'eval_str': 'z * (x - y)'})
+        cal_map.append({'key' : 'W_comp', 'vals':['pump.h_ea', 'pump.h_i', 'pump.inlet.m_flow'], 'eval_str': 'z * (x - y)'})
+        cal_map.append({'key' : 'W_comp_recom', 'vals':['recom_pump.h_ea', 'recom_pump.h_i', 'recom_pump.inlet.m_flow'], 'eval_str': 'z * (x - y)'})
+        cal_map.append({'key' : 'W_net', 'vals':['W_turbine', 'W_comp', 'W_comp_recom'], 'eval_str': 'x - y - z'})
+        cal_map.append({'key' : 'eta_all_recal', 'vals':['W_net', 'Q_in'], 'eval_str': 'x / y * 100'})
+        cal_map.append({'key' : 'eta_all_recal', 'vals':['W_net', 'Q_in'], 'eval_str': 'x / y * 100'})
 
-    libs = ["libCoolProp.a", 'libCoolProp.dll']
-    for lib in libs:            
-        if not os.path.exists(lib):
-            copyfile(model_path + r"\Resources\Library\\" + lib, ".\\" + lib) # completa target name needed
+        # performance
+        # LTR
+        cal_map.append({'key' : 'LTR_cool_dt', 'vals':['recup_low.crec_out.T','recup_low.crec_in.T'], 'eval_str': 'x - y'})
+        cal_map.append({'key' : 'LTR_hot_dt', 'vals':['recup_low.inlet.T','recup_low.outlet.T'], 'eval_str': 'x - y'})
+        cal_map.append({'key' : 'LTR_cool_dQ', 'vals':['recup_low.h_cool_e','recup_low.h_cool_i', 'recup_low.crec_in.m_flow'], 'eval_str': '(x - y) * z'})
+        cal_map.append({'key' : 'LTR_hot_dQ', 'vals':['recup_low.h_hot_i','recup_low.h_hot_e', 'recup_low.inlet.m_flow'], 'eval_str': '(x - y) * z'})
 
-    result_dict = gen_result_dict()
+        # HTR
+        cal_map.append({'key' : 'HTR_cool_dt', 'vals':['recup_high.crec_out.T','recup_high.crec_in.T'], 'eval_str': 'x - y'})
+        cal_map.append({'key' : 'HTR_hot_dt', 'vals':['recup_high.inlet.T','recup_high.outlet.T'], 'eval_str': 'x - y'})
+        cal_map.append({'key' : 'HTR_cool_dQ', 'vals':['recup_high.h_cool_e','recup_high.h_cool_i', 'recup_high.crec_in.m_flow'], 'eval_str': '(x - y) * z'})
+        cal_map.append({'key' : 'HTR_hot_dQ', 'vals':['recup_high.h_hot_i','recup_high.h_hot_e', 'recup_high.inlet.m_flow'], 'eval_str': '(x - y) * z'})
 
-    omc = OMCSessionZMQ()
-    path = inspect.getfile(omc.__class__)
-    model_path = r"D:\Workspace\Steps\Steps"
-    mod = ModelicaSystem(model_path + r"\package.mo","Steps.Test.TestPCHXMeshram",["Modelica 3.2.1"])
-    # options for simulation - steady state simulation, no iteration required, so set numberOfIntervals = 2 
-    mod.setSimulationOptions('stepSize  = 0.2')
+        return cal_map
 
-    mod.simulate()
+    def run_simulation(self, result_dict):
 
-    # collect data in solutions
-    for sol_key in result_dict.keys():
-        l = result_dict[sol_key]
-        sol = mod.getSolutions(sol_key)
-        if not sol is None:
-            val = mod.getSolutions(sol_key)[0][0]
-            l.append(val)
-        else:
-            print("solution with key = {0} not exsits".format(sol_key))
+        omc = OMCSessionZMQ()
+        # path = inspect.getfile(omc.__class__)
 
-    #update_cal_fields()
+        mod = ModelicaSystem(self.model_path_root + r"\package.mo","Steps.Test.TestPCHXMeshram",["Modelica 3.2.1"])
+        # options for simulation - steady state simulation, no iteration required, so set numberOfIntervals = 2 
+        mod.setSimulationOptions('stepSize  = 0.2')
 
-    save_to_file(result_dict) 
+        mod.simulate()
 
-    print('all done!')
+        # collect data in solutions
+        for sol_key in result_dict.keys():
+            l = result_dict[sol_key]
+            sol = mod.getSolutions(sol_key)
+            if not sol is None:
+                val = mod.getSolutions(sol_key)[0][0]
+                l.append(val)
+            else:
+                print("solution with key = {0} not exsits".format(sol_key))
+
+    def __update_cal_fields(self, result_dict):
+        # fill calculated fields into the result_dict
+        cal_map = self.__gen_cal_map()
+        # fill in the calculated value by python's eval
+        for item in cal_map:
+            vals = item['vals']
+
+            data = result_dict
+
+            if len(vals) == 2:
+                result_dict[item['key']] = cal_row([data[vals[0]], data[vals[1]]], eval_str=item['eval_str'])
+            elif len(vals) == 3:
+                result_dict[item['key']] = cal_row([data[vals[0]], data[vals[1]], data[vals[2]]], eval_str=item['eval_str'])      
+
+    def save_results(self, result_dict, file_name = []):
+        '''
+        save the simulation result into files    
+        '''
+
+        if file_name == [] :
+            file_name = self.path_out + "/result_%Y_%m_%d_%H_%M_%S.csv"
+
+        with open(dt.now().strftime(file_name) ,mode='w', newline='\n') as csv_file:            
+
+            writer = csv.DictWriter(csv_file, delimiter=',', quotechar='"', fieldnames=['name','value'])
+
+            writer.writeheader()
+
+            for k,v in result_dict.items():
+                writer.writerow({'name': k, 'value': v})                                
+
+    def load_result(self):
+        '''
+        Load simulation result from the latest, saved file
+        '''
+        import glob
+        import os
+
+        list_of_files = glob.glob(self.path_out + '/*.csv') # get all files ends with csv
+
+        if list_of_files == []:
+            raise FileNotFoundError("No result file saved in {0}/out".format(self.work_root))
+
+        latest_file = max(list_of_files, key = os.path.getctime)
+
+        if latest_file is None:
+            raise FileNotFoundError("No results file saved in " + self.path_out)
+        
+        result_dict = {}
+
+        with open(latest_file, mode = 'r', newline='\n') as csv_file:           
+            reader = csv.DictReader(csv_file, delimiter=',', quotechar='"')
+            for line in reader:
+                # print(line['name'], line['value'])
+                value_str = line['value']
+                values = [float(x) for x in value_str[1:-1].split(',')]
+
+                result_dict[line['name']] = values[0]
+
+        return result_dict
+
+    def draw_plot(self, result_dict):
+        '''
+        Draw the result on figures of Meshram 2016 to compare
+        '''
+        zigzag = 0
+        (Nu_plot, f_plot, T_plot, dp_plot)=(False, False, True, False) 
+
+        imgfile = [self.path_pics + "/Meshram_Fig_04.jpg", self.path_pics + "/Meshram_Fig_05.jpg"][zigzag]            
+        zticks=[["0.", "0.1", "0.2"],["0.", "0.08", "0.16"]][zigzag]
+        Tticks=[["400", "575", "750"],["400", "575", "750"]][zigzag]
+        dpyticks=[["0","2.50", "5.0"],["0", "40","80"]][zigzag]     
+        if (T_plot):
+            axis=[axisz,axisT]
+            z=np.linspace(0, x.length(), len(x.Th))
+            (fig, ax)=imgplot(z, x.Th+273, axis, "r", imgfile=imgfile,\
+                        xticks=zticks, yticks=Tticks)
+            imgplot(z, x.Tc+273, axis, "b--", ax=ax)
+            plotanno(ax,xlabel="Z(m)", ylabel="T(oK)", title=datarange)
+            fig.savefig("tmp\\Meshram_Fig%db_T_compare.png"%(4+zigzag))
+        if (dp_plot):
+            axis=[axisz,axisp]
+            z=np.linspace(0, x.length(), len(x.dpH))
+
+    def run(self, simulate = True):
+
+        if simulate:
+            result_dict = self.__gen_result_dict()              
+
+            self.run_simulation(result_dict)
+
+            self.save_results(result_dict)
+
+        else: # load the simulation result from latest, pre-saved file
+            result_dict = self.load_result()
+
+        #update_cal_fields()        
+
+        # self.draw_plot(result_dict) 
+
+        print('all done!') 
+
+
+def main(work_root = []):
+    # root path of modelica root
+    if work_root == []:
+        work_root = os.path.abspath(os.curdir)
+
+    test = TestPCHEMeshram(work_root)
+
+    test.run(simulate=False)    
 
 ###
 if __name__ == "__main__":
