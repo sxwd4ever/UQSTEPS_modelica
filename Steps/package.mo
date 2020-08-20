@@ -15,7 +15,7 @@ package Steps
   import Modelica.Constants.sigma;
   import Modelica.Blocks.Math.Sign;
   import Modelica.SIunits.Conversions.from_degC;
-  annotation(preferredView = "info", version = "0.2", versionBuild = 1, versionDate = "2016-04-26", uses(Modelica(version = "3.2.2")), Documentation(info = "<html>
+  annotation(preferredView = "info", version = "0.2", versionBuild = 1, versionDate = "2016-04-26", uses(Modelica(version = "3.2.1")), Documentation(info = "<html>
 <h4>Welcome to SolarTherm library!!</h4>
 <p>SolarTherm was created under the Astralian Solar Thermal Research Iniciative (ASTRI) program with the aim to provide solar thermal community with an easy tool to simulate and optimise Concentrating Solar Thermal (CST) power plants. The focus of this tool is the annual performance and the economic assessment of novel designs of solar thermal plants.</p>
 <p>It consists of a CST component and system library along with a simulation framework. As other simulation tools, it allows a high-level process modelling through the connection of previous defined components where users can simulate systems configuring only few parameters such as the size of the storage or the receiver area. However the attraction of this tool is its high flexibility, where it is easy to replace, develop or customise new components. This makes SolarTherm a suitable tool to explore of new technologies related with CST power systems including thermochemical systems (i.e. solar fuels).</p>

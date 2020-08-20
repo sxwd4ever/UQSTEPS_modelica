@@ -2,7 +2,6 @@ within Steps.Components;
 
 model KimCorrelations  "Correlation constants in Kim [2012]"
   import MyUtil = Steps.Utilities.Util;
-  import TB = Modelica.Blocks.Tables; 
   
   input Modelica.SIunits.Length pitch = 24.6 * 1e-3;
   input Modelica.SIunits.Diameter d_h = 0.922 * 1e-3;  
@@ -98,12 +97,12 @@ algorithm
       table_d := table_5c_d;
     end if;      
     */
-    a := TB.CombiTable1D.getTableValue(table_a, icol = 1, u = Modelica.SIunits.Conversions.to_deg(phi), tableAvailable = 1.0);
+    a := Modelica.Blocks.Tables.CombiTable1D.getTableValue(table_a, icol = 1, u = Modelica.SIunits.Conversions.to_deg(phi), tableAvailable = 1.0);
     
-    b := TB.CombiTable1D.getTableValue(table_b, icol = 1, u = Modelica.SIunits.Conversions.to_deg(phi), tableAvailable = 1.0);
+    b := Modelica.Blocks.Tables.CombiTable1D.getTableValue(table_b, icol = 1, u = Modelica.SIunits.Conversions.to_deg(phi), tableAvailable = 1.0);
     
-    c := TB.CombiTable1D.getTableValue(table_c, icol = 1, u = Modelica.SIunits.Conversions.to_deg(phi), tableAvailable = 1.0);
+    c := Modelica.Blocks.Tables.CombiTable1D.getTableValue(table_c, icol = 1, u = Modelica.SIunits.Conversions.to_deg(phi), tableAvailable = 1.0);
     
-    d := TB.CombiTable1D.getTableValue(table_d, icol = 1, u = Modelica.SIunits.Conversions.to_deg(phi), tableAvailable = 1.0);  
+    d := Modelica.Blocks.Tables.CombiTable1D.getTableValue(table_d, icol = 1, u = Modelica.SIunits.Conversions.to_deg(phi), tableAvailable = 1.0);  
 
 end KimCorrelations;
