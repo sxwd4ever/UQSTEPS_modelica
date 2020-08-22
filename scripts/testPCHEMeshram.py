@@ -8,6 +8,21 @@ import csv
 import os
 import numpy as np
 
+from plot_lib import imgplot, plotanno, plot_xy_series
+
+class DataSeries(object):
+    ''' 
+    2D data Series used to contain a series of (x,y) data
+    '''
+    def __init__(self, name, x, y, range_x, range_y, cs):
+        self.x = x
+        self.y = y
+        self.name = name
+        self.range_x = range_x
+        self.range_y = range_y
+        self.cs = cs
+
+
 class TestPCHEMeshram(object):
         
     def __init__(self, work_root):
@@ -236,7 +251,6 @@ class TestPCHEMeshram(object):
         '''
         Draw the result on figures of Meshram 2016 to compare
         '''
-        from plot_lib import imgplot, plotanno, plot_xy_series
 
         zigzag = 0
         axisx=[[4000,26000],[4000,32000]][zigzag]
@@ -251,17 +265,30 @@ class TestPCHEMeshram(object):
         if (T_plot):
             axis=[axisz,axisT]
             
-            (fig, ax) = plot_xy_series(x=x_values, y=y_values, range_x=axisz, range_y=axisT, img_file=imgfile)#xticks=zticks, yticks=Tticks) 
+            (fig, ax) = plot_xy_series(x=x_values, y=y_values, range_x=axisz, range_y=axisT, img_file=imgfile, color_style='r-s')#xticks=zticks, yticks=Tticks) 
 
             # (fig, ax)=imgplot(x_values, y_values, axis, "r", imgfile=imgfile, xticks=zticks, yticks=Tticks)
                  
             # for cold stream
             # imgplot(z, x.Tc+273, axis, "b--", ax=ax)
-            plotanno(ax,xlabel="Z(m)", ylabel="T(oK)", title="Higher Temperature Range")
+            # plotanno(ax,xlabel="Z(m)", ylabel="T(oK)", title="Higher Temperature Range")
             fig.savefig( self.path_out + "/Meshram_Fig%db_T_compare.png"%(4+zigzag))
         if (dp_plot):
             axis=[axisz,axisp]
             z=np.linspace(0, x.length(), len(x.dpH))
+
+    def draw_plot_2(self, data_set, img_file, fig_idx=1):
+
+        fig, ax = None, None        
+        
+        for series in data_set:
+            if(fig == None):
+                (fig, ax) = plot_xy_series(x=series.x, y=series.y, range_x=series.range_x, range_y=series.range_y, img_file=img_file, color_style = series.cs)
+            else:
+                (fig, ax) = plot_xy_series(x=series.x, y=series.y, range_x=series.range_x, range_y=series.range_y, axes_cur=ax, color_style = series.cs)
+
+        # save the figure 
+        fig.savefig( self.path_out + "/Meshram_Fig%db_T_compare.png"%(fig_idx))
 
     def run(self, simulate = True):
 
@@ -280,14 +307,38 @@ class TestPCHEMeshram(object):
         # generate T series
 
         N_seg = 10
-        len_seg = 12e-3
-        T_hot = np.array([ float(i) for i in range(1, N_seg + 1)])
-        x_values = np.arange(0, len_seg * (N_seg) , len_seg)        
+        len_seg = 12e-3       
 
-        for i in range(1, N_seg + 1):
-            T_hot[i - 1] = result_dict['pchx.cell_cold[{0}].T'.format(i)]
+        data_set = []
+        zigzag = 0
+        axisT=[[400.0,750.0],[400, 750.0]][zigzag]
+        axisx=[[0, 0.12], [0, 0.16]][zigzag]
+        axisdp=[[0,90], [0,90]][zigzag]
 
-        self.draw_plot(x_values = x_values, y_values = T_hot)
+        imgfile = [self.path_pics + "/Meshram_Fig_04.png", self.path_pics + "/Meshram_Fig_05.jpg"][zigzag]            
+        xticks=[["0.", "0.06", "0.12"],["0.", "0.08", "0.16"]][zigzag]
+        Tticks=[["400", "575", "750"],["400", "575", "750"]][zigzag]
+        dpyticks=[["0","2.50", "5.0"],["0", "40","80"]][zigzag]    
+
+        T_hot = []
+        T_cold = []
+        dp_hot = []
+        dp_cold = []
+
+        for i in range(0, N_seg):
+          T_hot.append(result_dict['pchx.cell_hot[{0}].T'.format(i+1)])
+          T_cold.append(result_dict['pchx.cell_cold[{0}].T'.format(i+1)])
+          dp_hot.append(result_dict['pchx.cell_hot[{0}].dp'.format(i+1)])
+          dp_cold.append(result_dict['pchx.cell_cold[{0}].dp'.format(i+1)])
+        
+        x_values = np.arange(0, len_seg * (N_seg) , len_seg) 
+
+        data_set.append(DataSeries(name = 'T_hot', x = x_values, y = np.array(T_hot),range_x=axisx, range_y=axisT, cs = 'r-s'))
+        data_set.append(DataSeries(name = 'T_cold', x = x_values, y = np.array(T_cold),range_x=axisx, range_y=axisT, cs = 'b-s'))
+        data_set.append(DataSeries(name = 'dp_hot', x = x_values, y = np.array(dp_hot),range_x=axisx, range_y=axisdp, cs = 'r-^'))
+        data_set.append(DataSeries(name = 'dp_cold', x = x_values, y = np.array(dp_cold),range_x=axisx, range_y=axisdp, cs = 'b-^'))
+
+        self.draw_plot_2(data_set,imgfile, fig_idx = 4 + zigzag)
 
         print('all done!') 
 
