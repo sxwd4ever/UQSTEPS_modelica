@@ -15,6 +15,8 @@ def show_xy_lim():
     ax.set_xlim(x_lim[0])
     ax.set_ylim(y_lim[0])
 
+    plt.show()
+
     points =[(0, 0), (5, 0), (0, -1), (10, 1)]
 
     print('see the value of "display" coordinates for points in the "data" coordinates:')
@@ -62,6 +64,7 @@ def physical_cor():
     plt.show()
 
 def main():
+    show_xy_lim()
     physical_cor()
 
 if __name__== '__main__' :
