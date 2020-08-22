@@ -87,40 +87,45 @@ def ptransform(XY, XXYY, xxyy):
     y = y2 + (y1 - y2) * (Y - Y1) / (Y2 - Y1)
     return (x,y)
 
+def cal_rel_axes(x, x_range):
+    x_min = min(x_range)
+    x_max = max(x_range)
+    return (x - x_min) / ( x_max - x_min)
+
 def plot_xy_series(x, y, range_x, range_y, img_file = "", color_style = 'r*', axes_cur = []):
     ''' 
     plot a series of (x,y) on an figure
     '''  
     if axes_cur==[]:
         img = mpimg.imread(img_file)
+        # flip the image upside down and with set orign ='lower' when call imshow
+        # to make the coordinates works as 'normal' way
+        img = np.flipud(img)
         f1 = plt.figure()
         axes_cur = f1.add_subplot(111)
-        #(y_img_1, y_img_2) = axes_cur.get_ylim()
-        #(x_img_1, x_img_2) = axes_cur.get_xlim()
         axes_cur.imshow(img, origin='lower')
-        # axes_cur.invert_yaxis()
         
-        (y_img_1, y_img_2) = axes_cur.get_ylim()
-        (x_img_1, x_img_2) = axes_cur.get_xlim()
-        plt.show()
+        # (y_img_1, y_img_2) = axes_cur.get_ylim()
+        # (x_img_1, x_img_2) = axes_cur.get_xlim()
+        #plt.show()
     else:
         f1 = plt.gcf()
 
-    xy_data = [(x[i], y[i]) for i in range(0, len(x))]
+    # calculate x, y in axes coordinates
+    x_axes = cal_rel_axes(x, range_x)
+    y_axes = cal_rel_axes(y, range_y)
 
-    # border of the image 
-    # 1 for min, 2 for max
-    (y_img_1, y_img_2) = axes_cur.get_ylim()
-    (x_img_1, x_img_2) = axes_cur.get_xlim()
-
-    xy_img = axes_cur.transData.inverted().transform(xy_data)
-
-    range_img = [(x_img_1, x_img_2),(y_img_1, y_img_2)]
-    range_xy = [range_x, range_y]
-
-    # transform from data coordinates to image coordinates
-    (x_img, y_img) = ptransform((x,y), range_xy, range_img)
-
-    axes_cur.plot(x_img, y_img, color_style)
+    # combine it into array of turple
+    xy_axes = [(x_axes[i], y_axes[i]) for i in range(0, len(x_axes))]
+    # transfrom axes coordinates to display coordinates
+    xy_disp = axes_cur.transAxes.transform(xy_axes)
+    # transfrom from display coordinates to data coordinates
+    xy_data = axes_cur.transData.inverted().transform(xy_disp)
+    # unpack into seperate x, y series 
+    x_data = [xy_data[i][0] for i in range(0, len(xy_data))]
+    y_data = [xy_data[i][1] for i in range(0, len(xy_data))]
+    
+    # draw data
+    axes_cur.plot(x_data, y_data, color_style)
 
     return (f1, axes_cur)
