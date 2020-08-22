@@ -6,8 +6,7 @@ from datetime import datetime as dt
 import inspect
 import csv
 import os
-
-from plot_lib import imgplot
+import numpy as np
 
 class TestPCHEMeshram(object):
         
@@ -57,7 +56,7 @@ class TestPCHEMeshram(object):
 
         # directory for output
         if not os.path.exists(self.path_out):
-            os.mkdir(self.path_out)
+            os.mkdir(self.path_out)        
 
         # copy cool prop lib
         libs = ["libCoolProp.a", 'libCoolProp.dll']
@@ -233,25 +232,33 @@ class TestPCHEMeshram(object):
 
         return result_dict
 
-    def draw_plot(self, result_dict):
+    def draw_plot(self, x_values = [], y_values = []):
         '''
         Draw the result on figures of Meshram 2016 to compare
         '''
+        from plot_lib import imgplot, plotanno, plot_xy_series
+
         zigzag = 0
+        axisx=[[4000,26000],[4000,32000]][zigzag]
+        axisT=[[400.0,750.0],[400, 750.0]][zigzag]
+        axisz=[[0, 0.12], [0, 0.16]][zigzag]
         (Nu_plot, f_plot, T_plot, dp_plot)=(False, False, True, False) 
 
-        imgfile = [self.path_pics + "/Meshram_Fig_04.jpg", self.path_pics + "/Meshram_Fig_05.jpg"][zigzag]            
-        zticks=[["0.", "0.1", "0.2"],["0.", "0.08", "0.16"]][zigzag]
+        imgfile = [self.path_pics + "/Meshram_Fig_04.png", self.path_pics + "/Meshram_Fig_05.jpg"][zigzag]            
+        zticks=[["0.", "0.06", "0.12"],["0.", "0.08", "0.16"]][zigzag]
         Tticks=[["400", "575", "750"],["400", "575", "750"]][zigzag]
         dpyticks=[["0","2.50", "5.0"],["0", "40","80"]][zigzag]     
         if (T_plot):
             axis=[axisz,axisT]
-            z=np.linspace(0, x.length(), len(x.Th))
-            (fig, ax)=imgplot(z, x.Th+273, axis, "r", imgfile=imgfile,\
-                        xticks=zticks, yticks=Tticks)
-            imgplot(z, x.Tc+273, axis, "b--", ax=ax)
-            plotanno(ax,xlabel="Z(m)", ylabel="T(oK)", title=datarange)
-            fig.savefig("tmp\\Meshram_Fig%db_T_compare.png"%(4+zigzag))
+            
+            (fig, ax) = plot_xy_series(x=x_values, y=y_values, range_x=axisz, range_y=axisT, img_file=imgfile)#xticks=zticks, yticks=Tticks) 
+
+            # (fig, ax)=imgplot(x_values, y_values, axis, "r", imgfile=imgfile, xticks=zticks, yticks=Tticks)
+                 
+            # for cold stream
+            # imgplot(z, x.Tc+273, axis, "b--", ax=ax)
+            plotanno(ax,xlabel="Z(m)", ylabel="T(oK)", title="Higher Temperature Range")
+            fig.savefig( self.path_out + "/Meshram_Fig%db_T_compare.png"%(4+zigzag))
         if (dp_plot):
             axis=[axisz,axisp]
             z=np.linspace(0, x.length(), len(x.dpH))
@@ -264,13 +271,23 @@ class TestPCHEMeshram(object):
             self.run_simulation(result_dict)
 
             self.save_results(result_dict)
-
-        else: # load the simulation result from latest, pre-saved file
-            result_dict = self.load_result()
+        
+        # load the simulation result from latest, pre-saved file
+        result_dict = self.load_result()
 
         #update_cal_fields()        
 
-        # self.draw_plot(result_dict) 
+        # generate T series
+
+        N_seg = 10
+        len_seg = 12e-3
+        T_hot = np.array([ float(i) for i in range(1, N_seg + 1)])
+        x_values = np.arange(0, len_seg * (N_seg) , len_seg)        
+
+        for i in range(1, N_seg + 1):
+            T_hot[i - 1] = result_dict['pchx.cell_cold[{0}].T'.format(i)]
+
+        self.draw_plot(x_values = x_values, y_values = T_hot)
 
         print('all done!') 
 
@@ -282,7 +299,7 @@ def main(work_root = []):
 
     test = TestPCHEMeshram(work_root)
 
-    test.run(simulate=False)    
+    test.run(simulate= False)    
 
 ###
 if __name__ == "__main__":
