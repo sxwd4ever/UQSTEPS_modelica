@@ -155,6 +155,9 @@ model PCHeatExchanger
     //Local pressure
     Modelica.SIunits.Pressure p;
     
+    // Local specific Enthalpy
+    Modelica.SIunits.SpecificEnthalpy h;
+    
     // Local velocity of fluid
     Modelica.SIunits.Velocity u;
     
@@ -189,11 +192,13 @@ model PCHeatExchanger
     
     if ByInlet then
       p = inlet.p;
-      T = CP.PropsSI("T", "P", inlet.p, "H", inStream(inlet.h_outflow), PBMedia.mediumName);
+      h = inStream(inlet.h_outflow);      
     else
       p = outlet.p;
-      T = CP.PropsSI("T", "P", outlet.p, "H", inStream(outlet.h_outflow), PBMedia.mediumName);
+      h = inStream(outlet.h_outflow);      
     end if;    
+    
+    T = CP.PropsSI("T", "P", p, "H", h, PBMedia.mediumName);
 
     //Debug from this point
     mu = CP.PropsSI("V", "P", p, "T", T, PBMedia.mediumName); 
@@ -216,22 +221,29 @@ algorithm
 equation
 */    
 
-    u = inlet.m_flow / A_flow / rho;  
-      
-    Nu = 4.089 + kim_cor.c * (Re ^ kim_cor.d);
-    
-/*
+    u = inlet.m_flow / A_flow / rho;      
+
 algorithm
-  // For debug purpose
+
+    Nu := 4.089 + kim_cor.c * (Re ^ kim_cor.d);
+    /*
+    MyUtil.myAssertNotEqual(
+    debug = false, 
+    val_test = id, compared = 2, 
+    name_val = "Re", 
+    val_ref = {id, G, d_h, mu, p , T}, 
+    name_val_ref = {"id", "G", "d_h", "mu", "p" , "T"}); 
+    */
+    // For debug purpose
     MyUtil.myAssert(
     debug = false, 
-    val_test = Nu, min = -1e5, max = 0, 
-    name_val = "Nu", 
-    val_ref = {id, Re, G, d_h, mu, p , T}, 
-    name_val_ref = {"id", "Re", "G", "d_h", "mu", "p" , "T"});     
+    val_test = T, min = 0, max = 1e5, 
+    name_val = "T", 
+    val_ref = {id, G, d_h, mu, p , T, h}, 
+    name_val_ref = {"id", "G", "d_h", "mu", "p" , "T", "h"});     
     
 equation
-*/    
+
     hc = Nu * k / d_h;
     
     f = (15.78 + kim_cor.a * Re ^ kim_cor.b ) / Re;  
@@ -259,26 +271,30 @@ equation
   // connect all the segments within the heat exchanger, except for the end segment
   for i in 1 : N_seg loop
   
-    if i <> N_seg then
+    if i <> 1 then
       // connect current segment's cool outlet with next segment's cool inlet
-      connect(cell_cold[i].outlet, cell_cold[i+1].inlet);
-      cell_cold[i+1].inlet.h_outflow = cell_cold[i].outlet.h_outflow;
+      connect(cell_cold[i].outlet, cell_cold[i-1].inlet);
+      cell_cold[i-1].inlet.h_outflow = cell_cold[i].outlet.h_outflow;
     end if;
     
-    if i <> 1 then
+    if i <> N_seg then
     // connect current segment's hot outlet with previous segment's hot inlet
-      connect(cell_hot[i].outlet, cell_hot[i-1].inlet);
-      cell_hot[i].outlet.h_outflow = cell_hot[i -1].inlet.h_outflow;
+      connect(cell_hot[i].outlet, cell_hot[i+1].inlet);
+      cell_hot[i].outlet.h_outflow = cell_hot[i + 1].inlet.h_outflow;
     end if;
         
   end for; 
   
   // Now connect the end segement with my inlet and outlet
-  connect(inlet_cool, cell_cold[1].inlet);
-  connect(cell_cold[N_seg].outlet, outlet_cool);  
-      
-  connect(outlet_hot, cell_hot[1].outlet);    
-  connect(cell_hot[N_seg].inlet, inlet_hot);   
+  connect(cell_cold[1].outlet, outlet_cool);
+  connect(inlet_cool, cell_cold[N_seg].inlet);     
+  cell_cold[1].outlet.h_outflow = inStream(outlet_cool.h_outflow);
+  inlet_cool.h_outflow = inStream(cell_cold[N_seg].inlet.h_outflow);   
+  
+  connect(cell_hot[1].inlet, inlet_hot);   
+  connect(outlet_hot, cell_hot[N_seg].outlet);         
+  cell_hot[1].inlet.h_outflow = inStream(inlet_hot.h_outflow);
+  cell_hot[N_seg].outlet.h_outflow = inStream(outlet_hot.h_outflow);  
   
 /*  
 algorithm
@@ -294,9 +310,9 @@ algorithm
   name_val_ref = {"inlet_cool.m_flow", "N_channel", "A_c"}); 
 
   testVal := inlet_cool.m_flow / N_channel / A_c;
-*/
+
 equation
-  
+*/  
   for i in 1 : N_seg loop
   
     k_wall[i] = MyUtil.thermal_conductivity(tableID = mc.table_th_inconel_750, name = name_material, temperature = (cell_cold[i].T + cell_hot[i].T) / 2);
@@ -317,16 +333,6 @@ equation
   
   end for;
 
-equation
-  // Now connect the end segement with my inlet and outlet
-  connect(inlet_cool, cell_cold[1].inlet);
-  connect(cell_cold[N_seg].outlet, outlet_cool);  
-  cell_cold[1].inlet.h_outflow = inStream(inlet_cool.h_outflow);
-  cell_cold[N_seg].outlet.h_outflow = inStream(outlet_cool.h_outflow);   
-    
-  connect(outlet_hot, cell_hot[1].outlet);    
-  connect(cell_hot[N_seg].inlet, inlet_hot);    
-  cell_hot[1].outlet.h_outflow = inStream(outlet_hot.h_outflow);
-  cell_hot[N_seg].inlet.h_outflow = inStream(inlet_hot.h_outflow);  
+
 
 end PCHeatExchanger;
