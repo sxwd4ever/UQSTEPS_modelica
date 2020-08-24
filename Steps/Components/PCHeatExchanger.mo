@@ -85,7 +85,7 @@ model PCHeatExchanger
     
   HXCell [N_seg] cell_hot(
     each cellType = CellType.Hot,
-    each ByInlet = false, 
+    each ByInlet = true, 
     each inlet.p.start = 20e6, 
     each T.start = Modelica.SIunits.Conversions.from_degC(700), 
     id = {i for i in 1 : N_seg});
@@ -186,6 +186,7 @@ model PCHeatExchanger
     // Fanning Friction Factor - used to calculate pressure drop
     Real f;          
     
+    // Local delta p between neighboring cells    
     Modelica.SIunits.PressureDifference dp;    
     
   equation   
@@ -254,10 +255,10 @@ equation
     // energy balance
     (outlet.h_outflow - inlet.h_outflow) * inlet.m_flow = Q; 
 
-    //pressure drop
-    dp = f * length_cell * rho *  (u ^ 2) / d_h;
+    //pressure drop : kPa * 1000 - > pa
+    dp = 2 * f * length_cell * rho *  (u ^ 2) / d_h * 1e3;
 
-    outlet.p - inlet.p = dp;
+    inlet.p - outlet.p = dp;
       
   end HXCell;
   
