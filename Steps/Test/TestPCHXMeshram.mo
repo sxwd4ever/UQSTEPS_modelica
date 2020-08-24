@@ -28,50 +28,50 @@ model TestPCHXMeshram
   // select one test scenario in Meshram [2016]
   parameter Integer scenario = Integer(TestScenario.zigzag_high_T);
   
-  parameter Modelica.SIunits.MassFlowRate mdot_hot_init = 99.4621884201685;
+  parameter Modelica.SIunits.MassFlowRate mdot_hot_odes = 99.4621884201685;
   
-  parameter Modelica.SIunits.MassFlowRate mdot_cold_init = 100.891159281523;
+  parameter Modelica.SIunits.MassFlowRate mdot_cold_odes = 100.891159281523;
   
   Components.Source source_hot(
     p_outlet = p_hot_in[scenario],
     T_outlet = T_hot_in[scenario],
-    mdot_init = mdot_hot_init,
+    mdot_init = mdot_hot_odes,
     fix_state = true
   );
 
   Components.Source source_cold(
     p_outlet = p_cold_in[scenario],
     T_outlet = T_cold_in[scenario],
-    mdot_init = mdot_cold_init,
+    mdot_init = mdot_cold_odes,
     fix_state = true
   );
 
   Components.Sink sink_hot(
     p_inlet = p_hot_out[scenario],
     T_inlet = T_hot_out[scenario],
-    mdot_init = mdot_hot_init,
+    mdot_init = mdot_hot_odes,
     fix_state = false
   );
 
   Components.Sink sink_cold(
     p_inlet = p_cold_out[scenario],
     T_inlet = T_cold_out[scenario],
-    mdot_init = mdot_cold_init,
+    mdot_init = mdot_cold_odes,
     fix_state = false
   );
  
   Components.PCHeatExchanger pchx(
     phi = phi_array[scenario], 
-    Re_design = 2000,
     d_c = 2e-3,
-    T_hot_in = T_hot_in[scenario],
-    T_cool_in = T_cold_in[scenario],
-    p_hot = p_hot_in[scenario],
-    p_cool = p_cold_in[scenario],
-    m_dot_hot = mdot_hot_init,
-    m_dot_cool = mdot_cold_init,
     pitch = 12.3e-3,
-    length_cell = 12e-3,
+    length_cell = 12e-3,    
+    Re_des = 2000,    
+    T_hot_des = T_hot_in[scenario],
+    T_cold_des = T_cold_in[scenario],
+    p_hot_des = p_hot_in[scenario],
+    p_cold_des = p_cold_in[scenario],
+    mdot_hot_odes = mdot_hot_odes,
+    mdot_cold_odes = mdot_cold_odes,
     N_seg = 10
   );
   
