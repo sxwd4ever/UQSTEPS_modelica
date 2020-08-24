@@ -1,8 +1,9 @@
 within Steps.Components;
 
+
 model PCHeatExchanger
   "Printed Circuit based Heat Exchanger"
-  //extends BaseExchanger;
+  //extends BaseExchanger; 
   
   import CP = Steps.Utilities.CoolProp; 
   import TB = Modelica.Blocks.Tables;  
@@ -14,67 +15,78 @@ model PCHeatExchanger
   replaceable Steps.Interfaces.PBFluidPort_a inlet_cool(redeclare package Medium = PBMedia, p(start= 20e6)) "Recuperator inlet";
   replaceable Steps.Interfaces.PBFluidPort_b outlet_cool(redeclare package Medium = PBMedia, p(start= 20e6)) "Recuperator outlet";
   
-  replaceable package PBMedia = Steps.Media.SCO2;  
+  replaceable package PBMedia = Steps.Media.SCO2; 
   
-  parameter Integer N_seg = 6 "Number of segments in a tube";
- 
-  inner parameter Modelica.SIunits.Length length_cell = 1e-3 "length of a cell";
+  parameter String name_material = "inconel 750";    
   
-  parameter String name_material = "inconel 750";  
-  
-  inner parameter Modelica.SIunits.Angle phi = 1.0 "unit rad";
-  
-  inner parameter Modelica.SIunits.ReynoldsNumber Re_design = 1200 "On-design ReynoldsNumber";
-  
-  parameter Modelica.SIunits.Diameter d_c = 0.0 "Diameter of semi-circular channel";
-  // inlet/outlet temperature of hot/cool channel
-  parameter Modelica.SIunits.Temp_C T_hot_in = 500;
-  //parameter Modelica.SIunits.Temp_C T_hot_out;
-  parameter Modelica.SIunits.Temp_C T_cool_in = 300;
-  //parameter Modelica.SIunits.Temp_C T_cool_out;
-  
-  //pressure of hot/cool channel
-  parameter Modelica.SIunits.Pressure p_hot = 20 * 1e6;
-  parameter Modelica.SIunits.Pressure p_cool = 9 * 1e6;
-  
-  // mass flow of hot/cool channel
-  parameter Modelica.SIunits.MassFlowRate m_dot_hot = 5;
-  parameter Modelica.SIunits.MassFlowRate m_dot_cool = 5;
-  
+  MaterialConductivity mc(name_material = name_material);
+  // On design parameters
+  // Geometry parameters  
   inner parameter Modelica.SIunits.Length pitch = 10 "pitch length of channel";
   
-  parameter Boolean debug_mode = false;
-  //protected
-  inner KimCorrelations kim_cor(phi = phi, pitch = pitch, d_h = d_h);  
-
-  MaterialConductivity mc(name_material = name_material);
-    
+  inner parameter Modelica.SIunits.Angle phi = 1.0 "angle of zigzag path, unit rad";
+  
+  // Geometry determined correlation coefficients - a, b, c d
+  inner KimCorrelations kim_cor(phi = phi, pitch = pitch, d_h = d_h); 
+  
+  inner parameter Modelica.SIunits.Length length_cell = 1e-3 "length of a cell";
+  
+  parameter Modelica.SIunits.Diameter d_c = 0.0 "Diameter of semi-circular channel";
+  
+  // d_c determined variables, d_h, A_c, peri_c
   inner Modelica.SIunits.Diameter d_h = 4 * A_c / peri_c "Hydraulic Diameter";
   
-  inner Modelica.SIunits.Length peri_c = d_c * Modelica.Constants.pi / 2 + d_c "perimeter of semi-circular";
+  inner Modelica.SIunits.Area A_c = Modelica.Constants.pi * d_c * d_c / 8 "Area of semi-circular tube";   
+  
+  inner Modelica.SIunits.Length peri_c = d_c * Modelica.Constants.pi / 2 + d_c "perimeter of semi-circular";  
   
   inner Modelica.SIunits.Length t_wall = (2 - Modelica.Constants.pi  / 4) * (d_c / 2) "thickness of wall between two neighboring hot and cold";
-  
-  // use ceil to avoid integer(0.01) = 0 so that we have one channel at least
-  inner Integer N_channel = integer(ceil(A_fmax / A_c)) "number of channels"; 
-  
-  inner Modelica.SIunits.Area A_c = Modelica.Constants.pi * d_c * d_c / 8 "Area of semi-circular tube";    
-  
-  inner Modelica.SIunits.Area A_flow = N_channel * A_c "Flow area of all channels";
-  
-  inner Modelica.SIunits.Area A_fc = m_dot_cool * d_h / mu_c / Re_design "Area of cold stream area";
-  inner Modelica.SIunits.Area A_fh = m_dot_hot * d_h / mu_h /Re_design "Area of hot stream area";
-  inner Modelica.SIunits.Area A_fmax = max(A_fc, A_fh) "Area of maximum stream area comparing A_fc and A_fh: A_fmax = max(A_fc, A_fh)";
-  
-  inner Modelica.SIunits.Area A_stack = peri_c * length_cell * N_channel "surface area of all cells in a stack";
-  
-  Modelica.SIunits.DynamicViscosity mu_c = CP.PropsSI("V", "P", p_cool, "T", T_cool_in, PBMedia.mediumName) "average dynamic Viscosity in cold channel";
-  Modelica.SIunits.DynamicViscosity mu_h = CP.PropsSI("V", "P", p_hot, "T", T_hot_in, PBMedia.mediumName) "average dynamic Viscosity in hot channel";   
-  
-  Modelica.SIunits.Length length_ch = length_cell * N_seg "length of one pipe in HeatExchanger unit m";
-    
-  String hot_stream_name, cold_stream_name;
 
+    // Thermodynamics state variables on design point 
+  //pressure of hot/cool channel
+  parameter Modelica.SIunits.Pressure p_hot_des = 20 * 1e6;
+  parameter Modelica.SIunits.Pressure p_cold_des = 9 * 1e6;
+   
+  // inlet/outlet temperature of hot/cool channel
+  parameter Modelica.SIunits.Temp_C T_hot_des = 500;
+  parameter Modelica.SIunits.Temp_C T_cold_des = 300;
+  
+  // (p,T) => mu
+  Modelica.SIunits.DynamicViscosity mu_c_des = CP.PropsSI("V", "P", p_cold_des, "T", T_cold_des, PBMedia.mediumName) "average dynamic Viscosity in cold channel";
+  Modelica.SIunits.DynamicViscosity mu_h_des = CP.PropsSI("V", "P", p_hot_des, "T", T_hot_des, PBMedia.mediumName) "average dynamic Viscosity in hot channel";   
+
+  // on design point values  
+  // mass flow of hot/cool channel
+  parameter Modelica.SIunits.MassFlowRate mdot_hot_des = 5;
+  parameter Modelica.SIunits.MassFlowRate mdot_cool_des = 5; 
+
+  inner parameter Modelica.SIunits.ReynoldsNumber Re_des = 1200 "On-design ReynoldsNumber";    
+
+  inner Modelica.SIunits.Area A_fc_des = mdot_cool_des * d_h / mu_c_des / Re_des "Area of cold stream area"; 
+  inner Modelica.SIunits.Area A_fh_des = mdot_hot_des * d_h / mu_h_des / Re_des "Area of hot stream area";  
+
+  inner Modelica.SIunits.Area A_fmax_des = max(A_fc_des, A_fh_des) "Area of maximum stream area comparing A_fc_des and A_fh_des A_fmax_des: = max(A_fc_des, A_fh_des)"; 
+  // use ceil() to avoid integer(0.01) = 0 so that we have one channel at least
+  inner Integer N_ch = integer(ceil(A_fmax_des / A_c)) "number of channels, determined on design point";  
+  
+  inner Modelica.SIunits.Area A_stack = peri_c * length_cell * N_ch "surface area of all cells in a stack";
+  
+  inner Modelica.SIunits.Area A_flow = N_ch * A_c "Flow area for all channels";
+  // end of assignment for on-design values
+
+  // off design variables
+  parameter Modelica.SIunits.MassFlowRate mdot_hot_odes = 50 "initial off design mass flow rate for hot stream";
+
+  parameter Modelica.SIunits.MassFlowRate mdot_cold_odes = 50 "initial off design mass flow rate for cold stream";
+  // start value for Re during simulation
+  inner Modelica.SIunits.ReynoldsNumber Re_hot_odes = mdot_hot_odes / (d_h * mu_c_des * A_fc_des) "Re off design value in hot stream";
+
+  inner Modelica.SIunits.ReynoldsNumber Re_cold_odes = mdot_cold_odes / (d_h * mu_h_des * A_fh_des) "Re off design value in cold stream";
+  
+  parameter Integer N_seg = 1 "Number of segments in a tube";
+  
+  Modelica.SIunits.Length length_ch = length_cell * N_seg "length of one pipe in HeatExchanger unit m"; 
+  
   // two sequences of the hx cells
   HXCell [N_seg] cell_cold(
     each cellType = CellType.Cold,
@@ -97,7 +109,13 @@ model PCHeatExchanger
   Modelica.SIunits.ThermalConductivity k_wall[N_seg];
   
   // overall Heat transfer coefficient
-  Modelica.SIunits.CoefficientOfHeatTransfer U[N_seg];     
+  Modelica.SIunits.CoefficientOfHeatTransfer U[N_seg];   
+  
+protected
+  // internal variable, for debug or efficient purpose
+  parameter Boolean debug_mode = false;   
+  
+  String hot_stream_name, cold_stream_name;
   
   parameter Real testVal = 1; 
 
@@ -134,20 +152,24 @@ model PCHeatExchanger
     
     outer Modelica.SIunits.Area A_c "Area of semi-circular tube"; 
     
-    outer Modelica.SIunits.Area A_fc;
+    outer Modelica.SIunits.Area A_fc_des;
     
-    outer Modelica.SIunits.Area A_fh;
+    outer Modelica.SIunits.Area A_fh_des;
     
     // length of this cell
     outer Modelica.SIunits.Length length_cell "unit m";  
     
-    outer Integer N_channel "number of channels";
-    
-    outer parameter Modelica.SIunits.ReynoldsNumber Re_design "On-design ReynoldsNumber";
+    outer Integer N_ch "number of channels";    
     
     outer parameter Modelica.SIunits.Angle phi;
     
     outer parameter Modelica.SIunits.Length pitch;
+    
+    outer parameter Modelica.SIunits.ReynoldsNumber Re_des "Re off design value in hot stream";
+    
+    outer Modelica.SIunits.ReynoldsNumber Re_hot_odes "Re off design value in hot stream";
+
+    outer Modelica.SIunits.ReynoldsNumber Re_cold_odes "Re off design value in cold stream";    
     
     //Local temperature
     Modelica.SIunits.Temperature T;
@@ -169,7 +191,7 @@ model PCHeatExchanger
     Modelica.SIunits.ThermalConductivity k;
     
     // Local Reynolds Number
-    Modelica.SIunits.ReynoldsNumber Re(start=Re_design);
+    Modelica.SIunits.ReynoldsNumber Re(start=Re_des);
     
     // Local Density
     Modelica.SIunits.Density rho;
@@ -188,7 +210,16 @@ model PCHeatExchanger
     
     // Local delta p between neighboring cells    
     Modelica.SIunits.PressureDifference dp;    
-    
+  
+  initial algorithm
+    /*
+    if cellType == CellType.Cold then
+      Re := Re_cold_odes;
+    else 
+      Re := Re_hot_odes;
+    end if;
+    */
+    //Re := Re_cold_odes;
   equation   
     
     if ByInlet then
@@ -261,14 +292,14 @@ equation
     inlet.p - outlet.p = dp;
       
   end HXCell;
-  
-algorithm  
-  // initialize the state for the hot side and cold side in all the cells
-  // using the hot inlet and cool outlet.
-  hot_stream_name := PBMedia.mediumName;
-  cold_stream_name := PBMedia.mediumName; 
+ 
+algorithm
+
+ cold_stream_name := PBMedia.mediumName; 
+ hot_stream_name := PBMedia.mediumName;
 
 equation  
+  
   // connect all the segments within the heat exchanger, except for the end segment
   for i in 1 : N_seg loop
   
@@ -307,10 +338,10 @@ algorithm
   debug = true, 
   val_test = testVal, min = -1e5, max = -1, 
   name_val = "testVal", 
-  val_ref = {inlet_cool.m_flow, N_channel, A_c}, 
-  name_val_ref = {"inlet_cool.m_flow", "N_channel", "A_c"}); 
+  val_ref = {inlet_cool.m_flow, N_ch, A_c}, 
+  name_val_ref = {"inlet_cool.m_flow", "N_ch", "A_c"}); 
 
-  testVal := inlet_cool.m_flow / N_channel / A_c;
+  testVal := inlet_cool.m_flow / N_ch / A_c;
 
 equation
 */  
@@ -329,11 +360,9 @@ equation
     cell_cold[i].Q = Q[i];
     cell_hot[i].Q = -Q[i];  
     
-    cell_cold[i].G = inlet_cool.m_flow / N_channel / A_c;
-    cell_hot[i].G = inlet_hot.m_flow / N_channel / A_c;   
+    cell_cold[i].G = inlet_cool.m_flow / N_ch / A_c;
+    cell_hot[i].G = inlet_hot.m_flow / N_ch / A_c;   
   
   end for;
-
-
 
 end PCHeatExchanger;
