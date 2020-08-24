@@ -107,7 +107,7 @@ class TestPCHEMeshram(object):
 
         # for each HX cell in PCHE
         N_seg = 10 
-        var_keys = ['T', 'dp','Re', 'Nu', 'f']
+        var_keys = ['T', 'p', 'h', 'u', 'k', 'rho', 'mu' ,'dp', 'G', 'Re', 'Nu', 'f', 'Q']
         node_keys = ['cell_cold', 'cell_hot']
         for var_key in var_keys:
             for node_key in node_keys:
@@ -115,7 +115,39 @@ class TestPCHEMeshram(object):
                     result_dict["pchx.{node}[{idx}].{var}".format(idx = i, var = var_key, node = node_key)] = []
 
         # some special varible in the model, specify them explicitly like
-        # result_dict['eta_total'] = []  
+        # input parameters
+        result_dict['pchx.N_seg'] = []  
+        result_dict['pchx.length_cell'] = [] 
+        result_dict['pchx.phi'] = []  
+        result_dict['pchx.Re_design'] = [] 
+        result_dict['pchx.d_c'] = []  
+        result_dict['pchx.T_hot_in'] = [] 
+        result_dict['pchx.T_cool_in'] = []  
+        result_dict['pchx.p_hot'] = []   
+        result_dict['pchx.p_cool'] = []  
+        result_dict['pchx.m_dot_hot'] = [] 
+        result_dict['pchx.m_dot_cool'] = []  
+        result_dict['pchx.pitch'] = []  
+        result_dict['pchx.kim_cor.a'] = []  
+        result_dict['pchx.kim_cor.b'] = [] 
+        result_dict['pchx.kim_cor.c'] = []  
+        result_dict['pchx.kim_cor.d'] = []          
+
+        # calculated initial parameters
+        result_dict['pchx.d_h'] = []  
+        result_dict['pchx.peri_c'] = [] 
+        result_dict['pchx.t_wall'] = []  
+        result_dict['pchx.N_channel'] = [] 
+        result_dict['pchx.A_c'] = []  
+        result_dict['pchx.A_flow'] = [] 
+        result_dict['pchx.A_fc'] = []  
+        result_dict['pchx.A_fh'] = []   
+        result_dict['pchx.A_fmax'] = []  
+        result_dict['pchx.A_fmax'] = [] 
+        result_dict['pchx.A_stack'] = []  
+        result_dict['pchx.mu_c'] = []  
+        result_dict['pchx.mu_h'] = []                  
+        result_dict['pchx.length_ch'] = []              
 
         return result_dict
 
@@ -313,7 +345,9 @@ class TestPCHEMeshram(object):
         zigzag = 0
         axisT=[[400.0,750.0],[400, 750.0]][zigzag]
         axisx=[[0, 0.12], [0, 0.16]][zigzag]
-        axisdp=[[0,90], [0,90]][zigzag]
+        axis_x_left = np.array(axisx)
+        axis_x_right = axis_x_left - len_seg
+        axisdp=[[0,800], [0,800]][zigzag]
 
         imgfile = [self.path_pics + "/Meshram_Fig_04.png", self.path_pics + "/Meshram_Fig_05.jpg"][zigzag]            
         xticks=[["0.", "0.06", "0.12"],["0.", "0.08", "0.16"]][zigzag]
@@ -322,21 +356,26 @@ class TestPCHEMeshram(object):
 
         T_hot = []
         T_cold = []
-        dp_hot = []
+        # global pressure drop R. T. the inlet temperature 
+        dp_hot = [] 
         dp_cold = []
+        # start fix pressure of each stream
+        p_hot_start = result_dict['pchx.cell_hot[1].p']
+        p_cold_start = result_dict['pchx.cell_cold[{0}].p'.format(N_seg)]
 
         for i in range(0, N_seg):
           T_hot.append(result_dict['pchx.cell_hot[{0}].T'.format(i+1)])
           T_cold.append(result_dict['pchx.cell_cold[{0}].T'.format(i+1)])
-          dp_hot.append(result_dict['pchx.cell_hot[{0}].dp'.format(i+1)])
-          dp_cold.append(result_dict['pchx.cell_cold[{0}].dp'.format(i+1)])
+          # pa -> kPa
+          dp_hot.append((p_hot_start - result_dict['pchx.cell_hot[{0}].p'.format(i+1)]) / 1e3)
+          dp_cold.append((p_cold_start - result_dict['pchx.cell_cold[{0}].p'.format(i+1)]) / 1e3)
         
         x_values = np.arange(0, len_seg * (N_seg) , len_seg) 
 
-        data_set.append(DataSeries(name = 'T_hot', x = x_values, y = np.array(T_hot),range_x=axisx, range_y=axisT, cs = 'r-s'))
-        data_set.append(DataSeries(name = 'T_cold', x = x_values, y = np.array(T_cold),range_x=axisx, range_y=axisT, cs = 'b-s'))
-        data_set.append(DataSeries(name = 'dp_hot', x = x_values, y = np.array(dp_hot),range_x=axisx, range_y=axisdp, cs = 'r-^'))
-        data_set.append(DataSeries(name = 'dp_cold', x = x_values, y = np.array(dp_cold),range_x=axisx, range_y=axisdp, cs = 'b-^'))
+        data_set.append(DataSeries(name = 'T_hot', x = x_values, y = np.array(T_hot),range_x=axis_x_left, range_y=axisT, cs = 'r-s'))
+        data_set.append(DataSeries(name = 'T_cold', x = x_values, y = np.array(T_cold),range_x=axis_x_right, range_y=axisT, cs = 'b-s'))
+        data_set.append(DataSeries(name = 'dp_hot', x = x_values, y = np.array(dp_hot),range_x=axis_x_left, range_y=axisdp, cs = 'r-^'))
+        data_set.append(DataSeries(name = 'dp_cold', x = x_values, y = np.array(dp_cold),range_x=axis_x_right, range_y=axisdp, cs = 'b-^'))
 
         self.draw_plot_2(data_set,imgfile, fig_idx = 4 + zigzag)
 
@@ -350,7 +389,7 @@ def main(work_root = []):
 
     test = TestPCHEMeshram(work_root)
 
-    test.run(simulate= False)    
+    test.run(simulate= True)    
 
 ###
 if __name__ == "__main__":
