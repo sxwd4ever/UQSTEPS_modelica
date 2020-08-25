@@ -41,47 +41,16 @@ model PCHeatExchanger
   inner Modelica.SIunits.Length peri_c = d_c * Modelica.Constants.pi / 2 + d_c "perimeter of semi-circular";  
   
   inner Modelica.SIunits.Length t_wall = (2 - Modelica.Constants.pi  / 4) * (d_c / 2) "thickness of wall between two neighboring hot and cold";
-
-    // Thermodynamics state variables on design point 
-  //pressure of hot/cool channel
-  parameter Modelica.SIunits.Pressure p_hot_des = 20 * 1e6;
-  parameter Modelica.SIunits.Pressure p_cold_des = 9 * 1e6;
-   
-  // inlet/outlet temperature of hot/cool channel
-  parameter Modelica.SIunits.Temp_C T_hot_des = 500;
-  parameter Modelica.SIunits.Temp_C T_cold_des = 300;
   
-  // (p,T) => mu
-  Modelica.SIunits.DynamicViscosity mu_c_des = CP.PropsSI("V", "P", p_cold_des, "T", T_cold_des, PBMedia.mediumName) "average dynamic Viscosity in cold channel";
-  Modelica.SIunits.DynamicViscosity mu_h_des = CP.PropsSI("V", "P", p_hot_des, "T", T_hot_des, PBMedia.mediumName) "average dynamic Viscosity in hot channel";   
+  inner parameter Modelica.SIunits.ReynoldsNumber Re_hot_odes = 5e3 "Re off design value in hot stream";
 
-  // on design point values  
-  // mass flow of hot/cool channel
-  parameter Modelica.SIunits.MassFlowRate mdot_hot_des = 5;
-  parameter Modelica.SIunits.MassFlowRate mdot_cool_des = 5; 
-
-  inner parameter Modelica.SIunits.ReynoldsNumber Re_des = 1200 "On-design ReynoldsNumber";    
-
-  inner Modelica.SIunits.Area A_fc_des = mdot_cool_des * d_h / mu_c_des / Re_des "Area of cold stream area"; 
-  inner Modelica.SIunits.Area A_fh_des = mdot_hot_des * d_h / mu_h_des / Re_des "Area of hot stream area";  
-
-  inner Modelica.SIunits.Area A_fmax_des = max(A_fc_des, A_fh_des) "Area of maximum stream area comparing A_fc_des and A_fh_des A_fmax_des: = max(A_fc_des, A_fh_des)"; 
-  // use ceil() to avoid integer(0.01) = 0 so that we have one channel at least
-  inner Integer N_ch = integer(ceil(A_fmax_des / A_c)) "number of channels, determined on design point";  
+  inner parameter Modelica.SIunits.ReynoldsNumber Re_cold_odes = 5e3 "Re off design value in cold stream";
+  
+  inner parameter Integer N_ch = 10 "Number of Channels in PCHE";
   
   inner Modelica.SIunits.Area A_stack = peri_c * length_cell * N_ch "surface area of all cells in a stack";
   
   inner Modelica.SIunits.Area A_flow = N_ch * A_c "Flow area for all channels";
-  // end of assignment for on-design values
-
-  // off design variables
-  parameter Modelica.SIunits.MassFlowRate mdot_hot_odes = 50 "initial off design mass flow rate for hot stream";
-
-  parameter Modelica.SIunits.MassFlowRate mdot_cold_odes = 50 "initial off design mass flow rate for cold stream";
-  // start value for Re during simulation
-  inner Modelica.SIunits.ReynoldsNumber Re_hot_odes = mdot_hot_odes / (d_h * mu_c_des * A_fc_des) "Re off design value in hot stream";
-
-  inner Modelica.SIunits.ReynoldsNumber Re_cold_odes = mdot_cold_odes / (d_h * mu_h_des * A_fh_des) "Re off design value in cold stream";
   
   parameter Integer N_seg = 1 "Number of segments in a tube";
   
@@ -93,13 +62,15 @@ model PCHeatExchanger
     each ByInlet = true, 
     each inlet.p.start = 8e6, 
     each T.start = Modelica.SIunits.Conversions.from_degC(27.15), 
+    each Re.start = Re_cold_odes,    
     id = {i for i in 1 : N_seg}); 
     
   HXCell [N_seg] cell_hot(
     each cellType = CellType.Hot,
     each ByInlet = true, 
-    each inlet.p.start = 20e6, 
-    each T.start = Modelica.SIunits.Conversions.from_degC(700), 
+    each inlet.p.start = 20e6,     
+    each T.start = Modelica.SIunits.Conversions.from_degC(700),     
+    each Re.start = Re_hot_odes,
     id = {i for i in 1 : N_seg});
 
   // Heat Change
@@ -147,14 +118,6 @@ protected
     outer Modelica.SIunits.Diameter d_h "Hydraulic Diameter";  
     
     outer KimCorrelations kim_cor;      
-   
-    outer Modelica.SIunits.Area A_flow "Flow area of all channels";
-    
-    outer Modelica.SIunits.Area A_c "Area of semi-circular tube"; 
-    
-    outer Modelica.SIunits.Area A_fc_des;
-    
-    outer Modelica.SIunits.Area A_fh_des;
     
     // length of this cell
     outer Modelica.SIunits.Length length_cell "unit m";  
@@ -165,11 +128,7 @@ protected
     
     outer parameter Modelica.SIunits.Length pitch;
     
-    outer parameter Modelica.SIunits.ReynoldsNumber Re_des "Re off design value in hot stream";
-    
-    outer Modelica.SIunits.ReynoldsNumber Re_hot_odes "Re off design value in hot stream";
-
-    outer Modelica.SIunits.ReynoldsNumber Re_cold_odes "Re off design value in cold stream";    
+    outer Modelica.SIunits.Area A_flow;
     
     //Local temperature
     Modelica.SIunits.Temperature T;
@@ -191,7 +150,7 @@ protected
     Modelica.SIunits.ThermalConductivity k;
     
     // Local Reynolds Number
-    Modelica.SIunits.ReynoldsNumber Re(start=Re_des);
+    Modelica.SIunits.ReynoldsNumber Re;
     
     // Local Density
     Modelica.SIunits.Density rho;
@@ -238,20 +197,20 @@ protected
     k = CP.PropsSI("L", "P", p, "T", T, PBMedia.mediumName);  
     
     rho = CP.PropsSI("D", "P", p, "T", T, PBMedia.mediumName);     
-  
-    Re = G * d_h / mu; 
-/*    
+    
 algorithm    
+    Re := G * d_h / mu; 
+    
     // For debug purpose
     MyUtil.myAssertNotEqual(
     debug = false, 
-    val_test = id, compared = 10, 
-    name_val = "id", 
-    val_ref = {Re, G, d_h, mu, p , T, phi, pitch, kim_cor.c, kim_cor.d}, 
-    name_val_ref = {"Re", "G", "d_h", "mu", "p" , "T", "phi", "pitch", "c", "d"}); 
-
+    val_test = Re, compared = 0, 
+    name_val = "Re", 
+    val_ref = {id, Re, G, d_h, mu, p , T, phi, pitch, kim_cor.c, kim_cor.d}, 
+    name_val_ref = {"id", "Re", "G", "d_h", "mu", "p" , "T", "phi", "pitch", "c", "d"});     
+    
 equation
-*/    
+    
 
     u = inlet.m_flow / A_flow / rho;      
 
@@ -285,9 +244,19 @@ equation
     
     // energy balance
     (outlet.h_outflow - inlet.h_outflow) * inlet.m_flow = Q; 
-
+    
+algorithm
     //pressure drop : kPa * 1000 - > pa
-    dp = 2 * f * length_cell * rho *  (u ^ 2) / d_h * 1e3;
+    dp := 2 * f * length_cell * rho *  (u ^ 2) / d_h * 1e3;
+    
+    MyUtil.myAssert(
+    debug = false, 
+    val_test = dp, min = 0, max = 1e5, 
+    name_val = "dp", 
+    val_ref = {id, G, f, d_h, mu, p , T, h}, 
+    name_val_ref = {"id", "G", "f", "d_h", "mu", "p" , "T", "h"});    
+    
+equation
 
     inlet.p - outlet.p = dp;
       
