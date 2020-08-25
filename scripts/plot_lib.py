@@ -3,129 +3,200 @@ The plot lib from hal's steps
 '''
 
 import matplotlib.image as mpimg
+import matplotlib as mp
 import matplotlib.pyplot as plt
 import numpy as np
 
-def openplot(figno):
-    plt.close(1)
-    f1=plt.figure()
-    ax = f1.add_subplot(111)
-    return (f1, ax)
+from enum import IntEnum
 
-def plotanno(ax,xlabel="", ylabel="", xlim=[], ylim=[], grid="on", \
-                legendloc="", title=""):
-    if ylim!=[]:
-        ax.set_ylim(ylim)
-    if xlim!=[]:
-        ax.set_xlim(xlim)
-    if xlabel!="":
-        ax.set_xlabel(xlabel)
-    if ylabel!="":
-        ax.set_ylabel(ylabel)
-    if grid!="":
-        if grid=="on" or grid=="off":
-            ax.grid(grid)
-        else:
-            ax.grid(True, grid)
-    if legendloc!="":
-        ax.legend(loc=legendloc)
-    if title!="":
-        ax.set_title(title)
-
-def imgplot(X, Y, XXYY, cs, imgfile="", ax=[], xticks=[], yticks=[]):
-
-    if ax==[]:
-        img=mpimg.imread(imgfile)
-        f1=plt.figure()
-        ax = f1.add_subplot(111)
-        ax.imshow(img)
-    else:
-        f1=plt.gcf()
-    (y1,y2)=ax.get_ylim()
-    (x1,x2)=ax.get_xlim()
-    xxyy=[(x1, x2),(y1,y2)]
-    (x,y)=ptransform((X,Y), XXYY, xxyy)
-    ax.plot(x,y,cs)
-#    ax.yaxis.set_major_locator(plt.NullLocator())
-#    ax.xaxis.set_major_formatter(plt.NullFormatter())
-    if xticks!=[]:
-        n=len(xticks)
-        xtickpos=np.zeros(n)
-        dx=(x2-x1)/(n-1)
-        for k in range(0,n):
-            xtickpos[k]=k*dx
-#        ax.set_xticks([x1, x2])
-        ax.set_xticks(xtickpos)
-        ax.set_xticklabels(xticks)
-#        print("(x2-x1)/(n-1)=(%f-%f)/%d=%f XTICKPOS="%(x2,x1,n-1,dx), end="")
-        # print(xtickpos)
-    if yticks!=[]:
-        n=len(yticks)
-        ytickpos=np.zeros(n)
-        dy=abs(y2-y1)/(n-1)
-        for k in range(0,n):
-            ytickpos[k]=y1-k*dy
-        ax.set_yticks(ytickpos)
-        ax.set_yticklabels(yticks)
-        # print("(y2-y1)/(n-1)=(%f-%f)/%d=%f yTICKPOS="%(y2,y1,n-1,dy), end="")
-        # print(ytickpos)
-    return (f1, ax)
-
-def ptransform(XY, XXYY, xxyy):
-    X1=XXYY[0][0]
-    X2=XXYY[0][1]
-    Y1=XXYY[1][0]
-    Y2=XXYY[1][1]
-    x1=xxyy[0][0]
-    x2=xxyy[0][1]
-    y1=xxyy[1][0]
-    y2=xxyy[1][1]
-    X=XY[0]
-    Y=XY[1]
-    x=(X-X1)/(X2-X1)*(x2-x1)+x1
-    # y=y2-(Y2-Y)/(Y2-Y1)*(y2-y1)
-    y = y2 + (y1 - y2) * (Y - Y1) / (Y2 - Y1)
-    return (x,y)
-
-def cal_rel_axes(x, x_range):
-    x_min = min(x_range)
-    x_max = max(x_range)
-    return (x - x_min) / ( x_max - x_min)
-
-def plot_xy_series(x, y, range_x, range_y, img_file = "", color_style = 'r*', axes_cur = []):
+class AxisType(IntEnum):
+    Primary = 0,
+    Secondary = 1
+class DataSeries(object):
     ''' 
-    plot a series of (x,y) on an figure
-    '''  
-    if axes_cur==[]:
-        img = mpimg.imread(img_file)
-        # flip the image upside down and with set orign ='lower' when call imshow
-        # to make the coordinates works as 'normal' way
-        img = np.flipud(img)
-        f1 = plt.figure()
-        axes_cur = f1.add_subplot(111)
-        axes_cur.imshow(img, origin='lower')
+    2D data Series used to contain a series of (x,y) data
+    '''
+    def __init__(self, name, x, y, range_x, range_y,cs = 'r-s'):
+        self.x = x
+        self.y = y
+        self.name = name
+        self.range_x = range_x
+        self.range_y = range_y
+        self.cs = cs
+        self.ax_type = AxisType.Primary
+        self.ticks = [None] * 2
+        self.ticks_label = [None] * 2    
+
+    def set_tick(self, tick, label, axis_type = AxisType.Primary, orient = 0):
+        '''
+        orient: 0: x-axis; 1: y-axis
+        '''
+        self.ticks[orient] = tick
+        self.ticks_label[orient] = label
+        self.ax_type = axis_type
+
+        return self
+
+    def set_tick_disp(self, tick_pos, axis_type = AxisType.Primary, orient = 0):
+        '''
+        set the ticks by disp coordinates
+        '''
+        pos = tick_pos
+        label = [None] * 3
+        label[0] = str(min(pos))
+        label[1] = str(np.mean(pos))
+        label[2] = str(max(pos))
+        self.ticks[orient] = pos
+        self.ticks_label[orient] = label
+        self.ax_type = axis_type
+
+        return self
+
+class PlotManager(object):
+
+    def __init__(self):        
+        self.series_set = dict()
+
+    def addPrimary(self, series: DataSeries):
+        name = series.name
+
+        if name in self.series_set:
+            raise ValueError(' existing data series with key=' + name)
+
+        self.series_set[name] = series        
+
+    def addSecondary(self, series: DataSeries):
+        series.ax_type = AxisType.Secondary
+        self.addPrimary(series)
+
+    def draw(self, img_file: str = "", dest_file: str = ""):
+
+        fig, ax = None, None        
         
-        # (y_img_1, y_img_2) = axes_cur.get_ylim()
-        # (x_img_1, x_img_2) = axes_cur.get_xlim()
-        #plt.show()
-    else:
-        f1 = plt.gcf()
+        for key, series in self.series_set.items():
 
-    # calculate x, y in axes coordinates
-    x_axes = cal_rel_axes(x, range_x)
-    y_axes = cal_rel_axes(y, range_y)
+            if(fig == None):
+                (fig, ax) = self.plot_xy_series(series=series, img_file=img_file)
+            else:
+                (fig, ax) = self.plot_xy_series(series=series, ax=ax)
 
-    # combine it into array of turple
-    xy_axes = [(x_axes[i], y_axes[i]) for i in range(0, len(x_axes))]
-    # transfrom axes coordinates to display coordinates
-    xy_disp = axes_cur.transAxes.transform(xy_axes)
-    # transfrom from display coordinates to data coordinates
-    xy_data = axes_cur.transData.inverted().transform(xy_disp)
-    # unpack into seperate x, y series 
-    x_data = [xy_data[i][0] for i in range(0, len(xy_data))]
-    y_data = [xy_data[i][1] for i in range(0, len(xy_data))]
+        # save the figure 
+        fig.savefig(dest_file)
+
+    def cal_rel_axes(self, x, x_range):
+        x_min = min(x_range)
+        x_max = max(x_range)
+        return (x - x_min) / ( x_max - x_min)
+
+    def draw_ticks(self, ax: mp.pyplot.axes, series: DataSeries):
+        '''
+        xy = draw x ticks or y ticks, 0 x_axis; 1 y_axis
+        '''
+        i = 0
+        for i in range(0, len(series.ticks)):
+            tick = series.ticks[i]
+            label = series.ticks_label[i]
+
+            if i == 0:
+                if series.ax_type == AxisType.Primary:
+                    ax.set_xticks(tick)
+                    ax.set_xticklabels(label)
+                else:
+                    secax = ax.secondary_xaxis('top')
+                    secax.set_xticks(tick)
+                    secax.set_xlabel(label)
+
+            else:
+                if series.ax_type == AxisType.Primary:
+                    ax.set_yticks(tick)
+                    ax.set_yticklabels(label)
+                else:
+                    secax = ax.secondary_yaxis('right')
+                    secax.set_yticks(tick)
+                    secax.set_ylabel(label)            
+
+    def plot_xy_series(self, series: DataSeries, ax: mp.pyplot.axes = [], img_file = []):
+        ''' 
+        plot a series of (x,y) on an figure
+        ''' 
+        x = series.x
+        y = series.y
+        range_x = series.range_x
+        range_y = series.range_y
+        color_style = series.cs
     
-    # draw data
-    axes_cur.plot(x_data, y_data, color_style)
+        if ax==[]:
+            img = mpimg.imread(img_file)
+            # flip the image upside down and with set orign ='lower' when call imshow
+            # to make the coordinates works as 'normal' way
+            img = np.flipud(img)
+            f1 = plt.figure()
+            ax = f1.add_subplot(111)
+            ax.imshow(img, origin='lower')
+            
+            # (y_img_1, y_img_2) = axes_cur.get_ylim()
+            # (x_img_1, x_img_2) = axes_cur.get_xlim()
+            #plt.show()
+        else:
+            f1 = plt.gcf()
 
-    return (f1, axes_cur)
+        # calculate x, y in axes coordinates
+        x_axes = self.cal_rel_axes(x, range_x)
+        y_axes = self.cal_rel_axes(y, range_y)
+        
+        # transfrom from axes coordinates to data coordinates
+        x_data, y_data = self.coor_trans_axes_2_data(ax, x_axes, y_axes) 
+        
+        # draw data
+        ax.plot(x_data, y_data, color_style)
+
+        num_seg = 10
+
+        tick, label = self.cal_tick_data(ax=ax, border= range_x, num_seg=10)
+        series.set_tick(tick, label)
+
+        tick, label = self.cal_tick_data(ax=ax, border=range_y, num_seg = 10, orient=1)
+        series.set_tick(tick, label, orient=1)
+
+        self.draw_ticks(ax, series)
+            
+        return (f1, ax)
+
+    def coor_trans_axes_2_data(self, ax, x_axes, y_axes):
+        '''
+            transfrom points axes coordinates [(0, 0), (1, 1)]-> data coorinates [(0,0), (max_x, max_y)]
+        '''
+        # combine it into array of turple
+        xy_axes = [(x_axes[i], y_axes[i]) for i in range(0, len(x_axes))]
+
+        # transfrom axes coordinates to display coordinates
+        xy_disp = ax.transAxes.transform(xy_axes)
+
+        # transfrom from display coordinates to data coordinates
+        xy_data = ax.transData.inverted().transform(xy_disp)
+
+        x_data = [xy_data[i][0] for i in range(0, len(xy_data))]
+        y_data = [xy_data[i][1] for i in range(0, len(xy_data))]
+
+        return x_data, y_data
+        
+
+    def cal_tick_data(self, ax, border, num_seg, orient = 0):
+        l = min(border)
+        r = max(border)
+
+        tick = (np.linspace(l, r, num_seg) - l) / (r - l)
+
+        
+        if orient == 0:
+            (tick_data, t) = self.coor_trans_axes_2_data(ax, tick, np.zeros(num_seg))
+        else:
+            (t, tick_data) = self.coor_trans_axes_2_data(ax, np.zeros(num_seg), tick)
+        
+        label = [None] * 3
+
+        label[0] = str(l)
+        label[1] = str((l + r) / 2)
+        label[2] = str(r)
+
+        return tick_data, [l, (l+r)/2, r]

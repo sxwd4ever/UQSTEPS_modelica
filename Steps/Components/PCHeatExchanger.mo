@@ -248,10 +248,11 @@ equation
 algorithm
     //pressure drop : kPa * 1000 - > pa
     dp := 2 * f * length_cell * rho *  (u ^ 2) / d_h * 1e3;
+    // dp := f * length_cell * rho *  (u ^ 2) / d_h * 1e3;
     
     MyUtil.myAssert(
     debug = false, 
-    val_test = dp, min = 0, max = 1e5, 
+    val_test = dp, min = 0, max = 10e6, 
     name_val = "dp", 
     val_ref = {id, G, f, d_h, mu, p , T, h}, 
     name_val_ref = {"id", "G", "f", "d_h", "mu", "p" , "T", "h"});    
