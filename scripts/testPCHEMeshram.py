@@ -10,23 +10,11 @@ import os
 import numpy as np
 import math
 
-from plot_lib import imgplot, plotanno, plot_xy_series
+from plot_lib import PlotManager, DataSeries
 
 class PipeType(IntEnum):
     Hot = 0,
     Cold = 1
-
-class DataSeries(object):
-    ''' 
-    2D data Series used to contain a series of (x,y) data
-    '''
-    def __init__(self, name, x, y, range_x, range_y, cs):
-        self.x = x
-        self.y = y
-        self.name = name
-        self.range_x = range_x
-        self.range_y = range_y
-        self.cs = cs
 
 class DesignParam(object):
     '''
@@ -48,7 +36,6 @@ class DesignParam(object):
         self.N_ch = 0.0
         self.mu = [0, 0]   
         self.G = [0, 0] # mass flux kg/(m^2 * s) should be constant if Re, P, T, d_c are constant
-
 
         self.cal_design_params()
 
@@ -360,49 +347,6 @@ class TestPCHEMeshram(object):
 
         return result_dict
 
-    def draw_plot(self, x_values = [], y_values = []):
-        '''
-        Draw the result on figures of Meshram 2016 to compare
-        '''
-
-        zigzag = 0
-        axisx=[[4000,26000],[4000,32000]][zigzag]
-        axisT=[[400.0,750.0],[400, 750.0]][zigzag]
-        axisz=[[0, 0.12], [0, 0.16]][zigzag]
-        (Nu_plot, f_plot, T_plot, dp_plot)=(False, False, True, False) 
-
-        imgfile = [self.path_pics + "/Meshram_Fig_04.png", self.path_pics + "/Meshram_Fig_05.jpg"][zigzag]            
-        zticks=[["0.", "0.06", "0.12"],["0.", "0.08", "0.16"]][zigzag]
-        Tticks=[["400", "575", "750"],["400", "575", "750"]][zigzag]
-        dpyticks=[["0","2.50", "5.0"],["0", "40","80"]][zigzag]     
-        if (T_plot):
-            axis=[axisz,axisT]
-            
-            (fig, ax) = plot_xy_series(x=x_values, y=y_values, range_x=axisz, range_y=axisT, img_file=imgfile, color_style='r-s')#xticks=zticks, yticks=Tticks) 
-
-            # (fig, ax)=imgplot(x_values, y_values, axis, "r", imgfile=imgfile, xticks=zticks, yticks=Tticks)
-                 
-            # for cold stream
-            # imgplot(z, x.Tc+273, axis, "b--", ax=ax)
-            # plotanno(ax,xlabel="Z(m)", ylabel="T(oK)", title="Higher Temperature Range")
-            fig.savefig( self.path_out + "/Meshram_Fig%db_T_compare.png"%(4+zigzag))
-        if (dp_plot):
-            axis=[axisz,axisp]
-            z=np.linspace(0, x.length(), len(x.dpH))
-
-    def draw_plot_2(self, data_set, img_file, fig_idx=1):
-
-        fig, ax = None, None        
-        
-        for series in data_set:
-            if(fig == None):
-                (fig, ax) = plot_xy_series(x=series.x, y=series.y, range_x=series.range_x, range_y=series.range_y, img_file=img_file, color_style = series.cs)
-            else:
-                (fig, ax) = plot_xy_series(x=series.x, y=series.y, range_x=series.range_x, range_y=series.range_y, axes_cur=ax, color_style = series.cs)
-
-        # save the figure 
-        fig.savefig( self.path_out + "/Meshram_Fig%db_T_compare.png"%(fig_idx))
-
     def run(self, simulate = True):
 
         if simulate:
@@ -415,20 +359,14 @@ class TestPCHEMeshram(object):
         # load the simulation result from latest, pre-saved file
         result_dict = self.load_result()
 
-        #update_cal_fields()        
-
-        # generate T series
-
+        #update_cal_fields()   
         N_seg = 10
-        len_seg = 12e-3       
+        len_seg = 12e-3   
 
-        data_set = []
-        zigzag = 0
-        axisT=[[400.0,750.0],[400, 750.0]][zigzag]
+        zigzag = 0        
         axisx=[[0, 0.12], [0, 0.16]][zigzag]
-        axis_x_left = np.array(axisx)
-        axis_x_right = axis_x_left - len_seg
-        axisdp=[[0,80], [0,80]][zigzag]
+        axisT=[[400.0, 750.0],[400, 750.0]][zigzag]
+        axisdp=[[0, 800], [0, 800]][zigzag]
 
         imgfile = [self.path_pics + "/Meshram_Fig_04.png", self.path_pics + "/Meshram_Fig_05.jpg"][zigzag]            
         xticks=[["0.", "0.06", "0.12"],["0.", "0.08", "0.16"]][zigzag]
@@ -440,7 +378,7 @@ class TestPCHEMeshram(object):
         # global pressure drop R. T. the inlet temperature 
         dp_hot = [] 
         dp_cold = []
-        # start fix pressure of each stream
+        # started, fix pressure of each stream
         p_hot_start = result_dict['pchx.cell_hot[1].p']
         p_cold_start = result_dict['pchx.cell_cold[{0}].p'.format(N_seg)]
 
@@ -453,12 +391,14 @@ class TestPCHEMeshram(object):
         
         x_values = np.arange(0, len_seg * (N_seg) , len_seg) 
 
-        data_set.append(DataSeries(name = 'T_hot', x = x_values, y = np.array(T_hot),range_x=axis_x_left, range_y=axisT, cs = 'r-s'))
-        data_set.append(DataSeries(name = 'T_cold', x = x_values, y = np.array(T_cold),range_x=axis_x_right, range_y=axisT, cs = 'b-s'))
-        data_set.append(DataSeries(name = 'dp_hot', x = x_values, y = np.array(dp_hot),range_x=axis_x_left, range_y=axisdp, cs = 'r-^'))
-        data_set.append(DataSeries(name = 'dp_cold', x = x_values, y = np.array(dp_cold),range_x=axis_x_right, range_y=axisdp, cs = 'b-^'))
+        plot = PlotManager()
 
-        self.draw_plot_2(data_set,imgfile, fig_idx = 4 + zigzag)
+        plot.addPrimary(DataSeries(name = 'T_hot', x = x_values, y = np.array(T_hot), range_x=axisx, range_y=axisT, cs = 'r-s'))
+        plot.addPrimary(DataSeries(name = 'T_cold', x = x_values + len_seg, y = np.array(T_cold), range_x=axisx, range_y=axisT, cs = 'b-s'))
+        plot.addSecondary(DataSeries(name = 'dp_hot', x = x_values, y = np.array(dp_hot), range_x=axisx, range_y=axisdp, cs = 'r-^'))
+        plot.addSecondary(DataSeries(name = 'dp_cold', x = x_values + len_seg, y = np.array(dp_cold), range_x=axisx, range_y=axisdp, cs = 'b-^'))
+
+        plot.draw(img_file=imgfile, dest_file= self.path_out + "/Meshram_Fig%db_compare.png"%(4))
 
         print('all done!') 
 
@@ -487,11 +427,11 @@ def main(work_root = []):
 
     param_des = DesignParam(d_c=2e-3, p=[9e6, 22.5e6], T=[730, 500], Re=2000, mdot=[10, 10])
 
-    mdot_odes, G_odes = set_off_params(param_des, True)
+    mdot_odes, G_odes = set_off_params(param_des, useG=True)
 
     test = TestPCHEMeshram(work_root, param_des=param_des, mdot_odes=mdot_odes)
 
-    test.run(simulate=True)    
+    test.run(simulate=False)    
 
 ###
 if __name__ == "__main__":
