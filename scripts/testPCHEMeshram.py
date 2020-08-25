@@ -10,9 +10,9 @@ import os
 import numpy as np
 import math
 
-from plot_lib import PlotManager, DataSeries
+from plot_lib import PlotManager, DataSeries, AxisType
 
-class PipeType(IntEnum):
+class StreamType(IntEnum):
     Hot = 0,
     Cold = 1
 
@@ -24,18 +24,18 @@ class DesignParam(object):
     def __init__(self, d_c = 12e-3, p=[9e6, 20e6], T=[500, 300], mdot = [8.3, 8.3], Re = 2000):
         # On design params initialization 
         self.d_c = d_c
-        self.p = p
-        self.T = T
-        self.mdot = mdot
-        self.Re = Re
+        self.p = np.array(p)
+        self.T = np.array(T)
+        self.mdot = np.array(mdot)
+        self.Re = np.array(Re)
 
         # parameters determined in cal_on_design_params
         self.d_h = 0.0
         self.A_c = 0.0
         self.A_f = 0.0
         self.N_ch = 0.0
-        self.mu = [0, 0]   
-        self.G = [0, 0] # mass flux kg/(m^2 * s) should be constant if Re, P, T, d_c are constant
+        self.mu = np.zeros(len(self.mdot))  
+        self.G = np.zeros(len(self.mdot)) # mass flux kg/(m^2 * s) should be constant if Re, P, T, d_c are constant
 
         self.cal_design_params()
 
@@ -53,23 +53,39 @@ class DesignParam(object):
     def cal_design_params(self):
         from CoolProp.CoolProp import PropsSI
         #  0 = hot, 1 = cold, following Enum PipeType
-        A_fx = [0, 0]
+        A_fx = np.zeros(len(StreamType))
 
         (self.A_c, self.d_h, peri_c) = self.cal_geo_params()
 
-        for i in PipeType:
+        for i in StreamType:
             self.mu[i] = PropsSI('V', 'P', self.p[i], 'T', self.T[i], "CO2")
-            A_fx[i] = self.mdot[i] * self.d_h / self.mu[i] / self.Re
+            
+        A_fx = np.divide(self.mdot, self.mu) * (self.d_h / self.Re)   
 
         self.A_f = max(A_fx)
         self.N_ch = math.ceil(self.A_f / self.A_c)
+        self.G = self.mdot / self.A_f
 
-        for i in PipeType:
-            self.G[i] = self.mdot[i] / self.A_f
+class OffDesignParam(object):
+
+    def __init__(self, param_des: DesignParam, mdot):
+        num_stream = len(StreamType)
+
+        self.mdot = np.array(mdot)
+        self.Re = np.zeros(num_stream)
+        self.G = np.zeros(num_stream)
+        self.param_des = param_des
+        self.__update()
+
+    def __update(self):
+        p_des = self.param_des
+        A_f = self.param_des.area_flow() 
+        self.G = self.mdot / A_f
+        self.Re = np.divide(self.mdot, p_des.mu) * p_des.d_h / A_f
 
 class TestPCHEMeshram(object):
         
-    def __init__(self, work_root, param_des = None, mdot_odes = []):
+    def __init__(self, work_root, param_des = None, param_odes = []):
         super().__init__()
         # common variable defination
         self.path_pics = "pics"
@@ -86,13 +102,7 @@ class TestPCHEMeshram(object):
             self.param_des = param_des
 
         # Off design params
-        # 0 = hot, 1 = cold
-        self.mdot_odes = mdot_odes
-        self.G_odes = [0, 0]
-        # calculated values
-        self.Re_odes = [0, 0]        
-
-        self.cal_off_design_params()
+        self.param_odes = param_odes
     
     def prepare_workspace(self):
         '''
@@ -136,17 +146,6 @@ class TestPCHEMeshram(object):
         for lib in libs:            
             if not os.path.exists(lib):
                 shutil.copyfile(self.model_path_root + r"\Resources\Library\\" + lib, ".\\" + lib) # completa target name needed 
-
-    
-    def cal_off_design_params(self):
-        p_des = self.param_des
-
-        if self.mdot_odes == []:
-            raise ValueError('No mass flow rate specified')
-
-        for i in PipeType:            
-            self.G_odes[i] = self.mdot_odes[i] / p_des.area_flow()            
-            self.Re_odes[i] = self.mdot_odes[i] * p_des.d_h / (p_des.area_flow() * p_des.mu[i] )
 
     def __gen_result_dict(self):
         
@@ -266,10 +265,10 @@ class TestPCHEMeshram(object):
         mod.setSimulationOptions('stepSize  = 0.2')
 
         params = ["N_ch={0}".format(self.param_des.N_ch)]
-        params.append("Re_hot_odes={0}".format(self.Re_odes[PipeType.Hot]))
-        params.append("Re_cold_odes={0}".format(self.Re_odes[PipeType.Cold]))
-        params.append("mdot_hot_odes={0}".format(self.mdot_odes[PipeType.Hot]))
-        params.append("mdot_cold_odes={0}".format(self.mdot_odes[PipeType.Cold]))
+        params.append("Re_hot_odes={0}".format(self.param_odes.Re[StreamType.Hot]))
+        params.append("Re_cold_odes={0}".format(self.param_odes.Re[StreamType.Cold]))
+        params.append("mdot_hot_odes={0}".format(self.param_odes.mdot[StreamType.Hot]))
+        params.append("mdot_cold_odes={0}".format(self.param_odes.mdot[StreamType.Cold]))
         mod.setParameters(params)
         # mod.setParameters("N_ch={0}".format(self.param_des.N_ch)) 
 
@@ -363,15 +362,12 @@ class TestPCHEMeshram(object):
         N_seg = 10
         len_seg = 12e-3   
 
-        zigzag = 0        
-        axisx=[[0, 0.12], [0, 0.16]][zigzag]
-        axisT=[[400.0, 750.0],[400, 750.0]][zigzag]
-        axisdp=[[0, 800], [0, 800]][zigzag]
+        zigzag = 0 # 0: Straight Channel, 1: Zigzag Channel        
+        axis_x=[[0, 0.12], [0, 0.16]][zigzag]
+        axis_T=[[400.0, 750.0],[400, 750.0]][zigzag]
+        axis_dp=[[0, 800], [0, 800]][zigzag]
 
-        imgfile = [self.path_pics + "/Meshram_Fig_04.png", self.path_pics + "/Meshram_Fig_05.jpg"][zigzag]            
-        xticks=[["0.", "0.06", "0.12"],["0.", "0.08", "0.16"]][zigzag]
-        Tticks=[["400", "575", "750"],["400", "575", "750"]][zigzag]
-        dpyticks=[["0","2.50", "5.0"],["0", "40","80"]][zigzag]    
+        imgfile = [self.path_pics + "/Meshram_Fig_04.png", self.path_pics + "/Meshram_Fig_05.png"][zigzag]     
 
         T_hot = []
         T_cold = []
@@ -393,45 +389,45 @@ class TestPCHEMeshram(object):
 
         plot = PlotManager()
 
-        plot.addPrimary(DataSeries(name = 'T_hot', x = x_values, y = np.array(T_hot), range_x=axisx, range_y=axisT, cs = 'r-s'))
-        plot.addPrimary(DataSeries(name = 'T_cold', x = x_values + len_seg, y = np.array(T_cold), range_x=axisx, range_y=axisT, cs = 'b-s'))
-        plot.addSecondary(DataSeries(name = 'dp_hot', x = x_values, y = np.array(dp_hot), range_x=axisx, range_y=axisdp, cs = 'r-^'))
-        plot.addSecondary(DataSeries(name = 'dp_cold', x = x_values + len_seg, y = np.array(dp_cold), range_x=axisx, range_y=axisdp, cs = 'b-^'))
+        plot.add(DataSeries(name = 'T_hot', x = x_values, y = np.array(T_hot), range_x=axis_x, range_y=axis_T, cs = 'r-s'))
+        plot.add(DataSeries(name = 'T_cold', x = x_values + len_seg, y = np.array(T_cold), range_x=axis_x, range_y=axis_T, cs = 'b-s'))
+        plot.add(DataSeries(name = 'dp_hot', x = x_values, y = np.array(dp_hot), range_x=axis_x, range_y=axis_dp, cs = 'r-^'), ax_type=AxisType.Secondary)
+        plot.add(DataSeries(name = 'dp_cold', x = x_values + len_seg, y = np.array(dp_cold), range_x=axis_x, range_y=axis_dp, cs = 'b-^'), ax_type=AxisType.Secondary)
 
-        plot.draw(img_file=imgfile, dest_file= self.path_out + "/Meshram_Fig%db_compare.png"%(4))
+        plot.draw(img_file=imgfile, dest_file= self.path_out + "/Meshram_Fig%db_compare.png"%(4 + zigzag))
 
         print('all done!') 
 
 
-def set_off_params(param_des, useG = True ):
-    # True = G -> mdot, False, mdot -> G and use above mdot directly
-    mdot_odes = [100, 100]     
-    # array to store meshram's data    
-    G_odes = [0, 0] # off_design mass flux
-    u_odes = [7.564, 1.876] # off design velocity 
-    rho_odes = [71.33, 223.65] # off design density    
+def set_off_params(param_des, mdot=[], G = []):
 
-    for i in PipeType:
-        if useG :
-            G_odes[i] = u_odes[i] * rho_odes[i]
-            mdot_odes[i] = G_odes[i] * param_des.area_flow()
+    if mdot == []:
+        if G == []:
+            raise ValueError('no mdot or G assigned for off design')
         else:
-            G_odes[i] = mdot_odes / param_des.area_flow()
+            mdot = np.array(G) * param_des.area_flow()           
 
-    return mdot_odes, G_odes
+    param_odes = OffDesignParam(param_des=param_des, mdot = mdot)
+
+    return param_odes
 
 def main(work_root = []):
     # root path of modelica root
     if work_root == []:
         work_root = os.path.abspath(os.curdir)
 
+    mdot_odes = np.array([100, 100])
+    # array to store meshram's data    
+    u_odes = np.array([7.564, 1.876]) # off design velocity 
+    rho_odes = np.array([71.33, 223.65]) # off design density    
+
     param_des = DesignParam(d_c=2e-3, p=[9e6, 22.5e6], T=[730, 500], Re=2000, mdot=[10, 10])
 
-    mdot_odes, G_odes = set_off_params(param_des, useG=True)
+    param_odes = set_off_params(param_des, G = np.multiply(u_odes, rho_odes))
 
-    test = TestPCHEMeshram(work_root, param_des=param_des, mdot_odes=mdot_odes)
+    test = TestPCHEMeshram(work_root, param_des=param_des, param_odes=param_odes)
 
-    test.run(simulate=False)    
+    test.run(simulate=True)    
 
 ###
 if __name__ == "__main__":

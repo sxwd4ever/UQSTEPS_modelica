@@ -27,28 +27,12 @@ class DataSeries(object):
         self.ticks = [None] * 2
         self.ticks_label = [None] * 2    
 
-    def set_tick(self, tick, label, axis_type = AxisType.Primary, orient = 0):
+    def set_tick(self, tick, label, orient = 0):
         '''
         orient: 0: x-axis; 1: y-axis
         '''
         self.ticks[orient] = tick
         self.ticks_label[orient] = label
-        self.ax_type = axis_type
-
-        return self
-
-    def set_tick_disp(self, tick_pos, axis_type = AxisType.Primary, orient = 0):
-        '''
-        set the ticks by disp coordinates
-        '''
-        pos = tick_pos
-        label = [None] * 3
-        label[0] = str(min(pos))
-        label[1] = str(np.mean(pos))
-        label[2] = str(max(pos))
-        self.ticks[orient] = pos
-        self.ticks_label[orient] = label
-        self.ax_type = axis_type
 
         return self
 
@@ -57,17 +41,14 @@ class PlotManager(object):
     def __init__(self):        
         self.series_set = dict()
 
-    def addPrimary(self, series: DataSeries):
+    def add(self, series: DataSeries, ax_type: AxisType = AxisType.Primary):
         name = series.name
 
         if name in self.series_set:
             raise ValueError(' existing data series with key=' + name)
 
-        self.series_set[name] = series        
-
-    def addSecondary(self, series: DataSeries):
-        series.ax_type = AxisType.Secondary
-        self.addPrimary(series)
+        series.ax_type = ax_type
+        self.series_set[name] = series               
 
     def draw(self, img_file: str = "", dest_file: str = ""):
 
@@ -83,11 +64,6 @@ class PlotManager(object):
         # save the figure 
         fig.savefig(dest_file)
 
-    def cal_rel_axes(self, x, x_range):
-        x_min = min(x_range)
-        x_max = max(x_range)
-        return (x - x_min) / ( x_max - x_min)
-
     def draw_ticks(self, ax: mp.pyplot.axes, series: DataSeries):
         '''
         xy = draw x ticks or y ticks, 0 x_axis; 1 y_axis
@@ -102,10 +78,11 @@ class PlotManager(object):
                     ax.set_xticks(tick)
                     ax.set_xticklabels(label)
                 else:
-                    secax = ax.secondary_xaxis('top')
-                    secax.set_xticks(tick)
-                    secax.set_xlabel(label)
-
+                    # ignore this top xtick for now
+                    # secax = ax.secondary_xaxis('top')
+                    # secax.set_xticks(tick)
+                    # secax.set_xticklabels(label)
+                    pass
             else:
                 if series.ax_type == AxisType.Primary:
                     ax.set_yticks(tick)
@@ -113,7 +90,7 @@ class PlotManager(object):
                 else:
                     secax = ax.secondary_yaxis('right')
                     secax.set_yticks(tick)
-                    secax.set_ylabel(label)            
+                    secax.set_yticklabels(label)            
 
     def plot_xy_series(self, series: DataSeries, ax: mp.pyplot.axes = [], img_file = []):
         ''' 
@@ -128,21 +105,18 @@ class PlotManager(object):
         if ax==[]:
             img = mpimg.imread(img_file)
             # flip the image upside down and with set orign ='lower' when call imshow
-            # to make the coordinates works as 'normal' way
+            # to make the coordinates works in 'normal' sense
             img = np.flipud(img)
             f1 = plt.figure()
             ax = f1.add_subplot(111)
             ax.imshow(img, origin='lower')
             
-            # (y_img_1, y_img_2) = axes_cur.get_ylim()
-            # (x_img_1, x_img_2) = axes_cur.get_xlim()
-            #plt.show()
         else:
             f1 = plt.gcf()
 
         # calculate x, y in axes coordinates
-        x_axes = self.cal_rel_axes(x, range_x)
-        y_axes = self.cal_rel_axes(y, range_y)
+        x_axes = self.cal_coor_axes(x, range_x)
+        y_axes = self.cal_coor_axes(y, range_y)
         
         # transfrom from axes coordinates to data coordinates
         x_data, y_data = self.coor_trans_axes_2_data(ax, x_axes, y_axes) 
@@ -161,6 +135,41 @@ class PlotManager(object):
         self.draw_ticks(ax, series)
             
         return (f1, ax)
+
+    def cal_tick_data(self, ax, border, num_seg, orient = 0):
+        
+        (l, r) = (min(border), max(border))
+        
+        # tick = [0, 0.5, 1]
+        # num_seg = len(tick)
+
+        num_tick = num_seg + 1
+
+        tick = (np.linspace(l, r, num_tick) - l) / (r - l)
+        label = [''] * len(tick)
+        label[0] = str(l)
+        label[-1] = str(r)
+        m = num_tick // 2
+        label[m] = str(tick[m] * (r - l) + l)
+
+        # label = list(map(str, [l, (l + r) / 2, r]))
+
+        if orient == 0:
+            (tick_data, t) = self.coor_trans_axes_2_data(ax, tick, np.zeros(num_tick))
+        else:
+            (t, tick_data) = self.coor_trans_axes_2_data(ax, np.zeros(num_tick), tick)        
+
+        return tick_data, label
+
+    def cal_coor_axes(self, x, x_r = []):
+        '''
+            calculate axes coordinates for x in range x_r or in its own range
+        '''
+        l, r = (min(x), max(x))
+        if x_r != []:
+            (l, r) = (min(x_r), max(x_r))
+
+        return (np.array(x) - l) / (r - l)
 
     def coor_trans_axes_2_data(self, ax, x_axes, y_axes):
         '''
@@ -181,22 +190,3 @@ class PlotManager(object):
         return x_data, y_data
         
 
-    def cal_tick_data(self, ax, border, num_seg, orient = 0):
-        l = min(border)
-        r = max(border)
-
-        tick = (np.linspace(l, r, num_seg) - l) / (r - l)
-
-        
-        if orient == 0:
-            (tick_data, t) = self.coor_trans_axes_2_data(ax, tick, np.zeros(num_seg))
-        else:
-            (t, tick_data) = self.coor_trans_axes_2_data(ax, np.zeros(num_seg), tick)
-        
-        label = [None] * 3
-
-        label[0] = str(l)
-        label[1] = str((l + r) / 2)
-        label[2] = str(r)
-
-        return tick_data, [l, (l+r)/2, r]
