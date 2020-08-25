@@ -20,6 +20,7 @@ model TestPCHXMeshram
   parameter Modelica.SIunits.Temp_K T_hot_out[4] = {494.37, 601.83, 466.69, 576.69}; // 4.1.2 of Meshram [2016]
   parameter Modelica.SIunits.AbsolutePressure p_hot_out[4] = {from_bar(90),from_bar(90),from_bar(90),from_bar(90)};  
   
+  parameter Integer N_ch = integer(80e3);  
   
   //parameter Modelica.SIunits.Angle phi_array[4] = {from_deg(0), from_deg(0), from_deg((180 - 108) /2), from_deg((180 - 108) /2)}; // 4.1.2 of Meshram [2016]
   
@@ -28,9 +29,13 @@ model TestPCHXMeshram
   // select one test scenario in Meshram [2016]
   parameter Integer scenario = Integer(TestScenario.zigzag_high_T);
   
-  parameter Modelica.SIunits.MassFlowRate mdot_hot_odes = 99.4621884201685;
+  parameter Modelica.SIunits.ReynoldsNumber Re_hot_odes = 2e3;
   
-  parameter Modelica.SIunits.MassFlowRate mdot_cold_odes = 100.891159281523;
+  parameter Modelica.SIunits.ReynoldsNumber Re_cold_odes = 2e3;  
+  
+  parameter Modelica.SIunits.MassFlowRate mdot_hot_odes = 10;
+  
+  parameter Modelica.SIunits.MassFlowRate mdot_cold_odes = 10;
   
   Components.Source source_hot(
     p_outlet = p_hot_in[scenario],
@@ -62,16 +67,12 @@ model TestPCHXMeshram
  
   Components.PCHeatExchanger pchx(
     phi = phi_array[scenario], 
-    d_c = 2e-3,
+    d_c = 5e-3,
     pitch = 12.3e-3,
     length_cell = 12e-3,    
-    Re_des = 2000,    
-    T_hot_des = T_hot_in[scenario],
-    T_cold_des = T_cold_in[scenario],
-    p_hot_des = p_hot_in[scenario],
-    p_cold_des = p_cold_in[scenario],
-    mdot_hot_odes = mdot_hot_odes,
-    mdot_cold_odes = mdot_cold_odes,
+    N_ch = N_ch,
+    Re_cold_odes = Re_cold_odes,
+    Re_hot_odes = Re_hot_odes,
     N_seg = 10
   );
   
