@@ -2,13 +2,19 @@ from OMPython import OMCSessionZMQ
 from OMPython import OMCSession
 from OMPython import ModelicaSystem
 from datetime import datetime as dt
+from enum import IntEnum
 
 import inspect
 import csv
 import os
 import numpy as np
+import math
 
 from plot_lib import imgplot, plotanno, plot_xy_series
+
+class PipeType(IntEnum):
+    Hot = 0,
+    Cold = 1
 
 class DataSeries(object):
     ''' 
@@ -22,10 +28,61 @@ class DataSeries(object):
         self.range_y = range_y
         self.cs = cs
 
+class DesignParam(object):
+    '''
+    Structure containing On Design parameters
+    '''
+
+    def __init__(self, d_c = 12e-3, p=[9e6, 20e6], T=[500, 300], mdot = [8.3, 8.3], Re = 2000):
+        # On design params initialization 
+        self.d_c = d_c
+        self.p = p
+        self.T = T
+        self.mdot = mdot
+        self.Re = Re
+
+        # parameters determined in cal_on_design_params
+        self.d_h = 0.0
+        self.A_c = 0.0
+        self.A_f = 0.0
+        self.N_ch = 0.0
+        self.mu = [0, 0]   
+        self.G = [0, 0] # mass flux kg/(m^2 * s) should be constant if Re, P, T, d_c are constant
+
+
+        self.cal_design_params()
+
+    def cal_geo_params(self):
+        d_c = self.d_c
+        A_c = math.pi * d_c * d_c / 8 
+        peri_c = d_c * math.pi / 2 + d_c          
+        d_h = 4 * A_c / peri_c
+
+        return (A_c, d_h, peri_c)
+
+    def area_flow(self):
+        return self.A_c * self.N_ch
+
+    def cal_design_params(self):
+        from CoolProp.CoolProp import PropsSI
+        #  0 = hot, 1 = cold, following Enum PipeType
+        A_fx = [0, 0]
+
+        (self.A_c, self.d_h, peri_c) = self.cal_geo_params()
+
+        for i in PipeType:
+            self.mu[i] = PropsSI('V', 'P', self.p[i], 'T', self.T[i], "CO2")
+            A_fx[i] = self.mdot[i] * self.d_h / self.mu[i] / self.Re
+
+        self.A_f = max(A_fx)
+        self.N_ch = math.ceil(self.A_f / self.A_c)
+
+        for i in PipeType:
+            self.G[i] = self.mdot[i] / self.A_f
 
 class TestPCHEMeshram(object):
         
-    def __init__(self, work_root):
+    def __init__(self, work_root, param_des = None, mdot_odes = []):
         super().__init__()
         # common variable defination
         self.path_pics = "pics"
@@ -33,9 +90,23 @@ class TestPCHEMeshram(object):
 
         self.work_root = work_root
         self.model_path_root = work_root + r"/Steps" 
-        
         self.prepare_workspace()
 
+        # params initialization
+        if param_des == None:
+            self.param_des = DesignParam()
+        else:
+            self.param_des = param_des
+
+        # Off design params
+        # 0 = hot, 1 = cold
+        self.mdot_odes = mdot_odes
+        self.G_odes = [0, 0]
+        # calculated values
+        self.Re_odes = [0, 0]        
+
+        self.cal_off_design_params()
+    
     def prepare_workspace(self):
         '''
         prepare the workspace for simulation, the directory structure is
@@ -77,7 +148,18 @@ class TestPCHEMeshram(object):
         libs = ["libCoolProp.a", 'libCoolProp.dll']
         for lib in libs:            
             if not os.path.exists(lib):
-                shutil.copyfile(self.model_path_root + r"\Resources\Library\\" + lib, ".\\" + lib) # completa target name needed
+                shutil.copyfile(self.model_path_root + r"\Resources\Library\\" + lib, ".\\" + lib) # completa target name needed 
+
+    
+    def cal_off_design_params(self):
+        p_des = self.param_des
+
+        if self.mdot_odes == []:
+            raise ValueError('No mass flow rate specified')
+
+        for i in PipeType:            
+            self.G_odes[i] = self.mdot_odes[i] / p_des.area_flow()            
+            self.Re_odes[i] = self.mdot_odes[i] * p_des.d_h / (p_des.area_flow() * p_des.mu[i] )
 
     def __gen_result_dict(self):
         
@@ -119,14 +201,7 @@ class TestPCHEMeshram(object):
         result_dict['pchx.N_seg'] = []  
         result_dict['pchx.length_cell'] = [] 
         result_dict['pchx.phi'] = []  
-        result_dict['pchx.Re_des'] = [] 
         result_dict['pchx.d_c'] = []  
-        result_dict['pchx.T_hot_des'] = [] 
-        result_dict['pchx.T_cool_des'] = []  
-        result_dict['pchx.p_hot_des'] = []   
-        result_dict['pchx.p_cool_des'] = []  
-        result_dict['pchx.mdot_hot_des'] = [] 
-        result_dict['pchx.mdot_cold_des'] = []  
         result_dict['pchx.pitch'] = []  
         result_dict['pchx.kim_cor.a'] = []  
         result_dict['pchx.kim_cor.b'] = [] 
@@ -137,18 +212,12 @@ class TestPCHEMeshram(object):
         result_dict['pchx.d_h'] = []  
         result_dict['pchx.peri_c'] = [] 
         result_dict['pchx.t_wall'] = []  
-        result_dict['pchx.N_ch_des'] = [] 
+        result_dict['pchx.N_ch'] = [] 
         result_dict['pchx.A_c'] = []  
         result_dict['pchx.A_flow'] = [] 
-        result_dict['pchx.A_fc_des'] = []  
-        result_dict['pchx.A_fh_des'] = []   
-        result_dict['pchx.A_fmax_des'] = []          
-        result_dict['pchx.A_stack'] = []  
-        result_dict['pchx.mu_c'] = []  
-        result_dict['pchx.mu_h'] = []                  
+ 
+        result_dict['pchx.A_stack'] = []                  
         result_dict['pchx.length_ch'] = []     
-        result_dict['pchx.mdot_hot_odes'] = [] 
-        result_dict['pchx.mdot_cold_odes'] = []  
         result_dict['pchx.Re_hot_odes'] = [] 
         result_dict['pchx.Re_cold_odes'] = []                           
 
@@ -209,6 +278,14 @@ class TestPCHEMeshram(object):
         # options for simulation - steady state simulation, no iteration required, so set numberOfIntervals = 2 
         mod.setSimulationOptions('stepSize  = 0.2')
 
+        params = ["N_ch={0}".format(self.param_des.N_ch)]
+        params.append("Re_hot_odes={0}".format(self.Re_odes[PipeType.Hot]))
+        params.append("Re_cold_odes={0}".format(self.Re_odes[PipeType.Cold]))
+        params.append("mdot_hot_odes={0}".format(self.mdot_odes[PipeType.Hot]))
+        params.append("mdot_cold_odes={0}".format(self.mdot_odes[PipeType.Cold]))
+        mod.setParameters(params)
+        # mod.setParameters("N_ch={0}".format(self.param_des.N_ch)) 
+
         mod.simulate()
 
         # collect data in solutions
@@ -231,9 +308,9 @@ class TestPCHEMeshram(object):
             data = result_dict
 
             if len(vals) == 2:
-                result_dict[item['key']] = cal_row([data[vals[0]], data[vals[1]]], eval_str=item['eval_str'])
+                result_dict[item['key']] = __cal_row([data[vals[0]], data[vals[1]]], eval_str=item['eval_str'])
             elif len(vals) == 3:
-                result_dict[item['key']] = cal_row([data[vals[0]], data[vals[1]], data[vals[2]]], eval_str=item['eval_str'])      
+                result_dict[item['key']] = __cal_row([data[vals[0]], data[vals[1]], data[vals[2]]], eval_str=item['eval_str'])      
 
     def save_results(self, result_dict, file_name = []):
         '''
@@ -250,7 +327,8 @@ class TestPCHEMeshram(object):
             writer.writeheader()
 
             for k,v in result_dict.items():
-                writer.writerow({'name': k, 'value': v})                                
+                val_str = '{0}'.format(v)[1:-1] # remove the surrounding square brackets
+                writer.writerow({'name': k, 'value': val_str})                                
 
     def load_result(self):
         '''
@@ -276,7 +354,7 @@ class TestPCHEMeshram(object):
             for line in reader:
                 # print(line['name'], line['value'])
                 value_str = line['value']
-                values = [float(x) for x in value_str[1:-1].split(',')]
+                values = [float(x) for x in value_str.split(',')]
 
                 result_dict[line['name']] = values[0]
 
@@ -350,7 +428,7 @@ class TestPCHEMeshram(object):
         axisx=[[0, 0.12], [0, 0.16]][zigzag]
         axis_x_left = np.array(axisx)
         axis_x_right = axis_x_left - len_seg
-        axisdp=[[0,800], [0,800]][zigzag]
+        axisdp=[[0,80], [0,80]][zigzag]
 
         imgfile = [self.path_pics + "/Meshram_Fig_04.png", self.path_pics + "/Meshram_Fig_05.jpg"][zigzag]            
         xticks=[["0.", "0.06", "0.12"],["0.", "0.08", "0.16"]][zigzag]
@@ -385,14 +463,35 @@ class TestPCHEMeshram(object):
         print('all done!') 
 
 
+def set_off_params(param_des, useG = True ):
+    # True = G -> mdot, False, mdot -> G and use above mdot directly
+    mdot_odes = [100, 100]     
+    # array to store meshram's data    
+    G_odes = [0, 0] # off_design mass flux
+    u_odes = [7.564, 1.876] # off design velocity 
+    rho_odes = [71.33, 223.65] # off design density    
+
+    for i in PipeType:
+        if useG :
+            G_odes[i] = u_odes[i] * rho_odes[i]
+            mdot_odes[i] = G_odes[i] * param_des.area_flow()
+        else:
+            G_odes[i] = mdot_odes / param_des.area_flow()
+
+    return mdot_odes, G_odes
+
 def main(work_root = []):
     # root path of modelica root
     if work_root == []:
         work_root = os.path.abspath(os.curdir)
 
-    test = TestPCHEMeshram(work_root)
+    param_des = DesignParam(d_c=2e-3, p=[9e6, 22.5e6], T=[730, 500], Re=2000, mdot=[10, 10])
 
-    test.run(simulate= True)    
+    mdot_odes, G_odes = set_off_params(param_des, True)
+
+    test = TestPCHEMeshram(work_root, param_des=param_des, mdot_odes=mdot_odes)
+
+    test.run(simulate=True)    
 
 ###
 if __name__ == "__main__":
