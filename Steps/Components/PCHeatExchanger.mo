@@ -57,13 +57,16 @@ model PCHeatExchanger
   Modelica.SIunits.Length length_ch = length_cell * N_seg "length of one pipe in HeatExchanger unit m"; 
   
   // two sequences of the hx cells
+  // use id to distinguish cold and hot cell
+  // hot_cell.id > 1000 and < 2000
+  // cold_cell.id > 2000
   HXCell [N_seg] cell_cold(
     each cellType = CellType.Cold,
     each ByInlet = true, 
     each inlet.p.start = 8e6, 
     each T.start = Modelica.SIunits.Conversions.from_degC(27.15), 
     each Re.start = Re_cold_start,    
-    id = {i for i in 1 : N_seg}); 
+    id = {i + 2000 for i in 1 : N_seg}); 
     
   HXCell [N_seg] cell_hot(
     each cellType = CellType.Hot,
@@ -71,7 +74,7 @@ model PCHeatExchanger
     each inlet.p.start = 20e6,     
     each T.start = Modelica.SIunits.Conversions.from_degC(700),     
     each Re.start = Re_hot_start,
-    id = {i for i in 1 : N_seg});
+    id = {i + 1000 for i in 1 : N_seg});
 
   // Heat Change
   Modelica.SIunits.Heat Q[N_seg];  
@@ -190,15 +193,26 @@ protected
     end if;    
     
     T = CP.PropsSI("T", "P", p, "H", h, PBMedia.mediumName);
+    
+algorithm 
 
     //Debug from this point
-    mu = CP.PropsSI("V", "P", p, "T", T, PBMedia.mediumName); 
+    mu := CP.PropsSI("V", "P", p, "T", T, PBMedia.mediumName); 
+
+    MyUtil.myAssert(
+    debug = false, 
+    val_test = p, min = 7e6, max = 30e6, 
+    name_val = "p", 
+    val_ref = {id, G, f, d_h, mu, p , T, h, rho, u, length_cell}, 
+    name_val_ref = {"id", "G", "f", "d_h", "mu", "p" , "T", "h", "rho", "u", "length_cell"});  
     
+equation    
+
     k = CP.PropsSI("L", "P", p, "T", T, PBMedia.mediumName);  
     
     rho = CP.PropsSI("D", "P", p, "T", T, PBMedia.mediumName);     
     
-algorithm    
+algorithm   
     Re := G * d_h / mu; 
     
     // For debug purpose
@@ -209,8 +223,7 @@ algorithm
     val_ref = {id, Re, G, d_h, mu, p , T, phi, pitch, kim_cor.c, kim_cor.d}, 
     name_val_ref = {"id", "Re", "G", "d_h", "mu", "p" , "T", "phi", "pitch", "c", "d"});     
     
-equation
-    
+equation    
 
     u = inlet.m_flow / A_flow / rho;      
 
@@ -246,16 +259,16 @@ equation
     (outlet.h_outflow - inlet.h_outflow) * inlet.m_flow = Q; 
     
 algorithm
-    //pressure drop : kPa * 1000 - > pa
-    dp := 2 * f * length_cell * rho *  (u ^ 2) / d_h * 1e3;
-    // dp := f * length_cell * rho *  (u ^ 2) / d_h * 1e3;
-    
-    MyUtil.myAssert(
+    //pressure drop, unit Pa
+    dp := 2 * f * length_cell * rho *  (u ^ 2) / d_h;
+    // dp := f * length_cell * rho *  (u ^ 2) / d_h
+      
+    MyUtil.myAssertNotEqual(
     debug = false, 
-    val_test = dp, min = 0, max = 10e6, 
-    name_val = "dp", 
-    val_ref = {id, G, f, d_h, mu, p , T, h}, 
-    name_val_ref = {"id", "G", "f", "d_h", "mu", "p" , "T", "h"});    
+    val_test = id, compared = 10010,
+    name_val = "id", 
+    val_ref = {id, G, f, d_h, mu, p , T, h, rho, u, length_cell, dp}, 
+    name_val_ref = {"id", "G", "f", "d_h", "mu", "p" , "T", "h", "rho", "u", "length_cell", "dp"});    
     
 equation
 
