@@ -22,13 +22,17 @@ class DesignParam(object):
     Structure containing On Design parameters
     '''
 
-    def __init__(self, d_c = 12e-3, p=[9e6, 20e6], T=[500, 300], mdot = [8.3, 8.3], Re = 2000):
+    def __init__(self, d_c = 12e-3, p=[9e6, 20e6], T=[500, 300], mdot = [8.3, 8.3], Re = 2000, N_seg = 10, len_seg=12e-3, pitch = 12e-3, phi= math.pi / 4):
         # On design params initialization 
         self.d_c = d_c
         self.p = np.array(p)
         self.T = np.array(T)
         self.mdot = np.array(mdot)
         self.Re = np.array(Re)
+        self.N_seg = N_seg
+        self.len_seg = len_seg  
+        self.pitch = pitch
+        self.phi = phi
 
         # parameters determined in cal_on_design_params
         self.d_h = 0.0
@@ -212,8 +216,10 @@ class TestPCHEMeshram(object):
  
         result_dict['pchx.A_stack'] = []                  
         result_dict['pchx.length_ch'] = []     
-        result_dict['pchx.Re_hot_odes'] = [] 
-        result_dict['pchx.Re_cold_odes'] = []                           
+        result_dict['pchx.Re_hot_start'] = [] 
+        result_dict['pchx.Re_cold_start'] = []                           
+        result_dict['mdot_hot'] = []  
+        result_dict['mdot_cold'] = []  
 
         return result_dict
 
@@ -263,6 +269,39 @@ class TestPCHEMeshram(object):
 
         return cal_map
 
+    def gen_model_param(self):
+        # set up on design parameters
+        para = self.param_des
+        (hot, cold) = (StreamType.Hot, StreamType.Cold)
+        para_dict = {}
+        para_dict["N_ch"] = para.N_ch
+
+        para_dict["T_cold_in"] = para.T[cold]
+        para_dict["p_cold_in"] = para.p[cold]
+
+        para_dict["T_hot_in"] = para.T[hot]
+        para_dict["p_hot_in"] = para.p[hot]
+
+        para_dict["phi"] = para.phi
+        para_dict["pitch"] = para.pitch
+        para_dict["d_c"] = para.d_c
+        para_dict["length_cell"] = para.len_seg       
+
+        # set up off design parameters
+        para = self.param_odes
+        para_dict["Re_hot_start"] = para.Re[hot]
+        para_dict["Re_cold_start"] = para.Re[cold]
+        
+        para_dict["mdot_hot"] = para.mdot[hot]
+        para_dict["mdot_cold"] = para.mdot[cold]
+
+        params = []
+
+        for k, v in para_dict.items():
+            params.append("{0}={1}".format(k, str(v)))
+
+        return params
+
     def run_simulation(self, result_dict):
 
         omc = OMCSessionZMQ()
@@ -272,13 +311,9 @@ class TestPCHEMeshram(object):
         # options for simulation - steady state simulation, no iteration required, so set numberOfIntervals = 2 
         mod.setSimulationOptions('stepSize  = 0.2')
 
-        params = ["N_ch={0}".format(self.param_des.N_ch)]
-        params.append("Re_hot_start={0}".format(self.param_odes.Re[StreamType.Hot]))
-        params.append("Re_cold_start={0}".format(self.param_odes.Re[StreamType.Cold]))
-        params.append("mdot_hot={0}".format(self.param_odes.mdot[StreamType.Hot]))
-        params.append("mdot_cold={0}".format(self.param_odes.mdot[StreamType.Cold]))
-        mod.setParameters(params)
-        # mod.setParameters("N_ch={0}".format(self.param_des.N_ch)) 
+        pars = self.gen_model_param()
+
+        mod.setParameters(pars)
 
         mod.simulate()
 
@@ -356,13 +391,13 @@ class TestPCHEMeshram(object):
 
     def gen_plot_manager(self, result_dict):
         #update_cal_fields()   
-        N_seg = 10
-        len_seg = 12e-3   
+        N_seg = self.param_des.N_seg
+        len_seg = self.param_des.len_seg
 
         zigzag = 0 # 0: Straight Channel, 1: Zigzag Channel        
         axis_x=[[0, 0.12], [0, 0.16]][zigzag]
         axis_T=[[400.0, 750.0],[400, 750.0]][zigzag]
-        axis_dp=[[0, 800], [0, 800]][zigzag]
+        axis_dp=[[0, 80], [0, 80]][zigzag]
 
         T_hot = []
         T_cold = []
@@ -459,23 +494,25 @@ def main(work_root = []):
     # configuration of different test scenario in meshram [2016] - table 3
     # arranged in same order as Enum TestScenario
 
-    # IMPORTANT: SIunits will be used in this script : [T] = K, [p] = pa, [length] = m, [angle] = rad, [mass] = kg, [time] = s
-
-    param_des = DesignParam(d_c=2e-3, p=[9e6, 22.5e6], T=[730, 500], Re=2000, mdot=[10, 10])
+    # IMPORTANT: SIunits will be used in this script : [T] = K, [p] = pa, [length] = m, [angle] = rad, [mass] = kg, [time] = s   
 
     T_cold_in = [400, 500, 400, 500][scenario] # unit K
-    p_cold_in = [Unit.from_bar(225), Unit.from_bar(225), Unit.from_bar(225), Unit.from_bar(225)][scenario]
+    p_cold_in = Unit.from_bar(225)
     
     T_cold_out = [498.45, 615.48, 522.23, 639.15][scenario]
-    p_cold_out = [Unit.from_bar(225), Unit.from_bar(225), Unit.from_bar(225), Unit.from_bar(225)][scenario]
+    p_cold_out = Unit.from_bar(225)
 
     T_hot_in = [630, 730, 630, 730][scenario]
-    p_hot_in = [Unit.from_bar(90), Unit.from_bar(90), Unit.from_bar(90), Unit.from_bar(90)][scenario]
+    p_hot_in = Unit.from_bar(90)
 
     T_hot_out = [494.37, 601.83, 466.69, 576.69][scenario]
-    p_hot_out = [Unit.from_bar(90), Unit.from_bar(90), Unit.from_bar(90), Unit.from_bar(90)][scenario]
-  
+    p_hot_out = Unit.from_bar(90)
+    
+    mdot = np.array([10, 10])
+
     phi = [Unit.from_deg(0), Unit.from_deg(0), Unit.from_deg((180 - 108) /2), Unit.from_deg((180 - 108) /2)][scenario]
+
+    param_des = DesignParam(d_c=2e-3, p=[p_hot_in, p_cold_in], T=[T_hot_in, T_cold_in], Re=2000, mdot=mdot, N_seg = 10, len_seg=12e-3, pitch = 12e-3, phi = phi)
 
     # index of array for hot/cold stream
     # 0 hot stream, 1 cold stream
@@ -490,14 +527,12 @@ def main(work_root = []):
     for stream in StreamType:
         rho_odes[stream] = PropsSI('D', 'P', p[stream], 'T', T[stream], media_name[stream])
 
-    # rho_odes = np.array([71.33, 223.65]) # off design density        
-
     # param_odes = OffDesignParam(param_des=param_des, G = np.multiply(u_odes, rho_odes))
     param_odes = OffDesignParam(param_des=param_des, mdot = mdot_odes)
 
     test = TestPCHEMeshram(work_root, param_des=param_des, param_odes=param_odes)
 
-    test.run(simulate=True)    
+    test.run(simulate=False)    
 
 ###
 if __name__ == "__main__":
