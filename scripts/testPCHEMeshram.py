@@ -3,6 +3,7 @@ from OMPython import OMCSession
 from OMPython import ModelicaSystem
 from datetime import datetime as dt
 from enum import IntEnum
+from CoolProp.CoolProp import PropsSI
 
 import inspect
 import csv
@@ -51,7 +52,7 @@ class DesignParam(object):
         return self.A_c * self.N_ch
 
     def cal_design_params(self):
-        from CoolProp.CoolProp import PropsSI
+        
         #  0 = hot, 1 = cold, following Enum PipeType
         A_fx = np.zeros(len(StreamType))
 
@@ -68,7 +69,14 @@ class DesignParam(object):
 
 class OffDesignParam(object):
 
-    def __init__(self, param_des: DesignParam, mdot):
+    def __init__(self, param_des: DesignParam, mdot = [], G = []):
+
+        if mdot == []:
+            if G == []:
+                raise ValueError('no mdot or G assigned for off design')
+            else:
+                mdot = np.array(G) * param_des.area_flow()     
+
         num_stream = len(StreamType)
 
         self.mdot = np.array(mdot)
@@ -265,10 +273,10 @@ class TestPCHEMeshram(object):
         mod.setSimulationOptions('stepSize  = 0.2')
 
         params = ["N_ch={0}".format(self.param_des.N_ch)]
-        params.append("Re_hot_odes={0}".format(self.param_odes.Re[StreamType.Hot]))
-        params.append("Re_cold_odes={0}".format(self.param_odes.Re[StreamType.Cold]))
-        params.append("mdot_hot_odes={0}".format(self.param_odes.mdot[StreamType.Hot]))
-        params.append("mdot_cold_odes={0}".format(self.param_odes.mdot[StreamType.Cold]))
+        params.append("Re_hot_start={0}".format(self.param_odes.Re[StreamType.Hot]))
+        params.append("Re_cold_start={0}".format(self.param_odes.Re[StreamType.Cold]))
+        params.append("mdot_hot={0}".format(self.param_odes.mdot[StreamType.Hot]))
+        params.append("mdot_cold={0}".format(self.param_odes.mdot[StreamType.Cold]))
         mod.setParameters(params)
         # mod.setParameters("N_ch={0}".format(self.param_des.N_ch)) 
 
@@ -346,18 +354,7 @@ class TestPCHEMeshram(object):
 
         return result_dict
 
-    def run(self, simulate = True):
-
-        if simulate:
-            result_dict = self.__gen_result_dict()              
-
-            self.run_simulation(result_dict)
-
-            self.save_results(result_dict)
-        
-        # load the simulation result from latest, pre-saved file
-        result_dict = self.load_result()
-
+    def gen_plot_manager(self, result_dict):
         #update_cal_fields()   
         N_seg = 10
         len_seg = 12e-3   
@@ -366,8 +363,6 @@ class TestPCHEMeshram(object):
         axis_x=[[0, 0.12], [0, 0.16]][zigzag]
         axis_T=[[400.0, 750.0],[400, 750.0]][zigzag]
         axis_dp=[[0, 800], [0, 800]][zigzag]
-
-        imgfile = [self.path_pics + "/Meshram_Fig_04.png", self.path_pics + "/Meshram_Fig_05.png"][zigzag]     
 
         T_hot = []
         T_cold = []
@@ -394,36 +389,111 @@ class TestPCHEMeshram(object):
         plot.add(DataSeries(name = 'dp_hot', x = x_values, y = np.array(dp_hot), range_x=axis_x, range_y=axis_dp, cs = 'r-^'), ax_type=AxisType.Secondary)
         plot.add(DataSeries(name = 'dp_cold', x = x_values + len_seg, y = np.array(dp_cold), range_x=axis_x, range_y=axis_dp, cs = 'b-^'), ax_type=AxisType.Secondary)
 
-        plot.draw(img_file=imgfile, dest_file= self.path_out + "/Meshram_Fig%db_compare.png"%(4 + zigzag))
+        return plot
+
+    def run(self, simulate = True):
+
+        if simulate:
+            result_dict = self.__gen_result_dict()              
+
+            self.run_simulation(result_dict)
+
+            self.save_results(result_dict)
+        
+        # load the simulation result from latest, pre-saved file
+        result_dict = self.load_result()
+
+        zigzag = 1
+        imgfile = [self.path_pics + "/Meshram_Fig_04.png", self.path_pics + "/Meshram_Fig_05.png"][zigzag]    
+        
+        self.gen_plot_manager(result_dict).draw(img_file=imgfile, dest_file= self.path_out + "/Meshram_Fig%db_compare.png"%(4 + zigzag))
 
         print('all done!') 
+class TestScenario(IntEnum):
+    '''
+    TestScenario Index for Meshram [2016]
+    '''
+    straight_low_T = 0,
+    straight_high_T = 1,
+    zigzag_low_T = 2,
+    zigzag_high_T = 3
 
+class Unit(object):
+    '''
+    class for unit conversion
+    # IMPORTANT: SIunits will be used in this script : [T] = K, [p] = pa, [length] = m, [angle] = rad
+    '''
+    from pint import UnitRegistry
+    ureg = UnitRegistry()
 
-def set_off_params(param_des, mdot=[], G = []):
+    @staticmethod
+    def convert(val, src_unit, dest_unit):
+        ureg = Unit.ureg
+        ureg.Unit
+        src = val * ureg[src_unit]
+        return src.to(ureg[dest_unit]).magnitude
 
-    if mdot == []:
-        if G == []:
-            raise ValueError('no mdot or G assigned for off design')
-        else:
-            mdot = np.array(G) * param_des.area_flow()           
+    @staticmethod
+    def from_bar(val):
+        return Unit.convert(val, 'bar', 'Pa')
 
-    param_odes = OffDesignParam(param_des=param_des, mdot = mdot)
+    @staticmethod
+    def from_degC(val):
+        return Unit.convert(val, '°C','K')
 
-    return param_odes
+    @staticmethod
+    def from_deg(val): 
+        '''
+        deg to rad for angle
+        '''
+        return Unit.convert(val, '°', 'rad')
 
 def main(work_root = []):
     # root path of modelica root
     if work_root == []:
         work_root = os.path.abspath(os.curdir)
 
-    mdot_odes = np.array([100, 100])
-    # array to store meshram's data    
-    u_odes = np.array([7.564, 1.876]) # off design velocity 
-    rho_odes = np.array([71.33, 223.65]) # off design density    
+    # index of test scenario
+    scenario = TestScenario.zigzag_high_T    
+  
+    # configuration of different test scenario in meshram [2016] - table 3
+    # arranged in same order as Enum TestScenario
+
+    # IMPORTANT: SIunits will be used in this script : [T] = K, [p] = pa, [length] = m, [angle] = rad, [mass] = kg, [time] = s
 
     param_des = DesignParam(d_c=2e-3, p=[9e6, 22.5e6], T=[730, 500], Re=2000, mdot=[10, 10])
 
-    param_odes = set_off_params(param_des, G = np.multiply(u_odes, rho_odes))
+    T_cold_in = [400, 500, 400, 500][scenario] # unit K
+    p_cold_in = [Unit.from_bar(225), Unit.from_bar(225), Unit.from_bar(225), Unit.from_bar(225)][scenario]
+    
+    T_cold_out = [498.45, 615.48, 522.23, 639.15][scenario]
+    p_cold_out = [Unit.from_bar(225), Unit.from_bar(225), Unit.from_bar(225), Unit.from_bar(225)][scenario]
+
+    T_hot_in = [630, 730, 630, 730][scenario]
+    p_hot_in = [Unit.from_bar(90), Unit.from_bar(90), Unit.from_bar(90), Unit.from_bar(90)][scenario]
+
+    T_hot_out = [494.37, 601.83, 466.69, 576.69][scenario]
+    p_hot_out = [Unit.from_bar(90), Unit.from_bar(90), Unit.from_bar(90), Unit.from_bar(90)][scenario]
+  
+    phi = [Unit.from_deg(0), Unit.from_deg(0), Unit.from_deg((180 - 108) /2), Unit.from_deg((180 - 108) /2)][scenario]
+
+    # index of array for hot/cold stream
+    # 0 hot stream, 1 cold stream
+    mdot_odes = np.array([100, 100])
+    # array to store meshram's data     
+    p = np.array([p_hot_in, p_cold_in])
+    T = np.array([T_hot_in, T_cold_in])
+    media_name = ['CO2', 'CO2']
+    u_odes = np.array([7.564, 1.876]) # off design velocity for hot/cold inlet
+    
+    rho_odes  = np.zeros(len(u_odes)) 
+    for stream in StreamType:
+        rho_odes[stream] = PropsSI('D', 'P', p[stream], 'T', T[stream], media_name[stream])
+
+    # rho_odes = np.array([71.33, 223.65]) # off design density        
+
+    # param_odes = OffDesignParam(param_des=param_des, G = np.multiply(u_odes, rho_odes))
+    param_odes = OffDesignParam(param_des=param_des, mdot = mdot_odes)
 
     test = TestPCHEMeshram(work_root, param_des=param_des, param_odes=param_odes)
 

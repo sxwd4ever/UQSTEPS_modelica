@@ -42,9 +42,9 @@ model PCHeatExchanger
   
   inner Modelica.SIunits.Length t_wall = (2 - Modelica.Constants.pi  / 4) * (d_c / 2) "thickness of wall between two neighboring hot and cold";
   
-  inner parameter Modelica.SIunits.ReynoldsNumber Re_hot_odes = 5e3 "Re off design value in hot stream";
+  inner parameter Modelica.SIunits.ReynoldsNumber Re_hot_start = 5e3 "Re off design value in hot stream";
 
-  inner parameter Modelica.SIunits.ReynoldsNumber Re_cold_odes = 5e3 "Re off design value in cold stream";
+  inner parameter Modelica.SIunits.ReynoldsNumber Re_cold_start = 5e3 "Re off design value in cold stream";
   
   inner parameter Integer N_ch = 10 "Number of Channels in PCHE";
   
@@ -62,7 +62,7 @@ model PCHeatExchanger
     each ByInlet = true, 
     each inlet.p.start = 8e6, 
     each T.start = Modelica.SIunits.Conversions.from_degC(27.15), 
-    each Re.start = Re_cold_odes,    
+    each Re.start = Re_cold_start,    
     id = {i for i in 1 : N_seg}); 
     
   HXCell [N_seg] cell_hot(
@@ -70,7 +70,7 @@ model PCHeatExchanger
     each ByInlet = true, 
     each inlet.p.start = 20e6,     
     each T.start = Modelica.SIunits.Conversions.from_degC(700),     
-    each Re.start = Re_hot_odes,
+    each Re.start = Re_hot_start,
     id = {i for i in 1 : N_seg});
 
   // Heat Change
