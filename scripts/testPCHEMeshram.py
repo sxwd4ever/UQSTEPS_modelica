@@ -512,11 +512,11 @@ def main(work_root = []):
 
     phi = [Unit.from_deg(0), Unit.from_deg(0), Unit.from_deg((180 - 108) /2), Unit.from_deg((180 - 108) /2)][scenario]
 
-    param_des = DesignParam(d_c=2e-3, p=[p_hot_in, p_cold_in], T=[T_hot_in, T_cold_in], Re=2000, mdot=mdot, N_seg = 10, len_seg=12e-3, pitch = 12e-3, phi = phi)
+    param_des = DesignParam(d_c=2e-3, p=[p_hot_in, p_cold_in], T=[T_hot_in, T_cold_in], Re=18000, mdot=mdot, N_seg = 10, len_seg=12e-3, pitch = 12e-3, phi = phi)
 
     # index of array for hot/cold stream
     # 0 hot stream, 1 cold stream
-    mdot_odes = np.array([100, 100])
+    mdot_odes = np.array([10, 10])
     # array to store meshram's data     
     p = np.array([p_hot_in, p_cold_in])
     T = np.array([T_hot_in, T_cold_in])
@@ -532,7 +532,7 @@ def main(work_root = []):
 
     test = TestPCHEMeshram(work_root, param_des=param_des, param_odes=param_odes)
 
-    test.run(simulate=False)    
+    test.run(simulate=True)    
 
 ###
 if __name__ == "__main__":
