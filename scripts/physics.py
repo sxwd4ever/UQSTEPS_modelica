@@ -1,6 +1,10 @@
 '''
 definition of basic Quantity, relations in physics
 '''
+
+import json
+import jsonpickle
+
 class Unit(object):
     '''
     class for unit conversion
@@ -33,24 +37,27 @@ class Unit(object):
 
 class Quantity(object):
     '''
-        pyhsics quantity : magnitude + unit, such 1 m, 10 s or 1e6 pa 
+        pyhsics quantity : magnitude [unit], such as 1 m, 10 s or 1e6 pa 
     '''
     from pint import UnitRegistry
     ureg = UnitRegistry()
 
-    def __init__(self, mag = 0, unit = 1, disp_unit = [], disp_prec = 2):
+    # Non-Dimensional Unit for Integer, Text or constant
+    ND_UNIT = '1'
+
+    def __init__(self, mag = 0, def_unit = ND_UNIT, unit = None, disp_prec = 2):
         super().__init__()
         
-        self._unit = unit        
-        self._disp_unit = disp_unit
+        self._def_unit = def_unit        
+        self._unit = unit
 
-        if disp_unit == []:
-            self._disp_unit = unit
+        if unit == None:
+            self._unit = def_unit
 
-        if not self.disp_unit == self.unit:
-            self._magnitude = self.__convert(mag, self.disp_unit, self.unit) 
+        if not self.unit == self.def_unit:
+            self._mag = self.__convert(mag, self.unit, self.def_unit) 
         else:
-            self._magnitude = mag 
+            self._mag = mag 
         
         self._disp_prec = disp_prec
 
@@ -60,30 +67,31 @@ class Quantity(object):
     @property
     def unit(self):
         """The unit property."""
-        return self._unit
+        return self._def_unit
     @unit.setter
-    def unit(self, value):
-        self._unit = value
+    def def_unit(self, value):
+        self._def_unit = value
 
     @property
-    def magnitude(self):
+    def mag(self):
         """The magnitude property."""
-        return self._magnitude
-    @magnitude.setter
-    def magnitude(self, value):
-        self._magnitude = value
+        return self._mag
+        
+    @mag.setter
+    def mag(self, value):
+        self._mag = value
 
     @property
-    def disp_unit(self):
+    def unit(self):
         """
         The disp_unit property. for disp purpose
         like pa could be displayed in kPa or mPa for short
         """
-        return self._disp_unit
+        return self._unit
 
-    @disp_unit.setter
-    def disp_unit(self, value):
-        self._disp_unit = value
+    @unit.setter
+    def unit(self, value):
+        self._unit = value
 
     @property
     def disp_prec(self):
@@ -95,34 +103,75 @@ class Quantity(object):
         self._disp_prec = value
 
     def __repr__(self):
-        val = self.magnitude
-        if not self.unit == self.disp_unit:
-            val = Quantity.ureg.convert(self._magnitude, self.unit, self.disp_unit)
+        val = self.mag
+        if not self.unit == self.def_unit:
+            val = Quantity.ureg.convert(self.mag, self.def_unit, self.unit)
         fmt = "<0:1.{0}f> <1>".format(self.disp_prec).replace('<','{').replace('>', '}')
 
-        return fmt.format(val, self.disp_unit)
+        if self.unit == Quantity.ND_UNIT:
+            return fmt.format(val)
+
+        return fmt.format(val, self.unit)
+
+class Length(Quantity):
+    '''
+        Quantity length in meter
+    '''
+    def __init__(self, arg, unit=None):
+        super().__init__(arg, 'm', unit)
+
+    @classmethod
+    def mm(cls, val):
+        return Length(val, 'mm')
+        
+    @classmethod
+    def km(cls, val):
+        return Length(val, 'km')
+
+class Mass(Quantity):
+    '''
+        Quantity length in kg
+    '''
+    def __init__(self, arg, unit=None):
+        super().__init__(arg, 'kg', unit)
+
+class Angle(Quantity):
+    '''
+    Quantity - Density in rad
+    '''
+
+    def __init__(self, arg, unit=None):
+        super().__init__(arg,'rad', unit=unit)
+
+    @classmethod    
+    def deg(cls, val):
+        return Angle(val, '°')
 
 class Pressure(Quantity):
     '''
     Quantity Pressure
     '''
-    def __init__(self, val, disp_unit=[]):
-        super().__init__(val, 'Pa', disp_unit)
+    def __init__(self, val, unit=None):
+        super().__init__(val, 'Pa', unit)
 
     @classmethod
-    def from_bar(cls, val):
+    def bar(cls, val):
         return Pressure(val, 'bar')
+
+    @classmethod
+    def MPa(cls, val):
+        return Pressure(val, 'MPa')
 
 class Temperature(Quantity):
     '''
     Quantity - Temperature in K
     '''
 
-    def __init__(self, val, disp_unit=[]):
-        super().__init__(val, 'K', disp_unit)
+    def __init__(self, val, unit=None):
+        super().__init__(val, 'K', unit)
     
     @classmethod
-    def from_degC(cls, val):
+    def degC(cls, val):
         return Temperature(val, 'degC')
 
 class MDot(Quantity):
@@ -130,36 +179,28 @@ class MDot(Quantity):
     Quantity - mass flow rate in kg/s
     '''
 
-    def __init__(self, val, disp_unit=[]):
-        super().__init__(val, 'kg/s', disp_unit)
+    def __init__(self, val, unit=None):
+        super().__init__(val, 'kg/s', unit)
 
 class Velocity(Quantity):
     '''
     Quantity - Velocity in m/s
     '''
 
-    def __init__(self, val, disp_unit=[]):
-        super().__init__(val, 'm/s', disp_unit=disp_unit)
+    def __init__(self, val, unit=None):
+        super().__init__(val, 'm/s', unit=unit)
 
 class Density(Quantity):
-    """docstring for Density in kg/s."""
+    '''
+    Quantity - Density in kg/m^3
+    '''
 
-    def __init__(self, val, disp_unit=[]):
-        super().__init__(val, 'kg/m**3', disp_unit=disp_unit)
-
-class Angle(Quantity):
-    """docstring for Degree."""
-    def __init__(self, arg, disp_unit=[]):
-        super().__init__(arg,'rad', disp_unit=disp_unit)
-        self.arg = arg
-
-    @classmethod    
-    def from_deg(cls, val):
-        return Angle(val, '°')
+    def __init__(self, val, unit=None):
+        super().__init__(val, 'kg/m**3', unit=unit)
 
 def main():
 
-    p = Pressure.from_bar(90)
+    p = Pressure.bar(90)
 
     print(p)
 
@@ -173,7 +214,7 @@ def main():
 
     p = Pressure(90, 'MPa')
 
-    p.disp_unit = 'Pa'
+    p.unit = 'Pa'
 
     print(p)
 
@@ -181,12 +222,12 @@ def main():
 
     print(T)
 
-    T = Temperature.from_degC(30)
+    T = Temperature.degC(30)
 
     print(T)
 
     T = Temperature(50, 'degC')
-    T.disp_unit = 'K'
+    T.unit = 'K'
     
     print(T)
 
@@ -198,7 +239,7 @@ def main():
 
     print(rho)
 
-    rho.disp_unit = 'kg/cm**3'
+    rho.unit = 'kg/cm^3'
     rho.disp_prec = 10
 
     print(rho)
@@ -207,13 +248,27 @@ def main():
 
     print(a)
 
-    a = Angle.from_deg(30)
+    a = Angle.deg(30)
 
     print(a)
 
-    a.disp_unit = 'rad'
+    a.unit = 'rad'
 
     print(a)
+
+    val = Length(2, 'mm')
+
+    print(val)   
+
+    val.unit = 'm'
+    val.disp_prec = 5
+    print(val)
+
+    empJSON = jsonpickle.encode(val, unpicklable=False)
+
+    data = json.dumps(empJSON, indent=4)
+
+    print(data)
 
 if __name__ == "__main__":
     main()
