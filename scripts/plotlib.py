@@ -16,7 +16,7 @@ class DataSeries(object):
     ''' 
     2D data Series used to contain a series of (x,y) data
     '''
-    def __init__(self, name, x, y, range_x, range_y,cs = 'r-s'):
+    def __init__(self, name, x, y, range_x, range_y,cs = 'r-s', label = []):
         self.x = x
         self.y = y
         self.name = name
@@ -25,21 +25,23 @@ class DataSeries(object):
         self.cs = cs
         self.ax_type = AxisType.Primary
         self.ticks = [None] * 2
-        self.ticks_label = [None] * 2    
+        self.ticks_label = [None] * 2 
+        self.label = label
 
-    def set_tick(self, tick, label, orient = 0):
+    def set_tick(self, tick, tick_label, orient = 0):
         '''
         orient: 0: x-axis; 1: y-axis
         '''
         self.ticks[orient] = tick
-        self.ticks_label[orient] = label
+        self.ticks_label[orient] = tick_label
 
         return self
 
 class PlotManager(object):
 
-    def __init__(self):        
+    def __init__(self, title):        
         self.series_set = dict()
+        self.title = title
 
     def add(self, series: DataSeries, ax_type: AxisType = AxisType.Primary):
         name = series.name
@@ -61,6 +63,7 @@ class PlotManager(object):
             else:
                 (fig, ax) = self.plot_xy_series(series=series, ax=ax)
 
+        fig.suptitle(self.title)
         # save the figure 
         fig.savefig(dest_file)
 
@@ -71,12 +74,14 @@ class PlotManager(object):
         i = 0
         for i in range(0, len(series.ticks)):
             tick = series.ticks[i]
-            label = series.ticks_label[i]
+            ticks_label = series.ticks_label[i]
+            label = series.label[i]
 
             if i == 0:
                 if series.ax_type == AxisType.Primary:
                     ax.set_xticks(tick)
-                    ax.set_xticklabels(label)
+                    ax.set_xticklabels(ticks_label)
+                    ax.set_xlabel(label)
                 else:
                     # ignore this top xtick for now
                     # secax = ax.secondary_xaxis('top')
@@ -86,11 +91,13 @@ class PlotManager(object):
             else:
                 if series.ax_type == AxisType.Primary:
                     ax.set_yticks(tick)
-                    ax.set_yticklabels(label)
+                    ax.set_yticklabels(ticks_label)
+                    ax.set_ylabel(label)
                 else:
                     secax = ax.secondary_yaxis('right')
                     secax.set_yticks(tick)
-                    secax.set_yticklabels(label)            
+                    secax.set_yticklabels(ticks_label)            
+                    secax.set_ylabel(label)
 
     def plot_xy_series(self, series: DataSeries, ax: mp.pyplot.axes = [], img_file = []):
         ''' 
@@ -104,7 +111,7 @@ class PlotManager(object):
     
         if ax==[]:
             img = mpimg.imread(img_file)
-            # flip the image upside down and with set orign ='lower' when call imshow
+            # flip the image upside down and set orign ='lower' when call imshow
             # to make the coordinates works in 'normal' sense
             img = np.flipud(img)
             f1 = plt.figure()
@@ -188,5 +195,3 @@ class PlotManager(object):
         y_data = [xy_data[i][1] for i in range(0, len(xy_data))]
 
         return x_data, y_data
-        
-
