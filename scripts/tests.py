@@ -11,89 +11,9 @@ import os
 import numpy as np
 import math
 
-from plot_lib import PlotManager, DataSeries, AxisType
-
-class StreamType(IntEnum):
-    Hot = 0,
-    Cold = 1
-
-class DesignParam(object):
-    '''
-    Structure containing On Design parameters
-    '''
-
-    def __init__(self, d_c = 12e-3, p=[9e6, 20e6], T=[500, 300], mdot = [8.3, 8.3], Re = 2000, N_seg = 10, len_seg=12e-3, pitch = 12e-3, phi= math.pi / 4):
-        # On design params initialization 
-        self.d_c = d_c
-        self.p = np.array(p)
-        self.T = np.array(T)
-        self.mdot = np.array(mdot)
-        self.Re = np.array(Re)
-        self.N_seg = N_seg
-        self.len_seg = len_seg  
-        self.pitch = pitch
-        self.phi = phi
-
-        # parameters determined in cal_on_design_params
-        self.d_h = 0.0
-        self.A_c = 0.0
-        self.A_f = 0.0
-        self.N_ch = 0.0
-        self.mu = np.zeros(len(self.mdot))  
-        self.G = np.zeros(len(self.mdot)) # mass flux kg/(m^2 * s) should be constant if Re, P, T, d_c are constant
-
-        self.cal_design_params()
-
-    def cal_geo_params(self):
-        d_c = self.d_c
-        A_c = math.pi * d_c * d_c / 8 
-        peri_c = d_c * math.pi / 2 + d_c          
-        d_h = 4 * A_c / peri_c
-
-        return (A_c, d_h, peri_c)
-
-    def area_flow(self):
-        return self.A_c * self.N_ch
-
-    def cal_design_params(self):
-        
-        #  0 = hot, 1 = cold, following Enum PipeType
-        A_fx = np.zeros(len(StreamType))
-
-        (self.A_c, self.d_h, peri_c) = self.cal_geo_params()
-
-        for i in StreamType:
-            self.mu[i] = PropsSI('V', 'P', self.p[i], 'T', self.T[i], "CO2")
-            
-        A_fx = np.divide(self.mdot, self.mu) * (self.d_h / self.Re)   
-
-        self.A_f = max(A_fx)
-        self.N_ch = math.ceil(self.A_f / self.A_c)
-        self.G = self.mdot / self.A_f
-
-class OffDesignParam(object):
-
-    def __init__(self, param_des: DesignParam, mdot = [], G = []):
-
-        if mdot == []:
-            if G == []:
-                raise ValueError('no mdot or G assigned for off design')
-            else:
-                mdot = np.array(G) * param_des.area_flow()     
-
-        num_stream = len(StreamType)
-
-        self.mdot = np.array(mdot)
-        self.Re = np.zeros(num_stream)
-        self.G = np.zeros(num_stream)
-        self.param_des = param_des
-        self.__update()
-
-    def __update(self):
-        p_des = self.param_des
-        A_f = self.param_des.area_flow() 
-        self.G = self.mdot / A_f
-        self.Re = np.divide(self.mdot, p_des.mu) * p_des.d_h / A_f
+from pbmodel import DesignParam, OffDesignParam, StreamType
+from plotlib import PlotManager, DataSeries, AxisType
+from utils import Unit
 
 class TestPCHEMeshram(object):
         
@@ -417,12 +337,15 @@ class TestPCHEMeshram(object):
         
         x_values = np.arange(0, len_seg * (N_seg) , len_seg) 
 
-        plot = PlotManager()
+        label_x = 'Z (m)'
+        label_T = 'T (K)'
+        label_dp = '$\Delta~p~(kPa)$ (K)'
 
-        plot.add(DataSeries(name = 'T_hot', x = x_values, y = np.array(T_hot), range_x=axis_x, range_y=axis_T, cs = 'r-s'))
-        plot.add(DataSeries(name = 'T_cold', x = x_values + len_seg, y = np.array(T_cold), range_x=axis_x, range_y=axis_T, cs = 'b-s'))
-        plot.add(DataSeries(name = 'dp_hot', x = x_values, y = np.array(dp_hot), range_x=axis_x, range_y=axis_dp, cs = 'r-^'), ax_type=AxisType.Secondary)
-        plot.add(DataSeries(name = 'dp_cold', x = x_values + len_seg, y = np.array(dp_cold), range_x=axis_x, range_y=axis_dp, cs = 'b-^'), ax_type=AxisType.Secondary)
+        plot = PlotManager(title='Zigzag Channel @ High Temperature Range')
+        plot.add(DataSeries(name = 'T_hot', x = x_values, y = np.array(T_hot), range_x=axis_x, range_y=axis_T, cs = 'r-s', label=[label_x, label_T]))
+        plot.add(DataSeries(name = 'T_cold', x = x_values + len_seg, y = np.array(T_cold), range_x=axis_x, range_y=axis_T, cs = 'b--s', label=[label_x, label_T]))
+        plot.add(DataSeries(name = 'dp_hot', x = x_values, y = np.array(dp_hot), range_x=axis_x, range_y=axis_dp, cs = 'r-^', label=[label_x, label_dp]), ax_type=AxisType.Secondary)
+        plot.add(DataSeries(name = 'dp_cold', x = x_values + len_seg, y = np.array(dp_cold), range_x=axis_x, range_y=axis_dp, cs = 'b--^', label=[label_x, label_dp]), ax_type=AxisType.Secondary)
 
         return plot
 
@@ -444,6 +367,7 @@ class TestPCHEMeshram(object):
         self.gen_plot_manager(result_dict).draw(img_file=imgfile, dest_file= self.path_out + "/Meshram_Fig%db_compare.png"%(4 + zigzag))
 
         print('all done!') 
+
 class TestScenario(IntEnum):
     '''
     TestScenario Index for Meshram [2016]
@@ -452,36 +376,6 @@ class TestScenario(IntEnum):
     straight_high_T = 1,
     zigzag_low_T = 2,
     zigzag_high_T = 3
-
-class Unit(object):
-    '''
-    class for unit conversion
-    # IMPORTANT: SIunits will be used in this script : [T] = K, [p] = pa, [length] = m, [angle] = rad
-    '''
-    from pint import UnitRegistry
-    ureg = UnitRegistry()
-
-    @staticmethod
-    def convert(val, src_unit, dest_unit):
-        ureg = Unit.ureg
-        ureg.Unit
-        src = val * ureg[src_unit]
-        return src.to(ureg[dest_unit]).magnitude
-
-    @staticmethod
-    def from_bar(val):
-        return Unit.convert(val, 'bar', 'Pa')
-
-    @staticmethod
-    def from_degC(val):
-        return Unit.convert(val, '°C','K')
-
-    @staticmethod
-    def from_deg(val): 
-        '''
-        deg to rad for angle
-        '''
-        return Unit.convert(val, '°', 'rad')
 
 def main(work_root = []):
     # root path of modelica root
@@ -492,9 +386,7 @@ def main(work_root = []):
     scenario = TestScenario.zigzag_high_T    
   
     # configuration of different test scenario in meshram [2016] - table 3
-    # arranged in same order as Enum TestScenario
-
-    # IMPORTANT: SIunits will be used in this script : [T] = K, [p] = pa, [length] = m, [angle] = rad, [mass] = kg, [time] = s   
+    # arranged in same order as Enum TestScenario    
 
     T_cold_in = [400, 500, 400, 500][scenario] # unit K
     p_cold_in = Unit.from_bar(225)
@@ -532,7 +424,7 @@ def main(work_root = []):
 
     test = TestPCHEMeshram(work_root, param_des=param_des, param_odes=param_odes)
 
-    test.run(simulate=True)    
+    test.run(simulate=False)    
 
 ###
 if __name__ == "__main__":

@@ -5,10 +5,10 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: testPCHEMeshram",
+            "name": "Python: TestPCHEMeshram",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/scripts/testPCHEMeshram.py",
+            "program": "${workspaceFolder}/scripts/tests.py",
             "console": "integratedTerminal"
         },
         {
