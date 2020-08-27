@@ -6,7 +6,10 @@ import numpy as np
 import math
 from enum import IntEnum
 from CoolProp.CoolProp import PropsSI
-from physics import Temperature, Pressure, MDot, Velocity, Density, Angle
+from physics import Temperature, Pressure, MDot, Velocity, Density, Angle, Length
+from copy import deepcopy
+
+import simplejson as json
 
 class StreamType(IntEnum):
     Hot = 0,
@@ -58,7 +61,7 @@ class DesignParam(object):
         (self.A_c, self.d_h, peri_c) = self.cal_geo_params()
 
         for i in StreamType:
-            self.mu[i] = CP.PropsSI('V', 'P', self.p[i], 'T', self.T[i], "CO2")
+            self.mu[i] = PropsSI('V', 'P', self.p[i], 'T', self.T[i], "CO2")
             
         A_fx = np.divide(self.mdot, self.mu) * (self.d_h / self.Re)   
 
@@ -100,21 +103,22 @@ class ThermoState(object):
         self._T = T
 
     @property
-    def p(self):
+    def p(self) -> Pressure:
         """The p property."""
         return self._p
     @p.setter
-    def p(self, value):
+    def p(self, value: Pressure):
         self._p = value
 
     @property
-    def T(self):
+    def T(self) -> Temperature:
         """The T property."""
         return self._T
     @T.setter
-    def T(self, value):
+    def T(self, value: Temperature):
         self._T = value
-        
+
+   
 
 class TestConfig(object):
     '''
@@ -127,33 +131,39 @@ class TestConfig(object):
         # default values of test case - Meshram [2016] Fig 4(b) - zigzag channel @ High Temperature
 
         # document property         
-        self.name = "zigzg channal @ High Temperature"
+        self.name = "zigzg channal, High Temperature"
 
         # geomerty
-        self.d_c = 2e-3
-        self.pitch = 12.3e-3
-        self.phi = uc_from_deg(180 - 108) / 2
+        self.d_c = Length.mm(2)
+
+        self.pitch = Length.mm(12.3)
+
+        self.phi = Angle.deg((180 - 108) / 2)
 
         # on design propery
         self.Re_des = 14500
         self.N_seg = 10
-        self.l_cell = 12e-3
+        self.l_cell = Length.mm(12)
 
         # fluid property
         # hot stream state 
-        self.st_hot_in = ThermoState(p=Pressure.from_bar(90), T = Temperature(730))
-        self.st_hot_out = ThermoState(p=Pressure.from_bar(90), T = Temperature(576.69))
+        self.p_hot_in = p=Pressure.bar(90)
+        self.T_hot_in = T = Temperature(730)
+        self.p_hot_out = p=Pressure.bar(90)
+        self.T_hot_out = T = Temperature(576.69)
 
         # cold stream state
-        self.st_cold_in = ThermoState(p = Pressure.from_bar(225), T = Temperature(500))
-        self.st_cold_out = ThermoState(p = Pressure.from_bar(225), T = Temperature(639.15))
+        self.p_cold_in = p=Pressure.bar(225)
+        self.T_cold_in = T = Temperature(500)
+        self.p_cold_out = p=Pressure.bar(90)
+        self.T_cold_out = T = Temperature(639.15)
+        
+        self.media_hot = "CO2"
+        self.media_cold = "CO2"
         
         # mass flow rate
         self.mdot_hot = MDot(10)
         self.mdot_cold = MDot(10)
-
-        self.media_hot = "Hot"
-        self.media_cold = "Cold"
 
         # off design configuration
         self.mdot_hot_odes = MDot(100)
@@ -162,9 +172,95 @@ class TestConfig(object):
         self.u_hot_odes = Velocity(7.564)
         self.u_cold_odes = Velocity(1.876)
 
-        st = self.st_hot_in    
-        self.rho_hot_odes = Density(PropsSI('D', 'P', st.p, 'T', st.T, media_hot))
+        self.rho_hot_odes = Density(PropsSI('D', 'P', self.p_hot_in.mag, 'T', self.T_hot_in.mag, self.media_hot))
 
-        st = self.st_cold_in
-        self.rho_cold_odes = Density(PropsSI('D', 'P', st.p, 'T', st.T, media_cold))
+        self.rho_cold_odes = Density(PropsSI('D', 'P', self.p_cold_in.mag, 'T', self.T_cold_in.mag, self.media_cold))
 
+    def gen_test_param(self) -> (DesignParam, OffDesignParam):
+
+        param_des = DesignParam(
+            d_c=self.d_c.mag, 
+            p=[self.p_hot_in.mag, self.p_cold_in.mag], 
+            T=[self.T_hot_in.mag, self.T_cold_in.mag], 
+            Re=self.Re_des, 
+            mdot=[self.mdot_hot.mag, self.mdot_cold.mag],
+            N_seg= self.N_seg, 
+            len_seg= self.l_cell.mag, 
+            pitch = self.pitch.mag, 
+            phi = self.phi.mag)
+
+        # param_odes = OffDesignParam(param_des=param_des, G = np.multiply(u_odes, rho_odes))
+        param_odes = OffDesignParam(param_des=param_des, mdot = [self.mdot_hot_odes.mag, self.mdot_cold_odes.mag])
+
+        return (param_des, param_odes)
+
+class ParamGroup(object):
+
+    def __init__(self, test_names):
+        super().__init__()
+        self.test_names = test_names
+        self.para_seqs = {}
+
+    def add_para_seq(self, param_name, seq):
+        if(len(seq) == len(self.test_names)):
+            self.para_seqs[param_name] = seq
+        else:
+            raise ValueError("number of vals not equal to test number")
+            
+    def get_test_value(self, idx):
+        '''
+        get value set for one test
+        '''
+
+        test_vals = []
+
+        for name, seq in self.para_seqs.items():
+            test_vals.append((name, seq[idx]))
+
+        return test_vals
+
+class ParamSweepSet(object):
+
+    def __init__(self):
+        super().__init__()
+
+        self.groups = {}
+
+    def new_group(self, name, test_names):
+        g = ParamGroup(test_names)
+        self.groups[name] = g
+        return g
+
+    def gen_configs(self, config: TestConfig):
+        '''
+        generate serveral configs based a given config
+        '''
+        clones = []
+
+        for k,group in self.groups.items():
+            test_names = group.test_names
+            
+            for i in range(0, len(test_names)):
+                clone = deepcopy(config)
+
+                test_value = group.get_test_value(i)
+
+                clone.name = clone.name + '@' + test_names[i]
+
+                for name, val in test_value:
+                    clone.__setattr__(name, val)
+
+                clones.append(clone)
+
+        return clones
+
+
+def main():
+
+
+
+    print('done')
+
+
+if __name__ == "__main__":
+    main()

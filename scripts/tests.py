@@ -13,11 +13,12 @@ import math
 
 from pbmodel import DesignParam, OffDesignParam, StreamType
 from plotlib import PlotManager, DataSeries, AxisType
-from utils import Unit
+from physics import Temperature, Pressure, MDot, Velocity, Density, Angle, Length
+from pbmodel import ParamSweepSet, TestConfig
 
 class TestPCHEMeshram(object):
         
-    def __init__(self, work_root, param_des = None, param_odes = []):
+    def __init__(self, work_root):
         super().__init__()
         # common variable defination
         self.path_pics = "pics"
@@ -28,13 +29,10 @@ class TestPCHEMeshram(object):
         self.prepare_workspace()
 
         # params initialization
-        if param_des == None:
-            self.param_des = DesignParam()
-        else:
-            self.param_des = param_des
+        self.param_des = None
 
         # Off design params
-        self.param_odes = param_odes
+        self.param_odes = None
     
     def prepare_workspace(self):
         '''
@@ -222,7 +220,7 @@ class TestPCHEMeshram(object):
 
         return params
 
-    def run_simulation(self, result_dict):
+    def run_simulation(self, cfg:TestConfig, param_set, result_dict):
 
         omc = OMCSessionZMQ()
         # path = inspect.getfile(omc.__class__)
@@ -231,21 +229,25 @@ class TestPCHEMeshram(object):
         # options for simulation - steady state simulation, no iteration required, so set numberOfIntervals = 2 
         mod.setSimulationOptions('stepSize  = 0.2')
 
-        pars = self.gen_model_param()
+        clones = param_set.gen_configs(cfg)
 
-        mod.setParameters(pars)
+        for clone in clones:
+            (self.param_des, self.param_odes) = clone.gen_test_param()
+            pars = self.gen_model_param()
 
-        mod.simulate()
+            mod.setParameters(pars)
 
-        # collect data in solutions
-        for sol_key in result_dict.keys():
-            l = result_dict[sol_key]
-            sol = mod.getSolutions(sol_key)
-            if not sol is None:
-                val = mod.getSolutions(sol_key)[0][0]
-                l.append(val)
-            else:
-                print("solution with key = {0} not exsits".format(sol_key))
+            mod.simulate()
+
+            # collect data in solutions
+            for sol_key in result_dict.keys():
+                l = result_dict[sol_key]
+                sol = mod.getSolutions(sol_key)
+                if not sol is None:
+                    val = mod.getSolutions(sol_key)[0][0]
+                    l.append(val)
+                else:
+                    print("solution with key = {0} not exsits".format(sol_key))
 
     def __update_cal_fields(self, result_dict):
         # fill calculated fields into the result_dict
@@ -349,12 +351,12 @@ class TestPCHEMeshram(object):
 
         return plot
 
-    def run(self, simulate = True):
+    def run(self, cfg: TestConfig, param_set: ParamSweepSet, simulate = True):
 
         if simulate:
             result_dict = self.__gen_result_dict()              
 
-            self.run_simulation(result_dict)
+            self.run_simulation(cfg, param_set,result_dict)
 
             self.save_results(result_dict)
         
@@ -368,63 +370,30 @@ class TestPCHEMeshram(object):
 
         print('all done!') 
 
-class TestScenario(IntEnum):
-    '''
-    TestScenario Index for Meshram [2016]
-    '''
-    straight_low_T = 0,
-    straight_high_T = 1,
-    zigzag_low_T = 2,
-    zigzag_high_T = 3
-
 def main(work_root = []):
     # root path of modelica root
     if work_root == []:
         work_root = os.path.abspath(os.curdir)
 
-    # index of test scenario
-    scenario = TestScenario.zigzag_high_T    
-  
-    # configuration of different test scenario in meshram [2016] - table 3
-    # arranged in same order as Enum TestScenario    
+    cfg = TestConfig()
 
-    T_cold_in = [400, 500, 400, 500][scenario] # unit K
-    p_cold_in = Unit.from_bar(225)
-    
-    T_cold_out = [498.45, 615.48, 522.23, 639.15][scenario]
-    p_cold_out = Unit.from_bar(225)
+    para_sweep_set = ParamSweepSet()
 
-    T_hot_in = [630, 730, 630, 730][scenario]
-    p_hot_in = Unit.from_bar(90)
+    g = para_sweep_set.new_group("group1", ["Re_des = 5000", "Re_des = 20000"])
+    g.add_para_seq("Re_des", [5000, 20000])
 
-    T_hot_out = [494.37, 601.83, 466.69, 576.69][scenario]
-    p_hot_out = Unit.from_bar(90)
-    
-    mdot = np.array([10, 10])
 
-    phi = [Unit.from_deg(0), Unit.from_deg(0), Unit.from_deg((180 - 108) /2), Unit.from_deg((180 - 108) /2)][scenario]
+    g = para_sweep_set.new_group("group2", [r"$\dot{m}_{off}$ = 10", r"${\dot{m}_{off}$ = 100"])
+    g.add_para_seq("mdot_hot_odes", [MDot(10), MDot(100)])
+    g.add_para_seq("mdot_cold_odes", [MDot(10), MDot(100)])
 
-    param_des = DesignParam(d_c=2e-3, p=[p_hot_in, p_cold_in], T=[T_hot_in, T_cold_in], Re=18000, mdot=mdot, N_seg = 10, len_seg=12e-3, pitch = 12e-3, phi = phi)
+    g = para_sweep_set.new_group("group3", [r"$(p,T)_{hi}$ = 10 MPa, 450°", r"$(p,T)_{hi}$ = 12 MPa, 300°"])
+    g.add_para_seq("p_hot_in", [Pressure.MPa(10), Pressure(12)])
+    g.add_para_seq("T_hot_in", [Temperature.degC(730), Temperature.degC(300)])    
 
-    # index of array for hot/cold stream
-    # 0 hot stream, 1 cold stream
-    mdot_odes = np.array([10, 10])
-    # array to store meshram's data     
-    p = np.array([p_hot_in, p_cold_in])
-    T = np.array([T_hot_in, T_cold_in])
-    media_name = ['CO2', 'CO2']
-    u_odes = np.array([7.564, 1.876]) # off design velocity for hot/cold inlet
-    
-    rho_odes  = np.zeros(len(u_odes)) 
-    for stream in StreamType:
-        rho_odes[stream] = PropsSI('D', 'P', p[stream], 'T', T[stream], media_name[stream])
+    test = TestPCHEMeshram(work_root)
 
-    # param_odes = OffDesignParam(param_des=param_des, G = np.multiply(u_odes, rho_odes))
-    param_odes = OffDesignParam(param_des=param_des, mdot = mdot_odes)
-
-    test = TestPCHEMeshram(work_root, param_des=param_des, param_odes=param_odes)
-
-    test.run(simulate=False)    
+    test.run( cfg, para_sweep_set, simulate=True)    
 
 ###
 if __name__ == "__main__":
