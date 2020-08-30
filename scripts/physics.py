@@ -20,21 +20,6 @@ class Unit(object):
         src = val * ureg[src_unit]
         return src.to(ureg[dest_unit]).magnitude
 
-    @classmethod
-    def from_bar(cls, val):
-        return Unit.convert(val, 'bar', 'Pa')
-
-    @classmethod
-    def from_degC(cls, val):
-        return Unit.convert(val, '°C','K')
-
-    @classmethod
-    def from_deg(cls, val): 
-        '''
-        deg to rad for angle
-        '''
-        return Unit.convert(val, '°', 'rad')
-
 class Quantity(object):
     '''
         pyhsics quantity : magnitude [unit], such as 1 m, 10 s or 1e6 pa 

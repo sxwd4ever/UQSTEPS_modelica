@@ -4,14 +4,17 @@ from OMPython import ModelicaSystem
 from datetime import datetime as dt
 from enum import IntEnum
 from CoolProp.CoolProp import PropsSI
+import pandas as pd
+import xlwings as xw
 
 import inspect
 import csv
 import os
+from os import path
 import numpy as np
 import math
 
-from model import DesignParam, OffDesignParam, StreamType, TestResult, TestDataSet, ParamSweepSet, TestConfig
+from model import TestResult, TestDataSet, TestConfig
 from plotlib import PlotManager, DataSeries, AxisType
 from physics import Temperature, Pressure, MDot, Velocity, Density, Angle, Length
 
@@ -24,9 +27,10 @@ class TestPCHEMeshram(object):
         self.path_out = "out"
 
         self.work_root = work_root
-        self.model_path_root = work_root + r"/Steps" 
-        self.prepare_workspace()
-   
+        self.model_path_root = path.join(work_root,"Steps")
+        self.prepare_workspace()        
+
+ 
     def prepare_workspace(self):
         '''
         prepare the workspace for simulation, the directory structure is
@@ -68,25 +72,30 @@ class TestPCHEMeshram(object):
         libs = ["libCoolProp.a", 'libCoolProp.dll']
         for lib in libs:            
             if not os.path.exists(lib):
-                shutil.copyfile(self.model_path_root + r"\Resources\Library\\" + lib, ".\\" + lib) # completa target name needed 
+                paths = ["Resources", "Library"]
+                lib_path = self.model_path_root
+                for path in paths:
+                    lib_path = path.join(lib_path, path)
+
+                shutil.copyfile( + lib, path.join("." + lib)) # completa target name needed 
 
     def run_simulation(self, ds_test : TestDataSet):
 
         omc = OMCSessionZMQ()
         # path = inspect.getfile(omc.__class__)
 
-        mod = ModelicaSystem(self.model_path_root + r"\package.mo","Steps.Test.TestPCHXMeshram",["Modelica 3.2.1"])
+        mod = ModelicaSystem(path.join(self.model_path_root,"package.mo"),"Steps.Test.TestPCHXMeshram",["Modelica 3.2.1"])
         # options for simulation - steady state simulation, no iteration required, so set numberOfIntervals = 2 
         mod.setSimulationOptions('stepSize  = 0.2')
 
-        for test_item in ds_test:
-            cfg = test_item.cfg
+        for test in ds_test:
+            cfg = test.cfg
 
-            mod.setParameters(test_item.gen_sim_param())
+            mod.setParameters(test.gen_sim_param())
 
             mod.simulate()
 
-            result = test_item.result
+            result = test.result
 
             # collect data in solutions
             for sol_key in result:
@@ -97,26 +106,80 @@ class TestPCHEMeshram(object):
                     print("solution with key = {0} not exsits".format(sol_key))
 
             # result.update_cal_columns()
-            
+
         print('Simulation done, save result next')   
 
-    def save_results(self, result_dict, file_name = []):
+        self.save_results(ds_test)    
+
+    def save_results(self, ds_test : TestDataSet):
         '''
         save the simulation result into files    
         '''
+        # create directory for current test batch
+        name_batch = path.join(self.path_out, ds_test.name)
 
-        if file_name == [] :
-            file_name = self.path_out + "/result_%Y_%m_%d_%H_%M_%S.csv"
+        xw_app = xw.App(visible=False)
 
-        with open(dt.now().strftime(file_name) ,mode='w', newline='\n') as csv_file:            
+        wbs = []
 
-            writer = csv.DictWriter(csv_file, delimiter=',', quotechar='"', fieldnames=['name','value'])
+        try:
 
-            writer.writeheader()
+            if not os.path.exists(name_batch):
+                os.mkdir(name_batch)        
 
-            for k,v in result_dict.items():
-                val_str = '{0}'.format(v)[1:-1] # remove the surrounding square brackets
-                writer.writerow({'name': k, 'value': val_str})                                
+            for test in ds_test:
+                cfg = test.cfg
+                gname = cfg.group_name
+
+                if gname not in wbs:
+                    wbk = xw_app.books.add()
+                    wbs.append(gname)
+                else:
+                    wbk = xw.apps.books[gname]            
+
+                sht = wbk.sheets.add(name = cfg.name)
+                x = 1
+
+                title = {"Table 1": "Test Config of " + cfg.name}
+                df = pd.DataFrame(title, index=[0]) 
+                sht.range(x, 1).options(pd.DataFrame, index=False, transpose=True).value = df
+                x = sht.range(x, 1).expand().last_cell.row + 1
+
+                # config
+                df = cfg.to_data_frame()   
+                sht.range(x, 1).options(pd.DataFrame, index=False, transpose=True).value = df
+                x = sht.range(x, 1).expand().last_cell.row + 2
+
+                title = {"Table 2": "Test Result of " + cfg.name}
+                df = pd.DataFrame(title, index=[0]) 
+                sht.range(x, 1).options(pd.DataFrame, index=False, transpose=True).value = df
+                x = sht.range(x, 1).expand().last_cell.row + 1
+
+                df = test.result.to_data_frame()
+                sht.range(x, 1).options(pd.DataFrame, index=False, transpose=True).value = df
+
+            for k in wbs:
+                wb = xw_app.books[k]
+                wb.save(os.path.join(name_batch, k))
+
+        finally:
+            xw_app.quit() # close the xlwings app finally
+
+            # result = test.result
+
+            # file_name = path.join(name_batch, "result_{0}.csv".format(cfg.name))
+
+            # with open(file_name, mode='w', newline='\n') as csv_file:            
+
+            #     writer = csv.DictWriter(csv_file, delimiter=',', quotechar='', fieldnames=['name','value'])
+
+            #     writer.writeheader()
+
+            #     for k in result:
+            #         v = result.get_values(k)
+            #         val_str = '{0}'.format(v)[1:-1] # remove the surrounding square brackets
+            #         val_str = val_str.replace('[','').replace(']','').replace(' ', ',')
+            #         writer.writerow({'name': k, 'value': val_str})                                
 
     def load_result(self):
         '''
@@ -192,14 +255,15 @@ class TestPCHEMeshram(object):
 
         if simulate:                          
             self.run_simulation(ds_test)            
-        
-        # load the simulation result from latest, pre-saved file
-        result = self.load_result()
+            print('simulation done, ready to plot figures')
+        else:
+            # load the simulation result from latest, pre-saved file
+            ds_test = self.load_result()
 
         zigzag = 1
         imgfile = [self.path_pics + "/Meshram_Fig_04.png", self.path_pics + "/Meshram_Fig_05.png"][zigzag]    
         
-        self.gen_plot_manager(result).draw(img_file=imgfile, dest_file= self.path_out + "/Meshram_Fig%db_compare.png"%(4 + zigzag))
+        self.gen_plot_manager(ds_test).draw(img_file=imgfile, dest_file= self.path_out + "/Meshram_Fig%db_compare.png"%(4 + zigzag))
 
         print('all done!') 
 
@@ -208,25 +272,26 @@ def main(work_root = []):
     if work_root == []:
         work_root = os.path.abspath(os.curdir)
 
-    cfg = TestConfig()
+    cfg_ref = TestConfig()
 
-    para_set = ParamSweepSet()
+    ds_test = TestDataSet(dt.now().strftime("Test_%Y_%m_%d_%H_%M_%S"), cfg=cfg_ref)
 
-    g = para_set.new_group("group1", ["Re_des = 5000", "Re_des = 20000"])
-    g.add_para_seq("Re_des", [5000, 20000])
+    g = ds_test.new_para_group("zigzag_HT", ["Single"])
+    g.add_para_seq("Re_des", [5000])
+    g.submit() # only submited group will be valid for test
 
+    g = ds_test.new_para_group("zigzag_HT_diff_Re", ["Re_des = 5000", "Re_des = 20000"])
+    g.add_para_seq("Re_des", [5000, 20000])    
 
-    g = para_set.new_group("group2", [r"$\dot{m}_{off}$ = 10", r"${\dot{m}_{off}$ = 100"])
+    g = ds_test.new_para_group("zigzag_HT_diff_mdot", [r"$\dot{m}_{off}$ = 10", r"${\dot{m}_{off}$ = 100"])
     g.add_para_seq("mdot_hot_odes", [MDot(10), MDot(100)])
     g.add_para_seq("mdot_cold_odes", [MDot(10), MDot(100)])
-    g.enable = False
+    # g.submit()
 
-    g = para_set.new_group("group3", [r"$(p,T)_{hi}$ = 10 MPa, 450°", r"$(p,T)_{hi}$ = 12 MPa, 300°"])
+    g = ds_test.new_para_group("zigzag_HT_diff_pT_in", [r"$(p,T)_{hi}$ = 10 MPa, 450°", r"$(p,T)_{hi}$ = 12 MPa, 300°"])
     g.add_para_seq("p_hot_in", [Pressure.MPa(10), Pressure(12)])
     g.add_para_seq("T_hot_in", [Temperature.degC(730), Temperature.degC(300)])   
-    g.enable = False 
-
-    ds_test = TestDataSet(cfg=cfg, para_set=para_set)
+    # g.submit
 
     test = TestPCHEMeshram(work_root)
 

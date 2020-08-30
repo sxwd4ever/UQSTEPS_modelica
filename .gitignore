@@ -51,7 +51,6 @@ coverage.xml
 .pytest_cache/
 
 # Translations
-*.mo
 *.pot
 
 # Django stuff:
@@ -122,6 +121,3 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
-
-# My custormerized build director
-build/
