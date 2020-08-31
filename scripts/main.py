@@ -1,22 +1,19 @@
+from os.path import pathsep
 from OMPython import OMCSessionZMQ
-from OMPython import OMCSession
 from OMPython import ModelicaSystem
 from datetime import datetime as dt
-from enum import IntEnum
-from CoolProp.CoolProp import PropsSI
 import pandas as pd
 import xlwings as xw
 
-import inspect
 import csv
 import os
 from os import path
 import numpy as np
-import math
 
-from model import TestResult, TestDataSet, TestConfig
+from model import TestDataSet, TestConfig
 from plotlib import PlotManager, DataSeries, AxisType
-from physics import Temperature, Pressure, MDot, Velocity, Density, Angle, Length
+from physics import Temperature, Pressure, MDot
+from utils import ExcelHelper
 
 class TestPCHEMeshram(object):
         
@@ -75,9 +72,9 @@ class TestPCHEMeshram(object):
                 paths = ["Resources", "Library"]
                 lib_path = self.model_path_root
                 for path in paths:
-                    lib_path = path.join(lib_path, path)
+                    lib_path = pathsep.join([lib_path, path])
 
-                shutil.copyfile( + lib, path.join("." + lib)) # completa target name needed 
+                shutil.copyfile(lib_path + lib, pathsep.join([".",lib])) # completa target name needed 
 
     def run_simulation(self, ds_test : TestDataSet):
 
@@ -118,7 +115,7 @@ class TestPCHEMeshram(object):
         # create directory for current test batch
         name_batch = path.join(self.path_out, ds_test.name)
 
-        xw_app = xw.App(visible=False)
+        xw_app: xw.App = xw.App(visible=False)
 
         wbs = []
 
@@ -135,28 +132,20 @@ class TestPCHEMeshram(object):
                     wbk = xw_app.books.add()
                     wbs.append(gname)
                 else:
-                    wbk = xw.apps.books[gname]            
+                    wbk = xw_app.books[gname]
 
                 sht = wbk.sheets.add(name = cfg.name)
-                x = 1
+
+                ex: ExcelHelper = ExcelHelper(sht)
 
                 title = {"Table 1": "Test Config of " + cfg.name}
-                df = pd.DataFrame(title, index=[0]) 
-                sht.range(x, 1).options(pd.DataFrame, index=False, transpose=True).value = df
-                x = sht.range(x, 1).expand().last_cell.row + 1
 
                 # config
-                df = cfg.to_data_frame()   
-                sht.range(x, 1).options(pd.DataFrame, index=False, transpose=True).value = df
-                x = sht.range(x, 1).expand().last_cell.row + 2
+                ex.write_dict(cfg.to_dict(), title_dict=title, linespacing=True)
 
                 title = {"Table 2": "Test Result of " + cfg.name}
-                df = pd.DataFrame(title, index=[0]) 
-                sht.range(x, 1).options(pd.DataFrame, index=False, transpose=True).value = df
-                x = sht.range(x, 1).expand().last_cell.row + 1
+                ex.write_dict(test.result.to_dict(), title_dict= title, linespacing= True)
 
-                df = test.result.to_data_frame()
-                sht.range(x, 1).options(pd.DataFrame, index=False, transpose=True).value = df
 
             for k in wbs:
                 wb = xw_app.books[k]
@@ -181,7 +170,7 @@ class TestPCHEMeshram(object):
             #         val_str = val_str.replace('[','').replace(']','').replace(' ', ',')
             #         writer.writerow({'name': k, 'value': val_str})                                
 
-    def load_result(self):
+    def load_result(self) -> TestDataSet:
         '''
         Load simulation result from the latest, saved file
         '''
@@ -274,7 +263,7 @@ def main(work_root = []):
 
     cfg_ref = TestConfig()
 
-    ds_test = TestDataSet(dt.now().strftime("Test_%Y_%m_%d_%H_%M_%S"), cfg=cfg_ref)
+    ds_test = TestDataSet(name = dt.now().strftime("Test_%Y_%m_%d_%H_%M_%S"), cfg=cfg_ref)
 
     g = ds_test.new_para_group("zigzag_HT", ["Single"])
     g.add_para_seq("Re_des", [5000])

@@ -9,7 +9,8 @@
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/scripts/tests.py",
-            "console": "integratedTerminal"
+            "console": "integratedTerminal",
+            "python.terminal.activateEnvironment": true
         },
         {
             "name": "Python: Current File",

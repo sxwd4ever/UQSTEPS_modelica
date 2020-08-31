@@ -1,24 +1,50 @@
 '''
     Utility class and method for Tests
 '''
+from numpy.core.fromnumeric import transpose
+from numpy.core.function_base import linspace
+from numpy.core.getlimits import _title_fmt
+import pandas as pd
+import xlwings as xw
 
+class ExcelHelper(object):
+    """
+    Helper class for reading and writing excels
+    """
 
-# unit conversion helper function
+    def __init__(self, sht:xw.Sheet, col_start = 1):
+        super().__init__()
+        self._row_idx: int = 1
+        self._col_start = col_start
+        self._sht: xw.Sheet = sht # the Sheet this helper working on
 
-# def uc_from_bar(p):
-#     '''
-#     transform from bar to pa for Pressure
-#     '''    
-#     return Unit.from_bar(p)
+    def reset(self, sht=None):
+        self._row_idx = 1
+        if sht != None:
+            self._sht = sht
 
-# def uc_from_degC(degC):
-#     '''
-#     transform from deg to K for Temperature
-#     '''    
-#     return Unit.from_degC(degC)
+    def _do_write_dict(self, dict_:dict, linespacing=False):
 
-# def uc_from_deg(deg):
-#     '''
-#     transform from deg to rad for angle
-#     '''
-#     return Unit.from_deg(deg)
+        df:pd.DataFrame = pd.DataFrame.from_dict(dict_, orient='index') # (dict_, index=[0])
+        rng:xw.Range = self._sht.range(self._row_idx, self._col_start)
+
+        rng.options(pd.DataFrame, header=False).value = df
+        self._row_idx: int = rng.expand().last_cell.row + 1
+
+        if linespacing:
+            self._row_idx += 1
+
+    def write_dict(self, dict_:dict, title_dict:dict=None, linespacing=False):
+        """
+        """
+        if title_dict != None:            
+            self._do_write_dict(dict_=title_dict)
+
+        self._do_write_dict(dict_=dict_, linespacing=True)
+
+class TestDataIO(object):
+    """
+
+    """
+
+    pass
