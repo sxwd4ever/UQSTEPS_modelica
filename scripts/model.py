@@ -6,17 +6,20 @@ import math
 from copy import deepcopy
 from datetime import datetime as dt
 from enum import IntEnum
+from typing import Tuple
 
 # 3rd or python modules
 import numpy as np
 from CoolProp.CoolProp import PropsSI
 import pandas as pd
+from xlwings.main import Book
 
 
 # my modules
 from physics import (Quantity, Angle, Density, Length, MDot, Pressure, Temperature,
                      Velocity)
 
+from utils import ExcelHelper
 
 class StreamType(IntEnum):
     Hot = 0,
@@ -69,8 +72,8 @@ class DesignParam(object):
 
         for i in StreamType:
             self.mu[i] = PropsSI('V', 'P', self.p[i], 'T', self.T[i], "CO2")
-            
-        A_fx = np.divide(self.mdot, self.mu) * (self.d_h / self.Re)   
+
+        A_fx =  np.divide(self.mdot, self.mu) * (self.d_h / self.Re)   
 
         self.A_f = max(A_fx)
         self.N_ch = math.ceil(self.A_f / self.A_c)
@@ -171,11 +174,11 @@ class ParamSet(object):
 
         return val_dict
 
-    def to_data_frame(self):
-        """
-        transform this config into a pandas data frame 
-        """
-        return pd.DataFrame(self.to_dict(), index=[0])               
+    # def to_data_frame(self):
+    #     """
+    #     transform this config into a pandas data frame 
+    #     """
+    #     return pd.DataFrame(self.to_dict(), index=[0])               
 
 class TestConfig(ParamSet):
     '''
@@ -188,7 +191,7 @@ class TestConfig(ParamSet):
         # default values of the test case - Meshram [2016] Fig 4(b) - zigzag channel @ High Temperature
 
         # document property         
-        self.name = name
+        self.name = "default config"
 
         self._group_name = group_name        
 
@@ -246,10 +249,10 @@ class TestConfig(ParamSet):
         p, T = self.get(pk.p_cold_in), self.get(pk.T_cold_in)
         self.set(pk.rho_cold_odes, Density(PropsSI('D', 'P', p, 'T', p, self.get(pk.media_cold))))
 
-    def gen_test_param(self) -> (DesignParam, OffDesignParam):
+    def gen_test_param(self) -> Tuple[DesignParam, OffDesignParam]:
         pk = ParamKeys
 
-        param_des = DesignParam(
+        param_des:DesignParam = DesignParam(
             d_c=self.get(pk.d_c), 
             p=[self.get(pk.p_hot_in), self.get(pk.p_cold_in)], 
             T=[self.get(pk.T_hot_in), self.get(pk.T_cold_in)], 
@@ -261,7 +264,7 @@ class TestConfig(ParamSet):
             phi = self.get(pk.phi))
 
         # param_odes = OffDesignParam(param_des=param_des, G = np.multiply(u_odes, rho_odes))
-        param_odes = OffDesignParam(param_des=param_des, mdot = [self.get(pk.mdot_hot_odes), self.get(pk.mdot_cold_odes)])
+        param_odes:OffDesignParam = OffDesignParam(param_des=param_des, mdot = [self.get(pk.mdot_hot_odes), self.get(pk.mdot_cold_odes)])
         return (param_des, param_odes)
 
     @property
@@ -273,6 +276,12 @@ class TestConfig(ParamSet):
     def group_name(self, value):
         self._group_name = value
 
+    @property
+    def full_name(self) -> str :
+        """The full_name property."""
+        return self._group_name + '@' + self.name
+
+
 class ParamGroup(object):
     """
         Corresponding to a set of Tests to see the effect of param sweep
@@ -283,7 +292,7 @@ class ParamGroup(object):
         self.test_names = test_names
         self.para_seqs = {}
         self._enable = enable
-        self.ds_test = None
+        self.ds_test: TestDataSet
 
     def add_para_seq(self, param_name, seq):
         if(len(seq) == len(self.test_names)):
@@ -474,9 +483,9 @@ class TestResult(object):
             data = result_dict
 
             if len(vals) == 2:
-                result_dict[item['key']] = __cal_row([data[vals[0]], data[vals[1]]], eval_str=item['eval_str'])
+                result_dict[item['key']] = self.__cal_row([data[vals[0]], data[vals[1]]], eval_str=item['eval_str'])
             elif len(vals) == 3:
-                result_dict[item['key']] = __cal_row([data[vals[0]], data[vals[1]], data[vals[2]]], eval_str=item['eval_str'])   
+                result_dict[item['key']] = self.__cal_row([data[vals[0]], data[vals[1]], data[vals[2]]], eval_str=item['eval_str'])   
 
     def __iter__(self):
         self._keys = list(self._result_dict.keys())
@@ -501,14 +510,12 @@ class TestResult(object):
 
         return self._result_dict[para_name]
 
-    def to_data_frame(self):
+    def to_dict(self) -> dict:
         dict_ = {}
         for k, v in self._result_dict.items():
-            dict_[k]  = list(v)
+            dict_[k]  = v.tolist()[0] # get the row 1 for 1d list
             
-        df = pd.DataFrame.from_dict(dict_, orient='index')
-
-        return df
+        return dict_
 
 class TestDataItem(object):
 
@@ -602,12 +609,14 @@ class TestDataSet(dict):
     each TestDataItem i contains one TestConfig and one TestResult for Test i.      
     """
 
-    def __init__(self, name = dt.now(), cfg : TestConfig = None):
+    def __init__(self, cfg: TestConfig, name = dt.now()):
         super().__init__()
         
         self.name = name
+        if cfg == None:
+            raise ValueError("None value for test config")
 
-        self.cfg_ref = cfg
+        self.cfg_ref:TestConfig = cfg
 
         self.test_items = []
 
@@ -634,7 +643,7 @@ class TestDataSet(dict):
 
         # generate test item for this group of tests
 
-        cfg_ref = self.cfg_ref
+        cfg_ref:TestConfig = self.cfg_ref
         test_names = group.test_names
             
         for i in range(0, len(test_names)):
@@ -644,7 +653,7 @@ class TestDataSet(dict):
 
             clone.group_name = name_group
 
-            clone.name = name_group + '@' + test_names[i]                
+            clone.name = test_names[i]                
 
             for para_name, val in para_value:
                 clone.__setattr__(para_name, val)                
@@ -692,38 +701,6 @@ def main():
 
     cfg_ref = TestConfig()
 
-    app = xw.App(visible=False)
-    try:
-
-        wbk = app.books.add() 
-
-
-        sht = wbk.sheets('sheet1')
-
-        title = {"table 1": "Test data Table"}
-
-        df = pd.DataFrame(title, index=[0])
-
-        x = 1
-        sht.range(x, 1).options(pd.DataFrame, index = False, transpose=True).value = df
-        x = sht.range(x, 1).expand().last_cell.row + 1
-        
-        rng = sht.range(x,1)
-
-        df = cfg_ref.to_data_frame()
-        print(df)
-
-        sht.range(x, 1).options(pd.DataFrame, index = False, transpose=True).value = df
-
-        x = sht.range(x, 1).expand().last_cell.row + 1
-
-        print(x)
-
-        wbk.save('2.xlsx')
-
-    finally:
-        app.quit()
-
     ds_test = TestDataSet(cfg = cfg_ref)
 
     g = ds_test.new_para_group("zigzag_HT_diff_Re", ["Re_des = 5000", "Re_des = 20000"])
@@ -741,9 +718,49 @@ def main():
     g.add_para_seq("T_hot_in", [Temperature.degC(730), Temperature.degC(300)])       
     g.withdraw()
 
-    for test in ds_test:
-        print(test.cfg.name)
+    app = xw.App(visible=False)
+    result_len = 10
+    wbs = {}
 
+    try:
+        i: int = 0
+        for test in ds_test:
+            # prepare workbook and sheet
+            result = test.result
+            cfg = test.cfg
+            gname = cfg.group_name
+
+            if gname not in wbs.keys():
+                wbk = Book()
+                wbs[gname] = wbk
+            else:
+                wbk = wbs[gname]
+
+            # generate mock results
+            for para in result:
+                result.set_result(para, np.random.rand(1, result_len))
+
+            sht =  wbk.sheets.add(name = cfg.name[0:30]) # max lenth for a sheet name
+            # sht =  wbk.sheets.add()
+
+            ex_helper = ExcelHelper(sht)
+            
+            title = {"table 1": "Test Config of " + test.cfg.name}
+
+            ex_helper.write_dict(test.cfg.to_dict(), title_dict=title, linespacing=True)
+
+            title = {"table 2": "Test result"}
+            ex_helper.write_dict(result.to_dict(), title_dict=title, linespacing=True)
+
+            i += 1
+
+        for k in wbs:
+            wb = wbs[k]
+            wb.save( dt.now().strftime("Test_{0}_%Y_%m_%d_%H_%M_%S.xlsx".format(k)))
+
+    finally:
+        app.quit()
+   
     print('done')
 
 
