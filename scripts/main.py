@@ -1,4 +1,5 @@
-from os.path import join, pathsep
+from math import trunc
+from os.path import join, sep
 from OMPython import OMCSessionZMQ
 from OMPython import ModelicaSystem
 from datetime import datetime as dt
@@ -8,11 +9,11 @@ import xlwings as xw
 
 import csv
 import os
-from os import path
+from os import path,sep
 import numpy as np
 from ex.CoolPropQuery import result
 
-from model import TestDataSet, TestConfig, TestResult, TestDataItem
+from model import TestDataSet, TestConfig, TestResult, TestDataItem, TestConstants
 from plotlib import PlotManager, DataSeries, AxisType
 from physics import Temperature, Pressure, MDot
 from utils import ExcelHelper
@@ -22,74 +23,72 @@ class TestPCHEMeshram(object):
     def __init__(self, work_root):
         super().__init__()
         # common variable defination
-        self.path_pics = "pics"
-        self.path_out = "out"
+        self.path_root = work_root
 
-        self.work_root = work_root
-        self.model_path_root = path.join(work_root,"Steps")
+        self.path_model = sep.join([self.path_root, "Steps"])
+        self.path_workspace = sep.join([self.path_root, "build"])
+        self.path_pics = sep.join([self.path_workspace, "pics"])
+        self.path_out = sep.join([self.path_workspace, "out"])
+
         self.prepare_workspace()        
 
  
     def prepare_workspace(self):
         '''
         prepare the workspace for simulation, the directory structure is
-        - Steps (currernt work directory)
-        |--.vscode  - directory for vscode's configurations
-        |--docs     - documents
-        |--build    - workspace for modelica simulation
-        |--scripts  - python scripts for test or parameter sweep
-        |--Steps    - Directory for modelica models codes
-        |.env       - configuration file for vs python extension
-        |.gitignore - git ignore file
+        - Steps (currernt work directory) -> path_root
+        |--.vscode              - directory for vscode's configurations
+        |--docs                 - documents
+        |--build                - -> path_workspace, workspace for modelica simulation, all
+        |  |                        the relative paths in this program are relative to point
+        |  |--out               - Final output of the Simulation
+        |  |  |--Test_Batch 1   - Simulation output data for test 1
+        |  |  ...               - Simulation output data for test ...
+        |  |--pics              - Temp storage dir for referenced pic 
+        |--scripts              - python scripts for test or parameter sweep
+        |--Steps                - Directory for modelica models codes
+        |.env                   - configuration file for vscode python extension
+        |.gitignore             - git ignore file
         ''' 
 
         import os
         import shutil      
 
-        os.chdir(self.work_root)
-
         # setup working directory
-        pwd = "build" 
-        if not os.path.exists(pwd):    
-            os.mkdir(pwd)
+        if not os.path.exists(self.path_workspace):    
+            os.mkdir(self.path_workspace)
 
-        os.chdir(pwd)        
+        os.chdir(self.path_workspace)
 
         if os.path.exists(self.path_pics):
-            shutil.rmtree(self.path_pics)
-        
-        # os.mkdir(self.path_pics)
+            shutil.rmtree(self.path_pics)     
 
-        # copy pics for plot use
-        shutil.copytree("../scripts/pics", self.path_pics)
+        # copy referenced pics for output figure 
+        shutil.copytree(sep.join([self.path_root, 'scripts', 'pics']), self.path_pics)
 
-        # directory for output
+        # directory for output        
         if not os.path.exists(self.path_out):
             os.mkdir(self.path_out)        
 
         # copy cool prop lib
         libs = ["libCoolProp.a", 'libCoolProp.dll']
-        for lib in libs:            
-            if not os.path.exists(lib):
-                paths = ["Resources", "Library"]
-                lib_path = self.model_path_root
-                for path in paths:
-                    lib_path = pathsep.join([lib_path, path])
+        for lib in libs: 
+            lib_path = sep.join([self.path_model, "Resources", "Library", lib])           
+            if not os.path.exists(lib_path):
+                shutil.copyfile(lib_path, sep.join([".",lib])) # completa target name needed 
 
-                shutil.copyfile(lib_path + lib, pathsep.join([".",lib])) # completa target name needed 
-
-    def run_simulation(self, ds_test : TestDataSet):
+    def simulate(self, ds_test : TestDataSet):
 
         omc = OMCSessionZMQ()
         # path = inspect.getfile(omc.__class__)
 
-        mod = ModelicaSystem(path.join(self.model_path_root,"package.mo"),"Steps.Test.TestPCHXMeshram",["Modelica 3.2.1"])
+        mod = ModelicaSystem(sep.join([self.path_model,"package.mo"]),"Steps.Test.TestPCHXMeshram",["Modelica 3.2.1"])
         # options for simulation - steady state simulation, no iteration required, so set numberOfIntervals = 2 
         mod.setSimulationOptions('stepSize  = 0.2')
 
         for test in ds_test:
             cfg = test.cfg
-
+            print('prepare to simulate=' + cfg.full_name)
             mod.setParameters(test.gen_sim_param())
 
             mod.simulate()
@@ -118,7 +117,7 @@ class TestPCHEMeshram(object):
         name_batch = path.join(self.path_out, ds_test.name)
 
         xw_app: xw.App = xw.App(visible=False)
-        wbs = {}
+        wbs = {} # set of names of workbook
 
         try:
 
@@ -128,29 +127,28 @@ class TestPCHEMeshram(object):
             for test in ds_test:
                 cfg = test.cfg
                 gname = cfg.group_name
+                filename = os.path.join(name_batch, gname + '.xlsx')
 
                 if gname not in wbs:
-                    wbk = xw.Book()
-                    wbs[gname] = wbk
+                    wbk = xw_app.books.add()                                     
+                    wbs[gname] = wbk.name
                 else:
-                    wbk = wbs[gname]
+                    wbk = xw.Book(filename)
 
                 sht = wbk.sheets.add(name = cfg.name[0:30]) # 30 - max lenth for a sheet name
 
-                ex: ExcelHelper = ExcelHelper(sht, col_start=2)
-
+                ex: ExcelHelper = ExcelHelper(sht)
+                u, l = 1, TestConstants.DATA_FILE_COL_START
                 title = {"Table 1": "Test Config"}
 
                 # config
-                ex.write_table(cfg.to_dict(), title=title)
+                (b, r) = ex.write_table(cfg.to_dict(), title=title, up=u, left=l, linespacing=True)
 
                 title = {"Table 2": "Results"}
-                ex.write_table(test.result.to_dict(), title= title)
+                (b, r) = ex.write_table(test.result.to_dict(), title=title, up=b, left=l, linespacing=True)
 
-
-            for k in wbs:
-                wb = wbs[k]
-                wb.save(os.path.join(name_batch, k))
+                wbk.save(filename)
+                wbk.close()
 
         finally:
             xw_app.quit() # close the xlwings app finally                                         
@@ -163,25 +161,26 @@ class TestPCHEMeshram(object):
         import os
         import xlwings as xw
 
-        os.chdir(os.sep.join([self.path_out, test_name]))
-
-        test_files = glob.glob(os.sep.join([".", '*.xlsx'])) # get all files ends with xlsx
+        # find test_files 
+        test_files = glob.glob(sep.join([self.path_out, test_name, '*.xlsx'])) # get all files ends with xlsx
 
         if test_files == []:
-            raise FileNotFoundError("No result file saved in {0}/out".format(self.work_root))
+            raise FileNotFoundError("No result file saved in {0}/{1}".format(self.path_out,test_name))
 
-        test_files = list(filter( lambda x: not x.startswith('.\\~$'), test_files))
+        # filter temporary files 
+        test_files = list(filter( lambda x: x.rfind('\\~$') < 0, test_files))
 
         app = xw.App(visible=False)
         ds_test:TestDataSet
 
         try:
-            ds_test = TestDataSet(TestConfig(test_name))
+            ds_test = TestDataSet(name = test_name,cfg=TestConfig())
 
             for test_file in test_files:
                     
-                wbk:xw.Book = xw.Book(test_file)
-                col_start = 2
+                wbk:xw.Book = xw.Book(test_file,read_only=True)
+                col_start = TestConstants.DATA_FILE_COL_START
+
                 for sht in wbk.sheets:
                     if sht.name.startswith('Sheet'):
                         continue
@@ -192,7 +191,7 @@ class TestPCHEMeshram(object):
 
                     dict_ = helper.read_dict((u, col_start))
 
-                    cfg = TestConfig(name=sht.name, group_name=sht.book.name)
+                    cfg = TestConfig(name=sht.name, group_name=sht.book.name.replace('.xlsx',''))
                     cfg.from_dict(dict_)
 
                     u = u + len(dict_) + offset
@@ -224,8 +223,9 @@ class TestPCHEMeshram(object):
 
         result = test.result
 
-        zigzag = 0 # 0: Straight Channel, 1: Zigzag Channel        
-        axis_x=[[0, 0.12], [0, 0.16]][zigzag]
+        zigzag = 1 # 0: Straight Channel, 1: Zigzag Channel        
+        # axis_x=[[0, 0.12], [0, 0.16]][zigzag]
+        axis_x=[[0, 0.12], [0, 0.12]][zigzag]
         axis_T=[[400.0, 750.0],[400, 750.0]][zigzag]
         axis_dp=[[0, 80], [0, 80]][zigzag]
 
@@ -249,9 +249,9 @@ class TestPCHEMeshram(object):
 
         label_x = 'Z (m)'
         label_T = 'T (K)'
-        label_dp = '$\Delta~p~(kPa)$ (K)'
+        label_dp = '$\\Delta~p~(kPa)$ (K)'
 
-        plot = PlotManager(title='Zigzag Channel @ High Temperature Range')
+        plot = PlotManager(title=cfg.full_name)
         plot.add(DataSeries(name = 'T_hot', x = x_values, y = np.array(T_hot), range_x=axis_x, range_y=axis_T, cs = 'r-s', label=[label_x, label_T]))
         plot.add(DataSeries(name = 'T_cold', x = x_values + len_seg, y = np.array(T_cold), range_x=axis_x, range_y=axis_T, cs = 'b--s', label=[label_x, label_T]))
         plot.add(DataSeries(name = 'dp_hot', x = x_values, y = np.array(dp_hot), range_x=axis_x, range_y=axis_dp, cs = 'r-^', label=[label_x, label_dp]), ax_type=AxisType.Secondary)
@@ -261,55 +261,61 @@ class TestPCHEMeshram(object):
 
     def run(self,  simulate = True):
         
+        pk = TestConstants
+
         if simulate:
-
-            test_name = dt.now().strftime("Test_%Y_%m_%d_%H_%M_%S")
-
+            # run simulation before loading results
             cfg_ref = TestConfig()
 
-            ds_test = TestDataSet(name = test_name, cfg=cfg_ref)
+            ds_test = TestDataSet(cfg=cfg_ref)
 
             g = ds_test.new_para_group("zigzag_HT", ["Single"])
-            g.add_para_seq("Re_des", [5000])
+            g.add_para_seq(pk.Re_des, [5000])
             # g.submit() # only submited group will be valid for test
 
-            g = ds_test.new_para_group("zigzag_HT_diff_Re", ["Re_des = 5000", "Re_des = 20000"])
-            g.add_para_seq("Re_des", [5000, 20000])    
+            g = ds_test.new_para_group("zigzag_HT_diff_Re", ["Re_des=5000", "Re_des=20000"])
+            g.add_para_seq(pk.Re_des, [5000, 20000])    
             g.submit()
 
-            g = ds_test.new_para_group("zigzag_HT_diff_mdot", [r"$\dot{m}_{off}$ = 10", r"${\dot{m}_{off}$ = 100"])
-            g.add_para_seq("mdot_hot_odes", [MDot(10), MDot(100)])
-            g.add_para_seq("mdot_cold_odes", [MDot(10), MDot(100)])
-            # g.submit()
+            g = ds_test.new_para_group("zigzag_HT_diff_mdot", [r"$\dot{m}_{off}$=50（-50%)"])
+            g.add_para_seq(pk.mdot_hot_odes, [MDot(50)])
+            g.add_para_seq(pk.mdot_cold_odes, [MDot(50)])
+            g.submit()
 
-            g = ds_test.new_para_group("zigzag_HT_diff_pT_in", [r"$(p,T)_{hi}$ = 10 MPa, 450°", r"$(p,T)_{hi}$ = 12 MPa, 300°"])
-            g.add_para_seq("p_hot_in", [Pressure.MPa(10), Pressure(12)])
-            g.add_para_seq("T_hot_in", [Temperature.degC(730), Temperature.degC(300)])   
+            g = ds_test.new_para_group("zigzag_HT_diff_mdot", [r"$\dot{m}_{off}$=50（-50%)", r"${\dot{m}_{off}$=100(50%)"])
+            g.add_para_seq(pk.mdot_hot_odes, [MDot(50), MDot(150)])
+            g.add_para_seq(pk.mdot_cold_odes, [MDot(50), MDot(150)])            
+
+            g = ds_test.new_para_group("zigzag_HT_diff_pT_in", [r"$(p,T)_{hi}$=10 MPa, 450°", r"$(p,T)_{hi}$=12 MPa, 300°"])
+            g.add_para_seq(pk.p_hot_in, [Pressure.MPa(10), Pressure(12)])
+            g.add_para_seq(pk.T_hot_in, [Temperature.degC(730), Temperature.degC(300)])   
             # g.submit
 
-            self.run_simulation(ds_test)  
-            print('simulation done, ready to plot figures')
+            self.simulate(ds_test)  
+            print('Test data saved, ready to plot figures')
 
-        else:
-            test_name = self.find_latest_test(self.path_out)                 
-            # load the simulation result from latest, pre-saved file
-            ds_test = self.load_result(test_name)
+        # loading the newes result
+        test_name = self.find_latest_test(self.path_out)                 
+        # load the simulation result from latest, pre-saved file
+        ds_test = self.load_result(test_name)
 
         zigzag = 1
-        imgfile = [self.path_pics + "/Meshram_Fig_04.png", self.path_pics + "/Meshram_Fig_05.png"][zigzag]    
-        
+        imgfile = ["Meshram_Fig_04.png", "Meshram_Fig_05.png"][zigzag]    
+        imgfile = sep.join([self.path_pics, imgfile])
 
         for test in ds_test:
-            self.gen_plot_manager(test).draw(img_file=imgfile, dest_file= self.path_out + "/Meshram_Fig{0}b_compare_{1}.png".format(4 + zigzag, test.name))
+            destfile = sep.join([self.path_out, ds_test.name, "Meshram_Fig{0}b_compare_{1}.png".format(4 + zigzag, test.name)])
+            self.gen_plot_manager(test).draw(img_file=imgfile, dest_file=destfile)
 
         print('all done!') 
 
-    def find_latest_test(self, root):
-        lists = [x[0] for x in os.walk(root)]
-        dir_ = max(lists, key = os.path.getctime)
-
-        return dir_.replace(root, '').replace('\\', '')
-
+    def find_latest_test(self, path_) -> str:
+        lists = [x[0] for x in os.walk(path_)]
+        dir_:str = max(lists, key = os.path.getctime)
+        # -1 is the return if no substring found
+        # do not use rindex() in case raising errors
+        idx = dir_.rfind('\\') 
+        return dir_[idx + 1:]
 
 def main(work_root = []):
     # root path of modelica root
@@ -318,7 +324,7 @@ def main(work_root = []):
 
     test = TestPCHEMeshram(work_root)
 
-    ds_test = test.run(simulate=False)
+    ds_test = test.run(simulate=True)
 ###
 if __name__ == "__main__":
     main()
