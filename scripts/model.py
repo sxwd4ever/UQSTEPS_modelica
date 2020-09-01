@@ -174,6 +174,15 @@ class ParamSet(object):
 
         return val_dict
 
+    def from_dict(self, dict_ : dict):
+        """
+        instansiate a config from a dict_
+        """
+        self.items = {}
+
+        for (k, v) in dict_.items():
+            self.items[k] = v
+
     # def to_data_frame(self):
     #     """
     #     transform this config into a pandas data frame 
@@ -387,7 +396,7 @@ class TestResult(object):
                 result_dict[sol_key] = []
 
         # for each HX cell in PCHE
-        N_seg = para_design.N_seg
+        N_seg = int(para_design.N_seg)
 
         var_keys = ['T', 'p', 'h', 'u', 'k', 'rho', 'mu' ,'dp', 'G', 'Re', 'Nu', 'f', 'Q']
         node_keys = ['cell_cold', 'cell_hot']
@@ -516,6 +525,11 @@ class TestResult(object):
             dict_[k]  = v.tolist()[0] # get the row 1 for 1d list
             
         return dict_
+    def from_dict(self, dict_:dict):
+        self._result_dict.clear()
+
+        for k, v in dict_.items():
+            self._result_dict[k] = np.array(v)
 
 class TestDataItem(object):
 
@@ -525,7 +539,7 @@ class TestDataItem(object):
 
         self._para_des, self._para_odes = cfg.gen_test_param()
 
-        self.result = TestResult(cfg.name, self._para_des)
+        self._result = TestResult(cfg.name, self._para_des)
 
     @property
     def para_des(self):
@@ -544,6 +558,15 @@ class TestDataItem(object):
     @name.setter
     def name(self, value):
         self.cfg.name = value
+
+    @property
+    def result(self) -> TestResult:
+        """The result property."""
+        return self._result
+
+    @result.setter
+    def result(self, value: TestResult):
+        self._result = value
 
     def gen_sim_param(self):
         # set up on design parameters
@@ -578,6 +601,7 @@ class TestDataItem(object):
             params.append("{0}={1}".format(k, str(v)))
 
         return params        
+
 class TestDataSet(dict):
     """
     TestDataSet
@@ -678,6 +702,10 @@ class TestDataSet(dict):
 
         return None
 
+    def addTestDataItem(self, item: TestDataItem):
+        
+        self.test_items.append(item)
+
     def __iter__(self):
         self._idx = 0
         return self
@@ -694,11 +722,110 @@ class TestDataSet(dict):
 
         return item
 
-def main():
+col_start = 3
+
+def save_test(ds_test: TestDataSet):
+    import xlwings as xw
+
+    app = xw.App(visible=False)
+    result_len = 10
+    wbs = {}
+
+    try:
+        for test in ds_test:
+            # prepare workbook and sheet
+            result = test.result
+            cfg = test.cfg
+            gname = cfg.group_name
+
+            if gname not in wbs.keys():
+                wbk = Book()
+                wbs[gname] = wbk
+            else:
+                wbk = wbs[gname]
+
+            # generate mock results
+            for para in result:
+                result.set_result(para, np.random.rand(1, result_len))
+
+            sht =  wbk.sheets.add(name = cfg.name[0:30]) # max lenth for a sheet name
+            # sht =  wbk.sheets.add()
+            (u, l) = (1, col_start)
+
+            ex_helper = ExcelHelper(sht)
+            
+            (b, r) = ex_helper.write_table(test.cfg.to_dict(), title={"table 1": "Config"}, up=u, left=l, linespacing=True)
+
+            (b, r) = ex_helper.write_table(result.to_dict(), title={"table 2": "Result"}, up=b, left = l, linespacing=True)
+
+        for k in wbs:
+            wb:xw.Book = wbs[k]
+
+            sht:xw.Sheet = wb.sheets['Sheet1']
+            sht.delete()
+            wb.save( dt.now().strftime("Test_{0}_%Y_%m_%d_%H_%M_%S.xlsx".format(k)))
+
+    finally:
+        app.quit()
+
+def load_test(root_path:str) -> TestDataSet:
+
+    import glob
+    import os
+
+    list_of_files: list[str] = glob.glob(os.sep.join([root_path, '*.xlsx'])) # get all files ends with csv
+    
+    ds_test:TestDataSet = TestDataSet(TestConfig("Default Config"))
+
+    list_of_files = list(filter( lambda x: not x.startswith('.\\~$'), list_of_files))
+
+    if list_of_files == []:
+        raise FileNotFoundError("No result file saved in {0}/out".format(root_path))
+
+    latest_file = max(list_of_files, key = os.path.getctime)
+
+    if latest_file is None:
+        raise FileNotFoundError("No results file saved in " + root_path)
 
     import xlwings as xw
-    # wbk.name='my book' 
 
+    app = xw.App(visible=False)
+
+    try:
+        wbk:xw.Book = Book(latest_file)
+
+        for sht in wbk.sheets:
+            helper = ExcelHelper(sht)
+            u = 1
+            offset = 2 # + 1 for linespacing, + 1 is start of next table 
+
+            dict_ = helper.read_dict((u, col_start))
+
+            cfg = TestConfig(name=sht.name, group_name=sht.book.name)
+            cfg.from_dict(dict_)
+
+            u = u + len(dict_) + offset
+
+            dict_ = helper.read_dict((u, col_start))
+            (p_des, p_odes) = cfg.gen_test_param()
+
+            result = TestResult(sht.name, p_des)
+            result.from_dict(dict_)
+
+            test_item = TestDataItem(cfg)
+            test_item.result = result
+
+            ds_test.addTestDataItem(test_item)
+
+    finally:
+        app.quit()
+
+    return ds_test
+
+def main():
+
+    # wbk.name='my book' 
+    
     cfg_ref = TestConfig()
 
     ds_test = TestDataSet(cfg = cfg_ref)
@@ -718,48 +845,9 @@ def main():
     g.add_para_seq("T_hot_in", [Temperature.degC(730), Temperature.degC(300)])       
     g.withdraw()
 
-    app = xw.App(visible=False)
-    result_len = 10
-    wbs = {}
+    save_test(ds_test)
 
-    try:
-        i: int = 0
-        for test in ds_test:
-            # prepare workbook and sheet
-            result = test.result
-            cfg = test.cfg
-            gname = cfg.group_name
-
-            if gname not in wbs.keys():
-                wbk = Book()
-                wbs[gname] = wbk
-            else:
-                wbk = wbs[gname]
-
-            # generate mock results
-            for para in result:
-                result.set_result(para, np.random.rand(1, result_len))
-
-            sht =  wbk.sheets.add(name = cfg.name[0:30]) # max lenth for a sheet name
-            # sht =  wbk.sheets.add()
-
-            ex_helper = ExcelHelper(sht)
-            
-            title = {"table 1": "Test Config of " + test.cfg.name}
-
-            ex_helper.write_dict(test.cfg.to_dict(), title_dict=title, linespacing=True)
-
-            title = {"table 2": "Test result"}
-            ex_helper.write_dict(result.to_dict(), title_dict=title, linespacing=True)
-
-            i += 1
-
-        for k in wbs:
-            wb = wbs[k]
-            wb.save( dt.now().strftime("Test_{0}_%Y_%m_%d_%H_%M_%S.xlsx".format(k)))
-
-    finally:
-        app.quit()
+    load_test(".")
    
     print('done')
 
