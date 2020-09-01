@@ -102,9 +102,9 @@ class OffDesignParam(object):
         A_f = self.param_des.area_flow() 
         self.G = self.mdot / A_f
         self.Re = np.divide(self.mdot, p_des.mu) * p_des.d_h / A_f
-class ParamKeys(object):
+class TestConstants(object):
     """
-    key definition for test
+    Constants and key definition for test
     """
 
     d_c = "d_c"
@@ -148,6 +148,10 @@ class ParamKeys(object):
     rho_hot_odes = "rho_hot_odes"
 
     rho_cold_odes = "rho_cold_odes"
+
+    # Format constants
+    # column start index in the data storage file
+    DATA_FILE_COL_START = 2 
 
 class ParamSet(object):
 
@@ -195,12 +199,12 @@ class TestConfig(ParamSet):
         this class is designed in a flatten way to make the configuration and debug simplier
     '''
 
-    def __init__(self, name = None, group_name = None):
+    def __init__(self, name = "default config", group_name = "default group"):
         super().__init__()
         # default values of the test case - Meshram [2016] Fig 4(b) - zigzag channel @ High Temperature
 
-        # document property         
-        self.name = "default config"
+        # document property  
+        self.name = name
 
         self._group_name = group_name        
 
@@ -208,7 +212,7 @@ class TestConfig(ParamSet):
 
     def init_config(self):
 
-        pk = ParamKeys
+        pk = TestConstants
         # geomerty
         self.set(pk.d_c,Length.mm(2))
 
@@ -242,8 +246,8 @@ class TestConfig(ParamSet):
         self.set(pk.media_cold, "CO2")
 
         # mass flow rate
-        self.set(pk.mdot_hot, MDot(10))
-        self.set(pk.mdot_cold, MDot(10))
+        self.set(pk.mdot_hot, MDot(100))
+        self.set(pk.mdot_cold, MDot(100))
 
         # off design configuration
         self.set(pk.mdot_hot_odes, MDot(100))
@@ -259,7 +263,7 @@ class TestConfig(ParamSet):
         self.set(pk.rho_cold_odes, Density(PropsSI('D', 'P', p, 'T', p, self.get(pk.media_cold))))
 
     def gen_test_param(self) -> Tuple[DesignParam, OffDesignParam]:
-        pk = ParamKeys
+        pk = TestConstants
 
         param_des:DesignParam = DesignParam(
             d_c=self.get(pk.d_c), 
@@ -633,7 +637,7 @@ class TestDataSet(dict):
     each TestDataItem i contains one TestConfig and one TestResult for Test i.      
     """
 
-    def __init__(self, cfg: TestConfig, name = dt.now()):
+    def __init__(self, cfg: TestConfig, name = dt.now().strftime("Test_%Y_%m_%d_%H_%M_%S")):
         super().__init__()
         
         self.name = name
@@ -680,7 +684,7 @@ class TestDataSet(dict):
             clone.name = test_names[i]                
 
             for para_name, val in para_value:
-                clone.__setattr__(para_name, val)                
+                clone.set(para_name, val)
 
             self.test_items.append(TestDataItem(cfg=clone))
 
@@ -722,7 +726,7 @@ class TestDataSet(dict):
 
         return item
 
-col_start = 3
+col_start = TestConstants.DATA_FILE_COL_START
 
 def save_test(ds_test: TestDataSet):
     import xlwings as xw
