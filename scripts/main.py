@@ -13,7 +13,7 @@ from os import path,sep
 import numpy as np
 from ex.CoolPropQuery import result
 
-from model import TestDataSet, TestConfig, TestResult, TestDataItem, TestConstants
+from model import ParamGroup, TestDataSet, TestConfig, TestResult, TestDataItem, TestConstants
 from plotlib import PlotManager, DataSeries, AxisType
 from physics import Temperature, Pressure, MDot
 from utils import ExcelHelper
@@ -148,7 +148,7 @@ class TestPCHEMeshram(object):
                 (b, r) = ex.write_table(test.result.to_dict(), title=title, up=b, left=l, linespacing=True)
 
                 wbk.save(filename)
-                wbk.close()
+                # wbk.close()
 
         finally:
             xw_app.quit() # close the xlwings app finally                                         
@@ -197,7 +197,7 @@ class TestPCHEMeshram(object):
                     u = u + len(dict_) + offset
 
                     dict_ = helper.read_dict((u, col_start))
-                    (p_des, p_odes) = cfg.gen_test_param()
+                    (p_des, p_odes) = cfg.gen_design_param()
 
                     result = TestResult(sht.name, p_des)
                     result.from_dict(dict_)
@@ -207,8 +207,6 @@ class TestPCHEMeshram(object):
 
                     ds_test.addTestDataItem(test_item)
 
-                break
-
         finally:
             app.quit()
 
@@ -217,7 +215,7 @@ class TestPCHEMeshram(object):
     def gen_plot_manager(self, test: TestDataItem) -> PlotManager:
         #update_cal_fields() 
         cfg = test.cfg
-        (p_des, p_odes) = cfg.gen_test_param()
+        (p_des, p_odes) = cfg.gen_design_param()
         N_seg = int(p_des.N_seg)
         len_seg = p_des.len_seg
 
@@ -269,27 +267,29 @@ class TestPCHEMeshram(object):
 
             ds_test = TestDataSet(cfg=cfg_ref)
 
-            g = ds_test.new_para_group("zigzag_HT", ["Single"])
-            g.add_para_seq(pk.Re_des, [5000])
-            # g.submit() # only submited group will be valid for test
+            g = ParamGroup("zigzag_HT_High_RE")
+            g.add_test_param("Re_des = 20000", Re_des=20000)
+            ds_test.add_para_group(g)
 
-            g = ds_test.new_para_group("zigzag_HT_diff_Re", ["Re_des=5000", "Re_des=20000"])
-            g.add_para_seq(pk.Re_des, [5000, 20000])    
-            g.submit()
+            g = ParamGroup("zigzag_HT_diff_Re")
+            g.add_test_param("Re_des = 5000", Re_des=5000)
+            g.add_test_param("Re_des = 20000", Re_des=20000)
+            # ds_test.add_para_group(g)
 
-            g = ds_test.new_para_group("zigzag_HT_diff_mdot", [r"$\dot{m}_{off}$=50（-50%)"])
-            g.add_para_seq(pk.mdot_hot_odes, [MDot(50)])
-            g.add_para_seq(pk.mdot_cold_odes, [MDot(50)])
-            g.submit()
+            # g = ds_test.new_para_group("zigzag_HT_diff_mdot", [r"$\dot{m}_{off}$ = 10"])
+            g = ParamGroup("zigzag_HT_mdot_50")
+            g.add_test_param("MDot_50", mdot_hot_odes=MDot(50), mdot_cold_odes=MDot(50))
+            ds_test.add_para_group(g)    
 
-            g = ds_test.new_para_group("zigzag_HT_diff_mdot", [r"$\dot{m}_{off}$=50（-50%)", r"${\dot{m}_{off}$=100(50%)"])
-            g.add_para_seq(pk.mdot_hot_odes, [MDot(50), MDot(150)])
-            g.add_para_seq(pk.mdot_cold_odes, [MDot(50), MDot(150)])            
+            g = ParamGroup("zigzag_HT_diff_mdot")
+            g.add_test_param("MDot_50（-50%)", title=r"$\dot{m}_{off}$=50（-50%)", mdot_hot_odes=MDot(50), mdot_cold_odes=MDot(50))
+            g.add_test_param("MDot_150（+50%)", title=r"$\dot{m}_{off}$=150（+50%)", mdot_hot_odes=MDot(150), mdot_cold_odes=MDot(150))
+            # ds_test.add_para_group(g)
 
-            g = ds_test.new_para_group("zigzag_HT_diff_pT_in", [r"$(p,T)_{hi}$=10 MPa, 450°", r"$(p,T)_{hi}$=12 MPa, 300°"])
-            g.add_para_seq(pk.p_hot_in, [Pressure.MPa(10), Pressure(12)])
-            g.add_para_seq(pk.T_hot_in, [Temperature.degC(730), Temperature.degC(300)])   
-            # g.submit
+            g = ParamGroup("zigzag_HT_diff_pT_in")
+            g.add_test_param("pT=10_450", title=r"$(p,T)_{hi}$ = 10 MPa, 450°", p_hot_in=Pressure.MPa(10), T_hot_in=Temperature.degC(730))
+            g.add_test_param("pT=12_300", title=r"$(p,T)_{hi}$ = 12 MPa, 300°", p_hot_in=Pressure.MPa(12), T_hot_in=Temperature.degC(300))
+            # ds_test.add_para_group(g)
 
             self.simulate(ds_test)  
             print('Test data saved, ready to plot figures')
@@ -324,7 +324,7 @@ def main(work_root = []):
 
     test = TestPCHEMeshram(work_root)
 
-    ds_test = test.run(simulate=True)
+    ds_test = test.run(simulate=False)
 ###
 if __name__ == "__main__":
     main()
