@@ -747,6 +747,7 @@ def save_test(ds_test: TestDataSet):
                 wbs[gname] = wbk
             else:
                 wbk = wbs[gname]
+                wbk.activate()
 
             # generate mock results
             for para in result:
@@ -762,12 +763,10 @@ def save_test(ds_test: TestDataSet):
 
             (b, r) = ex_helper.write_table(result.to_dict(), title={"table 2": "Result"}, up=b, left = l, linespacing=True)
 
-        for k in wbs:
-            wb:xw.Book = wbs[k]
-
-            sht:xw.Sheet = wb.sheets['Sheet1']
-            sht.delete()
-            wb.save( dt.now().strftime("Test_{0}_%Y_%m_%d_%H_%M_%S.xlsx".format(k)))
+            # sht:xw.Sheet = wbk.sheets['Sheet1']
+            # sht.delete()
+            wbk.save( dt.now().strftime("Test_{0}_%Y_%m_%d_%H_%M_%S.xlsx".format(gname)))
+            # wbk.close()
 
     finally:
         app.quit()
@@ -842,7 +841,7 @@ def main():
     g.add_para_seq("mdot_hot_odes", [MDot(10), MDot(100)])
     g.add_para_seq("mdot_cold_odes", [MDot(10), MDot(100)])
     g.submit()
-    g.withdraw()
+    # g.withdraw()
 
     g = ds_test.new_para_group("zigzag_HT_diff_pT_in", [r"$(p,T)_{hi}$ = 10 MPa, 450°", r"$(p,T)_{hi}$ = 12 MPa, 300°"])
     g.add_para_seq("p_hot_in", [Pressure.MPa(10), Pressure(12)])
