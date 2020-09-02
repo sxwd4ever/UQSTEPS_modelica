@@ -6,7 +6,9 @@ import math
 from copy import deepcopy
 from datetime import datetime as dt
 from enum import IntEnum
-from typing import Tuple
+from typing import Dict, Tuple
+from collections import OrderedDict
+from collections.abc import MutableMapping
 
 # 3rd or python modules
 import numpy as np
@@ -153,28 +155,40 @@ class TestConstants(object):
     # column start index in the data storage file
     DATA_FILE_COL_START = 2 
 
-class ParamSet(object):
+class ParamSet(MutableMapping):
 
-    def __init__(self):
-        self.items = {}
+    def __init__(self, *args, **kwargs):
+        self.store = dict()
+        self.update(dict(*args, **kwargs))  # use the free update to set keys
 
-    def set(self, str, value):
-        self.items[str] = value
-
-    def get(self, str):
-        
-        val =  self.items[str]
+    def __getitem__(self, key):
+        val =  self.store[self.__keytransform__(key)]
 
         if issubclass(type(val), Quantity):
             val = val.mag
 
         return val
 
+    def __setitem__(self, key, value):
+        self.store[self.__keytransform__(key)] = value
+
+    def __delitem__(self, key):
+        del self.store[self.__keytransform__(key)]
+
+    def __iter__(self):
+        return iter(self.store)
+
+    def __len__(self):
+        return len(self.store)
+
+    def __keytransform__(self, key):
+        return key
+
     def to_dict(self):
         val_dict = {}
 
-        for k in self.items.keys():
-            val_dict[k] = self.get(k)
+        for k in self.store.keys():
+            val_dict[k] = self.__getitem__(k)
 
         return val_dict
 
@@ -182,10 +196,9 @@ class ParamSet(object):
         """
         instansiate a config from a dict_
         """
-        self.items = {}
 
         for (k, v) in dict_.items():
-            self.items[k] = v
+            self.__setitem__(k, v)
 
     # def to_data_frame(self):
     #     """
@@ -208,73 +221,73 @@ class TestConfig(ParamSet):
 
         self._group_name = group_name        
 
-        self.init_config()
+        self.__init_config()
 
-    def init_config(self):
+    def __init_config(self):
 
         pk = TestConstants
         # geomerty
-        self.set(pk.d_c,Length.mm(2))
+        self[pk.d_c] = Length.mm(2)
 
-        self.set(pk.pitch, Length.mm(12.3))
+        self[pk.pitch] = Length.mm(12.3)
 
-        self.set(pk.phi, Angle.deg((180 - 108) / 2))
+        self[pk.phi] = Angle.deg((180 - 108) / 2)
 
         # on design propery
-        self.set(pk.Re_des, 14500)
-        self.set(pk.N_seg, 10)
-        self.set(pk.l_cell, Length.mm(12))
+        self[pk.Re_des] = 14500
+        self[pk.N_seg] = 10
+        self[pk.l_cell] = Length.mm(12)
 
-        self.set(pk.l_cell, Length.mm(12))
-        self.set(pk.l_cell, Length.mm(12))
-        self.set(pk.l_cell, Length.mm(12))
+        self[pk.l_cell] = Length.mm(12)
+        self[pk.l_cell] = Length.mm(12)
+        self[pk.l_cell] = Length.mm(12)
 
         # fluid property
         # hot stream state 
-        self.set(pk.p_hot_in, Pressure.bar(90))
-        self.set(pk.T_hot_in, Temperature(730))
-        self.set(pk.p_hot_out, Pressure.bar(90))
-        self.set(pk.T_hot_out, Temperature(576.69))
+        self[pk.p_hot_in] = Pressure.bar(90)
+        self[pk.T_hot_in] = Temperature(730)
+        self[pk.p_hot_out] = Pressure.bar(90)
+        self[pk.T_hot_out] = Temperature(576.69)
 
         # cold stream state
-        self.set(pk.p_cold_in, Pressure.bar(225))
-        self.set(pk.T_cold_in, Temperature(500))
-        self.set(pk.p_cold_out, Pressure.bar(90))
-        self.set(pk.T_cold_out, Temperature(639.15))
+        self[pk.p_cold_in] = Pressure.bar(225)
+        self[pk.T_cold_in] = Temperature(500)
+        self[pk.p_cold_out] = Pressure.bar(90)
+        self[pk.T_cold_out] = Temperature(639.15)
 
-        self.set(pk.media_hot, "CO2")
-        self.set(pk.media_cold, "CO2")
+        self[pk.media_hot] = "CO2"
+        self[pk.media_cold] = "CO2"
 
         # mass flow rate
-        self.set(pk.mdot_hot, MDot(100))
-        self.set(pk.mdot_cold, MDot(100))
+        self[pk.mdot_hot] = MDot(100)
+        self[pk.mdot_cold] = MDot(100)
 
         # off design configuration
-        self.set(pk.mdot_hot_odes, MDot(100))
-        self.set(pk.mdot_cold_odes, MDot(100))
+        self[pk.mdot_hot_odes] = MDot(100)
+        self[pk.mdot_cold_odes] = MDot(100)
 
-        self.set(pk.u_hot_odes, Velocity(7.564))
-        self.set(pk.u_cold_odes, Velocity(1.876))
+        self[pk.u_hot_odes] = Velocity(7.564)
+        self[pk.u_cold_odes] = Velocity(1.876)
 
-        p, T = self.get(pk.p_hot_in), self.get(pk.T_hot_in)
-        self.set(pk.rho_hot_odes, Density(PropsSI('D', 'P', p, 'T', p, self.get(pk.media_hot))))
+        p, T = self[pk.p_hot_in], self[pk.T_hot_in]
+        self[pk.rho_hot_odes] = Density(PropsSI('D','P', p, 'T', p, self[pk.media_hot]))
 
-        p, T = self.get(pk.p_cold_in), self.get(pk.T_cold_in)
-        self.set(pk.rho_cold_odes, Density(PropsSI('D', 'P', p, 'T', p, self.get(pk.media_cold))))
+        p, T = self[pk.p_cold_in], self[pk.T_cold_in]
+        self[pk.rho_cold_odes] = Density(PropsSI('D','P', p, 'T', p, self[pk.media_cold]))
 
-    def gen_test_param(self) -> Tuple[DesignParam, OffDesignParam]:
+    def gen_design_param(self) -> Tuple[DesignParam, OffDesignParam]:
         pk = TestConstants
 
         param_des:DesignParam = DesignParam(
-            d_c=self.get(pk.d_c), 
-            p=[self.get(pk.p_hot_in), self.get(pk.p_cold_in)], 
-            T=[self.get(pk.T_hot_in), self.get(pk.T_cold_in)], 
-            Re=self.get(pk.Re_des), 
-            mdot=[self.get(pk.mdot_hot), self.get(pk.mdot_cold)],
-            N_seg= self.get(pk.N_seg), 
-            len_seg= self.get(pk.l_cell), 
-            pitch = self.get(pk.pitch), 
-            phi = self.get(pk.phi))
+            d_c=self[pk.d_c], 
+            p=[self[pk.p_hot_in], self[pk.p_cold_in]], 
+            T=[self[pk.T_hot_in], self[pk.T_cold_in]], 
+            Re=self[pk.Re_des], 
+            mdot=[self[pk.mdot_hot], self[pk.mdot_cold]],
+            N_seg= self[pk.N_seg], 
+            len_seg= self[pk.l_cell], 
+            pitch = self[pk.pitch], 
+            phi = self[pk.phi])
 
         # param_odes = OffDesignParam(param_des=param_des, G = np.multiply(u_odes, rho_odes))
         param_odes:OffDesignParam = OffDesignParam(param_des=param_des, mdot = [self.get(pk.mdot_hot_odes), self.get(pk.mdot_cold_odes)])
@@ -295,35 +308,70 @@ class TestConfig(ParamSet):
         return self._group_name + '@' + self.name
 
 
+class TestParam(ParamSet):
+
+    def __init__(self, name="", title="", **options) -> None:
+        super().__init__()
+        
+        if title=='':
+            title = name
+
+        self.name = name
+        self.title = name
+
+        for k, v in options.items():
+            if k in TestConstants.__dict__.keys():
+                self[k] = v
+            else:
+                raise KeyError('Invalid para name=' + k)
+
 class ParamGroup(object):
     """
         Corresponding to a set of Tests to see the effect of param sweep
     """
-    def __init__(self, name, test_names, enable = True, ):
+    def __init__(self, name, enable = True, ):
         super().__init__()
         self._name = name
-        self.test_names = test_names
-        self.para_seqs = {}
+        self.paras = OrderedDict()
+        self._idx = 0
+        
         self._enable = enable
-        self.ds_test: TestDataSet
 
-    def add_para_seq(self, param_name, seq):
-        if(len(seq) == len(self.test_names)):
-            self.para_seqs[param_name] = seq
-        else:
-            raise ValueError("number of vals not equal to test number")
+    def add_test_param(self, name="", title="", **options):
+        para = TestParam(name=name, title=title, **options)
+        self.paras[name] = para
+        return para
+
+    # def __iter__(self):
+    #     self._idx = 0
+    #     return self
+
+    # def __next__(self) -> TestParam:
+    #     if self._idx < len(self.paras):
+    #         key = self.paras.values()[self._idx]
+    #         self._idx += 1
+    #         return key
+    #     else:
+    #         raise StopIteration
+
+
+    # def add_para_seq(self, param_name, seq):
+    #     if(len(seq) == len(self.test_names)):
+    #         self.para_seqs[param_name] = seq
+    #     else:
+    #         raise ValueError("number of vals not equal to test number")
             
-    def get_para_value(self, idx):
-        '''
-        get param values for a test
-        '''
+    # def get_para_value(self, idx):
+    #     '''
+    #     get param values for a test
+    #     '''
 
-        para_vals = []
+    #     para_vals = []
 
-        for name, seq in self.para_seqs.items():
-            para_vals.append((name, seq[idx]))
+    #     for name, seq in self.para_seqs.items():
+    #         para_vals.append((name, seq[idx]))
 
-        return para_vals
+    #     return para_vals
     
     @property
     def enable(self):
@@ -335,12 +383,6 @@ class ParamGroup(object):
             return
 
         self._enable = value
-
-    def submit(self):
-        self.ds_test.add_para_group(self)
-    
-    def withdraw(self):
-        self.ds_test.remove_para_group(self.name)
 
     @property
     def name(self):
@@ -541,7 +583,7 @@ class TestDataItem(object):
 
         self.cfg = cfg
 
-        self._para_des, self._para_odes = cfg.gen_test_param()
+        self._para_des, self._para_odes = cfg.gen_design_param()
 
         self._result = TestResult(cfg.name, self._para_des)
 
@@ -652,13 +694,9 @@ class TestDataSet(dict):
         
         self.test_groups = {}
 
-    def new_para_group(self, name, test_names):
-        g = ParamGroup(name, test_names)
-        g.ds_test = self
-        return g
-
     def add_para_group(self, group : ParamGroup):
         name_group = group.name
+
         if name_group in self.test_groups:
             print (' Test group with name={0} exsits already'.format(name_group))
             return
@@ -672,19 +710,16 @@ class TestDataSet(dict):
         # generate test item for this group of tests
 
         cfg_ref:TestConfig = self.cfg_ref
-        test_names = group.test_names
-            
-        for i in range(0, len(test_names)):
-            clone = deepcopy(cfg_ref)
 
-            para_value = group.get_para_value(i)
+        for para in group.paras.values():
+            clone = deepcopy(cfg_ref)
 
             clone.group_name = name_group
 
-            clone.name = test_names[i]                
+            clone.name = para.name
 
-            for para_name, val in para_value:
-                clone.set(para_name, val)
+            for k in para:
+                clone[k] = para[k]
 
             self.test_items.append(TestDataItem(cfg=clone))
 
@@ -731,7 +766,8 @@ col_start = TestConstants.DATA_FILE_COL_START
 def save_test(ds_test: TestDataSet):
     import xlwings as xw
 
-    app = xw.App(visible=False)
+    # set visible=True for debug purpose
+    app = xw.App(visible=True)
     result_len = 10
     wbs = {}
 
@@ -742,12 +778,12 @@ def save_test(ds_test: TestDataSet):
             cfg = test.cfg
             gname = cfg.group_name
 
-            if gname not in wbs.keys():
-                wbk = Book()
-                wbs[gname] = wbk
-            else:
+            if gname in wbs:
                 wbk = wbs[gname]
-                wbk.activate()
+                wbk.activate()                
+            else:
+                wbk = app.books.add()
+                wbs[gname] = wbk
 
             # generate mock results
             for para in result:
@@ -798,6 +834,9 @@ def load_test(root_path:str) -> TestDataSet:
         wbk:xw.Book = Book(latest_file)
 
         for sht in wbk.sheets:
+            if sht.name.startswith('Sheet1'):
+                continue
+
             helper = ExcelHelper(sht)
             u = 1
             offset = 2 # + 1 for linespacing, + 1 is start of next table 
@@ -810,7 +849,7 @@ def load_test(root_path:str) -> TestDataSet:
             u = u + len(dict_) + offset
 
             dict_ = helper.read_dict((u, col_start))
-            (p_des, p_odes) = cfg.gen_test_param()
+            (p_des, p_odes) = cfg.gen_design_param()
 
             result = TestResult(sht.name, p_des)
             result.from_dict(dict_)
@@ -828,25 +867,37 @@ def load_test(root_path:str) -> TestDataSet:
 def main():
 
     # wbk.name='my book' 
-    
     cfg_ref = TestConfig()
 
     ds_test = TestDataSet(cfg = cfg_ref)
 
-    g = ds_test.new_para_group("zigzag_HT_diff_Re", ["Re_des = 5000", "Re_des = 20000"])
-    g.add_para_seq("Re_des", [5000, 20000])
-    g.submit()
+    g = ParamGroup("zigzag_HT_High_RE")
+    g.add_test_param("Re_des = 20000", Re_des=20000)
+    ds_test.add_para_group(g)
 
-    g = ds_test.new_para_group("zigzag_HT_diff_mdot", [r"$\dot{m}_{off}$ = 10", r"${\dot{m}_{off}$ = 100"])
-    g.add_para_seq("mdot_hot_odes", [MDot(10), MDot(100)])
-    g.add_para_seq("mdot_cold_odes", [MDot(10), MDot(100)])
-    g.submit()
+    g = ParamGroup("zigzag_HT_diff_Re")
+    g.add_test_param("Re_des = 5000", Re_des=5000)
+    g.add_test_param("Re_des = 20000", Re_des=20000)
+    ds_test.add_para_group(g)
+
+    # g = ds_test.new_para_group("zigzag_HT_diff_mdot", [r"$\dot{m}_{off}$ = 10"])
+    g = ParamGroup("zigzag_HT_mdot_10")
+    g.add_test_param("MDot_10", mdot_hot_odes=MDot(10), mdot_cold_odes=MDot(10))
+    ds_test.add_para_group(g)    
+
+
+    g = ParamGroup("zigzag_HT_diff_mdot")
+    g.add_test_param("MDot_10", title=r"$\dot{m}_{off}$ = 10", mdot_hot_odes=MDot(10), mdot_cold_odes=MDot(10))
+    g.add_test_param("MDot_100", title=r"${\dot{m}_{off}$ = 100", mdot_hot_odes=MDot(100), mdot_cold_odes=MDot(100))
+    ds_test.add_para_group(g)
+
+    # g.submit()
     # g.withdraw()
 
-    g = ds_test.new_para_group("zigzag_HT_diff_pT_in", [r"$(p,T)_{hi}$ = 10 MPa, 450°", r"$(p,T)_{hi}$ = 12 MPa, 300°"])
-    g.add_para_seq("p_hot_in", [Pressure.MPa(10), Pressure(12)])
-    g.add_para_seq("T_hot_in", [Temperature.degC(730), Temperature.degC(300)])       
-    g.withdraw()
+    g = ParamGroup("zigzag_HT_diff_pT_in")
+    g.add_test_param("pT=10_450", title=r"$(p,T)_{hi}$ = 10 MPa, 450°", p_hot_in=Pressure.MPa(10), T_hot_in=Temperature.degC(730))
+    g.add_test_param("pT=12_300", title=r"$(p,T)_{hi}$ = 12 MPa, 300°", p_hot_in=Pressure.MPa(12), T_hot_in=Temperature.degC(300))
+    ds_test.add_para_group(g)
 
     save_test(ds_test)
 
