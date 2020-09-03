@@ -88,11 +88,12 @@ class TestPCHEMeshram(object):
 
         for test in ds_test:
             cfg = test.cfg
-            print('prepare to simulate=' + cfg.full_name)
+            print('prepare to simulate:' + cfg.full_name)
             mod.setParameters(test.gen_sim_param())
 
             mod.simulate()
 
+            print('simulation {0} done, retrieving result'.format(cfg.full_name))
             result = test.result
 
             # collect data in solutions
@@ -105,7 +106,7 @@ class TestPCHEMeshram(object):
 
             # result.update_cal_columns()
 
-        print('Simulation done, save result next')   
+        print('all simulation(s) done, save result next')   
 
         self.save_results(ds_test)    
 
@@ -269,22 +270,24 @@ class TestPCHEMeshram(object):
 
             g = ParamGroup("zigzag_HT_High_RE")
             g.add_test_param("Re_des = 20000", Re_des=20000)
-            ds_test.add_para_group(g)
+            # ds_test.add_para_group(g)
 
             g = ParamGroup("zigzag_HT_diff_Re")
-            g.add_test_param("Re_des = 5000", Re_des=5000)
-            g.add_test_param("Re_des = 20000", Re_des=20000)
-            # ds_test.add_para_group(g)
+            g.add_test_param("Re_des=5000", Re_des=5000)
+            g.add_test_param("Re_des=14500(design)", Re_des=14500)
+            g.add_test_param("Re_des=20000", Re_des=20000)
+            ds_test.add_para_group(g)
 
             # g = ds_test.new_para_group("zigzag_HT_diff_mdot", [r"$\dot{m}_{off}$ = 10"])
             g = ParamGroup("zigzag_HT_mdot_50")
             g.add_test_param("MDot_50", mdot_hot_odes=MDot(50), mdot_cold_odes=MDot(50))
-            ds_test.add_para_group(g)    
+            # ds_test.add_para_group(g)    
 
             g = ParamGroup("zigzag_HT_diff_mdot")
-            g.add_test_param("MDot_50（-50%)", title=r"$\dot{m}_{off}$=50（-50%)", mdot_hot_odes=MDot(50), mdot_cold_odes=MDot(50))
-            g.add_test_param("MDot_150（+50%)", title=r"$\dot{m}_{off}$=150（+50%)", mdot_hot_odes=MDot(150), mdot_cold_odes=MDot(150))
-            # ds_test.add_para_group(g)
+            g.add_test_param("MDot_50(-50%)", title=r"$\dot{m}_{off}$=50(-50%)", mdot_hot_odes=MDot(50), mdot_cold_odes=MDot(50))
+            g.add_test_param("MDot_100(100%)", title=r"$\dot{m}_{off}$=100(100%)", mdot_hot_odes=MDot(100), mdot_cold_odes=MDot(100))
+            g.add_test_param("MDot_150(+50%)", title=r"$\dot{m}_{off}$=150(+50%)", mdot_hot_odes=MDot(150), mdot_cold_odes=MDot(150))
+            ds_test.add_para_group(g)
 
             g = ParamGroup("zigzag_HT_diff_pT_in")
             g.add_test_param("pT=10_450", title=r"$(p,T)_{hi}$ = 10 MPa, 450°", p_hot_in=Pressure.MPa(10), T_hot_in=Temperature.degC(730))
@@ -324,7 +327,7 @@ def main(work_root = []):
 
     test = TestPCHEMeshram(work_root)
 
-    ds_test = test.run(simulate=False)
+    ds_test = test.run(simulate=True)
 ###
 if __name__ == "__main__":
     main()
