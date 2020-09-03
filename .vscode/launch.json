@@ -8,7 +8,7 @@
             "name": "Python: TestPCHEMeshram",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/scripts/tests.py",
+            "program": "${workspaceFolder}/scripts/main.py",
             "console": "integratedTerminal",
             "python.terminal.activateEnvironment": true
         },
