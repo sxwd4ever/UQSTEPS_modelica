@@ -1,11 +1,45 @@
 within Steps.Media;
 package SCO2 "supercritical CO2"
-
-  extends Modelica.Media.Interfaces.PartialMedium(ThermoStates = Modelica.Media.Interfaces.Choices.IndependentVariables.ph, final mediumName = "CO2", final substanceNames = {"CO2"}, final singleState = false, final reducedX = true, final fixedX = true, Temperature(min = 0, max = 1200, start = 500));
+  /*
+  extends Modelica.Media.IdealGases.Common.SingleGasNasa(
+  mediumName="Carbon Dioxide",
+  data=Modelica.Media.IdealGases.Common.SingleGasesData.CO2,
+  fluidConstants={Modelica.Media.IdealGases.Common.FluidData.CO2});
+  */
+  
+  extends Modelica.Media.Interfaces.PartialPureSubstance(
+    ThermoStates=Modelica.Media.Interfaces.Choices.IndependentVariables.pT,
+    FluidConstants = Modelica.Media.Interfaces.Types.IdealGas.FluidConstants,
+    mediumName="CO2",
+    substanceNames={"CO2"},
+    singleState=false,
+    final reducedX = true, 
+    final fixedX = true, 
+    Temperature(min=200, max=6000, start=500, nominal=500),
+    SpecificEnthalpy(start=0, nominal=1.0e5),
+    Density(start=10, nominal=10),
+    AbsolutePressure(start=10e5, nominal=10e5));  
+  
+  constant Modelica.Media.IdealGases.Common.DataRecord CO2(
+    name="CO2",
+    MM=0.0440095,
+    Hf=-8941478.544405185,
+    H0=212805.6215135368,
+    Tlimit=1000,
+    alow={49436.5054,-626.411601,5.30172524,0.002503813816,-2.127308728e-007,-7.68998878e-010,
+        2.849677801e-013},
+    blow={-45281.9846,-7.04827944},
+    ahigh={117696.2419,-1788.791477,8.29152319,-9.22315678e-005,4.86367688e-009,
+        -1.891053312e-012,6.330036589999999e-016},
+    bhigh={-39083.5059,-26.52669281},
+    R=188.9244822140674);
+  
+  
   
   import CP = Steps.Utilities.CoolProp;  
   import SI = Modelica.SIunits;
   
+  /*
   type Temperature = Real (
       final quantity="ThermodynamicTemperature",
       final unit="K",
@@ -15,12 +49,15 @@ package SCO2 "supercritical CO2"
       nominal=300,
       displayUnit="degC")
       "Temperature of the medium; add of min and max constraints"
-      annotation(absoluteValue=true);
+      annotation(absoluteValue=true); 
+  */
   
+
   redeclare record extends ThermodynamicState "A selection of variables that uniquely defines the thermodynamic state"
       AbsolutePressure p "Absolute pressure of medium";
       Temperature T "Temperature of PBMedia";
   end ThermodynamicState;
+
   
   /*
   record FullThermodynamicState
@@ -35,8 +72,7 @@ package SCO2 "supercritical CO2"
   end FullThermodynamicState;
   */
   
-  replaceable model CO2_pT "Base properties of medium" 
-    extends BaseProperties(final standardOrderComponents = true);
+  redeclare replaceable model extends BaseProperties(final standardOrderComponents = true) "Base properties of medium"
     Modelica.SIunits.SpecificEntropy s;
   equation
       state.p = p;
@@ -47,7 +83,7 @@ package SCO2 "supercritical CO2"
       u = h - p / d;
       MM = 0.044;
       R = 8.3144 / MM; 
-  end CO2_pT;
+  end BaseProperties;
     
   function getFullState
     "get the full state of this medium"
@@ -92,6 +128,22 @@ package SCO2 "supercritical CO2"
   algorithm
     state := ThermodynamicState(p = p, T = CP.PropsSI("T", "P", p, "S", s, mediumName));
   end setState_psX;
+  
+  function setState_ph
+    "Return thermodynamic state from p and h"
+    extends Modelica.Icons.Function;
+    input AbsolutePressure p "Pressure";
+    input SpecificEnthalpy h "Specific enthalpy";
+    input FixedPhase phase=0
+      "2 for two-phase, 1 for one-phase, 0 if not known";
+    output ThermodynamicState state "Thermodynamic state record";
+  algorithm
+    state := setState_phX(
+            p,
+            h,
+            fill(0, 0),
+            phase);
+  end setState_ph;
 
   redeclare function extends pressure "Return pressure"
   algorithm
@@ -152,4 +204,25 @@ package SCO2 "supercritical CO2"
   algorithm
       cv := CP.PropsSI("CVMASS", "P", state.p, "T", state.T, mediumName);
   end specificHeatCapacityCv;  
+  
+  redeclare function extends density_derp_T
+    "Returns the partial derivative of density with respect to pressure at constant temperature"
+  algorithm
+    ddpT := 1/(state.T*CO2.R);
+    annotation(Inline=true,smoothOrder=2);
+  end density_derp_T;
+
+  redeclare function extends density_derT_p
+    "Returns the partial derivative of density with respect to temperature at constant pressure"
+  algorithm
+    ddTp := -state.p/(state.T*state.T*CO2.R);
+    annotation(Inline=true,smoothOrder=2);
+  end density_derT_p;  
+  
+  redeclare function extends density_derX
+    "Returns the partial derivative of density with respect to mass fractions at constant pressure and temperature"
+  algorithm
+    dddX := fill(0,nX);
+    annotation(Inline=true,smoothOrder=2);
+  end density_derX;  
 end SCO2;
