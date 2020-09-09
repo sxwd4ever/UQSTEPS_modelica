@@ -213,10 +213,12 @@ equation
     // mass balance
     inlet.m_flow + outlet.m_flow = 0;
     
-    // energy balance
-    (outlet.h_outflow - inlet.h_outflow) * inlet.m_flow = Q; 
-
+    // energy balance  
+    (outlet.h_outflow - inlet.h_outflow) * inlet.m_flow = Q;
+        
     inlet.p - outlet.p = dp;
+    
+    inlet.h_outflow = inStream(inlet.h_outflow); // connect inlet and previous component's outlet
       
   end HXCell;
  
@@ -233,28 +235,38 @@ equation
     if i <> 1 then
       // connect current segment's cool outlet with next segment's cool inlet
       connect(cell_cold[i].outlet, cell_cold[i-1].inlet);
-      cell_cold[i-1].inlet.h_outflow = cell_cold[i].outlet.h_outflow;
+      //cell_cold[i-1].inlet.h_outflow = cell_cold[i].outlet.h_outflow;
     end if;
     
     if i <> N_seg then
     // connect current segment's hot outlet with previous segment's hot inlet
       connect(cell_hot[i].outlet, cell_hot[i+1].inlet);
-      cell_hot[i].outlet.h_outflow = cell_hot[i + 1].inlet.h_outflow;
+      //cell_hot[i].outlet.h_outflow = cell_hot[i + 1].inlet.h_outflow;
     end if;
         
   end for; 
   
   // Now connect the end segement with my inlet and outlet
   connect(cell_cold[1].outlet, outlet_cool);
-  connect(inlet_cool, cell_cold[N_seg].inlet);     
-  cell_cold[1].outlet.h_outflow = inStream(outlet_cool.h_outflow);
-  inlet_cool.h_outflow = inStream(cell_cold[N_seg].inlet.h_outflow);   
+  connect(inlet_cool, cell_cold[N_seg].inlet); 
+      
+  //cell_cold[1].outlet.h_outflow = inStream(outlet_cool.h_outflow);
+  //inlet_cool.h_outflow = inStream(cell_cold[N_seg].inlet.h_outflow);  
   
-  connect(cell_hot[1].inlet, inlet_hot);   
-  connect(outlet_hot, cell_hot[N_seg].outlet);         
-  cell_hot[1].inlet.h_outflow = inStream(inlet_hot.h_outflow);
-  cell_hot[N_seg].outlet.h_outflow = inStream(outlet_hot.h_outflow);  
  
+  connect(cell_hot[1].inlet, inlet_hot);   
+  connect(outlet_hot, cell_hot[N_seg].outlet);    
+       
+  //cell_hot[1].inlet.h_outflow = inStream(inlet_hot.h_outflow);
+  //inlet_hot.h_outflow = inStream(inlet_hot.h_outflow);
+  
+  //cell_hot[N_seg].outlet.h_outflow = inStream(outlet_hot.h_outflow);  
+  /*
+  if N_seg == 1 then  // if only one segment in HX
+    inlet_cool.h_outflow = inStream(inlet_cool.h_outflow);
+    inlet_hot.h_outflow = inStream(inlet_hot.h_outflow);
+  end if;
+  */
   for i in 1 : N_seg loop
   
     k_wall[i] = MyUtil.thermal_conductivity(tableID = mc.table_th_inconel_750, name = name_material, temperature = (cell_cold[i].T + cell_hot[i].T) / 2);

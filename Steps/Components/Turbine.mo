@@ -8,16 +8,16 @@ model Turbine
   Real eta "Efficiency of this turbine";
 
   //Intermediate variables
-  PBMedia.CO2_pT medium_isen "medium under isentropic process";  
+  Steps.Media.SCO2.BaseProperties medium_isen "medium under isentropic process";  
   
   Modelica.SIunits.Power W_turbine;  
   
 equation
-  medium_in.state = PBMedia.setState_pTX(p = inlet.p, T = inlet.T);
+  medium_in.state = PBMedia.setState_phX(p = inlet.p, h = inStream(inlet.h_outflow)); // T = inlet.T);
   medium_isen.state = PBMedia.setState_psX(p = p_out, s = medium_in.s);
   medium_out.state = PBMedia.setState_phX(p = p_out, h = medium_in.h - eta * (medium_in.h - medium_isen.h));
   
-  outlet.T = medium_out.T;  
+  //outlet.T = medium_out.T;  
   outlet.m_flow + inlet.m_flow = 0;
   outlet.p = medium_out.p;
   outlet.h_outflow = medium_out.h;

@@ -4,26 +4,23 @@ model FanCooler
   extends TwoPorts;
   
   import Steps.Interfaces.PortType;
+  import Steps.Utilities.CoolProp.PropsSI;
   
-  Modelica.SIunits.TemperatureDifference delta_T "Incoming temperature difference";  
+  parameter Modelica.SIunits.TemperatureDifference delta_T = 18.0 "Incoming temperature difference";  
   
-  Modelica.SIunits.Temperature T_amb "ambinent temperature";
-  
-algorithm
+  parameter Modelica.SIunits.Temperature T_amb = Modelica.SIunits.Conversions.from_degC(15) "ambinent temperature";
 
-  //assert(outlet.PT == PortType.free, "error port type");
-  
+  Modelica.SIunits.SpecificEnthalpy h_out;
+
 equation
   // Note that, no matter what the CO2 inlet conditions are, the fan cooler CO2 
   // exit temperature is always the same for fixed ITD and ambient air temperature.  
-  medium_in.state = PBMedia.setState_pTX(p = inlet.p, T = inlet.T);  
-  medium_out.state = PBMedia.setState_pTX(p = inlet.p, T = T_amb + delta_T);
+  h_out = PropsSI("H", "P", inlet.p, "T", T_amb + delta_T, PBMedia.mediumName);
   
-  outlet.T =  medium_out.T;
   outlet.p = inlet.p;
   outlet.m_flow + inlet.m_flow = 0;
-  outlet.h_outflow = medium_out.h;
+  outlet.h_outflow = h_out;
   
-  inlet.h_outflow = inStream(outlet.h_outflow);
+  inlet.h_outflow = inStream(inlet.h_outflow); 
 
 end FanCooler;

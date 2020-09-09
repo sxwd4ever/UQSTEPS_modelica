@@ -9,8 +9,8 @@ model Recuperator
   Real eta "heat exchange efficiency";
   
   //Intermedian variables for calculation of the max possible transfered heat
-  Media.SCO2.CO2_pT medium_cool_max;
-  Media.SCO2.CO2_pT medium_hot_max;
+  Steps.Media.SCO2.BaseProperties medium_cool_max;
+  Steps.Media.SCO2.BaseProperties medium_hot_max;
  
   Real Q_actual;  
   Real Q_max_hot "The maximum possible heat exchanged by hot pass";  
@@ -18,8 +18,8 @@ model Recuperator
   
 equation
  
-  medium_hot_in.state = PBMedia.setState_pTX(p = inlet_hot.p, T = inlet_hot.T);
-  medium_cool_in.state = PBMedia.setState_pTX(p = inlet_cool.p, T = inlet_cool.T);
+  medium_hot_in.state = PBMedia.setState_phX(p = inlet_hot.p, h = inStream(inlet_hot.h_outflow)); // T = inlet_hot.T);
+  medium_cool_in.state = PBMedia.setState_phX(p = inlet_cool.p, h = inStream(inlet_cool.h_outflow)); // T = inlet_cool.T);
     
   // Q_max_hot
   medium_cool_max.state = PBMedia.setState_pTX(p = medium_hot_in.p, T = medium_cool_in.T);
@@ -36,7 +36,7 @@ equation
   
   myAssert(debug = true, val_test = medium_cool_out.h, min = 0, max = 1e5, name_val = "h_cool_out", val_ref = {medium_cool_in.h, inlet_cool.p, inlet_cool.m_flow, Q_actual}, name_val_ref = {"medium_cool_in.h", "inlet_cool.p", "inlet_cool.m_flow", "Q_actual"});  
   
-  outlet_cool.T = medium_cool_out.T;
+  //outlet_cool.T = medium_cool_out.T;
   outlet_cool.p = medium_cool_out.p;
   outlet_cool.m_flow + inlet_cool.m_flow = 0;
   outlet_cool.h_outflow = medium_cool_out.h;  
@@ -44,7 +44,7 @@ equation
   
   // for outlet_hot = outlet_main
   medium_hot_out.state = PBMedia.setState_phX(p = inlet_hot.p, h = medium_hot_in.h - Q_actual / inlet_hot.m_flow); 
-  outlet_hot.T = medium_hot_out.T;
+  //outlet_hot.T = medium_hot_out.T;
   outlet_hot.p = medium_hot_out.p;
   outlet_hot.m_flow + inlet_hot.m_flow = 0;
   outlet_hot.h_outflow = medium_hot_out.h;
