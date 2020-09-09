@@ -2,8 +2,6 @@ BaseExchanger
 EndPoint
 ExchangerContainer
 FanCooler
-HXCellState
-HXState
 PipeType
 Merger
 OilHeater

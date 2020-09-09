@@ -12,7 +12,7 @@ model Pump
   input SI.AbsolutePressure p_outlet "fixed outlet pressure of pump"; 
   SI.Power W_comp "power input";
     
-  PBMedia.CO2_pT medium_isen;
+  Steps.Media.SCO2.BaseProperties medium_isen;
   
 equation
  
@@ -22,7 +22,7 @@ equation
   
   inlet.m_flow + outlet.m_flow = 0;
   outlet.p = medium_out.p;
-  outlet.T = medium_out.T;
+  //outlet.T = medium_out.T;
   outlet.h_outflow = medium_out.h; 
   inlet.h_outflow = inStream(outlet.h_outflow); 
   

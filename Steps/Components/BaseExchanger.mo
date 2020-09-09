@@ -9,10 +9,10 @@ model BaseExchanger "Base class for components such as heat exchangers,recuperat
   replaceable Steps.Interfaces.PBFluidPort_b outlet_cool(redeclare package Medium = PBMedia) "Recuperator outlet";
   
   // Common intermediate variables for states of inlet and outlet
-  PBMedia.CO2_pT medium_cool_in;
-  PBMedia.CO2_pT medium_cool_out;
-  PBMedia.CO2_pT medium_hot_in;
-  PBMedia.CO2_pT medium_hot_out;   
+  Steps.Media.SCO2.BaseProperties medium_cool_in;
+  Steps.Media.SCO2.BaseProperties medium_cool_out;
+  Steps.Media.SCO2.BaseProperties medium_hot_in;
+  Steps.Media.SCO2.BaseProperties medium_hot_out;   
     
   parameter Boolean debug_mode = false;
   

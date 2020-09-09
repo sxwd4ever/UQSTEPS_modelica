@@ -5,14 +5,16 @@ model Source
   //extends Steps.Components.TwoPorts;
   
   import CP = Steps.Utilities.CoolProp;  
+  import Modelica.SIunits.Conversions.{from_bar, from_degC};
+  
   replaceable package PBMedia = Steps.Media.SCO2;
   
   // fixed outlet temperautre and pressure
-  parameter Modelica.SIunits.AbsolutePressure p_outlet(start = 9 * 1e6);
-  parameter Modelica.SIunits.Temperature T_outlet(start = 400);
+  parameter Modelica.SIunits.AbsolutePressure p_outlet = 9 * 1e6;
+  parameter Modelica.SIunits.Temperature T_outlet = from_degC(400);
 
   // fixed mass flow
-  parameter Modelica.SIunits.MassFlowRate mdot_init(start = 8.3);
+  parameter Modelica.SIunits.MassFlowRate mdot_init = 8.3;
   
   parameter Boolean fix_state = true;
   
@@ -24,12 +26,12 @@ equation
   //determine the boundary condition
   if fix_state then 
     outlet.p = p_outlet;
-
     outlet.m_flow = - mdot_init;  
     outlet.h_outflow = CP.PropsSI("H", "P", p_outlet, "T", T_outlet, PBMedia.mediumName);
-  end if;  
+    T = T_outlet;
+  else     
+    outlet.h_outflow = inStream(outlet.h_outflow); 
+    T = CP.PropsSI("T", "P", p_outlet, "H", inStream(outlet.h_outflow), PBMedia.mediumName);
+  end if;     
   
-  //T = CP.PropsSI("T", "P", outlet.p, "H", inStream(outlet.h_outflow), PBMedia.mediumName);
-  T = CP.PropsSI("T", "P", p_outlet, "H", inStream(outlet.h_outflow), PBMedia.mediumName);
-
 end Source;
