@@ -2,26 +2,30 @@ within Steps.Components;
 
 model Turbine
   extends Steps.Components.TwoPorts;  
-
+  import CP = Steps.Utilities.CoolProp;
+  
   //Initial parameters
-  Modelica.SIunits.AbsolutePressure p_out "fixed output pressure";
-  Real eta "Efficiency of this turbine";
+  parameter Modelica.SIunits.AbsolutePressure p_out "fixed output pressure";
+  parameter Real eta "Efficiency of this turbine";
 
   //Intermediate variables
-  Steps.Media.SCO2.BaseProperties medium_isen "medium under isentropic process";  
+  Modelica.SIunits.SpecificEntropy s; 
+  
+  Modelica.SIunits.SpecificEnthalpy h_isen "Isentropic enthaplpy";  
   
   Modelica.SIunits.Power W_turbine;  
   
 equation
-  medium_in.state = PBMedia.setState_phX(p = inlet.p, h = inStream(inlet.h_outflow)); // T = inlet.T);
-  medium_isen.state = PBMedia.setState_psX(p = p_out, s = medium_in.s);
-  medium_out.state = PBMedia.setState_phX(p = p_out, h = medium_in.h - eta * (medium_in.h - medium_isen.h));
+  
+  s = CP.PropsSI("S", "P", inlet.p, "H", inlet.h_outflow, PBMedia.mediumName);  
+  h_isen = CP.PropsSI("H", "P", p_out, "S", s, PBMedia.mediumName); 
   
   //outlet.T = medium_out.T;  
   outlet.m_flow + inlet.m_flow = 0;
-  outlet.p = medium_out.p;
-  outlet.h_outflow = medium_out.h;
-  inlet.h_outflow = inStream(outlet.h_outflow); 
+  outlet.p = p_out;
+  outlet.h_outflow = inlet.h_outflow - eta * (inlet.h_outflow - h_isen);
   
-  W_turbine = inlet.m_flow * (medium_in.h - medium_out.h);
+  inlet.h_outflow = inStream(inlet.h_outflow); 
+  
+  W_turbine = inlet.m_flow * (inlet.h_outflow - outlet.h_outflow);
 end Turbine;

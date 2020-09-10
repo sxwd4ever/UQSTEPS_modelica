@@ -61,9 +61,7 @@ model OffDesignRCBCycle
   // use pump as compressor
   Steps.Components.Pump pump(
     p_outlet = P_PUMP_E, 
-    eta = eta_main_compressor,
-    medium_in.T.start = 500, 
-    medium_in.T.nominal = 500
+    eta = eta_main_compressor
   );   
   
   Steps.Components.Pump recom_pump(
@@ -79,9 +77,7 @@ model OffDesignRCBCycle
   
   //low temperature recuperator
   Steps.Components.Recuperator recup_low(
-    eta = eta_recuperator_low,
-    medium_hot_max.T.start = 500,
-    medium_hot_max.T.nominal=500
+    eta = eta_recuperator_low
   );
   
   /*
@@ -116,8 +112,7 @@ model OffDesignRCBCycle
     t_sim_duration = stop_time
   );
   
-  Steps.Components.PCMHeater pcm_heater(
-    delta_T = dT_pcm
+  Steps.Components.PCMHeater pcm_heater(    
   );  
   
   parameter Modelica.SIunits.Pressure P_TURBINE_E = P_PUMP_I;

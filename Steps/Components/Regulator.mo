@@ -2,6 +2,8 @@ within Steps.Components;
 
 model Regulator
   extends Steps.Components.TwoPorts;
+  
+  import CP = Steps.Utilities.CoolProp;
       
   parameter Modelica.SIunits.AbsolutePressure p_init;
   //parameter Modelica.SIunits.Pressure P_E = -1.0;
@@ -12,13 +14,10 @@ model Regulator
   //Modelica.Blocks.Interfaces.RealInput T_input;
       
 equation  
-  medium_in.state = PBMedia.setState_phX(p = inlet.p, h = inStream(inlet.h_outflow));
-  medium_out.state = PBMedia.setState_pTX(p = p_init, T = T_init);
-  
-  outlet.p = medium_out.p;
+
+  outlet.p = p_init;
   outlet.m_flow = - m_flow_init;
-  outlet.h_outflow = - medium_out.h;
-  //outlet.T = medium_out.T;
+  outlet.h_outflow = CP.PropsSI("H", "P", p_init, "T", T_init, PBMedia.mediumName); 
   
-  inlet.h_outflow = medium_in.h;
+  inlet.h_outflow = inStream(inlet.h_outflow);
 end Regulator;

@@ -6,27 +6,22 @@ model Merger
   import Modelica.SIunits;
   
   Steps.Interfaces.PBFluidPort_a inlet_merge(redeclare package Medium = PBMedia);
-  Steps.Media.SCO2.BaseProperties medium_merge;
   
   parameter SIunits.Temperature T_init "initial temperature when no fluid from merge_in";
   parameter SIunits.Pressure p_init "initial pressure when no fluid from merge_in";
 
+  Modelica.SIunits.SpecificEnthalpy h_mix "mixes h of the output stream";
+
 equation  
   
-  medium_in.state = PBMedia.setState_phX(p = inlet.p, h = inStream(inlet.h_outflow));
-  medium_merge.state = PBMedia.setState_phX(p = inlet_merge.p, h = inStream(inlet_merge.h_outflow));
+  h_mix = (inlet.h_outflow * inlet.m_flow + inlet_merge.h_outflow * inlet_merge.m_flow) / (inlet.m_flow + inlet_merge.m_flow);
   
-  medium_out.state = PBMedia.setState_phX( 
-    p = inlet.p, 
-    h = (medium_in.h * inlet.m_flow +  medium_merge.h * inlet_merge.m_flow) / (inlet.m_flow + inlet_merge.m_flow)
-  );  
- 
   outlet.m_flow + inlet.m_flow + inlet_merge.m_flow = 0; 
-  outlet.p = medium_out.p;
+  outlet.p = inlet.p;
   //outlet.T = medium_out.T; 
-  outlet.h_outflow = medium_out.h;
+  outlet.h_outflow = h_mix;  
   
-  inlet.h_outflow = inStream(outlet.h_outflow);
-  inlet_merge.h_outflow = inStream(outlet.h_outflow);
+  inlet.h_outflow = inStream(inlet.h_outflow);
+  inlet_merge.h_outflow = inStream(inlet_merge.h_outflow);
 
 end Merger;
