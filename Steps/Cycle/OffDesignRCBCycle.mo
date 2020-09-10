@@ -9,7 +9,7 @@ model OffDesignRCBCycle
   
   parameter Modelica.SIunits.Time stop_time = 1.0 "time length of the experiment";
   
-  parameter Real M_CO2 = 51.91;    //# Co2 flow rate, kg/s
+  parameter Real M_CO2 = 100;    //# Co2 flow rate, kg/s
   parameter Modelica.SIunits.Pressure P_PUMP_I = 8.0 * 1e6 ; //# Pa
   parameter Modelica.SIunits.Pressure P_PUMP_E = 20.0 * 1e6;    //# Pump exit pressure, Pa
   //Modelica.SIunits.Temperature T_PUMP_I = T_AMB + DT_COOLER; // K, "Pump inlet temperature - trial value" ;
@@ -39,11 +39,11 @@ model OffDesignRCBCycle
 
   parameter Modelica.SIunits.Length length_cell = 12e-3 "length of the discretized cell in a channel";
 
-  parameter Integer N_seg = 10 "number of cells/segment for the discretization of a channel";  
+  parameter Integer N_seg = 2 "number of cells/segment for the discretization of a channel";  
   
-  parameter Modelica.SIunits.ReynoldsNumber Re_hot_start = 2e3 "Hot stream's start value of Reynolds Number, used to increase convergence";
+  parameter Modelica.SIunits.ReynoldsNumber Re_hot_start = 14.5e3 "Hot stream's start value of Reynolds Number, used to increase convergence";
   
-  parameter Modelica.SIunits.ReynoldsNumber Re_cold_start = 2e3 "Cold stream's start value of Reynolds Number, used to increase convergence";    
+  parameter Modelica.SIunits.ReynoldsNumber Re_cold_start = 14.5e3 "Cold stream's start value of Reynolds Number, used to increase convergence";    
 
   parameter Modelica.SIunits.TemperatureDifference DT_COOLER = 18.0;
 
@@ -69,7 +69,7 @@ model OffDesignRCBCycle
     eta = eta_bypass_compressor
   );
   
-  
+  /*
   //high temperature recuperator
   Steps.Components.Recuperator recup_high(
     eta = eta_recuperator_high      
@@ -79,8 +79,8 @@ model OffDesignRCBCycle
   Steps.Components.Recuperator recup_low(
     eta = eta_recuperator_low
   );
+   */
   
-  /*
   Components.PCHeatExchanger recup_high(
     phi = phi, 
     d_c = d_c,
@@ -102,7 +102,7 @@ model OffDesignRCBCycle
     N_seg = N_seg,
     length_cell = length_cell  
   );
- */
+
   parameter Real dT_pcm = 10.0;
 
   Steps.Components.TemperatureOutput temp_out(
