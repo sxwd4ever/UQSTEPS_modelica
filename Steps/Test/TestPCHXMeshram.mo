@@ -38,43 +38,53 @@ model TestPCHXMeshram
 
   parameter Modelica.SIunits.Length length_cell = 12e-3 "length of the discretized cell in a channel";
 
-  parameter Integer N_seg = 1 "number of cells/segment for the discretization of a channel";
+  parameter Integer N_seg = 2 "number of cells/segment for the discretization of a channel";
+  
+  parameter Boolean SourceFixed_hot = false;
+  
+  parameter Boolean SourceFixed_cold = false;
   
   Components.Source source_hot(
     p_outlet = p_hot_in,
     T_outlet = T_hot_in,
     mdot_init = mdot_hot,
-    fix_state = true
+    fix_state = SourceFixed_hot
   );
 
   Components.Source source_cold(
     p_outlet = p_cold_in,
     T_outlet = T_cold_in,
     mdot_init = mdot_cold,
-    fix_state = true
+    fix_state = SourceFixed_cold // True if set its state as boundary condition
   );
 
   Components.Sink sink_hot(
     p_inlet = p_hot_out,
     T_inlet = T_hot_out,
     mdot_init = mdot_hot,
-    fix_state = false
+    fix_state = not SourceFixed_hot
   );
 
   Components.Sink sink_cold(
     p_inlet = p_cold_out,
     T_inlet = T_cold_out,
     mdot_init = mdot_cold,
-    fix_state = false
+    fix_state = not SourceFixed_cold
   );
  
   Components.PCHeatExchanger pchx(
     phi = phi, 
     d_c = d_c,
     pitch = pitch,     
-    N_ch = N_ch,
+    N_ch = N_ch,    
     Re_cold_start = Re_cold_start,
     Re_hot_start = Re_hot_start,
+    T_start_hot = T_hot_out,
+    T_start_cold = T_cold_out,
+    p_start_hot = p_hot_out,
+    p_start_cold = p_cold_out,
+    ByInlet_hot = SourceFixed_hot,
+    ByInlet_cold = SourceFixed_cold,
     N_seg = N_seg,
     length_cell = length_cell   
   );
@@ -83,7 +93,7 @@ equation
   
   connect(source_hot.outlet, pchx.inlet_hot);
   connect(pchx.outlet_hot, sink_hot.inlet);
-  connect(source_cold.outlet, pchx.inlet_cool);
-  connect(pchx.outlet_cool, sink_cold.inlet);  
+  connect(source_cold.outlet, pchx.inlet_cold);
+  connect(pchx.outlet_cold, sink_cold.inlet);  
   
 end TestPCHXMeshram;

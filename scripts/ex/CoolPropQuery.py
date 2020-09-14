@@ -14,7 +14,20 @@ import CoolProp as CP
 # result = CP.CoolProp.PropsSI("H", "P", 20e6, 'T', 715 + 273.15, 'CO2')
 
 # P, T -> mu (local viscosity)([Pa], [K] -> [mu])
-result = CP.CoolProp.PropsSI("V", "P", 3616780, 'T', 700 + 273.15, 'CO2')
+# result = CP.CoolProp.PropsSI("V", "P", 3616780, 'T', 700 + 273.15, 'CO2')
 
+result = CP.CoolProp.PropsSI("H", "P", 8e6, 'T', 15 + 273.15, 'CO2')
+
+print("result=" + str(result))
+
+result = CP.CoolProp.PropsSI("H", "P", 20e6, 'T', 15 + 273.15, 'CO2')
+
+print("result=" + str(result))
+
+result = CP.CoolProp.PropsSI("H", "P", 8e6, 'T', 700 + 273.15, 'CO2')
+
+print("result=" + str(result))
+
+result = CP.CoolProp.PropsSI("H", "P", 20e6, 'T', 700 + 273.15, 'CO2')
 
 print("result=" + str(result))

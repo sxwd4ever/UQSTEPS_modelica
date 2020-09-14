@@ -5,7 +5,7 @@ model WaterCooler
   
   import SI = Modelica.SIunits;
 
-  parameter SI.Temperature T_cool_in;
+  parameter SI.Temperature T_cold_in;
   parameter Real pinch = 0.0; 
     
 equation
@@ -13,7 +13,7 @@ equation
   medium_in.state = PBMedia.setState_phX(p = inlet.p, h = inStream(inlet.h_outflow));
   
   outlet.p = inlet.p;
-  medium_out.state = PBMedia.setState_pTX(p = outlet.p, T = T_cool_in + pinch);  
+  medium_out.state = PBMedia.setState_pTX(p = outlet.p, T = T_cold_in + pinch);  
 
   outlet.m_flow + inlet.m_flow = 0;  
   outlet.h_outflow = medium_out.h; 

@@ -10,8 +10,8 @@ model SimplePCHeatExchanger
   
   replaceable Steps.Interfaces.PBFluidPort_a inlet_hot(redeclare package Medium = PBMedia, p(start= 1e6)) "Inlet port, previous component";
   replaceable Steps.Interfaces.PBFluidPort_b outlet_hot(redeclare package Medium = PBMedia, p(start= 1e6)) "Outlet port, next component";
-  replaceable Steps.Interfaces.PBFluidPort_a inlet_cool(redeclare package Medium = PBMedia, p(start= 1e6)) "Recuperator inlet";
-  replaceable Steps.Interfaces.PBFluidPort_b outlet_cool(redeclare package Medium = PBMedia, p(start= 1e6)) "Recuperator outlet";
+  replaceable Steps.Interfaces.PBFluidPort_a inlet_cold(redeclare package Medium = PBMedia, p(start= 1e6)) "Recuperator inlet";
+  replaceable Steps.Interfaces.PBFluidPort_b outlet_cold(redeclare package Medium = PBMedia, p(start= 1e6)) "Recuperator outlet";
   
   replaceable package PBMedia = Steps.Media.SCO2;  
   
@@ -26,19 +26,19 @@ model SimplePCHeatExchanger
   inner parameter Modelica.SIunits.ReynoldsNumber Re_design = 1200 "On-design ReynoldsNumber";
   
   parameter Modelica.SIunits.Diameter d_c = 0.0 "Diameter of semi-circular channel";
-  // inlet/outlet temperature of hot/cool channel
+  // inlet/outlet temperature of hot/cold channel
   parameter Modelica.SIunits.Temp_C T_hot_in = 500;
   //parameter Modelica.SIunits.Temp_C T_hot_out;
-  parameter Modelica.SIunits.Temp_C T_cool_in = 300;
-  //parameter Modelica.SIunits.Temp_C T_cool_out;
+  parameter Modelica.SIunits.Temp_C T_cold_in = 300;
+  //parameter Modelica.SIunits.Temp_C T_cold_out;
   
-  //pressure of hot/cool channel
+  //pressure of hot/cold channel
   parameter Modelica.SIunits.Pressure p_hot = 20 * 1e6;
-  parameter Modelica.SIunits.Pressure p_cool = 9 * 1e6;
+  parameter Modelica.SIunits.Pressure p_cold = 9 * 1e6;
   
-  // mass flow of hot/cool channel
+  // mass flow of hot/cold channel
   parameter Modelica.SIunits.MassFlowRate m_dot_hot = 5;
-  parameter Modelica.SIunits.MassFlowRate m_dot_cool = 5;
+  parameter Modelica.SIunits.MassFlowRate m_dot_cold = 5;
   
   parameter Modelica.SIunits.Length pitch = 10 "pitch length of channel";
   
@@ -60,13 +60,13 @@ model SimplePCHeatExchanger
   
   inner Modelica.SIunits.Area A_flow = N_channel * A_c "Flow area of all channels";
   
-  inner Modelica.SIunits.Area A_fc = m_dot_cool * d_h / mu_c / Re_design "Area of cold stream area";
+  inner Modelica.SIunits.Area A_fc = m_dot_cold * d_h / mu_c / Re_design "Area of cold stream area";
   inner Modelica.SIunits.Area A_fh = m_dot_hot * d_h / mu_h /Re_design "Area of hot stream area";
   inner Modelica.SIunits.Area A_fmax = max(A_fc, A_fh) "Area of maximum stream area comparing A_fc and A_fh: A_fmax = max(A_fc, A_fh)";
   
   inner Modelica.SIunits.Area A_stack = peri_c * length_cell * N_channel "surface area of all cells in a stack";
   
-  Modelica.SIunits.DynamicViscosity mu_c = CP.PropsSI("V", "P", p_cool, "T", T_cool_in, PBMedia.mediumName) "average dynamic Viscosity in cold channel";
+  Modelica.SIunits.DynamicViscosity mu_c = CP.PropsSI("V", "P", p_cold, "T", T_cold_in, PBMedia.mediumName) "average dynamic Viscosity in cold channel";
   Modelica.SIunits.DynamicViscosity mu_h = CP.PropsSI("V", "P", p_hot, "T", T_hot_in, PBMedia.mediumName) "average dynamic Viscosity in hot channel";   
   
   Modelica.SIunits.Length length_ch = length_cell * N_seg "length of one pipe in HeatExchanger unit m";
@@ -142,7 +142,7 @@ model SimplePCHeatExchanger
   end HXCell;
 algorithm  
   // initialize the state for the hot side and cold side in all the cells
-// using the hot inlet and cool outlet.
+// using the hot inlet and cold outlet.
   hot_stream_name := PBMedia.mediumName;
   cold_stream_name := PBMedia.mediumName; 
 
@@ -151,7 +151,7 @@ equation
   for i in 1 : N_seg loop
   
     if i <> N_seg then
-      // connect current segment's cool outlet with next segment's cool inlet
+      // connect current segment's cold outlet with next segment's cold inlet
       connect(cell_cold[i].outlet, cell_cold[i+1].inlet);
       cell_cold[i+1].inlet.h_outflow = cell_cold[i].outlet.h_outflow;
     end if;
@@ -166,7 +166,7 @@ equation
   
   for i in 1 : N_seg loop
     
-    cell_cold[i].G = inlet_cool.m_flow / N_channel / A_c;
+    cell_cold[i].G = inlet_cold.m_flow / N_channel / A_c;
     cell_hot[i].G = inlet_hot.m_flow / N_channel / A_c;    
     
     cell_cold[i].Q = 20;
@@ -175,14 +175,14 @@ equation
   end for;
   
   // Now connect the end segement with my inlet and outlet
-  connect(inlet_cool, cell_cold[1].inlet);
-  connect(cell_cold[N_seg].outlet, outlet_cool);  
+  connect(inlet_cold, cell_cold[1].inlet);
+  connect(cell_cold[N_seg].outlet, outlet_cold);  
   cell_hot[N_seg].inlet.h_outflow = inStream(inlet_hot.h_outflow);
-  cell_cold[N_seg].outlet.h_outflow = inStream(outlet_cool.h_outflow);   
+  cell_cold[N_seg].outlet.h_outflow = inStream(outlet_cold.h_outflow);   
     
   connect(outlet_hot, cell_hot[1].outlet);    
   connect(cell_hot[N_seg].inlet, inlet_hot);    
   cell_hot[1].outlet.h_outflow = inStream(outlet_hot.h_outflow);
-  cell_cold[1].inlet.h_outflow = inStream(inlet_cool.h_outflow);
+  cell_cold[1].inlet.h_outflow = inStream(inlet_cold.h_outflow);
   
 end SimplePCHeatExchanger;

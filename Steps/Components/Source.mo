@@ -16,11 +16,11 @@ model Source
   // fixed mass flow
   parameter Modelica.SIunits.MassFlowRate mdot_init = 8.3;
   
-  parameter Boolean fix_state = true;
+  parameter Boolean fix_state = true "if use this component as boundary condition";
   
   Modelica.SIunits.Temperature T;
   
-  replaceable Steps.Interfaces.PBFluidPort_b outlet(redeclare package Medium = PBMedia) "Outlet port, next component";  
+  replaceable Steps.Interfaces.PBFluidPort_b outlet(redeclare package Medium = PBMedia, p.start = p_outlet) "Outlet port, next component";  
  
 equation  
   //determine the boundary condition
@@ -30,8 +30,8 @@ equation
     outlet.h_outflow = CP.PropsSI("H", "P", p_outlet, "T", T_outlet, PBMedia.mediumName);
     T = T_outlet;
   else     
-    outlet.h_outflow = inStream(outlet.h_outflow); 
-    T = CP.PropsSI("T", "P", p_outlet, "H", inStream(outlet.h_outflow), PBMedia.mediumName);
+    //outlet.h_outflow = inStream(outlet.h_outflow); 
+    T = CP.PropsSI("T", "P", p_outlet, "H", outlet.h_outflow, PBMedia.mediumName);
   end if;     
   
 end Source;

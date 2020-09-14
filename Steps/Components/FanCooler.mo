@@ -13,7 +13,7 @@ model FanCooler
   Modelica.SIunits.SpecificEnthalpy h_out;
 
 equation
-  // Note that, no matter what the CO2 inlet conditions are, the fan cooler CO2 
+  // Note that, no matter what the CO2 inlet conditions are, the fan colder CO2 
   // exit temperature is always the same for fixed ITD and ambient air temperature.  
   h_out = PropsSI("H", "P", inlet.p, "T", T_amb + delta_T, PBMedia.mediumName);
   
