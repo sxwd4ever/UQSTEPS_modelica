@@ -19,7 +19,7 @@ model Sink
  
   replaceable Steps.Interfaces.PBFluidPort_a inlet(redeclare package Medium = PBMedia) "Inlet port, previous component";
   
-  parameter Boolean fix_state = true;
+  parameter Boolean fix_state = true "if use this component as boundary condition";
     
 equation   
 
@@ -28,9 +28,9 @@ equation
     inlet.m_flow = mdot_init;
     inlet.h_outflow = CP.PropsSI("H", "P", p_inlet, "T", T_inlet, PBMedia.mediumName);
     T = T_inlet;
-  else    
-    inlet.h_outflow = inStream(inlet.h_outflow); 
-  end if; 
-   
-  T = CP.PropsSI("T", "P", inlet.p, "H", inStream(inlet.h_outflow), PBMedia.mediumName); 
+  else       
+    T = CP.PropsSI("T", "P", inlet.p, "H", inlet.h_outflow, PBMedia.mediumName); 
+  end if;  
+    
+  inlet.h_outflow = inStream(inlet.h_outflow); 
 end Sink;

@@ -32,14 +32,14 @@ model TestFanCooler
     fix_state = false
   );
 
-  Components.FanCooler cooler(
+  Components.FanCooler colder(
     T_amb = T_AMB,
     delta_T = DT_COOLER
   );
 
 equation
   
-  connect(source.outlet, cooler.inlet);  
-  connect(cooler.outlet, sink.inlet);
+  connect(source.outlet, colder.inlet);  
+  connect(colder.outlet, sink.inlet);
 
 end TestFanCooler;

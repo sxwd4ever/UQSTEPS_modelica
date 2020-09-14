@@ -37,7 +37,7 @@ model RCBCycle
   
   parameter Modelica.SIunits.TemperatureDifference DT_COOLER = 18.0;
   
-  Steps.Components.FanCooler fan_cooler(
+  Steps.Components.FanCooler fan_colder(
     T_amb = T_AMB,
     delta_T = DT_COOLER
   );
@@ -70,11 +70,11 @@ model RCBCycle
     Re_design = 5000,
     d_c = 1.51 * 1e-3,
     T_hot_in = Modelica.SIunits.Conversions.from_degC(451),
-    T_cool_in = Modelica.SIunits.Conversions.from_degC(41),
+    T_cold_in = Modelica.SIunits.Conversions.from_degC(41),
     p_hot = 9 * 1e6,
-    p_cool = 20 * 1e6,
+    p_cold = 20 * 1e6,
     m_dot_hot = 8.3,
-    m_dot_cool = 8.3,
+    m_dot_cold = 8.3,
     pitch = 24.6 * 1e-3,
     length_cell = 3e-3,
     N_seg = 2
@@ -85,11 +85,11 @@ model RCBCycle
     Re_design = 5000,
     d_c = 1.51 * 1e-3,
     T_hot_in = Modelica.SIunits.Conversions.from_degC(451),
-    T_cool_in = Modelica.SIunits.Conversions.from_degC(41),
+    T_cold_in = Modelica.SIunits.Conversions.from_degC(41),
     p_hot = 9 * 1e6,
-    p_cool = 20 * 1e6,
+    p_cold = 20 * 1e6,
     m_dot_hot = 8.3,
-    m_dot_cool = 8.3,
+    m_dot_cold = 8.3,
     pitch = 24.6 * 1e-3,
     length_cell = 3e-3,
     N_seg = 2
@@ -140,17 +140,17 @@ equation
   connect(splitter.outlet_split, recom_pump.inlet);
   connect(recom_pump.outlet, merger.inlet_merge);  
   
-  connect(splitter.outlet, fan_cooler.inlet);
+  connect(splitter.outlet, fan_colder.inlet);
   
-  connect(fan_cooler.outlet, pump.inlet);
+  connect(fan_colder.outlet, pump.inlet);
   
-  connect(pump.outlet, recup_low.inlet_cool);  
+  connect(pump.outlet, recup_low.inlet_cold);  
    
-  connect(recup_low.outlet_cool, merger.inlet);
+  connect(recup_low.outlet_cold, merger.inlet);
   
-  connect(merger.outlet, recup_high.inlet_cool);
+  connect(merger.outlet, recup_high.inlet_cold);
   
-  connect(recup_high.outlet_cool, pcm_heater.inlet);    
+  connect(recup_high.outlet_cold, pcm_heater.inlet);    
   
   connect(temp_out.y, pcm_heater.T_input);
   connect(pcm_heater.outlet, regulator.inlet);

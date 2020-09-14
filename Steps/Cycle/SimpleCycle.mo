@@ -1,7 +1,7 @@
 within Steps.Cycle;
 
 model SimpleCycle
-  "Simplest Cycle with pump - oilheater - valve - Water cooler - pump"   
+  "Simplest Cycle with pump - oilheater - valve - Water colder - pump"   
   constant Real CONV_DEG_TO_K = 273.15 "Temperature conversion constant degC -> K"; 
   
   parameter Modelica.SIunits.Pressure P_ATM = 101325; // Pa
@@ -41,8 +41,8 @@ model SimpleCycle
   
   parameter Real M_WATER = 2; //kg/s
   
-  Steps.Components.WaterCooler water_cooler(    
-    T_cool_in = 5.0 + CONV_DEG_TO_K,
+  Steps.Components.WaterCooler water_colder(    
+    T_cold_in = 5.0 + CONV_DEG_TO_K,
     pinch = 10  
   );
   
@@ -51,7 +51,7 @@ equation
   connect(regulator.outlet, pump.inlet);
   connect(pump.outlet, oil_heater.inlet);
   connect(oil_heater.outlet, valve.inlet);
-  connect(valve.outlet, water_cooler.inlet);
-  connect(water_cooler.outlet, regulator.inlet);
+  connect(valve.outlet, water_colder.inlet);
+  connect(water_colder.outlet, regulator.inlet);
  
 end SimpleCycle;
