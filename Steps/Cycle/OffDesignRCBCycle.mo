@@ -5,6 +5,9 @@ model OffDesignRCBCycle
 // Adjustable parameters
   import Util = Utilities.Util;
   import Modelica.SIunits.Conversions.{from_degC, from_deg};
+  import Steps.Utilities.CoolProp.PropsSI;
+  
+  replaceable package PBMedia = Steps.Media.SCO2;
   
   parameter Modelica.SIunits.Pressure P_ATM = 101325; // Pa
   parameter Modelica.SIunits.Temperature T_AMB = from_degC(15) "Ambinent temperature";
@@ -16,9 +19,9 @@ model OffDesignRCBCycle
   parameter Modelica.SIunits.Pressure P_PUMP_E = 20.0 * 1e6;    //# Pump exit pressure, Pa
   parameter Modelica.SIunits.Pressure P_TURBINE_E = P_PUMP_I;
   
-  parameter Modelica.SIunits.SpecificEnthalpy H_PUMP_I = 232873; // h @ {p = 8e6, T = 15°C}
-  parameter Modelica.SIunits.SpecificEnthalpy H_PUMP_E = 223579; // h @ {P = 20e6, T = 15°c}  
-  parameter Modelica.SIunits.SpecificEnthalpy H_TURBINE_I = 1223271; // h @ {P = 20e6, T = 700°c} J/K  
+  parameter Modelica.SIunits.SpecificEnthalpy H_PUMP_I = PropsSI("H", "T", T_AMB, "P", P_PUMP_I, PBMedia.mediumName); 
+  parameter Modelica.SIunits.SpecificEnthalpy H_PUMP_E = PropsSI("H", "T", T_AMB, "P", P_PUMP_E, PBMedia.mediumName); 
+  parameter Modelica.SIunits.SpecificEnthalpy H_TURBINE_I = PropsSI("H", "T", T_HEATER_E, "P", P_PUMP_E, PBMedia.mediumName); 
   
   parameter Modelica.SIunits.Temp_K T_HEATER_E = from_degC(700);
   
@@ -51,7 +54,7 @@ model OffDesignRCBCycle
 
   parameter Modelica.SIunits.Length length_cell = 12e-3 "length of the discretized cell in a channel";
 
-  parameter Integer N_seg = 30 "number of cells/segment for the discretization of a channel";  
+  parameter Integer N_seg = 10 "number of cells/segment for the discretization of a channel";  
   
   parameter Modelica.SIunits.ReynoldsNumber Re_hot_start = 14.5e3 "Hot stream's start value of Reynolds Number, used to increase convergence";
   
@@ -59,10 +62,10 @@ model OffDesignRCBCycle
 
   parameter Modelica.SIunits.TemperatureDifference DT_COOLER = 18.0;
   
-  parameter Boolean SourceFixed_hot = false;
+  parameter Boolean SourceFixed_hot = true;
   
-  parameter Boolean SourceFixed_cold = false;  
-
+  parameter Boolean SourceFixed_cold = true;  
+  /*
   Steps.Components.Regulator regulator(
     T_init = T_AMB,
     p_init = P_PUMP_E,   
@@ -72,46 +75,34 @@ model OffDesignRCBCycle
     outlet.p(start = P_PUMP_E),
     outlet.h_outflow(start = H_TURBINE_I)
   );
-  
+  */
   Steps.Components.FanCooler fan_colder(
     T_amb = T_AMB,
     delta_T = DT_COOLER,
-    outlet.p(start = P_PUMP_I),
-    outlet.h_outflow(start = H_PUMP_I),
-    inlet.p(start = P_PUMP_I),
-    inlet.h_outflow(start = H_PUMP_I)
+    outlet.p(start = P_PUMP_I)
+    //outlet.h_outflow(start = H_PUMP_I),
+    //inlet.p(start = P_PUMP_I),
+    //inlet.h_outflow(start = H_PUMP_I),
   );
   
   // use pump as compressor
   Steps.Components.Pump pump(
     p_outlet = P_PUMP_E, 
-    eta = eta_main_compressor,
-    inlet.p(start = P_PUMP_I),
-    inlet.h_outflow(start = H_PUMP_I),
-    outlet.p(start = P_PUMP_E),
-    outlet.h_outflow(start = H_PUMP_E)    
+    eta = eta_main_compressor
+    //inlet.p(start = P_PUMP_I),
+    //inlet.h_outflow(start = H_PUMP_I),
+    //outlet.p(start = P_PUMP_E)
+    //outlet.h_outflow(start = H_PUMP_E)    
   );   
   
   Steps.Components.Pump recom_pump(
     p_outlet = P_PUMP_E, 
-    eta = eta_bypass_compressor,
-    inlet.p(start = P_PUMP_I),
-    inlet.h_outflow(start = H_PUMP_I),
-    outlet.p(start = P_PUMP_E),
-    outlet.h_outflow(start = H_PUMP_E)      
+    eta = eta_bypass_compressor
+    //inlet.p(start = P_PUMP_I),
+    //inlet.h_outflow(start = H_PUMP_I),
+    //outlet.p(start = P_PUMP_E)
+    //outlet.h_outflow(start = H_PUMP_E)      
   );
-  
-  /*
-  //high temperature recuperator
-  Steps.Components.Recuperator recup_high(
-    eta = eta_recuperator_high      
-  );
-  
-  //low temperature recuperator
-  Steps.Components.Recuperator recup_low(
-    eta = eta_recuperator_low
-  );
-   */
   
   Components.PCHeatExchanger recup_high(
     phi = phi, 
@@ -123,13 +114,21 @@ model OffDesignRCBCycle
     N_seg = N_seg,
     length_cell = length_cell,
     
-    T_start_hot = T_HEATER_E,    
+    inlet_hot.p(start = P_TURBINE_E),
+    inlet_hot.h_outflow(start = PropsSI("H", "T", from_degC(578), "P", P_TURBINE_E, PBMedia.mediumName)),
+    inlet_hot.m_flow(start = M_CO2),
+    
+    inlet_cold.p(start = P_PUMP_E),
+    inlet_cold.h_outflow(start = PropsSI("H", "T", from_degC(151), "P", P_PUMP_E, PBMedia.mediumName)),
+    inlet_cold.m_flow(start = M_CO2),
+    
     p_start_hot = P_TURBINE_E,
-    h_start_hot = H_PUMP_I,
+    T_start_hot = from_degC(578),
+    //h_start_hot = H_PUMP_I,
     
     p_start_cold = P_PUMP_E,
-    T_start_cold = T_AMB,    
-    h_start_cold = H_PUMP_E,
+    T_start_cold = from_degC(151),    
+    //h_start_cold = H_PUMP_E,
     
     ByInlet_hot = SourceFixed_hot,
     ByInlet_cold = SourceFixed_cold     
@@ -145,19 +144,25 @@ model OffDesignRCBCycle
     N_seg = N_seg,
     length_cell = length_cell, 
      
-    T_start_hot = T_HEATER_E,    
-    p_start_hot = P_TURBINE_E,
-    h_start_hot = H_PUMP_I,
+    inlet_hot.p(start = P_PUMP_I),
+    inlet_hot.h_outflow(start = PropsSI("H", "T", from_degC(156), "P", P_PUMP_I, PBMedia.mediumName)),
+    inlet_hot.m_flow(start = -M_CO2),
+    
+    inlet_cold.p(start = P_PUMP_E),
+    inlet_cold.h_outflow(start = PropsSI("H", "T", from_degC(62), "P", P_PUMP_E, PBMedia.mediumName)),
+    inlet_cold.m_flow(start = M_CO2 * (1 - splitter_split_ratio)),  
+    
+    p_start_hot = P_PUMP_I,   
+    T_start_hot = from_degC(155),  
+    //h_start_hot = H_PUMP_I,
     
     p_start_cold = P_PUMP_E,
-    T_start_cold = T_AMB,    
-    h_start_cold = H_PUMP_E,
+    T_start_cold = from_degC(63),    
+    //h_start_cold = H_PUMP_E,
     
     ByInlet_hot = SourceFixed_hot,
     ByInlet_cold = SourceFixed_cold    
   );
-
-
 
   Steps.Components.TemperatureOutput temp_out(
     T_start = T_HEATER_E,
@@ -167,38 +172,39 @@ model OffDesignRCBCycle
   );
   
   Steps.Components.PCMHeater pcm_heater(
-    inlet.p(start = P_PUMP_E),
-    inlet.h_outflow(start = H_PUMP_E),
+    mdot_init = M_CO2,
+    //inlet.p(start = P_PUMP_E),
+    //inlet.h_outflow(start = H_PUMP_E),
     outlet.p(start = P_PUMP_E),
-    outlet.h_outflow(start = H_TURBINE_I)
+    outlet.h_outflow(start = H_TURBINE_I)    
   );  
    
   Steps.Components.Turbine turbine(    
     p_out = P_TURBINE_E,
-    eta = eta_turbine,
-    outlet.p(start = P_TURBINE_E),
-    outlet.h_outflow(start = H_PUMP_I)    
+    eta = eta_turbine
+    //outlet.p(start = P_TURBINE_E)
+    //outlet.h_outflow(start = H_PUMP_I)    
   ); 
   
   Steps.Components.Splitter splitter(
-    split_ratio = splitter_split_ratio,
-    outlet.p(start = P_PUMP_I),
-    outlet.h_outflow(start = H_PUMP_I),
-    inlet.p(start = P_PUMP_I),
-    inlet.h_outflow(start = H_PUMP_I),
-    outlet_split.p(start = P_PUMP_I),
-    outlet_split.h_outflow(start = H_PUMP_I)
+    split_ratio = splitter_split_ratio
+    //outlet.p(start = P_PUMP_I),
+    //outlet.h_outflow(start = H_PUMP_I),
+    //inlet.p(start = P_PUMP_I),
+    //inlet.h_outflow(start = H_PUMP_I),
+    //outlet_split.p(start = P_PUMP_I)
+    //outlet_split.h_outflow(start = H_PUMP_I)
   );
   
   Steps.Components.Merger merger(
     T_init = T_AMB,
-    p_init = P_ATM,
-    inlet.p(start = P_PUMP_E),
-    inlet.h_outflow(start = H_PUMP_E),    
-    outlet.p(start = P_PUMP_E),
-    outlet.h_outflow(start = H_PUMP_E),
-    inlet_merge.p(start = P_PUMP_E),
-    inlet_merge.h_outflow(start = H_PUMP_E)
+    p_init = P_ATM
+    //inlet.p(start = P_PUMP_E),
+    //inlet.h_outflow(start = H_PUMP_E),    
+    //outlet.p(start = P_PUMP_E),
+    //outlet.h_outflow(start = H_PUMP_E),
+    //inlet_merge.p(start = P_PUMP_E)
+    //inlet_merge.h_outflow(start = H_PUMP_E)
   );
   
   //total efficiency
@@ -206,7 +212,7 @@ model OffDesignRCBCycle
 
 equation
   
-  connect(regulator.outlet, turbine.inlet);
+  //connect(regulator.outlet, turbine.inlet);
   
   connect(turbine.outlet, recup_high.inlet_hot);
   
@@ -230,7 +236,7 @@ equation
   connect(recup_high.outlet_cold, pcm_heater.inlet);    
   
   connect(temp_out.y, pcm_heater.T_input);
-  connect(pcm_heater.outlet, regulator.inlet);
+  connect(pcm_heater.outlet, turbine.inlet);
 
 algorithm
   eta_total := if initial() then 0 else (turbine.W_turbine - pump.W_comp - recom_pump.W_comp) / pcm_heater.Q * 100;

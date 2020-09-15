@@ -10,12 +10,18 @@ model PCHeatExchanger
   import UTIL = Modelica.Utilities;
   import MyUtil = Steps.Utilities.Util;
   import Modelica.SIunits.Conversions.{from_degC, from_bar};
-  
+/*  
   replaceable Steps.Interfaces.PBFluidPort_a inlet_hot(redeclare package Medium = PBMedia, p(start= p_start_hot), h_outflow(start = h_start_hot)) "Inlet port, previous component";
   replaceable Steps.Interfaces.PBFluidPort_b outlet_hot(redeclare package Medium = PBMedia, p(start= p_start_hot), h_outflow(start = h_start_hot)) "Outlet port, next component";
   replaceable Steps.Interfaces.PBFluidPort_a inlet_cold(redeclare package Medium = PBMedia, p(start= p_start_cold), h_outflow(start = h_start_cold)) "Recuperator inlet";
   replaceable Steps.Interfaces.PBFluidPort_b outlet_cold(redeclare package Medium = PBMedia, p(start= p_start_cold), h_outflow(start = h_start_cold)) "Recuperator outlet";
+*/
   
+  replaceable Steps.Interfaces.PBFluidPort_a inlet_hot(redeclare package Medium = PBMedia) "Inlet port, previous component";
+  replaceable Steps.Interfaces.PBFluidPort_b outlet_hot(redeclare package Medium = PBMedia) "Outlet port, next component";
+  replaceable Steps.Interfaces.PBFluidPort_a inlet_cold(redeclare package Medium = PBMedia) "Recuperator inlet";
+  replaceable Steps.Interfaces.PBFluidPort_b outlet_cold(redeclare package Medium = PBMedia) "Recuperator outlet";  
+
   replaceable package PBMedia = Steps.Media.SCO2; 
   
   parameter String name_material = "inconel 750";    
@@ -41,8 +47,8 @@ model PCHeatExchanger
   parameter Modelica.SIunits.AbsolutePressure p_start_hot = from_bar(80);  
   parameter Modelica.SIunits.AbsolutePressure p_start_cold = from_bar(200);
   
-  parameter Modelica.SIunits.SpecificEnthalpy h_start_hot = CP.PropsSI("H", "P", p_start_hot, "T", T_start_hot, PBMedia.mediumName);  
-  parameter Modelica.SIunits.SpecificEnthalpy h_start_cold = CP.PropsSI("H", "P", p_start_cold, "T", T_start_cold, PBMedia.mediumName);
+  //Modelica.SIunits.SpecificEnthalpy h_start_hot = CP.PropsSI("H", "P", p_start_hot, "T", T_start_hot, PBMedia.mediumName);  
+  //Modelica.SIunits.SpecificEnthalpy h_start_cold = CP.PropsSI("H", "P", p_start_cold, "T", T_start_cold, PBMedia.mediumName);
   
   // d_c determined variables, d_h, A_c, peri_c
   inner Modelica.SIunits.Diameter d_h = 4 * A_c / peri_c "Hydraulic Diameter";
@@ -56,6 +62,10 @@ model PCHeatExchanger
   parameter Modelica.SIunits.ReynoldsNumber Re_hot_start = 5e3 "Re off design value in hot stream";
 
   parameter Modelica.SIunits.ReynoldsNumber Re_cold_start = 5e3 "Re off design value in cold stream";
+  
+  parameter Modelica.SIunits.MassFlowRate mdot_start_hot = 100;
+  
+  parameter Modelica.SIunits.MassFlowRate mdot_start_cold = 100;
   
   inner parameter Integer N_ch = 10 "Number of Channels in PCHE";
   
@@ -78,21 +88,23 @@ model PCHeatExchanger
   HXCell [N_seg] cell_cold(
     each ByInlet = ByInlet_cold, 
     each inlet.p.start = p_start_cold, 
-    each inlet.h_outflow.start = h_start_cold,
-    each outlet.p.start = p_start_cold,
-    each outlet.h_outflow.start = h_start_cold,
+    each inlet.h_outflow.start = CP.PropsSI("H", "P", p_start_cold, "T", T_start_cold, PBMedia.mediumName),
+    //each outlet.p.start = p_start_cold,
+    //each outlet.h_outflow.start = CP.PropsSI("H", "P", p_start_cold, "T", T_start_cold, PBMedia.mediumName),
     each T.start = T_start_cold, 
-    each Re.start = Re_cold_start,    
+    each Re.start = Re_cold_start,  
+    //each inlet.m_flow.start = mdot_start_cold,  
     id = {i + 2000 for i in 1 : N_seg}); 
     
   HXCell [N_seg] cell_hot(
     each ByInlet = ByInlet_hot, 
     each inlet.p.start = p_start_hot, 
-    each inlet.h_outflow.start = h_start_hot,   
-    each outlet.p.start = p_start_hot, 
-    each outlet.h_outflow.start = h_start_hot,
+    each inlet.h_outflow.start = CP.PropsSI("H", "P", p_start_hot, "T", T_start_hot, PBMedia.mediumName),   
+    //each outlet.p.start = p_start_hot, 
+    //each outlet.h_outflow.start = CP.PropsSI("H", "P", p_start_hot, "T", T_start_hot, PBMedia.mediumName),
     each T.start = T_start_hot,     
     each Re.start = Re_hot_start,
+    //each inlet.m_flow.start = mdot_start_hot,
     id = {i + 1000 for i in 1 : N_seg});
 
   // Heat Change
@@ -188,7 +200,7 @@ protected
     Modelica.SIunits.PressureDifference dp;    
   
   equation   
-    /*
+
     // use upstream or downstream state can increase speed of convergence
     if ByInlet then
       p = inlet.p;
@@ -197,15 +209,16 @@ protected
     else
       p = outlet.p;
       h = outlet.h_outflow; 
-    end if;       
-    */  
+    end if;  
     
     // use average value is more flexible, but difficult to find solution  
+/*
 algorithm
       
     p := (outlet.p + inlet.p) / 2;
     h := (outlet.h_outflow + inlet.h_outflow) / 2; 
-    
+*/
+
 equation
     
     inlet.h_outflow = inStream(inlet.h_outflow); // set up equation between inlet and previous component's outlet 
