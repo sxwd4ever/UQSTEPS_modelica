@@ -15,6 +15,8 @@ model PCMHeater
   Modelica.SIunits.HeatFlowRate Q;
  
   import Steps.Utilities.CoolProp.PropsSI;
+  
+  parameter Modelica.SIunits.MassFlowRate mdot_init = 100;
 
 protected
   
@@ -24,10 +26,13 @@ equation
   
   T_inlet = PropsSI("T", "P", inlet.p, "H", inlet.h_outflow, PBMedia.mediumName);
  
-  outlet.m_flow + inlet.m_flow = 0;
+  // outlet.m_flow + inlet.m_flow = 0;
+  
+  outlet.m_flow = - mdot_init;
+  
   T_output = max(T_input, T_inlet);
   
-  outlet.h_outflow =  PropsSI("H", "P", inlet.p, "T", T_output, PBMedia.mediumName);
+  outlet.h_outflow =  PropsSI("H", "P", inlet.p, "T", T_input, PBMedia.mediumName);
   //outlet.T = medium_out.T;  
   outlet.p = inlet.p;  
   inlet.h_outflow = inStream(inlet.h_outflow);

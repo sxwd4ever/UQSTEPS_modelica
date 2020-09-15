@@ -9,7 +9,7 @@ model FanCooler
   parameter Modelica.SIunits.TemperatureDifference delta_T = 18.0 "Incoming temperature difference";  
   
   parameter Modelica.SIunits.Temperature T_amb = Modelica.SIunits.Conversions.from_degC(15) "ambinent temperature";
-
+  
   Modelica.SIunits.SpecificEnthalpy h_out;
 
 equation
@@ -20,6 +20,8 @@ equation
   outlet.p = inlet.p;
   outlet.m_flow + inlet.m_flow = 0;
   outlet.h_outflow = h_out;
+  
+  // outlet.m_flow = - mdot_init;
   
   inlet.h_outflow = inStream(inlet.h_outflow); 
 
