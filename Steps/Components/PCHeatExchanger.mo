@@ -120,7 +120,7 @@ protected
   // internal variable, for debug or efficient purpose
   parameter Boolean debug_mode = false;   
   
-  String hot_stream_name, cold_stream_name;
+  //String hot_stream_name, cold_stream_name;
   
   parameter Real testVal = 1; 
 
@@ -222,18 +222,27 @@ algorithm
 equation
     
     inlet.h_outflow = inStream(inlet.h_outflow); // set up equation between inlet and previous component's outlet 
+
+    // mass balance
+    inlet.m_flow + outlet.m_flow = 0;
+    
+    // energy balance  
+    (outlet.h_outflow - inlet.h_outflow) * inlet.m_flow = Q;
+       
+    inlet.p - outlet.p = dp; 
+
      
     T = CP.PropsSI("T", "P", p, "H", h, PBMedia.mediumName);
     
     mu = CP.PropsSI("V", "P", p, "T", T, PBMedia.mediumName); 
 
-    // k = CP.PropsSI("L", "P", p, "T", T, PBMedia.mediumName);   
+    k = CP.PropsSI("L", "P", p, "T", T, PBMedia.mediumName);   
     
     rho = CP.PropsSI("D", "P", p, "T", T, PBMedia.mediumName); 
       
-    // Re = G * d_h / mu; 
+    Re = G * d_h / mu; 
     
-    // Nu = 4.089 + kim_cor.c * (Re ^ kim_cor.d);    
+    Nu = 4.089 + kim_cor.c * (Re ^ kim_cor.d);    
     
     u = inlet.m_flow / A_flow / rho;     
     
@@ -244,14 +253,8 @@ equation
     //pressure drop, unit Pa  
     dp = 2 * f * length_cell * rho *  (u ^ 2) / d_h;     
     
-    // mass balance
-    inlet.m_flow + outlet.m_flow = 0;
     
-    // energy balance  
-    (outlet.h_outflow - inlet.h_outflow) * inlet.m_flow = Q;
-       
-    inlet.p - outlet.p = dp;     
-        
+/*        
 algorithm 
     // ******************************************** 
     // this algorithm section is used for debug purpose
@@ -263,7 +266,7 @@ algorithm
     //
     // once the bug fixed, DO REMEMBER to rewind the changed lines reversely. 
     // ********************************************
-    Re := G * d_h / mu; 
+    //Re := G * d_h / mu; 
     
     MyUtil.myAssertNotEqual(
     debug = false, 
@@ -272,7 +275,7 @@ algorithm
     val_ref = {id, Nu, Re, G, f, d_h, mu, T, p ,  h, rho, u, length_cell, dp}, 
     name_val_ref = {"id", "Nu", "Re", "G", "f", "d_h", "mu",  "T", "p" , "h", "rho", "u", "length_cell", "dp"}); 
     
-    k := CP.PropsSI("L", "P", p, "T", T, PBMedia.mediumName);    
+    //k := CP.PropsSI("L", "P", p, "T", T, PBMedia.mediumName);    
       
     MyUtil.myAssert(
     debug = false, 
@@ -281,7 +284,7 @@ algorithm
     val_ref = {id, Nu, Re, G, f, d_h, mu, T, p ,  h, rho, u, length_cell, dp}, 
     name_val_ref = {"id", "Nu", "Re", "G", "f", "d_h", "mu",  "T", "p" , "h", "rho", "u", "length_cell", "dp"});    
     
-    Nu := 4.089 + kim_cor.c * (Re ^ kim_cor.d);    
+    //Nu := 4.089 + kim_cor.c * (Re ^ kim_cor.d);    
     
     MyUtil.myAssert(
     debug = false, 
@@ -289,14 +292,14 @@ algorithm
     name_val = "Nu", 
     val_ref = {id, Nu, Re, G, f, d_h, mu, p , T, h, rho, u, length_cell, dp}, 
     name_val_ref = {"id", "Nu", "Re", "G", "f", "d_h", "mu", "p" , "T", "h", "rho", "u", "length_cell", "dp"});  
-      
+*/      
   end HXCell;
- 
+/* 
 algorithm
 
   cold_stream_name := PBMedia.mediumName; 
   hot_stream_name := PBMedia.mediumName;
-
+*/
 equation  
   
   // connect all the segments within the heat exchanger, except for the end segment
@@ -324,11 +327,12 @@ equation
   //inlet_cold.h_outflow = inStream(inlet_cold.h_outflow);   
   //inlet_hot.h_outflow = inStream(inlet_hot.h_outflow);    
 
+
   for i in 1 : N_seg loop
   
     k_wall[i] = MyUtil.thermal_conductivity(tableID = mc.table_th_inconel_750, name = name_material, temperature = (cell_cold[i].T + cell_hot[i].T) / 2);
  
-    1 / U[i] =  1 / cell_hot[i].hc + 1 / cell_cold[i].hc + t_wall / k_wall[i];   
+     U[i] =  1 / (1 / cell_hot[i].hc + 1 / cell_cold[i].hc + t_wall / k_wall[i]);   
     
     if cell_hot[i].T > cell_cold[i].T then
       Q[i] = U[i] * A_stack * (cell_hot[i].T - cell_cold[i].T);      
