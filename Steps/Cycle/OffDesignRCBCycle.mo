@@ -173,6 +173,7 @@ model OffDesignRCBCycle
   
   Steps.Components.PCMHeater pcm_heater(
     mdot_init = M_CO2,
+    T_input = T_HEATER_E,
     //inlet.p(start = P_PUMP_E),
     //inlet.h_outflow(start = H_PUMP_E),
     outlet.p(start = P_PUMP_E),
@@ -235,11 +236,11 @@ equation
   
   connect(recup_high.outlet_cold, pcm_heater.inlet);    
   
-  connect(temp_out.y, pcm_heater.T_input);
+  //connect(temp_out.y, pcm_heater.T_input);
   connect(pcm_heater.outlet, turbine.inlet);
 
-algorithm
-  eta_total := if initial() then 0 else (turbine.W_turbine - pump.W_comp - recom_pump.W_comp) / pcm_heater.Q * 100;
+// algorithm
+  eta_total = if initial() then 0 else (turbine.W_turbine - pump.W_comp - recom_pump.W_comp) / pcm_heater.Q * 100;
 annotation(
     experiment(StartTime = 0, StopTime = 1, Tolerance = 1e-6, Interval = 0.002),
     __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian");

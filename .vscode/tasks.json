@@ -1,0 +1,65 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [		
+		{
+			"type": "shell",
+			"label": "C/C++: build CoolProp",
+			"command": "cmd.exe",
+			"args": [
+				"/c",
+				"buildCoolProp.bat"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}/src"
+			},
+			"group": "build",
+			"problemMatcher": [
+				"$gcc"
+			]
+		},
+		{
+			"type": "shell",
+			"label": "C/C++: build MyProps",
+			"command": "cmd.exe",
+			"args": [
+				"/c",
+				"buildMyProps.bat"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}/src"
+			},
+			"group": "build",
+			"problemMatcher": [
+				"$gcc"
+			]
+		},
+		{
+			"type": "shell",
+			"label": "C/C++: buildTest",
+			"command": "C:\\MinGW\\mingw64\\mingw64\\bin\\g++.exe",
+			"args": [
+				"-g",
+				"-std=c++11",
+				"-L../../lib",
+				"-I../",
+				"-I../externals/CoolProp/include",
+				"-I../externals/CoolProp/externals/fmtlib",
+				"../main.cpp",
+				"-lCoolProp",
+				"../../lib/myProps.a"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}/src/build"
+			},
+			"problemMatcher": [
+				"$gcc"
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			}
+		}
+	]
+}
