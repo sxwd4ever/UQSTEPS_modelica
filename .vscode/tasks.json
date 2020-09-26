@@ -38,11 +38,33 @@
 		{
 			"type": "shell",
 			"label": "C/C++: buildTest",
-			"command": "C:\\MinGW\\mingw64\\mingw64\\bin\\g++.exe",
-			"args": [
-				"-g",
+			"command": "C:\\MinGW\\mingw64\\mingw64\\bin\\gcc.exe",
+			"args": [				
 				"-std=c++11",
+				"-m64",
 				"-L../../lib",
+				"-I../",				
+				"-I../externals/CoolProp/include",
+				"-I../externals/CoolProp/externals/fmtlib",
+				"../main.cpp",
+				"-lMyProps",
+				"-lCoolProp"				
+			],
+			"options": {
+				"cwd": "${workspaceFolder}/src/build"
+			},
+			"problemMatcher": [
+				"$gcc"
+			],
+		},
+		{
+			"type": "shell",
+			"label": "C/C++: buildTest_CMake",
+			"command": "cmake",
+			"args": [				
+				"..",
+				"-G",
+				"MinGW Makefiles",
 				"-I../",
 				"-I../externals/CoolProp/include",
 				"-I../externals/CoolProp/externals/fmtlib",

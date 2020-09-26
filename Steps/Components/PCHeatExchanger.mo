@@ -230,16 +230,16 @@ equation
     (outlet.h_outflow - inlet.h_outflow) * inlet.m_flow = Q;
        
     inlet.p - outlet.p = dp; 
-
      
-    T = CP.PropsSI("T", "P", p, "H", h, PBMedia.mediumName);
-    
+    //(T, mu, k, rho) = CP.MyPropsSI_pH(p=p, H=h, fluidName=PBMedia.mediumName);// CP.PropsSI("T", "P", p, "H", h, PBMedia.mediumName);
+    T = CP.PropsSI("V", "P", p, "H", h, PBMedia.mediumName); 
+        
     mu = CP.PropsSI("V", "P", p, "T", T, PBMedia.mediumName); 
 
     k = CP.PropsSI("L", "P", p, "T", T, PBMedia.mediumName);   
     
-    rho = CP.PropsSI("D", "P", p, "T", T, PBMedia.mediumName); 
-      
+    rho = CP.PropsSI("D", "P", p, "T", T, PBMedia.mediumName);     
+    
     Re = G * d_h / mu; 
     
     Nu = 4.089 + kim_cor.c * (Re ^ kim_cor.d);    
