@@ -1,18 +1,24 @@
-#include "CoolProp.h"
+#include "CoolPropLib.h"
 #include "AbstractState.h"
 #include "DataStructures.h"
-#include "MyProps.h"
+#include "MyPropsLib.h"
 
-#include <string>
+// #include <string>
 #include "crossplatform_shared_ptr.h"
+#include "example_dll.h"
 
 using namespace CoolProp;
 
-void MyPropsSI_pT(double p, double T, const std::string &FluidName, double &h, double &rhomass)
+void EXPORT_MY_CODE MyCall()
 {
-	
+	hello("World");
+}
+
+void EXPORT_MY_CODE MyPropsSI_pT(double p, double T, const std::string &FluidName, double &h, double &rhomass)
+{
+
 	/*
-	    T = CP.PropsSI("T", "P", p, "H", h, PBMedia.mediumName);
+	T = CP.PropsSI("T", "P", p, "H", h, PBMedia.mediumName);
     
     mu = CP.PropsSI("V", "P", p, "T", T, PBMedia.mediumName); 
 
@@ -20,7 +26,7 @@ void MyPropsSI_pT(double p, double T, const std::string &FluidName, double &h, d
     
     rho = CP.PropsSI("D", "P", p, "T", T, PBMedia.mediumName); 
 	*/
-
+	/*
 	std::string str("HEOS");
 	std::string fluidName("CO2");
 	std::vector<std::string> fluid_names(1);
@@ -32,8 +38,8 @@ void MyPropsSI_pT(double p, double T, const std::string &FluidName, double &h, d
     medium->update(PT_INPUTS, p, T); // SI units
 	h = medium->hmass();
 	rhomass = medium->rhomass();
-	
-	/*
+	*/
+
     const long buffersize = 500;
     long errcode = 0;
     char buffer[buffersize];
@@ -44,7 +50,7 @@ void MyPropsSI_pT(double p, double T, const std::string &FluidName, double &h, d
 	AbstractState_update(handle, _PT, p, T, &errcode, buffer, buffersize);
 	h = AbstractState_keyed_output(handle, _Hmass, &errcode, buffer, buffersize);
 	rhomass = AbstractState_keyed_output(handle, _Dmass, &errcode, buffer, buffersize);
-*/
+	
     return;
 	/*
     std::cout << "T: " << medium->T() << " K" << std::endl;
@@ -57,7 +63,7 @@ void MyPropsSI_pT(double p, double T, const std::string &FluidName, double &h, d
 	*/
 }
 
-double MyPropsSI_pH(double p, double H, const std::string &FluidName, double &mu, double &k, double &rho)
+double EXPORT_MY_CODE MyPropsSI_pH(double p, double H, const std::string &FluidName, double &mu, double &k, double &rho)
 {
 	/*
 	shared_ptr<AbstractState> medium(AbstractState::factory("HEOS", FluidName));

@@ -6,18 +6,18 @@ SET INCLUDE_COOLPROP=../externals/CoolProp/include
 
 SET INCLUDE_FMT_LIB=../externals/CoolProp/externals/fmtlib
 
+SET TARGET_LIB=MyProps.dll
+
 REM build
 
-g++ -c -std=c++11 -L. -L../../lib -I%INCLUDE_COOLPROP% -I%INCLUDE_FMT_LIB% ../myProps.cpp -lCoolProp
+REM generate dynamic lib
 
-REM generate static lib
-
-ar rvs myProps.a myProps.o
+gcc -shared -fPIC -std=c++11 -L. -L../../lib -I%INCLUDE_COOLPROP% -I%INCLUDE_FMT_LIB% -c ../MyProps.cpp -o %TARGET_LIB% -lCoolProp
 
 cd %CWD%
 
-copy build\myProps.a ..\build\
+copy build\%TARGET_LIB% ..\build\
 
-move build\myProps.a ..\lib\
+move build\%TARGET_LIB% ..\lib\
 
-del build\myProps.o
+del build\%TARGET_LIB%
