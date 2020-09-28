@@ -12,7 +12,11 @@ REM build
 
 REM generate dynamic lib
 
-gcc -shared -fPIC -std=c++11 -L. -L../../lib -I%INCLUDE_COOLPROP% -I%INCLUDE_FMT_LIB% -c ../MyProps.cpp -o %TARGET_LIB% -lCoolProp
+REM libCoolProp.a (static library) should be exsits current directory
+
+g++ -c ../MyPropsLib.cpp -m64 -DBUILDING_DLL -DWITH_SHARED_LIB_WRAPPER -DSHARED_PTR_TR1_NAMESPACE -DSHARED_PTR_TR1_MEMORY_HEADER -I%INCLUDE_COOLPROP% -I%INCLUDE_FMT_LIB%
+
+g++ -shared  -m64 -L. -o %TARGET_LIB% MyPropsLib.o -lCoolProp
 
 cd %CWD%
 

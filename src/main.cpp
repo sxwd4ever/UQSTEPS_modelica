@@ -14,7 +14,10 @@
 #include "DataStructures.h"
 #include "crossplatform_shared_ptr.h"
 
-//using namespace CoolProp;
+// #include "example_dll.h"
+
+using namespace CoolProp;
+
 #endif
 
 #ifdef WITH_STATIC_LIB
@@ -26,7 +29,7 @@
 
 #endif
 
-using namespace CoolProp;
+// using namespace CoolProp;
 
 int main()
 
@@ -38,7 +41,7 @@ int main()
 
 #ifdef WITH_SHARED_LIB_WRAPPER
 
-    MyCall();	
+    //MyCall();	
 	MyPropsSI_pT(p, T, "CO2", h, rhoh);
    
     std::cout << "rhoh': " << rhoh << " mol/m^3" << std::endl;
@@ -55,11 +58,12 @@ int main()
 #endif
 
 #ifdef WITH_SHARED_LIB_DIRECT
-
+    MyCall();	
+    //MyCall("DLL");	
 	const long buffersize = 500;
     long errcode = 0;
     char buffer[buffersize];
-    long handle = AbstractState_factory("HEOS","CO2", &errcode, buffer, buffersize);
+    long handle = _AbstractState_factory("HEOS","CO2", &errcode, buffer, buffersize);
     long _PT = get_input_pair_index("PT_INPUTS");
     long _Hmass = get_param_index("HMASS");
 	long _Dmass = get_param_index("DMASS");
@@ -68,7 +72,6 @@ int main()
 	rhomass = AbstractState_keyed_output(handle, _Dmass, &errcode, buffer, buffersize);
     std::cout << "T: " << h << " K" << std::endl;
     std::cout << "rho': " << rhomass << " kg/m^3" << std::endl;
-
 #endif
 
 #ifdef WITH_STATIC_LIB

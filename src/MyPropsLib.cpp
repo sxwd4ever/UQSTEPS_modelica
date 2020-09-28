@@ -5,41 +5,24 @@
 
 // #include <string>
 #include "crossplatform_shared_ptr.h"
-#include "example_dll.h"
+// #include "example_dll.h"
 
 using namespace CoolProp;
 
-void EXPORT_MY_CODE MyCall()
-{
-	hello("World");
-}
+// void EXPORT_MY_CODE MyCall()
+// {
+// 	hello("World");
+// }
 
 void EXPORT_MY_CODE MyPropsSI_pT(double p, double T, const std::string &FluidName, double &h, double &rhomass)
 {
 
-	/*
-	T = CP.PropsSI("T", "P", p, "H", h, PBMedia.mediumName);
-    
-    mu = CP.PropsSI("V", "P", p, "T", T, PBMedia.mediumName); 
+	// shared_ptr<AbstractState> medium(AbstractState::factory("HEOS", FluidName));
+    // medium->update(PT_INPUTS, p, T); // SI units
+	// h = medium->hmass();
+	// rhomass = medium->rhomass();
 
-    k = CP.PropsSI("L", "P", p, "T", T, PBMedia.mediumName);   
-    
-    rho = CP.PropsSI("D", "P", p, "T", T, PBMedia.mediumName); 
-	*/
-	/*
-	std::string str("HEOS");
-	std::string fluidName("CO2");
-	std::vector<std::string> fluid_names(1);
-	fluid_names[0] = "CO2";
-	
-    AbstractState * pState = AbstractState::factory(str, fluid_names);
-
-	shared_ptr<AbstractState> medium(pState);
-    medium->update(PT_INPUTS, p, T); // SI units
-	h = medium->hmass();
-	rhomass = medium->rhomass();
-	*/
-
+	// Call functions declared in CoolPropLib.h
     const long buffersize = 500;
     long errcode = 0;
     char buffer[buffersize];
@@ -52,29 +35,31 @@ void EXPORT_MY_CODE MyPropsSI_pT(double p, double T, const std::string &FluidNam
 	rhomass = AbstractState_keyed_output(handle, _Dmass, &errcode, buffer, buffersize);
 	
     return;
-	/*
-    std::cout << "T: " << medium->T() << " K" << std::endl;
-    std::cout << "rho': " << medium->rhomass() << " kg/m^3" << std::endl;
-    std::cout << "rho': " << medium->rhomolar() << " mol/m^3" << std::endl;
-    std::cout << "h': " << medium->hmass() << " J/kg" << std::endl;
-    std::cout << "h': " << medium->hmolar() << " J/mol" << std::endl;
-    std::cout << "s': " << medium->smass() << " J/kg/K" << std::endl;
-    std::cout << "s': " << medium->smolar() << " J/mol/K" << std::endl;
-	*/
 }
 
-double EXPORT_MY_CODE MyPropsSI_pH(double p, double H, const std::string &FluidName, double &mu, double &k, double &rho)
+double EXPORT_MY_CODE MyPropsSI_pH(double p, double H, const char * FluidName , double &mu, double &k, double &rho)
 {
-	/*
-	shared_ptr<AbstractState> medium(AbstractState::factory("HEOS", FluidName));
-    medium->update(HmassP_INPUTS, H, p); // SI units
-	double T = medium->T();
-	mu = medium->viscosity();
-	k = medium->conductivity();
-	rho = medium->rhomass();	
+    const long buffersize = 500;
+    long errcode = 0;
+    char buffer[buffersize];
+    long handle = AbstractState_factory("HEOS",FluidName, &errcode, buffer, buffersize);
+    long _HP = get_input_pair_index("HmassP_INPUTS");
+	long _T = get_param_index("T");
+	long _Dmass = get_param_index("DMASS");
+	long _MU = get_param_index("VISCOSITY");
+	long _K = get_param_index("CONDUCTIVITY");
+	double T = 0.0;
+
+	AbstractState_update(handle, _HP, H , p, &errcode, buffer, buffersize);
+
+	T = AbstractState_keyed_output(handle, _T, &errcode, buffer, buffersize);
+	mu = AbstractState_keyed_output(handle, _MU, &errcode, buffer, buffersize);
+	k = AbstractState_keyed_output(handle, _K, &errcode, buffer, buffersize);
+	rho = AbstractState_keyed_output(handle, _Dmass, &errcode, buffer, buffersize);
+
+	// mu = p + 2;
+	// k = p + H + 1;
+	// rho = H + 1;
+
 	return T;
-	*/
-	mu = p + 2;
-	k = p + H + 1;
-	rho = H + 1;
 }

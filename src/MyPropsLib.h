@@ -15,11 +15,9 @@ extern "C" {
 #define EXPORT_MY_CODE __declspec(dllimport)
 #endif
 
-void EXPORT_MY_CODE MyCall();
-
 void EXPORT_MY_CODE MyPropsSI_pT(double p, double T, const std::string &FluidName, double &h, double &rhomass);
 
-double EXPORT_MY_CODE MyPropsSI_pH(double p, double H, const std::string &FluidName, double &mu, double &k, double &rho);
+double EXPORT_MY_CODE MyPropsSI_pH(double p, double H, const char * FluidName, double &mu, double &k, double &rho);
 
 #ifdef __cplusplus
 }
