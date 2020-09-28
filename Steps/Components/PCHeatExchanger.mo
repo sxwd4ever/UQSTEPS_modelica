@@ -231,7 +231,9 @@ equation
        
     inlet.p - outlet.p = dp; 
      
-    //(T, mu, k, rho) = CP.MyPropsSI_pH(p=p, H=h, fluidName=PBMedia.mediumName);// CP.PropsSI("T", "P", p, "H", h, PBMedia.mediumName);
+    (T, mu, k, rho) = CP.MyPropsSI(p=p, H=h, fluidName=PBMedia.mediumName);
+    
+    /*
     T = CP.PropsSI("V", "P", p, "H", h, PBMedia.mediumName); 
         
     mu = CP.PropsSI("V", "P", p, "T", T, PBMedia.mediumName); 
@@ -239,6 +241,7 @@ equation
     k = CP.PropsSI("L", "P", p, "T", T, PBMedia.mediumName);   
     
     rho = CP.PropsSI("D", "P", p, "T", T, PBMedia.mediumName);     
+    */
     
     Re = G * d_h / mu; 
     
