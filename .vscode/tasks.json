@@ -82,6 +82,22 @@
 				"kind": "build",
 				"isDefault": true
 			}
+		},
+		{
+			"type": "shell",
+			"label": "C/C++: build PCHE",
+			"command": "cmd.exe",
+			"args": [
+				"/c",
+				"buildPCHE.bat"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}/src"
+			},
+			"group": "build",
+			"problemMatcher": [
+				"$gcc"
+			]
 		}
 	]
 }
