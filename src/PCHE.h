@@ -7,7 +7,7 @@ class ThermoState
 private:
     /* data */
 public:
-    ThermoState(double p, double T, double mdot, const char * medium);
+    ThermoState(double p, double T, double mdot, std::string medium);
     ~ThermoState();
 
     double T;
@@ -16,7 +16,7 @@ public:
     double mdot;
 
     // medium name
-    char * medium;
+    std::string medium;
 };
 
 struct SIM_PARAM
@@ -53,7 +53,9 @@ public:
     PCHE_CELL();
     ~PCHE_CELL();
 
-    void init(ThermoState & st, PCHE * pche, const char * medium="CO2");
+    void init(ThermoState & st, PCHE * pche, std::string medium = "CO2");
+
+    void clone(PCHE_CELL * src);
 
     /* data */
     // heat Flux
@@ -91,13 +93,24 @@ class PCHE
 private:
     /* data */
     void init();
+    /* variables for cool prop*/
+
+    char * _cp_err_buf = NULL;
+    long _handle_cp_hot;
+    long _handle_cp_cold;
+    long _handle_HP_INPUT;
+    long _handle_T;
+    long _handle_Dmass;
+    long _handle_MU;
+    long _handle_K;
+    long _err_code;
 public:
     PCHE(/* args */);
     ~PCHE();
 
     void simulate(BoundaryCondtion & bc, SIM_PARAM & sim_para);
 
-    void calc_U(int idx, double & h_hot, double & h_cold, BoundaryCondtion & bc);
+    bool calc_U(int idx, double & h_hot, double & h_cold, BoundaryCondtion & bc);
 
     double avg_T(PCHE_CELL * cell_seq, int count);
     // *** geometry parameter ***    
@@ -135,7 +148,11 @@ public:
     PCHE_CELL cell_hot[MAX_SEG_LEN];
     PCHE_CELL cell_cold[MAX_SEG_LEN];
     
+    // overall heat transfer coefficients
     double U[MAX_SEG_LEN];
+    // local transferred heat 
+    double q[MAX_SEG_LEN];
+
 };
 
 

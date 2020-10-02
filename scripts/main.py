@@ -1,3 +1,4 @@
+from logging import exception
 from math import trunc
 from os.path import join, sep
 from OMPython import OMCSessionZMQ
@@ -11,7 +12,7 @@ import csv
 import os
 from os import path,sep
 import numpy as np
-from ex.CoolPropQuery import result
+# from ex.CoolPropQuery import result
 
 from model import ParamGroup, TestDataSet, TestConfig, TestResult, TestDataItem, TestConstants
 from plotlib import PlotManager, DataSeries, AxisType
@@ -75,7 +76,10 @@ class TestPCHEMeshram(object):
         for lib in libs: 
             lib_path = sep.join([self.path_model, "Resources", "Library", lib])           
             if not os.path.exists(lib_path):
-                shutil.copyfile(lib_path, sep.join([".",lib])) # completa target name needed 
+                try:
+                    shutil.copyfile(lib_path, sep.join([".",lib])) # completa target name needed 
+                except:
+                    pass
 
     def simulate(self, ds_test : TestDataSet):
 
