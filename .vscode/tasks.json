@@ -7,6 +7,9 @@
 			"type": "shell",
 			"label": "C/C++: build CoolProp",
 			"command": "cmd.exe",
+			"linux":{
+				"command": "bash"
+			},
 			"args": [
 				"/c",
 				"buildCoolProp.bat"
@@ -78,10 +81,7 @@
 			"problemMatcher": [
 				"$gcc"
 			],
-			"group": {
-				"kind": "build",
-				"isDefault": true
-			}
+			"group": "build"
 		},
 		{
 			"type": "shell",
@@ -91,10 +91,19 @@
 				"/c",
 				"buildPCHE.bat"
 			],
+			"linux":{
+				"command": "bash",
+				"args": [				
+					"buildPCHE.sh"
+				],
+			},
 			"options": {
 				"cwd": "${workspaceFolder}/src"
 			},
-			"group": "build",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
 			"problemMatcher": [
 				"$gcc"
 			]
