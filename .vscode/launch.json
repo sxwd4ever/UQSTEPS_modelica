@@ -43,8 +43,7 @@
                     "text": "-enable-pretty-printing",
                     "ignoreFailures": true
                 }
-            ],
-            "preLaunchTask": "C/C++: build PCHE"
+            ]
         },
         {
             "name": "Python: TestPCHEMeshram",

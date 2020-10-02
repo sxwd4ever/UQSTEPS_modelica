@@ -3,7 +3,7 @@
 #include <iostream>
 #include <math.h>
 
-using namespace CoolProp;
+// using namespace CoolProp;
 using namespace std;
 
 /**
@@ -140,30 +140,32 @@ PCHE::PCHE(/* args */)
     length_cell = 12e-3;
     d_c = 1.5e-3;
     N_ch = 80e3;
-    N_seg = 100;
+    N_seg = 200; // [Kwon2019]'s maximum node number
 
     this->init();
 
     // for coolprop query
-    const long buffersize = 500;
+    _buffer_size = 500;
     _err_code = 0;
-    _cp_err_buf = new char[buffersize];
+    _cp_err_buf = new char[_buffer_size];
 
     _handle_HP_INPUT = get_input_pair_index("HmassP_INPUTS");
 
     _handle_T = get_param_index("T");
     _handle_Dmass = get_param_index("DMASS");
     _handle_MU = get_param_index("VISCOSITY");
-    _handle_K = get_param_index("CONDUCTIVITY");
-
-
-
-   
+    _handle_K = get_param_index("CONDUCTIVITY");       
 }
 
 PCHE::~PCHE()
 {
+    delete _cp_err_buf;
 
+    if(_handle_cp_hot != 0)
+        AbstractState_free(_handle_cp_hot, & _err_code, _cp_err_buf, _buffer_size);
+
+    if(_handle_cp_cold != 0)    
+        AbstractState_free(_handle_cp_cold, &_err_code, _cp_err_buf, _buffer_size);
 }
 
 void PCHE::init()
@@ -204,30 +206,35 @@ bool PCHE::calc_U(int idx, double & h_hot, double & h_cold, BoundaryCondtion & b
 {
     bool heat_exchanged = true;
 
-    AbstractState_update(handle, _HP, H , p, &errcode, buffer, buffersize);
-
-	T = AbstractState_keyed_output(handle, _T, &errcode, buffer, buffersize);
-	mu = AbstractState_keyed_output(handle, _MU, &errcode, buffer, buffersize);
-	k = AbstractState_keyed_output(handle, _K, &errcode, buffer, buffersize);
-	rho = AbstractState_keyed_output(handle, _Dmass, &errcode, buffer, buffersize); 
-
     PCHE_CELL * c_h = &cell_hot[idx];
     PCHE_CELL * c_c = &cell_cold[idx];
 
-    double p_cold = bc.st_cold_in->p;
-    double p_hot = bc.st_hot_in->p;
+    AbstractState_update(_handle_cp_hot, _handle_HP_INPUT, h_hot, c_h->p, &_err_code, _cp_err_buf, _buffer_size);
 
-    const char * medium_hot = bc.st_hot_in->medium.c_str();
-    const char * medium_cold = bc.st_cold_in->medium.c_str();
+    AbstractState_update(_handle_cp_cold, _handle_HP_INPUT, h_cold, c_c->p, &_err_code, _cp_err_buf, _buffer_size);
 
-    c_h->mu = PropsSI("V", "T", c_h->T, "P", p_hot, medium_hot);
-    c_c->mu = PropsSI("V", "T", c_c->T, "P", p_cold, medium_cold);
+	// T = AbstractState_keyed_output(handle, _T, &errcode, buffer, buffersize);
+	// mu = AbstractState_keyed_output(handle, _MU, &errcode, buffer, buffersize);
+	// k = AbstractState_keyed_output(handle, _K, &errcode, buffer, buffersize);
+	// rho = AbstractState_keyed_output(handle, _Dmass, &errcode, buffer, buffersize);     
 
-    c_h->k = PropsSI("L", "T", c_h->T, "P", p_hot, medium_hot);
-    c_c->k = PropsSI("L", "T", c_c->T, "P", p_cold, medium_cold);
+    // double p_cold = bc.st_cold_in->p;
+    // double p_hot = bc.st_hot_in->p;
 
-    c_h->rho = PropsSI("D", "T", avg_T(this->cell_hot, idx), "P", p_hot, medium_hot);
-    c_c->rho = PropsSI("D", "T", avg_T(this->cell_cold, idx), "P", p_cold, medium_cold);
+    // const char * medium_hot = bc.st_hot_in->medium.c_str();
+    // const char * medium_cold = bc.st_cold_in->medium.c_str();
+
+    c_h->T = AbstractState_keyed_output(_handle_cp_hot, _handle_T, &_err_code, _cp_err_buf, _buffer_size);
+    c_c->T = AbstractState_keyed_output(_handle_cp_cold, _handle_T, &_err_code, _cp_err_buf, _buffer_size);
+
+    c_h->mu = AbstractState_keyed_output(_handle_cp_hot, _handle_MU, &_err_code, _cp_err_buf, _buffer_size);
+    c_c->mu = AbstractState_keyed_output(_handle_cp_cold, _handle_MU, &_err_code, _cp_err_buf, _buffer_size);
+
+    c_h->k = AbstractState_keyed_output(_handle_cp_hot, _handle_K, &_err_code, _cp_err_buf, _buffer_size);
+    c_c->k = AbstractState_keyed_output(_handle_cp_cold, _handle_K, &_err_code, _cp_err_buf, _buffer_size);
+
+    c_h->rho = AbstractState_keyed_output(_handle_cp_hot, _handle_Dmass, &_err_code, _cp_err_buf, _buffer_size);
+    c_c->rho = AbstractState_keyed_output(_handle_cp_cold, _handle_Dmass, &_err_code, _cp_err_buf, _buffer_size);
 
     c_h->Re = this->G_hot * this->d_h / c_h->mu;
     c_c->Re = this->G_cold * this->d_h / c_c->mu;
@@ -266,11 +273,11 @@ bool PCHE::calc_U(int idx, double & h_hot, double & h_cold, BoundaryCondtion & b
     // {
     cell_hot[idx + 1].p = c_h->p - c_h->dp;
 
-    cell_hot[idx + 1].T = PropsSI("T", "P", cell_hot[idx + 1].p, "H", h_hot, medium_hot);
+    cell_hot[idx + 1].h = h_hot; // PropsSI("T", "P", cell_hot[idx + 1].p, "H", h_hot, medium_hot);
 
     cell_cold[idx + 1].p = c_c->p + c_c->dp;
 
-    cell_cold[idx + 1].T = PropsSI("T", "P", cell_cold[idx + 1].p, "H", h_cold, medium_cold);
+    cell_cold[idx + 1].h = h_cold; //PropsSI("T", "P", cell_cold[idx + 1].p, "H", h_cold, medium_cold);
     // }
 
     return heat_exchanged;
@@ -291,7 +298,9 @@ void PCHE::simulate(BoundaryCondtion & bc, SIM_PARAM & sim_para)
         this->q[i] = 0;
     }
 
-    _handle_cp_cold = AbstractState_factory("HEOS",FluidName, &errcode, buffer, buffersize);
+    _handle_cp_cold = AbstractState_factory("HEOS", st_cold.medium.c_str(), &this->_err_code, _cp_err_buf, _buffer_size);
+
+    _handle_cp_hot = AbstractState_factory("HEOS", st_hot.medium.c_str(), &this->_err_code, _cp_err_buf, _buffer_size);
 
     this->G_hot = bc.st_hot_in->mdot / N_ch / A_c;
     this->G_cold = bc.st_cold_in->mdot / N_ch / A_c;
@@ -312,8 +321,9 @@ void PCHE::simulate(BoundaryCondtion & bc, SIM_PARAM & sim_para)
 
     for (size_t i = 0; i < sim_para.N_iter; i++)
     {
-        h_hot = PropsSI("H", "P", cell_hot[0].p, "T", cell_hot[0].T, bc.st_hot_in->medium);
-        h_cold = PropsSI("H", "P", cell_cold[0].p, "T", cell_cold[0].T, bc.st_cold_in->medium);
+        h_hot = PropsSI("H", "P", cell_hot[0].p, "T", cell_hot[0].T, bc.st_hot_in->medium.c_str());
+        h_cold = PropsSI("H", "P", cell_cold[0].p, "T", cell_cold[0].T, bc.st_cold_in->medium.c_str());
+
         heat_exchanged = true;
         diff_per = 0.0;
 
