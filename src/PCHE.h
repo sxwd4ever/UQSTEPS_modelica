@@ -1,6 +1,12 @@
 #ifndef __PCHE_H
 #define __PCHE_H
+
+#include <iostream>
+
 #define MAX_SEG_LEN 10000
+
+
+using namespace std;
 
 class ThermoState
 {
@@ -95,7 +101,8 @@ private:
     void init();
     /* variables for cool prop*/
 
-    char * _cp_err_buf = NULL;
+    char * _cp_err_buf;
+    long _buffer_size;
     long _handle_cp_hot;
     long _handle_cp_cold;
     long _handle_HP_INPUT;
