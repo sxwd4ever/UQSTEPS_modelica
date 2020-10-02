@@ -87,7 +87,8 @@
         "xloctime": "cpp",
         "xstddef": "cpp",
         "xtr1common": "cpp",
-        "adolcforward": "cpp"
+        "adolcforward": "cpp",
+        "bitset": "cpp"
     },
     "workbench.tree.indent": 4
 }

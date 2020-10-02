@@ -3,6 +3,8 @@
 #include <iostream>
 #include <math.h>
 
+using namespace CoolProp;
+
 /**
  * convert angle from degree to rad
  */
@@ -24,12 +26,57 @@ double from_degC(double degC)
     return degC + 273.15;
 }
 
-using namespace CoolProp;
+ThermoState::ThermoState(double p, double T, double mdot, const char * medium)
+{
+    p = p;
+    T = T;
+    mdot = mdot;
+    medium = medium;
+}
 
-PCHE_CELL::PCHE_CELL(double p, double T, const char * medium)
+ThermoState::~ThermoState()
+{
+
+}
+
+
+BoundaryCondtion::BoundaryCondtion(/* args */)
+{
+    // mass flow rate of hot/cold side
+    double mdot_hot = 10, mdot_cold = 10;
+
+    st_hot_in = new ThermoState(730, from_bar(90), mdot_hot, "CO2");
+
+    st_cold_in = new ThermoState(500, from_bar(225), mdot_cold, "CO2");
+
+    st_hot_out = new ThermoState(576.69, from_bar(90), mdot_hot, "CO2");
+
+    st_cold_out = new ThermoState(639.15, from_bar(225), mdot_cold, "CO2");
+
+}
+
+BoundaryCondtion::~BoundaryCondtion()
+{
+    delete st_hot_in;
+    delete st_cold_in;
+    delete st_hot_out;
+    delete st_cold_out;
+}
+
+PCHE_CELL::PCHE_CELL()
 {    
-    this->p = p;
-    this->T = T;
+    _pche = NULL;
+}
+
+PCHE_CELL::~PCHE_CELL()
+{
+}
+
+void PCHE_CELL::init(ThermoState & st, PCHE * pche, const char * medium)
+{
+    this->_pche = pche;
+    this->p = st.p;
+    this->T = st.T;
     this->h = PropsSI("H", "P", p, "T", T, medium);
     this->dp = 0;
     this->Q = 0;
@@ -44,15 +91,20 @@ PCHE_CELL::PCHE_CELL(double p, double T, const char * medium)
     this->hc = 0;
 
     return;
-
-}
-
-PCHE_CELL::~PCHE_CELL()
-{
 }
 
 PCHE::PCHE(/* args */)
 {
+    pitch = 12e-3;
+    phi = from_degC((180-108)/2);
+    a = 0;
+    b = 0;
+    c = 0;
+    d = 0;
+    length_cell = 12e-3;
+    d_c = 2e-3;
+    N_ch = 80e3;
+    N_seg = 100;
 }
 
 PCHE::~PCHE()
@@ -60,92 +112,158 @@ PCHE::~PCHE()
 
 }
 
+void PCHE::init()
+{
+    A_c = M_PI * d_c * d_c / 8;
+    // perimeter of semi-circular
+    peri_c = d_c * M_PI / 2 + d_c ;  
+    // Hydraulic Diameter
+    d_h = 4 * A_c / peri_c;
+    // thickness of wall between two neighboring hot and cold
+    t_wall = ( 2 - M_PI_4) * (d_c / 2);
+    // surface area of all cells in a stack 
+    A_stack =  peri_c * length_cell * N_ch;
+    // Flow area for all channels
+    A_flow = N_ch * A_c;
+    // length of one pipe in HeatExchanger unit m
+    length_ch = length_cell * N_seg;
+}
+
+double PCHE::avg_T(PCHE_CELL * cell_seq, int count)
+{
+    double sum = 0;
+    for (size_t i = 0; i < count; i++)
+        sum += cell_seq[i].T;
+
+    return sum / count;    
+}
+
+void PCHE::calc_U(int idx, double & h_hot, double & h_cold, BoundaryCondtion & bc)
+{
+    PCHE_CELL * c_h = &cell_hot[idx];
+    PCHE_CELL * c_c = &cell_cold[idx];
+
+    double p_cold = bc.st_cold_in-> p;
+    double p_hot = bc.st_hot_in->p;
+
+    char * medium_hot = bc.st_hot_in->medium;
+    char * medium_cold = bc.st_cold_in->medium;
+
+    c_h->mu = PropsSI("V", "T", c_h->T, "P", p_hot, medium_hot);
+    c_c->mu = PropsSI("V", "T", c_c->T, "P", p_cold, medium_cold);
+
+    c_h->k = PropsSI("L", "T", c_h->T, "P", p_hot, medium_hot);
+    c_c->k = PropsSI("L", "T", c_c->T, "P", p_cold, medium_cold);
+
+    c_h->Re = this->G_hot * this->d_h / c_h->mu;
+    c_c->Re = this->G_cold * this->d_h / c_c->mu;
+
+    c_h->rho = PropsSI("D", "T", avg_T(this->cell_hot, i), "P", p_hot, medium_hot);
+    c_c->rho = PropsSI("D", "T", avg_T(this->cell_cold, i), "P", p_cold, medium_cold);
+
+    c_h->u = c_h.mdot / this->A_flow / c_h->rho;
+    c_c->u = c_c.mdot / this->A_flow / c_c->rho;
+
+    c_h->Nu = 4.089 + c * c_h->Re ^ d;
+    c_c->Nu = 4.089 + c * c_c->Re ^ d;
+    // thermal conductivity of the wall
+    double kw = 1.0;
+    c_h->hc = c_h->Nu * c_h->k / this->d_h;
+    c_c->hc = c_c->Nu * c_c->k / this->d_h;
+
+    U[idx] = 1 /( 1 / c_h->hc + 1 / c_c->hc + this->t_wall / kw);
+
+    c_h->f = (15.78 + a * c_h->Re ^ b) / c_h->Re;
+    c_c->f = (15.78 + a * c_h->Re ^ b) / c_c->Re;
+
+
+    /*
+    self.ReH[i]=self.Gh*self.dh/self.muh[i]
+    self.ReC[i]=self.Gc*self.dh/self.muc[i]
+    self.rhoH[i]=hotfluid.prop("D","T",np.average(self.Th[0:i+1]), "P", self.hot.P.p)
+    self.rhoC[i]=coldfluid.prop("D","T",np.average(self.Tc[0:i+1]), "P", self.cold.P.p)
+    uH=self.hot.P.mdot/self.flowarea()/self.rhoH[i]
+    uC=self.cold.P.mdot/self.flowarea()/self.rhoC[i]
+    area=self.peri*dL*self.N  # Surface area of the channel segment, m2
+    if method=="Kim2012":
+        self.NuH[i]=4.089+self.abcd[2]*(self.ReH[i])**self.abcd[3]
+        self.NuC[i]=4.089+self.abcd[2]*(self.ReC[i])**self.abcd[3]
+        kw=thconductivity(self.metal, (self.Th[i]+self.Tc[i])/2)
+        self.hh[i]=self.NuH[i]*self.kh[i]/self.dh
+        self.hc[i]=self.NuC[i]*self.kc[i]/self.dh
+        self.U[i]=1/(1/self.hh[i]+1/self.hc[i]+self.tw/kw)
+        self.V[3]=kw/self.tw
+        self.fH[i]=(15.78+self.abcd[0]*self.ReH[i]**self.abcd[1])/self.ReH[i]
+        self.fC[i]=(15.78+self.abcd[0]*self.ReC[i]**self.abcd[1])/self.ReC[i]  
+        */  
+}
+
+void PCHE::simulate(BoundaryCondtion & bc, SIM_PARAM & sim_para)
+{
+    for (size_t i = 0; i < N_seg; i++)
+    {
+        ThermoState st(bc.st_hot_in->p, 0, bc.st_hot_in->mdot, "CO2");
+        this->cell_hot[i].init(st, this);
+
+        st = ThermoState(bc.st_cold_in->p, 0, bc.st_cold_in->mdot, "CO2");
+        this->cell_cold[i].init(st, this);
+
+        this->U[i] = 0;
+    }
+
+    this->G_hot = bc.st_hot_in->mdot / N_ch / A_c;
+    this->G_cold = bc.st_cold_in->mdot / N_ch / A_c;
+
+    // temperature difference between the hot inlet and cold inlet
+    double dT = bc.st_hot_in->T - bc.st_cold_in->T; // maximum possible difference
+
+    // suppose (p, T) for hot/cold inlet are known
+    // try to find out (p, T) for cold/cold outlet by trial iteration
+
+    cell_hot[0].T = bc.st_hot_in->T;
+    cell_hot[0].p = bc.st_hot_in->p;
+    // start from the lowest possible temperature
+    cell_cold[0].T = bc.st_cold_in->T; 
+    cell_cold[0].p = bc.st_cold_in->p;
+
+    std::string mname_hot = "CO2", mname_cold = "CO2";
+    
+    double h_hot, h_cold; // specific enthalpy for current hot/cold cell
+
+    for (size_t i = 0; i < sim_para.N_iter; i++)
+    {
+        h_hot = PropsSI("H", "P", cell_hot[0].p, "T", cell_hot[0].T, mname_hot);
+        h_cold = PropsSI("H", "P", cell_cold[0].p, "T", cell_cold[0].T, mname_cold);
+
+        for(size_t idx_cell = 0; idx_cell < this->N_seg; idx_cell ++)
+            this->calc_U(idx_cell, h_hot, h_cold, bc);
+
+        if(abs(cell_cold[N_seg].T - bc.st_cold_in->T) < sim_para.err )
+            break;
+
+        // update dt and T_cold_in accordingly
+        dT = bc.st_cold_in->T - this->cell_cold[this->N_seg].T;
+        this->cell_cold[0].T += 0.2 * dT;
+    }
+}
 
 int main()
 {	
     // // *** geometry parameter ***    
-    // // pitch length
-    // double pitch = 12e-3;
-    // // angle
-    // double phi = from_deg((180-108) / 2);
-    // // Kim's correlation factors
-    // double a = 0, b = 0, c = 0, d = 0;
-    // // length of each segment
-    // double length_cell = 12e-3;
-    // // Diameter of semi_circular
-    // double d_c = 2e-3;
-    // // Area of semi-circular tube - area per channel
-    // double A_c = M_PI * d_c * d_c / 8;
-    // // perimeter of semi-circular
-    // double peri_c = d_c * M_PI / 2 + d_c ;  
-    // // Hydraulic Diameter
-    // double d_h = 4 * A_c / peri_c;
-    // // thickness of wall between two neighboring hot and cold
-    // double t_wall = ( 2 - M_PI_4) * (d_c / 2);
-    // // number of channels
-    // int N_ch = 80e3;
-    // // number of segments
-    // int N_seg = 100;
-    // // surface area of all cells in a stack 
-    // double A_stack =  peri_c * length_cell * N_ch;
-    // // Flow area for all channels
-    // double A_flow = N_ch * A_c;
-    // // length of one pipe in HeatExchanger unit m
-    // double length_ch = length_cell * N_seg;
 
-    // // *** boundary condition ***
-    // // temperature and pressure
-    // double T_cold_in = 500, p_cold_in = from_bar(225);
-    // double T_cold_out = 639.15, p_cold_out = from_bar(225);
-    // double T_hot_in = 730, p_hot_in = from_bar(90);
-    // double T_hot_out = 576.69, p_hot_out = from_bar(90);
-    // // mass flow rate of hot/cold side
-    // double mdot_hot = 10, mdot_cold = 10;
-    // double G_hot = mdot_hot / N_ch / A_c;
-    // double G_cold = mdot_cold / N_ch / A_c;
+    // *** boundary condition ***
 
-    // // temperature difference between the hot inlet and cold inlet
-    // double dt = T_hot_in - T_cold_in; // maximum possible difference
+    PCHE pche;
 
-    // int N_iter = 1e4; // maximum iteration number
-    // double err = 1e-3; // error for 'identical' test
+    BoundaryCondtion bc;   
 
-    // PCHE_CELL cell_hot[N_seg], cell_cold[N_seg];
+    SIM_PARAM sim_param;
+    sim_param.N_iter = 1e4;
+    sim_param.err = 1e-3;
 
-    // for (size_t i = 0; i < N_seg; i++)
-    // {
-    //     init_cell(cell_hot[i]);
+    pche.simulate(bc, sim_param);
 
-    //     init_cell(cell_cold[i]);
-    // }
-
-    // // suppose (p, T) for hot/cold inlet are known
-    // // try to find out (p, T) for cold/cold outlet by trial iteration
-
-    // cell_hot[0].T = T_hot_in;
-    // cell_hot[0].p = p_hot_in;
-    // // start from the lowest possible temperature
-    // cell_cold[0].T = T_cold_in; 
-    // cell_cold[0].p = p_cold_in;
-
-    // std::string mname_hot = "CO2", mname_cold = "CO2";
-    
-    // double h_hot, h_cold; // specific enthalpy for current hot/cold cell
-
-    // for (size_t i = 0; i < N_iter; i++)
-    // {
-    //     h_hot = PropsSI("H", "P", cell_hot[0].p, "T", cell_hot[0].T, mname_hot);
-    //     h_cold = PropsSI("H", "P", cell_cold[0].p, "T", cell_cold[0].T, mname_cold);
-
-
-
-    //     if(abs(cell_cold[N_seg].T - T_cold_in) < err )
-    //         break;
-    // }
-    
-
-
-    std::cout << "Hello world!" << std::endl;
+    std::cout << "All done" << std::endl;
 
     //hello("dll world");
     
