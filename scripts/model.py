@@ -238,10 +238,6 @@ class TestConfig(ParamSet):
         self[pk.N_seg] = 10
         self[pk.l_cell] = Length.mm(12)
 
-        self[pk.l_cell] = Length.mm(12)
-        self[pk.l_cell] = Length.mm(12)
-        self[pk.l_cell] = Length.mm(12)
-
         # fluid property
         # hot stream state 
         self[pk.p_hot_in] = Pressure.bar(90)
