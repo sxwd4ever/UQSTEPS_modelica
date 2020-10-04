@@ -2,12 +2,12 @@
     // See https://go.microsoft.com/fwlink/?LinkId=733558
     // for the documentation about the tasks.json format
     "version": "2.0.0",
-    "tasks": [		
+    "tasks": [
 		{
 			"type": "shell",
 			"label": "C/C++: build CoolProp",
 			"command": "cmd.exe",
-			"linux":{
+			"linux": {
 				"command": "bash"
 			},
 			"args": [
@@ -40,31 +40,31 @@
 		},
 		{
 			"type": "shell",
-			"label": "C/C++: buildTest",
+			"label": "C/C++: build Test",
 			"command": "C:\\MinGW\\mingw64\\mingw64\\bin\\gcc.exe",
-			"args": [				
+			"args": [
 				"-std=c++11",
 				"-m64",
 				"-L../../lib",
-				"-I../",				
+				"-I../",
 				"-I../externals/CoolProp/include",
 				"-I../externals/CoolProp/externals/fmtlib",
 				"../main.cpp",
 				"-lMyProps",
-				"-lCoolProp"				
+				"-lCoolProp"
 			],
 			"options": {
 				"cwd": "${workspaceFolder}/src/build"
 			},
 			"problemMatcher": [
 				"$gcc"
-			],
+			]
 		},
 		{
 			"type": "shell",
-			"label": "C/C++: buildTest_CMake",
+			"label": "C/C++: build Test_CMake",
 			"command": "cmake",
-			"args": [				
+			"args": [
 				"..",
 				"-G",
 				"MinGW Makefiles",
@@ -85,24 +85,24 @@
 		},
 		{
 			"type": "shell",
-			"label": "C/C++: build PCHE",
+			"label": "C/C++: build TestPCHE",
 			"command": "cmd.exe",
 			"args": [
 				"/c",
-				"buildPCHE.bat"
+				"buildTestPCHE.bat"
 			],
-			"linux":{
+			"linux": {
 				"command": "bash",
-				"args": [				
+				"args": [
 					"buildPCHE.sh"
-				],
-			},
-			"options": {
-				"cwd": "${workspaceFolder}/src"
+				]
 			},
 			"group": {
 				"kind": "build",
 				"isDefault": true
+			},
+			"options": {
+				"cwd": "${workspaceFolder}/src"
 			},
 			"problemMatcher": [
 				"$gcc"

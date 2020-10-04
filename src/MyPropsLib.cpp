@@ -2,6 +2,7 @@
 #include "AbstractState.h"
 #include "DataStructures.h"
 #include "MyPropsLib.h"
+#include "PCHE.h"
 
 // #include <string>
 #include "crossplatform_shared_ptr.h"
@@ -62,4 +63,28 @@ double EXPORT_MY_CODE MyPropsSI_pH(double p, double H, const char * FluidName , 
 	// rho = H + 1;
 
 	return T;
+}
+
+/**
+ * off-design simulation for PCHE
+ */
+double EXPORT_MY_CODE PCHE_OFFD_Simulation(PCHE_GEO_PARAM * geo, KIM_CORR_COE * cor, SIM_PARAM * sim_param, ThermoState * st_hot_in, ThermoState * st_cold_in, ThermoState * st_hot_out, ThermoState * st_cold_out)
+{
+    PCHE * pche = new PCHE(*geo);
+
+    pche->set_kim_corr_coe(*cor);
+
+    // *** boundary condition ***
+    BoundaryCondtion bc;   
+
+    bc.st_hot_in = st_hot_in;
+    bc.st_cold_in = st_cold_in;
+    bc.st_hot_out = st_hot_out;
+    bc.st_cold_out = st_cold_out;
+
+    pche->simulate(bc, * sim_param);
+
+    delete pche;
+
+	return 0.0;
 }

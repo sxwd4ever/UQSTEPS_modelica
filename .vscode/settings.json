@@ -88,7 +88,14 @@
         "xstddef": "cpp",
         "xtr1common": "cpp",
         "adolcforward": "cpp",
-        "bitset": "cpp"
+        "bitset": "cpp",
+        "*.rh": "cpp",
+        "core": "cpp",
+        "superlusupport": "cpp",
+        "autodiff": "cpp",
+        "iterativesolvers": "cpp",
+        "openglsupport": "cpp",
+        "nonlinearoptimization": "cpp"
     },
     "workbench.tree.indent": 4
 }
