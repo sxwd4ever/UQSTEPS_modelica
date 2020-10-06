@@ -27,6 +27,19 @@ double EXPORT_MY_CODE MyPropsSI_pH(double p, double H, const char * FluidName, d
  */
 double EXPORT_MY_CODE PCHE_OFFD_Simulation(PCHE_GEO_PARAM * geo, KIM_CORR_COE * cor, SIM_PARAM * sim_param, ThermoState * st_hot_in, ThermoState * st_cold_in, ThermoState * st_hot_out, ThermoState * st_cold_out);
 
+ThermoState * EXPORT_MY_CODE NewThermoState_pT(double p, double T, double mdot, std::string medium);
+
+double EXPORT_MY_CODE from_deg(double deg);
+
+/** 
+ * convert preseaure in bar to Pa
+ */
+double EXPORT_MY_CODE from_bar(double p_bar);
+
+double EXPORT_MY_CODE from_degC(double degC);
+
+bool EXPORT_MY_CODE the_same(double x, double y, double eps, double & diff_per);
+
 #ifdef __cplusplus
 }
 #endif

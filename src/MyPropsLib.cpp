@@ -3,12 +3,47 @@
 #include "DataStructures.h"
 #include "MyPropsLib.h"
 #include "PCHE.h"
+#include <math.h>
 
 // #include <string>
 #include "crossplatform_shared_ptr.h"
 // #include "example_dll.h"
 
 using namespace CoolProp;
+
+/**
+ * convert angle from degree to rad
+ */
+double EXPORT_MY_CODE from_deg(double deg)
+{
+    return deg * M_PI / 180;
+}
+
+/** 
+ * convert preseaure in bar to Pa
+ */
+double EXPORT_MY_CODE from_bar(double p_bar)
+{
+    return p_bar * 1e5;
+}
+
+double EXPORT_MY_CODE from_degC(double degC)
+{
+    return degC + 273.15;
+}
+
+bool EXPORT_MY_CODE the_same(double x, double y, double eps, double & diff_per)
+{
+    double err = 1e-4;
+    if (abs(x - 0) < err)
+    {
+        diff_per = 1.0;
+        return abs(y) <= err;
+    }
+        
+    diff_per = abs((y-x) * 1.0 / x);
+    return  diff_per<= eps;
+}
 
 // void EXPORT_MY_CODE MyCall()
 // {
@@ -63,6 +98,17 @@ double EXPORT_MY_CODE MyPropsSI_pH(double p, double H, const char * FluidName , 
 	// rho = H + 1;
 
 	return T;
+}
+
+ThermoState * EXPORT_MY_CODE NewThermoState_pT(double p, double T, double mdot, std::string medium)
+{
+    ThermoState * st = new ThermoState();
+    st->p = p;
+    st->T = T;
+    st->h = PropsSI("H", "P", p, "T", T, medium.c_str());
+    st->mdot = mdot;
+    st->medium = medium;
+    return st;
 }
 
 /**

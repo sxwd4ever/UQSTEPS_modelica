@@ -1,15 +1,17 @@
 #include "MyPropsLib.h"
 #include "PCHE.h"
-#include "Utils.h"
+#include <time.h>
 
 int main()
 {	
+    time_t t1, t2;
+    t1 = clock();
     PCHE_GEO_PARAM geo;
     // set the correlation coefficients mannually
     /* data */
     geo.pitch = 12.3e-3;
     geo.phi = from_deg((180-108)/2);
-    geo.length_cell = 12e-3;
+    geo.length_cell = 5e-3;
     geo.d_c = 1.5e-3;
     geo.N_ch = 80e3;
     geo.N_seg = 200; // [Kwon2019]'s maximum node number 
@@ -34,10 +36,12 @@ int main()
     SIM_PARAM sim_param;
     sim_param.N_iter = 1e4;
     sim_param.err = 1e-2; // 1 percent
+    sim_param.step_rel = 0.2;
+    sim_param.delta_T_init = 5;
 
-    PCHE_OFFD_Simulation(&geo, &cor, &sim_param, st_hot_in, st_cold_in, st_hot_out, st_cold_out);
+    PCHE_OFFD_Simulation(&geo, &cor, &sim_param, st_hot_in, st_cold_in, st_hot_out, st_cold_out);     
 
-    std::cout << "All done" << std::endl;
-
+    t2 = clock();
+    printf("All done! Elapsed time for user defined tests: %g s",(double)(t2-t1)/CLOCKS_PER_SEC);
     return 1;
 }
