@@ -22,9 +22,9 @@ struct PCHE_GEO_PARAM
     /* data */
     // pitch length
     double pitch;
-    // angle
+    // pitch angle
     double phi;
-    // length of each segment
+    // length of segment
     double length_cell;
     // Diameter of semi_circular
     double d_c;
@@ -49,7 +49,11 @@ struct KIM_CORR_COE
 
 struct SIM_PARAM
 {
+    // error tolerance
     double err;
+    // initial delta_T between T_hot_in and T_cold_out
+    double delta_T_init;
+    // maximum iteration number
     int N_iter;
     // relative step length between two trial values of T_cold_out
     // T_cold_out[i] += step_rel * (T_bc_cold_in  - T_cold_in[i-1])
@@ -83,7 +87,7 @@ public:
     PCHE_CELL();
     ~PCHE_CELL();
 
-    void _init(ThermoState * st, PCHE * pche, std::string medium = "CO2");
+    void _init(ThermoState * st, PCHE * pche);
 
     void clone(PCHE_CELL * src);
 
@@ -123,6 +127,11 @@ class PCHE
 private:
     /* data */
     void _init(PCHE_GEO_PARAM & geo);
+
+    PCHE_CELL * _cell_cold_in();
+
+    double _cp_props(long handle_stream, long handle_prop, double def_value = 0.0);
+
     // Kim's correlation factors
     KIM_CORR_COE _corr_coe;
 
@@ -171,8 +180,10 @@ private:
     
     // overall heat transfer coefficients
     double * _U;
-    // local transferred heat 
-    double * _q;
+    // array of local transferred heat 
+    double * _Q;
+    // index of the pinch point cell
+    int _idx_pinch;
 
 public:
     PCHE(PCHE_GEO_PARAM & geo);
@@ -189,8 +200,5 @@ public:
 
     double avg_T(PCHE_CELL * cell_seq, int count);
 };
-
-
-ThermoState * NewThermoState_pT(double p, double T, double mdot, std::string medium);
 
 #endif
