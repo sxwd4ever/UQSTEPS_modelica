@@ -12,10 +12,10 @@
 			},
 			"args": [
 				"/c",
-				"buildCoolProp.bat"
+				"../scripts/buildCoolProp.bat"
 			],
 			"options": {
-				"cwd": "${workspaceFolder}/src"
+				"cwd": "${workspaceFolder}/src/c"
 			},
 			"group": "build",
 			"problemMatcher": [
@@ -28,10 +28,10 @@
 			"command": "cmd.exe",
 			"args": [
 				"/c",
-				"buildMyProps.bat"
+				"..\\scripts\\buildMyProps.bat"
 			],
 			"options": {
-				"cwd": "${workspaceFolder}/src"
+				"cwd": "${workspaceFolder}/src/c"
 			},
 			"group": "build",
 			"problemMatcher": [
@@ -54,7 +54,7 @@
 				"-lCoolProp"
 			],
 			"options": {
-				"cwd": "${workspaceFolder}/src/build"
+				"cwd": "${workspaceFolder}/src/c/build"
 			},
 			"problemMatcher": [
 				"$gcc"
@@ -73,10 +73,10 @@
 				"-I../externals/CoolProp/externals/fmtlib",
 				"../main.cpp",
 				"-lCoolProp",
-				"../../lib/myProps.a"
+				"../../../lib/myProps.a"
 			],
 			"options": {
-				"cwd": "${workspaceFolder}/src/build"
+				"cwd": "${workspaceFolder}/src/c/build"
 			},
 			"problemMatcher": [
 				"$gcc"
@@ -89,7 +89,7 @@
 			"command": "cmd.exe",
 			"args": [
 				"/c",
-				"buildTestPCHE.bat"
+				"..\\scripts\\buildTestPCHE.bat"
 			],
 			"linux": {
 				"command": "bash",
@@ -102,7 +102,7 @@
 				"isDefault": true
 			},
 			"options": {
-				"cwd": "${workspaceFolder}/src"
+				"cwd": "${workspaceFolder}/src/c"
 			},
 			"problemMatcher": [
 				"$gcc"

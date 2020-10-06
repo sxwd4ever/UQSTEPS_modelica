@@ -20,6 +20,6 @@ g++ -shared -m64 -L. -o %TARGET_LIB% MyPropsLib.o PCHE.o -lCoolProp
 
 cd %CWD%
 
-copy build\%TARGET_LIB% ..\build\
+copy build\%TARGET_LIB% ..\..\build\
 
-copy build\%TARGET_LIB% ..\lib\
+copy build\%TARGET_LIB% ..\..\lib\
