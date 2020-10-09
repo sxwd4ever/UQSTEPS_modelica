@@ -7,19 +7,6 @@
 // using namespace CoolProp;
 using namespace std;
 
-BoundaryCondtion::BoundaryCondtion(/* args */)
-{
-
-}
-
-BoundaryCondtion::~BoundaryCondtion()
-{
-    delete st_hot_in;
-    delete st_cold_in;
-    delete st_hot_out;
-    delete st_cold_out;
-}
-
 PCHE_CELL::PCHE_CELL()
 {    
     _pche = NULL;
@@ -202,8 +189,8 @@ bool PCHE::calc_U(int idx, double & h_hot, double & h_cold, BoundaryCondtion & b
     c_h->Re = this->_G_hot * this->_d_h / c_h->mu;
     c_c->Re = this->_G_cold * this->_d_h / c_c->mu;
 
-    c_h->u = bc.st_hot_in->mdot / _A_flow / c_h->rho;
-    c_c->u = bc.st_cold_in->mdot / _A_flow / c_c->rho;
+    c_h->u = bc.st_hot_in.mdot / _A_flow / c_h->rho;
+    c_c->u = bc.st_cold_in.mdot / _A_flow / c_c->rho;
 
     c_h->Nu = 4.089 + _corr_coe.c * pow(c_h->Re, _corr_coe.d);
     c_c->Nu = 4.089 + _corr_coe.c * pow(c_c->Re, _corr_coe.d);
@@ -230,8 +217,8 @@ bool PCHE::calc_U(int idx, double & h_hot, double & h_cold, BoundaryCondtion & b
     c_h->dp = c_h->f * _geo.length_cell * c_h->rho * pow(c_h->u, 2) / this->_d_h;
     c_c->dp = c_c->f * _geo.length_cell * c_c->rho * pow(c_c->u, 2) / this->_d_h;
 
-    h_hot = (bc.st_hot_in->mdot * h_hot - _Q[idx]) / bc.st_hot_in->mdot;
-    h_cold = (bc.st_cold_in->mdot * h_cold - _Q[idx] ) / bc.st_cold_in->mdot;
+    h_hot = (bc.st_hot_in.mdot * h_hot - _Q[idx]) / bc.st_hot_in.mdot;
+    h_cold = (bc.st_cold_in.mdot * h_cold - _Q[idx] ) / bc.st_cold_in.mdot;
 
     // set temperature and pressure for next cell
     // if(_q[idx] > 0)
@@ -261,10 +248,47 @@ double PCHE::_cp_props(long handle_stream, long handle_prop, double def_value)
     return prop;
 }
 
-void PCHE::simulate(BoundaryCondtion & bc, SIM_PARAM & sim_para)
+void PCHE::_print_boundary_conditions(BoundaryCondtion & bc)
 {
-    ThermoState * st_hot = NewThermoState_pT(bc.st_hot_in->p, 0, bc.st_hot_in->mdot, bc.st_hot_in->medium);
-    ThermoState * st_cold = NewThermoState_pT(bc.st_cold_in->p, 0, bc.st_cold_in->mdot, bc.st_cold_in->medium);
+    cout<< "**** boundary condition ****"<<endl;
+    cout<< "(p, T, h)_hot_in = ("<<bc.st_hot_in.p<<", "<<bc.st_hot_in.T<<", "<<bc.st_hot_in.h<<");"<< endl;
+    cout<< "(p, T, h)_cold_in = ("<<bc.st_cold_in.p<<", "<<bc.st_cold_in.T<<", "<<bc.st_cold_in.h<<");"<< endl;
+    cout<< "(p, T, h)_hot_out = ("<<bc.st_hot_out.p<<", "<<bc.st_hot_out.T<<", "<<bc.st_hot_out.h<<");"<< endl;
+    cout<< "(p, T, h)_cold_out = ("<<bc.st_cold_out.p<<", "<<bc.st_cold_out.T<<", "<<bc.st_cold_out.h<<");"<< endl;
+}
+
+void PCHE::_print_geo_param(PCHE_GEO_PARAM & geo)
+{
+    cout<< "**** PCHE's Geometry params ****"<<endl;
+    cout<< "pitch       = "<<geo.pitch<<endl;
+    cout<< "phi         = "<<geo.phi<<endl;
+    cout<< "length_cell = "<<geo.length_cell<<endl;
+    cout<< "d_c         = "<<geo.d_c<<endl;
+    cout<< "N_ch        = "<<geo.N_ch<<endl;
+    cout<< "N_seg       = "<<geo.N_seg<<endl;
+}
+
+void PCHE::_print_sim_param(SIM_PARAM & sim_param)
+{
+    cout<< "**** simulation params ****"<<endl;
+    cout<< "err       = "<<sim_param.err<<endl;
+    cout<< "dT_init   = "<<sim_param.delta_T_init<<endl;
+    cout<< "N_iter    = "<<sim_param.N_iter<<endl;
+    cout<< "step_rel  = "<<sim_param.step_rel<<endl;
+}
+
+void PCHE::simulate(BoundaryCondtion & bc, SIM_PARAM & sim_para, SimulationResult & sr)
+{
+    _print_geo_param(_geo);
+
+    _print_boundary_conditions(bc);
+
+    _print_sim_param(sim_para);
+    
+    cout<<"ready to start simulation"<<endl;
+
+    ThermoState * st_hot = NewThermoState_pT(bc.st_hot_in.p, 0, bc.st_hot_in.mdot, bc.media_hot);
+    ThermoState * st_cold = NewThermoState_pT(bc.st_cold_in.p, 0, bc.st_cold_in.mdot, bc.media_cold);
 
     for (size_t i = 0; i < _geo.N_seg; i++)
     {
@@ -275,22 +299,22 @@ void PCHE::simulate(BoundaryCondtion & bc, SIM_PARAM & sim_para)
         this->_Q[i] = 0;
     }
 
-    _handle_cp_cold = AbstractState_factory("HEOS", st_cold->medium.c_str(), &this->_err_code, _cp_err_buf, _buffer_size);
-    _handle_cp_hot = AbstractState_factory("HEOS", st_hot->medium.c_str(), &this->_err_code, _cp_err_buf, _buffer_size);
+    _handle_cp_hot = AbstractState_factory("HEOS", bc.media_hot, &this->_err_code, _cp_err_buf, _buffer_size);
+    _handle_cp_cold = AbstractState_factory("HEOS", bc.media_cold, &this->_err_code, _cp_err_buf, _buffer_size);
 
-    this->_G_hot = bc.st_hot_in->mdot / _geo.N_ch / _A_c;
-    this->_G_cold = bc.st_cold_in->mdot / _geo.N_ch / _A_c;
+    this->_G_hot = bc.st_hot_in.mdot / _geo.N_ch / _A_c;
+    this->_G_cold = bc.st_cold_in.mdot / _geo.N_ch / _A_c;
 
     // temperature difference between the hot inlet and cold inlet
     double dT = 0.0;
 
     // suppose (p, T) for hot/cold inlet are known
     // try to find out (p, T) for cold/cold outlet by trial iteration
-    _cell_hot[0].T = bc.st_hot_in->T;
-    _cell_hot[0].p = bc.st_hot_in->p;
+    _cell_hot[0].T = bc.st_hot_in.T;
+    _cell_hot[0].p = bc.st_hot_in.p;
 
-    _cell_cold[0].T = bc.st_hot_in->T - sim_para.delta_T_init; // start from t_hot_in - 5
-    _cell_cold[0].p = bc.st_cold_in->p;
+    _cell_cold[0].T = bc.st_hot_in.T - sim_para.delta_T_init; // start from t_hot_in - 5
+    _cell_cold[0].p = bc.st_cold_in.p;
 
     //dT = (_cell_cold[0].T - bc.st_cold_in->T) * sim_para.step_rel;
     
@@ -326,8 +350,8 @@ void PCHE::simulate(BoundaryCondtion & bc, SIM_PARAM & sim_para)
         // calculate delta T for next iteration
         //dT = bc.st_cold_in->T - _cell_cold[_idx_pinch].T;
 
-        dT = bc.st_cold_in->T - _cell_cold_in()->T;
-        bool converged = the_same(_cell_cold_in()->T, bc.st_cold_in->T, sim_para.err, diff_per);
+        dT = bc.st_cold_in.T - _cell_cold_in()->T;
+        bool converged = the_same(_cell_cold_in()->T, bc.st_cold_in.T, sim_para.err, diff_per);
 
         cout<<i<<" th trial, diff(%)="<< diff_per<<"; ";
         cout<<"T_{cold,out}="<<_cell_cold[0].T <<" K; ";
@@ -351,6 +375,18 @@ void PCHE::simulate(BoundaryCondtion & bc, SIM_PARAM & sim_para)
 
     delete st_cold;
     delete st_hot;
+
+    // assign the simulation result as output
+
+    for (size_t i = 0; i < sr.N_seg; i++)
+    {
+        sr.p_hot[i] = _cell_hot[i].p;
+        sr.p_cold[i] = _cell_cold[i].p;
+        sr.h_hot[i] = _cell_hot[i].h;
+        sr.h_cold[i] = _cell_cold[i].h;
+    }
+
+    return;
 }
 
 PCHE_CELL * PCHE::_cell_cold_in()
