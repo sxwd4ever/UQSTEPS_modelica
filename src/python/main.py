@@ -25,8 +25,9 @@ class TestPCHEMeshram(object):
         super().__init__()
         # common variable defination
         self.path_root = work_root
-
-        self.path_model = sep.join([self.path_root, "Steps"])
+        from pathlib import Path
+        parent_dir = Path(self.path_root).parent
+        self.path_model = sep.join([parent_dir.__str__(), "Modelica", "Steps"])
         self.path_workspace = sep.join([self.path_root, "build"])
         self.path_pics = sep.join([self.path_workspace, "pics"])
         self.path_out = sep.join([self.path_workspace, "out"])
@@ -40,14 +41,19 @@ class TestPCHEMeshram(object):
         - Steps (currernt work directory) -> path_root
         |--.vscode              - directory for vscode's configurations
         |--docs                 - documents
+        |--lib                  - compiled libraries
         |--build                - -> path_workspace, workspace for modelica simulation, all
-        |  |                        the relative paths in this program are relative to point
-        |  |--out               - Final output of the Simulation
-        |  |  |--Test_Batch 1   - Simulation output data for test 1
-        |  |  ...               - Simulation output data for test ...
-        |  |--pics              - Temp storage dir for referenced pic 
-        |--scripts              - python scripts for test or parameter sweep
-        |--Steps                - Directory for modelica models codes
+        |   |                        the relative paths in this program are relative to point
+        |   |--out               - Final output of the Simulation
+        |   |  |--Test_Batch 1   - Simulation output data for test 1
+        |   |  ...               - Simulation output data for test ...
+        |   |--pics              - Temp storage dir for referenced pic 
+        |--src
+        |   |--c                 - c++ sources
+            |--Modelica          - Modelica models
+                |--Steps                - Directory for modelica models codes
+            |--scripts           - shell scripts for compiling and tasks
+            |--Python            - Python scripts for parameters sweep          
         |.env                   - configuration file for vscode python extension
         |.gitignore             - git ignore file
         ''' 
@@ -65,14 +71,14 @@ class TestPCHEMeshram(object):
             shutil.rmtree(self.path_pics)     
 
         # copy referenced pics for output figure 
-        shutil.copytree(sep.join([self.path_root, 'scripts', 'pics']), self.path_pics)
+        shutil.copytree(sep.join([self.path_root, 'pics']), self.path_pics)
 
         # directory for output        
         if not os.path.exists(self.path_out):
             os.mkdir(self.path_out)        
 
         # copy cool prop lib
-        libs = ["libCoolProp.a", 'libCoolProp.dll']
+        libs = ["libCoolProp.a", 'libCoolProp.dll', 'MyProps.dll']
         for lib in libs: 
             lib_path = sep.join([self.path_model, "Resources", "Library", lib])           
             if not os.path.exists(lib_path):
@@ -326,8 +332,11 @@ class TestPCHEMeshram(object):
 
 def main(work_root = []):
     # root path of modelica root
+    from pathlib import Path
+
+    
     if work_root == []:
-        work_root = os.path.abspath(os.curdir)
+        work_root = os.path.abspath(os.curdir)        
 
     test = TestPCHEMeshram(work_root)
 

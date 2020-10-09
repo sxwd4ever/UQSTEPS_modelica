@@ -8,6 +8,12 @@ SET INCLUDE_FMT_LIB=../externals/CoolProp/externals/fmtlib
 
 SET TARGET_LIB=MyProps.dll
 
+SET MODELICA_INCLUDE=..\Modelica\Steps\Resources\Include
+
+SET MODELICA_LIBRARY=..\Modelica\Steps\Resources\Library
+
+SET MODELICA_TEST=C:\Users\uqxsui\AppData\Local\Temp\OpenModelica\OMEdit\Steps.Utilities.CoolProp
+
 REM build
 
 REM generate dynamic lib
@@ -23,3 +29,11 @@ cd %CWD%
 copy build\%TARGET_LIB% ..\..\build\
 
 copy build\%TARGET_LIB% ..\..\lib\
+
+copy MyPropsLib.h %MODELICA_INCLUDE%
+
+copy PCHE.h %MODELICA_INCLUDE%
+
+copy build\%TARGET_LIB% %MODELICA_LIBRARY%
+
+copy build\%TARGET_LIB% "%MODELICA_TEST%"
