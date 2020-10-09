@@ -3,6 +3,8 @@
 
 #include <iostream>
 
+#define MAX_CELL_NUM 1000
+
 using namespace std;
 
 struct ThermoState
@@ -11,7 +13,6 @@ struct ThermoState
     double p;
     double h;
     double mdot;
-    std::string medium;
 };
 
 /**
@@ -60,20 +61,38 @@ struct SIM_PARAM
     double step_rel; 
 };
 
-class BoundaryCondtion
+struct BoundaryCondtion
 {
-private:
-    /* data */
-public:
-    BoundaryCondtion(/* args */);
-    ~BoundaryCondtion();
+    ThermoState st_hot_in;
+    ThermoState st_cold_in;
+    ThermoState st_hot_out;
+    ThermoState st_cold_out;
 
-    ThermoState * st_hot_in;
-    ThermoState * st_cold_in;
-    ThermoState * st_hot_out;
-    ThermoState * st_cold_out;
+    const char * media_hot;
+
+    const char * media_cold;
 };
 
+// typedef struct
+// {
+//     ThermoState st_hot_in;
+//     ThermoState st_cold_in;
+//     ThermoState st_hot_out;
+//     ThermoState st_cold_out;
+// }SimulationResult;
+
+typedef struct
+{
+  double * h_hot;
+  double * h_cold;
+  
+  double * p_hot;
+  double * p_cold;
+
+  /* segment number */
+  int N_seg;
+
+} SimulationResult;
 
 class PCHE;
 
@@ -131,6 +150,12 @@ private:
     PCHE_CELL * _cell_cold_in();
 
     double _cp_props(long handle_stream, long handle_prop, double def_value = 0.0);
+
+    void _print_boundary_conditions(BoundaryCondtion & bc);
+
+    void _print_geo_param(PCHE_GEO_PARAM & geo);
+
+    void _print_sim_param(SIM_PARAM & sim_param);
 
     // Kim's correlation factors
     KIM_CORR_COE _corr_coe;
@@ -194,7 +219,7 @@ public:
      */
     void set_kim_corr_coe(KIM_CORR_COE & coe);
 
-    void simulate(BoundaryCondtion & bc, SIM_PARAM & sim_para);
+    void simulate(BoundaryCondtion & bc, SIM_PARAM & sim_para, SimulationResult & sr);
 
     bool calc_U(int idx, double & h_hot, double & h_cold, BoundaryCondtion & bc);
 

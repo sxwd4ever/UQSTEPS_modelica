@@ -33,7 +33,10 @@
 			"options": {
 				"cwd": "${workspaceFolder}/src/c"
 			},
-			"group": "build",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
 			"problemMatcher": [
 				"$gcc"
 			]
@@ -97,10 +100,7 @@
 					"buildPCHE.sh"
 				]
 			},
-			"group": {
-				"kind": "build",
-				"isDefault": true
-			},
+			"group": "build",
 			"options": {
 				"cwd": "${workspaceFolder}/src/c"
 			},

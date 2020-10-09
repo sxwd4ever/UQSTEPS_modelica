@@ -50,7 +50,8 @@
             "name": "Python: TestPCHEMeshram",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/scripts/main.py",
+            "cwd": "${workspaceFolder}/src/python",
+            "program": "main.py",
             "console": "integratedTerminal",
             "python.terminal.activateEnvironment": true
         },

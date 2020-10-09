@@ -95,7 +95,8 @@
         "autodiff": "cpp",
         "iterativesolvers": "cpp",
         "openglsupport": "cpp",
-        "nonlinearoptimization": "cpp"
+        "nonlinearoptimization": "cpp",
+        "mprealsupport": "cpp"
     },
     "workbench.tree.indent": 4
 }

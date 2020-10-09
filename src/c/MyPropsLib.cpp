@@ -4,12 +4,44 @@
 #include "MyPropsLib.h"
 #include "PCHE.h"
 #include <math.h>
+#include <exception>
 
 // #include <string>
-#include "crossplatform_shared_ptr.h"
+// #include "crossplatform_shared_ptr.h"
+#include <tr1/memory>
 // #include "example_dll.h"
 
 using namespace CoolProp;
+
+class PCHELibrary{
+private:
+    std::map<std::size_t, std::tr1::shared_ptr<PCHE> > _PCHE_library;
+    long _next_handle;
+public:
+    PCHELibrary(): _next_handle(0){};
+    long add(std::tr1::shared_ptr<PCHE> pche){
+        _PCHE_library.insert(std::pair<std::size_t, std::tr1::shared_ptr<PCHE> >(_next_handle,  pche));
+        _next_handle++;
+        return _next_handle-1;
+    }
+    void remove(long handle){
+        std::size_t count_removed = _PCHE_library.erase(handle);
+        if (count_removed != 1){
+            cout<<"could not free handle="<<handle<<endl;
+        }
+    }
+    std::tr1::shared_ptr<PCHE> & get(long handle){
+        std::map<std::size_t, std::tr1::shared_ptr<PCHE> >::iterator it = _PCHE_library.find(handle);
+        if (it != _PCHE_library.end()){
+            return it->second;
+        }
+        else{
+            throw exception();
+        }
+    }
+};
+
+static PCHELibrary handle_manager;
 
 /**
  * convert angle from degree to rad
@@ -100,37 +132,106 @@ double EXPORT_MY_CODE MyPropsSI_pH(double p, double H, const char * FluidName , 
 	return T;
 }
 
-ThermoState * EXPORT_MY_CODE NewThermoState_pT(double p, double T, double mdot, std::string medium)
+ThermoState * EXPORT_MY_CODE NewThermoState_pT(double p, double T, double mdot, const char * medium)
 {
     ThermoState * st = new ThermoState();
     st->p = p;
     st->T = T;
-    st->h = PropsSI("H", "P", p, "T", T, medium.c_str());
+    st->h = PropsSI("H", "P", p, "T", T, medium);
     st->mdot = mdot;
-    st->medium = medium;
     return st;
 }
 
 /**
  * off-design simulation for PCHE
  */
-double EXPORT_MY_CODE PCHE_OFFD_Simulation(PCHE_GEO_PARAM * geo, KIM_CORR_COE * cor, SIM_PARAM * sim_param, ThermoState * st_hot_in, ThermoState * st_cold_in, ThermoState * st_hot_out, ThermoState * st_cold_out)
+double EXPORT_MY_CODE PCHE_OFFD_Simulation(PCHE_GEO_PARAM * geo, KIM_CORR_COE * cor, SIM_PARAM * sim_param, BoundaryCondtion * bc, double * h_hot, double * h_cold, double * p_hot, double * p_cold, size_t N_seg)
 {
+    SimulationResult sr;
+    sr.h_hot = h_hot;
+    sr.h_cold = h_cold;
+    sr.p_hot = p_hot;    
+    sr.p_cold = p_cold;
+    sr.N_seg = N_seg;
+
     PCHE * pche = new PCHE(*geo);
 
     pche->set_kim_corr_coe(*cor);
 
-    // *** boundary condition ***
-    BoundaryCondtion bc;   
-
-    bc.st_hot_in = st_hot_in;
-    bc.st_cold_in = st_cold_in;
-    bc.st_hot_out = st_hot_out;
-    bc.st_cold_out = st_cold_out;
-
-    pche->simulate(bc, * sim_param);
+    pche->simulate(* bc, * sim_param, sr);
 
     delete pche;
 
 	return 0.0;
+}
+
+/**
+ * test for transferring c struct as input/output parameter
+
+
+void * EXPORT_MY_CODE init_PCHE_sim_ext_object(PCHE_GEO_PARAM * geo)
+{
+    std::tr1::shared_ptr<PCHE> ptr_pche (new PCHE(*geo)); 
+
+    PCHE_SIM_EXT_OBJ * ext_obj = new PCHE_SIM_EXT_OBJ();
+    ext_obj->handle_pche = handle_manager.add(ptr_pche);
+
+    return (void *) ext_obj;
+}
+
+void EXPORT_MY_CODE PCHE_simulate(SIM_PARAM * sim_para, BoundaryCondtion * bc, void * ext_obj)
+{
+    PCHE_SIM_EXT_OBJ * pche_ext_obj = (PCHE_SIM_EXT_OBJ *)ext_obj;
+
+    std::tr1::shared_ptr<PCHE> & pche = handle_manager.get(pche_ext_obj->handle_pche);
+    
+    // pche->simulate(*bc,*sim_para);
+
+    pche_ext_obj->st_cold_in.T = bc->st_cold_in.T + 123;
+}
+
+void EXPORT_MY_CODE close_PCHE_sim_ext_object(void * ext_obj)
+{
+    PCHE_SIM_EXT_OBJ * pche_ext_obj = (PCHE_SIM_EXT_OBJ *)ext_obj;
+
+    std::tr1::shared_ptr<PCHE> & pche = handle_manager.get(pche_ext_obj->handle_pche);
+    
+    handle_manager.remove(pche_ext_obj->handle_pche);
+}
+*/
+
+void EXPORT_MY_CODE test_struct_param(SIM_PARAM * sim_para, PCHE_GEO_PARAM * geo, BoundaryCondtion * bc, double * h_hot, double * h_cold, double * p_hot, double * p_cold, size_t N_seg)
+{
+    // sim_para = new SIM_PARAM();
+
+    sim_para->err = geo->pitch;
+    sim_para->step_rel = geo->phi + geo->length_cell;
+    sim_para->delta_T_init = 10.0;
+
+    // st_result[1] = 11222;
+
+    for (size_t i = 0; i < N_seg; i++)
+    {
+        /* code */
+        //st_result[i].T = i * 100 + 1;
+        //st_result[i].p = i * 1000 + 2;
+        // st_result[i] = i * 100 + 1;
+        h_hot[i] = i * 100 + 1;
+        h_cold[i] = i * 100 + 3;
+        p_hot[i] = i * 100 + 5;
+        p_cold[i] = i * 100 + 7;
+    }    
+
+    // return sim_para;
+}
+
+
+
+//     // return sim_para;
+// }
+
+void EXPORT_MY_CODE setState_C_impl(double p, double M,  State *state)
+{
+    state->p = p;
+    state->M = M;
 }
