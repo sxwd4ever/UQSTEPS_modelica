@@ -32,7 +32,7 @@ struct PCHE_GEO_PARAM
     // number of channels
     int N_ch;
     // number of segments
-    int N_seg; // [Kwon2019]'s maximum node number    
+    int N_seg; // [Kwon2019]'s maximum node number   
 };
 
 /** 
@@ -61,17 +61,13 @@ struct SIM_PARAM
     double step_rel; 
 };
 
-struct BoundaryCondtion
+typedef struct
 {
     ThermoState st_hot_in;
     ThermoState st_cold_in;
     ThermoState st_hot_out;
     ThermoState st_cold_out;
-
-    const char * media_hot;
-
-    const char * media_cold;
-};
+} BoundaryCondtion;
 
 // typedef struct
 // {
@@ -101,16 +97,23 @@ class PCHE_CELL
 private:
     /* data */
     PCHE * _pche;
-
+    const char * type_name();
 public:
     PCHE_CELL();
     ~PCHE_CELL();
 
-    void _init(ThermoState * st, PCHE * pche);
-
+    // type: 0=hot, 1=cold
+    void init(int idx, int type, PCHE * pche);
     void clone(PCHE_CELL * src);
 
-    /* data */
+    void print_state();
+
+    bool validate();
+
+    // idx in sequence
+    int idx; 
+    // hot/cold side
+    int type_stream;    
     // heat Flux
     double Q;
     // heat flux
@@ -147,15 +150,34 @@ private:
     /* data */
     void _init(PCHE_GEO_PARAM & geo);
 
+
     PCHE_CELL * _cell_cold_in();
 
-    double _cp_props(long handle_stream, long handle_prop, double def_value = 0.0);
+    double _cp_props(long handle_stream, long handle_prop, double def_value = 0, double max = 1e6, double min = 0);
 
+    long _cp_new_state(const char * medium);
+
+    void _cp_state_update(long handle_stream, long handle_input, double val1, double val2);
+
+    bool _calc_U(int idx, BoundaryCondtion & bc);
+
+    double _avg_T(PCHE_CELL * cell_seq, int count);
+
+    /*** function outputs parameters for debug ***/
     void _print_boundary_conditions(BoundaryCondtion & bc);
 
     void _print_geo_param(PCHE_GEO_PARAM & geo);
 
     void _print_sim_param(SIM_PARAM & sim_param);
+
+    void _print_PCHE_state();
+
+    void _print_cp_err(const char * info);
+
+    const char * _get_prop_name(long handle_prop);
+
+    const char * _get_stream_name(long handle_stream);
+    /*** end of debug utility functions ***/
 
     // Kim's correlation factors
     KIM_CORR_COE _corr_coe;
@@ -219,11 +241,9 @@ public:
      */
     void set_kim_corr_coe(KIM_CORR_COE & coe);
 
-    void simulate(BoundaryCondtion & bc, SIM_PARAM & sim_para, SimulationResult & sr);
+    void simulate(const char * media_hot, const char * media_cold, BoundaryCondtion & bc, SIM_PARAM & sim_para, SimulationResult & sr);
 
-    bool calc_U(int idx, double & h_hot, double & h_cold, BoundaryCondtion & bc);
 
-    double avg_T(PCHE_CELL * cell_seq, int count);
 };
 
 #endif
