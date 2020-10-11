@@ -27,9 +27,13 @@ typedef struct {
 } State;
 
 /**
+ * Wrapper of CoolProp's PropsSI function. 
+ */
+double EXPORT_MY_CODE MyPropsSI(const char *Output, const char *Name1, double Prop1, const char *Name2, double Prop2, const char *Ref);
+
+/**
  * batch Props query function using (p,T): one thermo state in, multiple outputs out to save time of calling CoolProp
  */
-
 void EXPORT_MY_CODE MyPropsSI_pT(double p, double T, const std::string &FluidName, double &h, double &rhomass);
 
 /**
@@ -40,7 +44,7 @@ double EXPORT_MY_CODE MyPropsSI_pH(double p, double H, const char * FluidName, d
 /**
  * off-design simulation for PCHE
  */
-double EXPORT_MY_CODE PCHE_OFFD_Simulation(PCHE_GEO_PARAM * geo, KIM_CORR_COE * cor, SIM_PARAM * sim_param, BoundaryCondtion * bc, double * h_hot, double * h_cold, double * p_hot, double * p_cold, size_t N_seg);
+double EXPORT_MY_CODE PCHE_OFFD_Simulation(const char * media_hot, const char * media_cold, PCHE_GEO_PARAM * geo, KIM_CORR_COE * cor, SIM_PARAM * sim_param, BoundaryCondtion * bc, double * h_hot, double * h_cold, double * p_hot, double * p_cold, size_t N_seg);
 
 /**
  * Create new ThermoState with given (p, T), mdot and medium name
@@ -69,6 +73,12 @@ double EXPORT_MY_CODE from_degC(double degC);
  */
 bool EXPORT_MY_CODE the_same(double x, double y, double eps, double & diff_per);
 
+void EXPORT_MY_CODE test_struct_param(SIM_PARAM * sim_para, PCHE_GEO_PARAM * geo, BoundaryCondtion * bc, double * h_hot, double * h_cold, double * p_hot, double * p_cold, size_t N_seg);
+
+void EXPORT_MY_CODE setState_C_impl(double p, double M,  State *state);
+
+/** 
+ * functions utilizing external objects - not very useful since I have to return data
 
 struct PCHE_SIM_EXT_OBJ
 {
@@ -80,22 +90,15 @@ struct PCHE_SIM_EXT_OBJ
     ThermoState st_cold_out;
 };
 
-void EXPORT_MY_CODE test_struct_param(SIM_PARAM * sim_para, PCHE_GEO_PARAM * geo, BoundaryCondtion * bc, double * h_hot, double * h_cold, double * p_hot, double * p_cold, size_t N_seg);
-// void EXPORT_MY_CODE test_struct_param(SIM_PARAM * sim_para, PCHE_GEO_PARAM * geo, BoundaryCondtion * bc, ThermoState * st_result, size_t num_st);
-
-/**
- * test for transferring c struct as input/output parameter
- */
+// test for transferring c struct as input/output parameter
 void * EXPORT_MY_CODE init_PCHE_sim_ext_object(PCHE_GEO_PARAM * geo);
-
-/** 
- * functions utilizing external objects - not very useful since I have to return data
 
 void EXPORT_MY_CODE PCHE_simulate(SIM_PARAM * sim_para, BoundaryCondtion * bc, void * PCHE_ext_obj);
 
 void EXPORT_MY_CODE close_PCHE_sim_ext_object(void * ext_obj);
+
 */
-void EXPORT_MY_CODE setState_C_impl(double p, double M,  State *state);
+
 
 #ifdef __cplusplus
 }

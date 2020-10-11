@@ -77,10 +77,10 @@ bool EXPORT_MY_CODE the_same(double x, double y, double eps, double & diff_per)
     return  diff_per<= eps;
 }
 
-// void EXPORT_MY_CODE MyCall()
-// {
-// 	hello("World");
-// }
+double EXPORT_MY_CODE MyPropsSI(const char *Output, const char *Name1, double Prop1, const char *Name2, double Prop2, const char *Ref)
+{
+    return PropsSI(Output, Name1, Prop1, Name2, Prop2, Ref);
+}
 
 void EXPORT_MY_CODE MyPropsSI_pT(double p, double T, const std::string &FluidName, double &h, double &rhomass)
 {
@@ -125,10 +125,6 @@ double EXPORT_MY_CODE MyPropsSI_pH(double p, double H, const char * FluidName , 
 	k = AbstractState_keyed_output(handle, _K, &errcode, buffer, buffersize);
 	rho = AbstractState_keyed_output(handle, _Dmass, &errcode, buffer, buffersize);
 
-	// mu = p + 2;
-	// k = p + H + 1;
-	// rho = H + 1;
-
 	return T;
 }
 
@@ -145,7 +141,7 @@ ThermoState * EXPORT_MY_CODE NewThermoState_pT(double p, double T, double mdot, 
 /**
  * off-design simulation for PCHE
  */
-double EXPORT_MY_CODE PCHE_OFFD_Simulation(PCHE_GEO_PARAM * geo, KIM_CORR_COE * cor, SIM_PARAM * sim_param, BoundaryCondtion * bc, double * h_hot, double * h_cold, double * p_hot, double * p_cold, size_t N_seg)
+double EXPORT_MY_CODE PCHE_OFFD_Simulation(const char * media_hot, const char * media_cold, PCHE_GEO_PARAM * geo, KIM_CORR_COE * cor, SIM_PARAM * sim_param, BoundaryCondtion * bc, double * h_hot, double * h_cold, double * p_hot, double * p_cold, size_t N_seg)
 {
     SimulationResult sr;
     sr.h_hot = h_hot;
@@ -158,7 +154,11 @@ double EXPORT_MY_CODE PCHE_OFFD_Simulation(PCHE_GEO_PARAM * geo, KIM_CORR_COE * 
 
     pche->set_kim_corr_coe(*cor);
 
-    pche->simulate(* bc, * sim_param, sr);
+    // bc->media_cold = "CO2";
+    // bc->media_hot = "CO2";
+
+    pche->simulate(media_hot, media_cold, * bc, * sim_param, sr);
+
 
     delete pche;
 
@@ -224,11 +224,6 @@ void EXPORT_MY_CODE test_struct_param(SIM_PARAM * sim_para, PCHE_GEO_PARAM * geo
 
     // return sim_para;
 }
-
-
-
-//     // return sim_para;
-// }
 
 void EXPORT_MY_CODE setState_C_impl(double p, double M,  State *state)
 {
