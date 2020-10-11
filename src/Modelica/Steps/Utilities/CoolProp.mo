@@ -4,9 +4,9 @@ model CoolProp
 
   import Steps.Components.{ThermoState, PCHEGeoParam, KimCorrCoe, SimParam, BoundaryCondition, SimulationResult};
   import Modelica.SIunits.Conversions.{from_deg, from_bar};
-  constant Integer MAX_SEG_NUM = 1000;
+  constant Integer MAX_SEG_NUM = 500;
   
-  function PropsSI "Import the CoolProp PropsSI Function"
+  function PropsSI "Import the MyPropsLib's PropsSI Function"
     
     input String OutputType;
     input String Input1Type;
@@ -16,8 +16,8 @@ model CoolProp
     input String FluidName;
     output Real  OutputValue;
   
-    external "C" OutputValue = PropsSI(OutputType, Input1Type, Input1Value, Input2Type, Input2Value, FluidName)
-    annotation(Library={"CoolProp"}, LibraryDirectory="modelica://Steps/Resources/Library"); 
+    external "C" OutputValue = MyPropsSI(OutputType, Input1Type, Input1Value, Input2Type, Input2Value, FluidName)
+    annotation(Library={"MyProps"}, LibraryDirectory="modelica://Steps/Resources/Library"); 
     
   end PropsSI;
   
@@ -36,7 +36,7 @@ model CoolProp
     output Real rho;
   
     external "C" T = MyPropsSI_pH(p, H, fluidName, mu, k, rho);
-    annotation(Library={"MyPropsLib"}, LibraryDirectory="modelica://Steps/Resources/Library"); 
+    annotation(Library={"MyProps"}, LibraryDirectory="modelica://Steps/Resources/Library"); 
 
   end MyPropsSI;
   
@@ -49,13 +49,17 @@ model CoolProp
     output Real rho;
   
     external "C" MyPropsSI_pT(p, T, fluidName, h, rho);
-    annotation(Library={"MyPropsLib"}, LibraryDirectory="modelica://Steps/Resources/Library"); 
+    annotation(Library={"MyProps"}, LibraryDirectory="modelica://Steps/Resources/Library"); 
 
   end MyPropsSI_pT;    
 /*
- * double EXPORT_MY_CODE PCHE_OFFD_Simulation(PCHE_GEO_PARAM * geo, KIM_CORR_COE * cor, SIM_PARAM * sim_param, BoundaryCondtion * bc, double * h_hot, double * h_cold, double * p_hot, double * p_cold, size_t N_seg)
+ * PCHE_OFFD_Simulation(const char * media_hot, const char * media_cold, PCHE_GEO_PARAM * geo, KIM_CORR_COE * cor, SIM_PARAM * sim_param, BoundaryCondtion * bc, double * h_hot, double * h_cold, double * p_hot, double * p_cold, size_t N_seg)
  */
 function PCHE_OFFD_Simulation "test for transferring c struct as input/output parameter"
+    
+    input String media_hot;
+    
+    input String media_cold;
     
     input PCHEGeoParam geo;
     
@@ -79,7 +83,7 @@ function PCHE_OFFD_Simulation "test for transferring c struct as input/output pa
 
     // output Real st[10]; 
     
-    external "C" PCHE_OFFD_Simulation(geo, cor, sim_param, bc, h_hot, h_cold, p_hot, p_cold, N_seg);
+    external "C" PCHE_OFFD_Simulation(media_hot, media_cold, geo, cor, sim_param, bc, h_hot, h_cold, p_hot, p_cold, N_seg);
     
     annotation(Library={"MyProps"}, LibraryDirectory="modelica://Steps/Resources/Library");
     
@@ -134,18 +138,15 @@ double EXPORT_MY_CODE test_struct_param(SIM_PARAM * sim_para, PCHE_GEO_PARAM * g
   SimParam sim_param(err=1e-2, delta_T_init = 5, N_iter = 10000, step_rel=0.2);
   
   BoundaryCondition bc(
-  st_hot_in(T=730, p = from_bar(90), h = 932534, mdot = 10), 
-  st_cold_in(T=500, p = from_bar(225), h = 627426, mdot = 10), 
-  st_hot_out(T=576.69, p = from_bar(90), h = 754560, mdot = 10), 
-  st_cold_out(T=639.15, p = from_bar(225), h = 805341, mdot = 10),
-  media_hot="CO2",
-  media_cold="Water");   
+  st_hot_in(T = 730, p = from_bar(90), h = 932534, mdot = 10), 
+  st_cold_in(T = 500, p = from_bar(225), h = 627426, mdot = 10), 
+  st_hot_out(T = 576.69, p = from_bar(90), h = 754560, mdot = 10), 
+  st_cold_out(T = 639.15, p = from_bar(225), h = 805341, mdot = 10));   
   
   Real h_hot[MAX_SEG_NUM];
   Real h_cold[MAX_SEG_NUM];
   Real p_hot[MAX_SEG_NUM];
-  Real p_cold[MAX_SEG_NUM];  
-  
+  Real p_cold[MAX_SEG_NUM];    
   
   KimCorrCoe cor(a=0.37934, b=0.82413, c=0.03845, d=0.73793);
   
@@ -158,8 +159,9 @@ equation
 
   // sr = TestStructParam(sim_param, geo, bc);
   // (h_hot, h_cold, p_hot, p_cold) = TestStructParam(sim_param, geo, bc, geo.N_seg);
+
   
-  (h_hot, h_cold, p_hot, p_cold) = PCHE_OFFD_Simulation(geo, cor, sim_param, bc, geo.N_seg);
+  (h_hot, h_cold, p_hot, p_cold) = PCHE_OFFD_Simulation("CO2", "CO2", geo, cor, sim_param, bc, geo.N_seg);
   // state = setState(p);
   state = setState(p,M);
   
