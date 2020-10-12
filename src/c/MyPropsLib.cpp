@@ -138,6 +138,14 @@ ThermoState * EXPORT_MY_CODE NewThermoState_pT(double p, double T, double mdot, 
     return st;
 }
 
+void CompleteThermoState(ThermoState * st, const char * media)
+{
+    if(st->T == 0)
+        st->T = PropsSI("T", "P", st->p, "H", st->h, media);
+    else if(st->h == 0)
+        st->h = PropsSI("H", "P", st->p, "T", st->T, media);
+}
+
 /**
  * off-design simulation for PCHE
  */
@@ -157,8 +165,14 @@ double EXPORT_MY_CODE PCHE_OFFD_Simulation(const char * media_hot, const char * 
     // bc->media_cold = "CO2";
     // bc->media_hot = "CO2";
 
-    pche->simulate(media_hot, media_cold, * bc, * sim_param, sr);
+    // fill the T in bc
 
+    CompleteThermoState(& bc->st_hot_in, media_hot);
+    CompleteThermoState(& bc->st_hot_out, media_hot);
+    CompleteThermoState(& bc->st_cold_in, media_cold);
+    CompleteThermoState(& bc->st_cold_out, media_cold);
+
+    pche->simulate(media_hot, media_cold, * bc, * sim_param, sr);
 
     delete pche;
 

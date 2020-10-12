@@ -1,6 +1,6 @@
 within Steps.Test;
 
-model TestPCHX
+model TestPCHE
   "Simple cycle to test PC Heat Exchange"     
   
   /*
@@ -45,7 +45,7 @@ model TestPCHX
     fix_state = false
   );
  
-  Components.PCHeatExchanger pchx(
+  Components.PCHeatExchanger pche(
     phi = Modelica.SIunits.Conversions.from_deg(45), 
     Re_design = 5000,
     d_c = 1.51 * 1e-3,
@@ -61,7 +61,7 @@ model TestPCHX
   );
   
   /*
-  Components.PCHeatExchangerV2 pchx(
+  Components.PCHeatExchangerV2 pche(
     phi = Modelica.SIunits.Conversions.from_deg(45), 
     Re_design = 5000,
     d_c = 1.51 * 1e-3,
@@ -78,7 +78,7 @@ model TestPCHX
   */
   
   /*
-  Components.PCHeatExchanger pchx(
+  Components.PCHeatExchanger pche(
     phi = Modelica.Constants.pi / 4, 
     Re_design = 5000,
     d_c = 1.51 * 1e-3,
@@ -90,16 +90,16 @@ model TestPCHX
   */
   
   /*
-  Components.Recuperator pchx(
+  Components.Recuperator pche(
     eta = 0.99  
   );
   */
   
 equation
   
-  connect(source_hot.outlet, pchx.inlet_hot);
-  connect(pchx.outlet_hot, sink_hot.inlet);
-  connect(source_cold.outlet, pchx.inlet_cold);
-  connect(pchx.outlet_cold, sink_cold.inlet);  
+  connect(source_hot.outlet, pche.inlet_hot);
+  connect(pche.outlet_hot, sink_hot.inlet);
+  connect(source_cold.outlet, pche.inlet_cold);
+  connect(pche.outlet_cold, sink_cold.inlet);  
   
-end TestPCHX;
+end TestPCHE;

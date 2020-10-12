@@ -344,7 +344,7 @@ void PCHE::simulate(const char * media_hot, const char * media_cold, BoundaryCon
     _cell_hot[0].T = bc.st_hot_in.T;
     _cell_hot[0].p = bc.st_hot_in.p;
 
-    _cell_cold[0].T = bc.st_hot_in.T - sim_para.delta_T_init; // start from t_hot_in - 5
+    _cell_cold[0].T = _cell_hot[0].T - sim_para.delta_T_init; // start from t_hot_in - 5
     _cell_cold[0].p = bc.st_cold_in.p;
 
     //double h_hot, h_cold; // specific enthalpy for current hot/cold cell
@@ -384,7 +384,6 @@ void PCHE::simulate(const char * media_hot, const char * media_cold, BoundaryCon
             }
         // calculate delta T for next iteration
         // dT = bc.st_cold_in->T - _cell_cold[_idx_pinch].T;
-
         dT = bc.st_cold_in.T - _cell_cold_in()->T;
         bool converged = the_same(_cell_cold_in()->T, bc.st_cold_in.T, sim_para.err, diff_per);
 
