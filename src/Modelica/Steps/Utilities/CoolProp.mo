@@ -4,7 +4,7 @@ model CoolProp
 
   import Steps.Components.{ThermoState, PCHEGeoParam, KimCorrCoe, SimParam, BoundaryCondition, SimulationResult};
   import Modelica.SIunits.Conversions.{from_deg, from_bar};
-  constant Integer MAX_SEG_NUM = 500;
+  constant Integer MAX_SEG_NUM = 10;
   
   function PropsSI "Import the MyPropsLib's PropsSI Function"
     

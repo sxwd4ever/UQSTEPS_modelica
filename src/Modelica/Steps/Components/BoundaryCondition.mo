@@ -1,7 +1,7 @@
 within Steps.Components;
 
 record BoundaryCondition
-  "Record for BoundaryCondition, aligns with the struct definition in C"
+  "abcd Record for BoundaryCondition, aligns with the struct definition in C"
     // error in transferring a string together with array of records within a record
     // so I move these two variables to the interface. 
     // String media_hot;
