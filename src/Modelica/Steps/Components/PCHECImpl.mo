@@ -17,9 +17,9 @@ model PCHECImpl
   replaceable Steps.Interfaces.PBFluidPort_b outlet_cold(redeclare package Medium = PBMedia, p(start= p_start_cold), h_outflow(start = h_start_cold)) "Recuperator outlet";
 */
   
-  replaceable Steps.Interfaces.PBFluidPort_a inlet_hot(redeclare package Medium = PBMedia) "Inlet port, previous component";
+  replaceable Steps.Interfaces.PBFluidPort_a inlet_hot(redeclare package Medium = PBMedia, p(start = bc_hot_in.p, nominal= bc_hot_in.p), h_outflow(start = bc_hot_in.h, nominal=bc_hot_in.h)) "Inlet port, previous component";
   replaceable Steps.Interfaces.PBFluidPort_b outlet_hot(redeclare package Medium = PBMedia) "Outlet port, next component";
-  replaceable Steps.Interfaces.PBFluidPort_a inlet_cold(redeclare package Medium = PBMedia) "Recuperator inlet";
+  replaceable Steps.Interfaces.PBFluidPort_a inlet_cold(redeclare package Medium = PBMedia, p(start = bc_cold_in.p, nominal= bc_cold_in.p), h_outflow(start = bc_cold_in.h, nominal=bc_cold_in.h)) "Recuperator inlet";
   replaceable Steps.Interfaces.PBFluidPort_b outlet_cold(redeclare package Medium = PBMedia) "Recuperator outlet";  
 
   replaceable package PBMedia = Steps.Media.SCO2; 
@@ -39,29 +39,33 @@ model PCHECImpl
   
   inner parameter Integer N_ch = 10 "Number of Channels in PCHE";
   
-  parameter Integer N_seg = 1 "Number of segments in a tube";
+  parameter Integer N_seg = 2 "Number of segments in a tube";
+  
+  parameter ThermoState bc_hot_in(p = from_bar(90), T = from_degC(730), h = CP.PropsSI("H", "T", bc_hot_in.T, "P", bc_hot_in.p, PBMedia.mediumName), mdot=10);
+  
+  parameter ThermoState bc_cold_in(p = from_bar(225), T = from_degC(500), h = CP.PropsSI("H", "T", bc_cold_in.T, "P", bc_cold_in.p, PBMedia.mediumName), mdot=10);
 
   // Geometry determined correlation coefficients - a, b, c d
   inner KimCorrelations kim_cor(phi = phi, pitch = pitch, d_h = d_h); 
   
-  constant Integer MAX_SEG_NUM = Steps.Utilities.CoolProp.MAX_SEG_NUM;
-
   PCHEGeoParam geo(pitch = pitch, phi = phi, length_cell = length_cell, d_c = d_c,
   N_ch = N_ch, N_seg = N_seg);
   
-  SimParam sim_param(err=1e-2, delta_T_init = 5, N_iter = 100, step_rel=0.3);
+  SimParam sim_param(err=1e-2, delta_T_init = 5, N_iter = 100, step_rel=0.3, log_level = 1);
   
   // only (p, h, mdot) of the hot/cold inlet matters
   BoundaryCondition bc(
   st_hot_in(T = 0, p = inlet_hot.p, h = inlet_hot.h_outflow, mdot = inlet_hot.m_flow), 
+  // st_hot_in(T = 0, p = bc_hot_in.p, h = bc_hot_in.h, mdot = inlet_hot.m_flow), 
   st_cold_in(T = 0, p = inlet_cold.p, h = inlet_cold.h_outflow, mdot = inlet_cold.m_flow), 
+  //st_cold_in(T = 0, p = bc_cold_in.p, h = bc_cold_in.h, mdot = inlet_cold.m_flow), 
   st_hot_out(T = 0, p = 0, h = 0, mdot = inlet_hot.m_flow),  
   st_cold_out(T = 0, p = 0, h = 0, mdot = inlet_cold.m_flow));   
   
-  Real h_hot[MAX_SEG_NUM];
-  Real h_cold[MAX_SEG_NUM];
-  Real p_hot[MAX_SEG_NUM];
-  Real p_cold[MAX_SEG_NUM];    
+  Real h_hot[2];
+  Real h_cold[2];
+  Real p_hot[2];
+  Real p_cold[2];    
   
   KimCorrCoe cor(a=kim_cor.a, b=kim_cor.b, c=kim_cor.c, d=kim_cor.d);  
   
@@ -96,8 +100,8 @@ equation
 
 // algorithm
   
-  outlet_hot.h_outflow = h_hot[N_seg];
-  outlet_hot.p = p_hot[N_seg];
+  outlet_hot.h_outflow = h_hot[1];
+  outlet_hot.p = p_hot[1];
   
   outlet_cold.h_outflow = h_cold[0];
   outlet_cold.p = p_cold[0];

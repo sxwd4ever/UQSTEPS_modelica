@@ -84,6 +84,9 @@ model TestPCHECImpl
     N_seg = N_seg,
     length_cell = length_cell,    
     
+    bc_hot_in(p = p_hot_in, T = T_hot_in, mdot = mdot_hot),    
+    bc_cold_in(p = p_cold_in, T = T_cold_in, mdot = mdot_cold)    
+    /*
     inlet_hot.p(start = p_hot_in, nominal = p_hot_in),
     inlet_hot.h_outflow(start = h_hot_in, nominal = h_hot_in),
     inlet_hot.m_flow(start = mdot_hot, nominal = mdot_hot),
@@ -91,11 +94,10 @@ model TestPCHECImpl
     inlet_cold.p(start = p_cold_in, nominal = p_cold_in),
     inlet_cold.h_outflow(start = h_cold_in, nominal = h_cold_in),
     inlet_cold.m_flow(start = mdot_cold, nominal = mdot_cold) 
+    */
   );
   
-protected
-  parameter Modelica.SIunits.SpecificEnthalpy h_hot_in = PropsSI("H", "T", T_hot_in, "P", p_hot_in, PBMedia.mediumName);
-  parameter Modelica.SIunits.SpecificEnthalpy h_cold_in = PropsSI("H", "T", T_cold_in, "P", p_cold_in, PBMedia.mediumName);
+
   
 equation
   

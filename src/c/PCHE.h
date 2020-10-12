@@ -7,6 +7,8 @@
 
 using namespace std;
 
+enum log_level {DEBUG = 0, INFO = 1, ERR = 2, SERVE = 3, OFF = 4};
+
 struct ThermoState
 {
     double T;
@@ -59,6 +61,9 @@ struct SIM_PARAM
     // relative step length between two trial values of T_cold_out
     // T_cold_out[i] += step_rel * (T_bc_cold_in  - T_cold_in[i-1])
     double step_rel; 
+
+    // log level for output contorl
+    int log_level = log_level::OFF;
 };
 
 typedef struct
@@ -150,7 +155,6 @@ private:
     /* data */
     void _init(PCHE_GEO_PARAM & geo);
 
-
     PCHE_CELL * _cell_cold_in();
 
     double _cp_props(long handle_stream, long handle_prop, double def_value = 0, double max = 1e6, double min = 0);
@@ -164,13 +168,15 @@ private:
     double _avg_T(PCHE_CELL * cell_seq, int count);
 
     /*** function outputs parameters for debug ***/
+    bool _can_log(int level);
+
     void _print_boundary_conditions(BoundaryCondtion & bc);
 
     void _print_geo_param(PCHE_GEO_PARAM & geo);
 
     void _print_sim_param(SIM_PARAM & sim_param);
 
-    void _print_PCHE_state();
+    void _print_PCHE_state(std::string title);
 
     void _print_cp_err(const char * info);
 
@@ -232,6 +238,8 @@ private:
     // index of the pinch point cell
     int _idx_pinch;
 
+    // system log level
+    int _log_level; 
 public:
     PCHE(PCHE_GEO_PARAM & geo);
     ~PCHE();
@@ -241,7 +249,7 @@ public:
      */
     void set_kim_corr_coe(KIM_CORR_COE & coe);
 
-    void simulate(const char * media_hot, const char * media_cold, BoundaryCondtion & bc, SIM_PARAM & sim_para, SimulationResult & sr);
+    void simulate(const char * media_hot, const char * media_cold, BoundaryCondtion & bc, SIM_PARAM & sim_param, SimulationResult & sr);
 
 
 };

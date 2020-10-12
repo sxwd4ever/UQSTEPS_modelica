@@ -3,8 +3,7 @@ within Steps.Utilities;
 model CoolProp
 
   import Steps.Components.{ThermoState, PCHEGeoParam, KimCorrCoe, SimParam, BoundaryCondition, SimulationResult};
-  import Modelica.SIunits.Conversions.{from_deg, from_bar};
-  constant Integer MAX_SEG_NUM = 10;
+  import Modelica.SIunits.Conversions.{from_deg, from_bar};  
   
   function PropsSI "Import the MyPropsLib's PropsSI Function"
     
@@ -71,10 +70,10 @@ function PCHE_OFFD_Simulation "test for transferring c struct as input/output pa
     
     input Integer N_seg;       
     
-    output Real h_hot[MAX_SEG_NUM];
-    output Real h_cold[MAX_SEG_NUM];
-    output Real p_hot[MAX_SEG_NUM];
-    output Real p_cold[MAX_SEG_NUM];  
+    output Real h_hot[2];
+    output Real h_cold[2];
+    output Real p_hot[2];
+    output Real p_cold[2];  
   protected     
 
     // mapping of array of structs or structs with array is not allowed.
@@ -103,10 +102,10 @@ double EXPORT_MY_CODE test_struct_param(SIM_PARAM * sim_para, PCHE_GEO_PARAM * g
     
     input Integer N_seg;       
     
-    output Real h_hot[MAX_SEG_NUM];
-    output Real h_cold[MAX_SEG_NUM];
-    output Real p_hot[MAX_SEG_NUM];
-    output Real p_cold[MAX_SEG_NUM];  
+    output Real h_hot[2];
+    output Real h_cold[2];
+    output Real p_hot[2];
+    output Real p_cold[2];  
   protected     
 
     // mapping of array of structs or structs with array is not allowed.
@@ -135,7 +134,7 @@ double EXPORT_MY_CODE test_struct_param(SIM_PARAM * sim_para, PCHE_GEO_PARAM * g
   PCHEGeoParam geo(pitch = 12e-3, phi = from_deg((180-108)/2), length_cell = 5e-2, d_c = 1.5e-3,
   N_ch = 80000, N_seg = 200);
   
-  SimParam sim_param(err=1e-2, delta_T_init = 5, N_iter = 10000, step_rel=0.2);
+  SimParam sim_param(err=1e-2, delta_T_init = 5, N_iter = 10000, step_rel=0.2, log_level = 1);
   
   BoundaryCondition bc(
   st_hot_in(T = 730, p = from_bar(90), h = 932534, mdot = 10), 
@@ -143,10 +142,10 @@ double EXPORT_MY_CODE test_struct_param(SIM_PARAM * sim_para, PCHE_GEO_PARAM * g
   st_hot_out(T = 576.69, p = from_bar(90), h = 754560, mdot = 10), 
   st_cold_out(T = 639.15, p = from_bar(225), h = 805341, mdot = 10));   
   
-  Real h_hot[MAX_SEG_NUM];
-  Real h_cold[MAX_SEG_NUM];
-  Real p_hot[MAX_SEG_NUM];
-  Real p_cold[MAX_SEG_NUM];    
+  Real h_hot[2];
+  Real h_cold[2];
+  Real p_hot[2];
+  Real p_cold[2];    
   
   KimCorrCoe cor(a=0.37934, b=0.82413, c=0.03845, d=0.73793);
   

@@ -73,7 +73,7 @@ double EXPORT_MY_CODE from_degC(double degC);
  */
 bool EXPORT_MY_CODE the_same(double x, double y, double eps, double & diff_per);
 
-void EXPORT_MY_CODE test_struct_param(SIM_PARAM * sim_para, PCHE_GEO_PARAM * geo, BoundaryCondtion * bc, double * h_hot, double * h_cold, double * p_hot, double * p_cold, size_t N_seg);
+void EXPORT_MY_CODE test_struct_param(SIM_PARAM * sim_param, PCHE_GEO_PARAM * geo, BoundaryCondtion * bc, double * h_hot, double * h_cold, double * p_hot, double * p_cold, size_t N_seg);
 
 void EXPORT_MY_CODE setState_C_impl(double p, double M,  State *state);
 
@@ -93,7 +93,7 @@ struct PCHE_SIM_EXT_OBJ
 // test for transferring c struct as input/output parameter
 void * EXPORT_MY_CODE init_PCHE_sim_ext_object(PCHE_GEO_PARAM * geo);
 
-void EXPORT_MY_CODE PCHE_simulate(SIM_PARAM * sim_para, BoundaryCondtion * bc, void * PCHE_ext_obj);
+void EXPORT_MY_CODE PCHE_simulate(SIM_PARAM * sim_param, BoundaryCondtion * bc, void * PCHE_ext_obj);
 
 void EXPORT_MY_CODE close_PCHE_sim_ext_object(void * ext_obj);
 

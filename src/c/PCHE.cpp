@@ -1,6 +1,7 @@
 #include "CoolPropLib.h"
 #include "PCHE.h"
 #include <iostream>
+#include <sstream>
 #include <math.h>
 #include "MyPropsLib.h"
 
@@ -87,6 +88,8 @@ void PCHE_CELL::clone(PCHE_CELL * src)
 
 PCHE::PCHE(PCHE_GEO_PARAM & geo)
 {
+    _log_level = log_level::INFO; 
+ 
     _cell_hot = NULL;
     _cell_cold = NULL;
 
@@ -261,9 +264,12 @@ bool PCHE::_calc_U(int idx, BoundaryCondtion & bc)
     }
     else
     {
-        cout<<"!!! invalid cell state"<<endl;
-        c_h->print_state();
-        c_c->print_state();
+        if(_can_log(log_level::ERR))
+        {
+            cout<<"!!! invalid cell state"<<endl;            
+            c_h->print_state();
+            c_c->print_state();
+        }
 
         heat_exchanged = false;
         c_h->dp = 0;
@@ -319,15 +325,21 @@ long PCHE::_cp_new_state(const char * medium)
     return handle;
 }
 
-void PCHE::simulate(const char * media_hot, const char * media_cold, BoundaryCondtion & bc, SIM_PARAM & sim_para, SimulationResult & sr)
+void PCHE::simulate(const char * media_hot, const char * media_cold, BoundaryCondtion & bc, SIM_PARAM & sim_param, SimulationResult & sr)
 {
+    std::ostringstream str_stream;
+  
+    std::string info;
+
+    _log_level = sim_param.log_level;
+
     _print_geo_param(_geo);
 
     _print_boundary_conditions(bc);
 
-    _print_sim_param(sim_para);
+    _print_sim_param(sim_param);
     
-    cout<<"ready to start simulation"<<endl;
+    // cout<<"ready to start simulation"<<endl;
 
     _handle_cp_hot = _cp_new_state(media_hot);
 
@@ -344,14 +356,14 @@ void PCHE::simulate(const char * media_hot, const char * media_cold, BoundaryCon
     _cell_hot[0].T = bc.st_hot_in.T;
     _cell_hot[0].p = bc.st_hot_in.p;
 
-    _cell_cold[0].T = _cell_hot[0].T - sim_para.delta_T_init; // start from t_hot_in - 5
+    _cell_cold[0].T = _cell_hot[0].T - sim_param.delta_T_init; // start from t_hot_in - 5
     _cell_cold[0].p = bc.st_cold_in.p;
 
     //double h_hot, h_cold; // specific enthalpy for current hot/cold cell
     double diff_per = 0.0;
     bool heat_exchanged = true;
 
-    for (size_t i = 0; i < sim_para.N_iter; i++)
+    for (size_t i = 0; i < sim_param.N_iter; i++)
     {
         heat_exchanged = true;
         _idx_pinch = -1;
@@ -365,8 +377,8 @@ void PCHE::simulate(const char * media_hot, const char * media_cold, BoundaryCon
         _cell_hot[0].h = _cp_props(_handle_cp_hot, _handle_H);
         _cell_cold[0].h = _cp_props(_handle_cp_cold, _handle_H);
 
-        cout<<endl<<"before "<< i<< " th trial:"<<endl;
-        _print_PCHE_state();
+        str_stream<<endl<<"before "<< i<< " th trial:"<<endl;
+        _print_PCHE_state(str_stream.str());
 
         for(int idx_cell = 0; idx_cell < _geo.N_seg; idx_cell ++)
             // heat_exchanged = this->calc_U(idx_cell, h_hot, h_cold, bc);
@@ -385,38 +397,46 @@ void PCHE::simulate(const char * media_hot, const char * media_cold, BoundaryCon
         // calculate delta T for next iteration
         // dT = bc.st_cold_in->T - _cell_cold[_idx_pinch].T;
         dT = bc.st_cold_in.T - _cell_cold_in()->T;
-        bool converged = the_same(_cell_cold_in()->T, bc.st_cold_in.T, sim_para.err, diff_per);
+        bool converged = the_same(_cell_cold_in()->T, bc.st_cold_in.T, sim_param.err, diff_per);
 
-        cout<<"after "<< i<< " th trial:"<<endl;
-        _print_PCHE_state();
+        str_stream.clear();
+        str_stream<<endl<<"after "<< i<< " th trial:"<<endl;
+        _print_PCHE_state(str_stream.str());
 
-        cout<<"-> T_{cold,out}="<<_cell_cold[0].T <<" K; ";
-        if(_idx_pinch > 0)
-            cout<<"T_{cold, pinch="<<_idx_pinch<<"}="<<_cell_cold[_idx_pinch].T<<" K; ";
-        else
-            cout<<"T_{cold,in}="<< _cell_cold_in()->T<<" K; ";
-        cout<<"diff(%)="<< diff_per<<"; next dT="<<dT<<" K "<<endl;
+        if(_can_log(log_level::DEBUG))
+        {
+            cout<<"-> T_{cold,out}="<<_cell_cold[0].T <<" K; ";
+            if(_idx_pinch > 0)
+                cout<<"T_{cold, pinch="<<_idx_pinch<<"}="<<_cell_cold[_idx_pinch].T<<" K; ";
+            else
+                cout<<"T_{cold,in}="<< _cell_cold_in()->T<<" K; ";
+            cout<<"diff(%)="<< diff_per<<"; next dT="<<dT<<" K "<<endl;
+        }
 
         if(converged)
             break;
-
         // update dt and T_cold_out accordingly, for next iteration
-        _cell_cold[0].T += dT * sim_para.step_rel;
+        _cell_cold[0].T += dT * sim_param.step_rel;
         _cell_cold[0].p = bc.st_cold_in.p;
-        // if(_cell_cold_in()->T > bc.st_cold_in->T)
-        //     _cell_cold[0].T -= dT;
-        // else
-        //     _cell_cold[0].T += dT;
     }
 
     // assign the simulation result as output
-
     for (size_t i = 0; i < sr.N_seg; i++)
     {
         sr.p_hot[i] = _cell_hot[i].p;
         sr.p_cold[i] = _cell_cold[i].p;
         sr.h_hot[i] = _cell_hot[i].h;
         sr.h_cold[i] = _cell_cold[i].h;
+    }
+
+    if(_can_log(log_level::INFO))
+    {
+        cout<<"simluation done with result:"<<endl;
+        
+        _cell_hot[0].print_state();
+        _cell_hot[sr.N_seg - 1].print_state();
+        _cell_cold[0].print_state();
+        _cell_cold[sr.N_seg - 1].print_state();
     }
 
     return;
@@ -461,6 +481,9 @@ const char * PCHE::_get_stream_name(long handle_stream)
 
 void PCHE::_print_boundary_conditions(BoundaryCondtion & bc)
 {
+    if(!_can_log(log_level::DEBUG))
+        return;
+
     cout<< "**** boundary condition ****"<<endl;
     cout<< "(p, T, h)_hot_in    = ("<<bc.st_hot_in.p<<", "<<bc.st_hot_in.T<<", "<<bc.st_hot_in.h<<");"<< endl;
     cout<< "(p, T, h)_cold_in   = ("<<bc.st_cold_in.p<<", "<<bc.st_cold_in.T<<", "<<bc.st_cold_in.h<<");"<< endl;
@@ -470,6 +493,9 @@ void PCHE::_print_boundary_conditions(BoundaryCondtion & bc)
 
 void PCHE::_print_geo_param(PCHE_GEO_PARAM & geo)
 {
+    if(!_can_log(log_level::DEBUG))
+        return;
+
     cout<< "**** PCHE's Geometry params ****"<<endl;
     cout<< "pitch       = "<<geo.pitch<<endl;
     cout<< "phi         = "<<geo.phi<<endl;
@@ -481,6 +507,9 @@ void PCHE::_print_geo_param(PCHE_GEO_PARAM & geo)
 
 void PCHE::_print_sim_param(SIM_PARAM & sim_param)
 {
+    if(!_can_log(log_level::DEBUG))
+        return;
+
     cout<< "**** simulation params ****"<<endl;
     cout<< "err       = "<<sim_param.err<<endl;
     cout<< "dT_init   = "<<sim_param.delta_T_init<<endl;
@@ -488,8 +517,13 @@ void PCHE::_print_sim_param(SIM_PARAM & sim_param)
     cout<< "step_rel  = "<<sim_param.step_rel<<endl;
 }
 
-void PCHE::_print_PCHE_state()
+void PCHE::_print_PCHE_state(std::string title)
 {
+    if(!_can_log(log_level::DEBUG))
+        return;
+
+    cout<<title.c_str();
+
     int idx_last = _geo.N_seg - 1;
     cout<< "**** state of four ports (p, T, h) ****"<<endl;
 
@@ -510,5 +544,11 @@ void PCHE::_print_PCHE_state()
 
 void PCHE::_print_cp_err(const char * info)
 {
-    cout<<info<<"(code=" << _err_code<<"): "<<_cp_err_buf<<endl;
+    if(_can_log(log_level::ERR))
+        cout<<info<<"(code=" << _err_code<<"): "<<_cp_err_buf<<endl;
+}
+
+bool PCHE::_can_log(int level)
+{
+    return level >= _log_level;
 }

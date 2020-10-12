@@ -32,7 +32,7 @@ equation
   
   T_output = max(T_input, T_inlet);
   
-  outlet.h_outflow =  PropsSI("H", "P", inlet.p, "T", T_input, PBMedia.mediumName);
+  outlet.h_outflow =  PropsSI("H", "P", inlet.p, "T", 730, PBMedia.mediumName);
   //outlet.T = medium_out.T;  
   outlet.p = inlet.p;  
   inlet.h_outflow = inStream(inlet.h_outflow);
