@@ -40,9 +40,9 @@ model TestPCHEMeshram
 
   parameter Integer N_seg = 100 "number of cells/segment for the discretization of a channel";
   
-  parameter Boolean SourceFixed_hot = false;
+  parameter Boolean SourceFixed_hot = true;
   
-  parameter Boolean SourceFixed_cold = false;
+  parameter Boolean SourceFixed_cold = true;
   
   Components.Source source_hot(
     p_outlet = p_hot_in,

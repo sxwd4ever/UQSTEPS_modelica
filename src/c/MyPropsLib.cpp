@@ -152,10 +152,10 @@ void CompleteThermoState(ThermoState * st, const char * media)
 double EXPORT_MY_CODE PCHE_OFFD_Simulation(const char * media_hot, const char * media_cold, PCHE_GEO_PARAM * geo, KIM_CORR_COE * cor, SIM_PARAM * sim_param, BoundaryCondtion * bc, double * h_hot, double * h_cold, double * p_hot, double * p_cold, size_t N_seg)
 {
     SimulationResult sr;
-    sr.h_hot = h_hot;
-    sr.h_cold = h_cold;
-    sr.p_hot = p_hot;    
-    sr.p_cold = p_cold;
+    sr.h_hot = new double[N_seg];
+    sr.h_cold = new double[N_seg];
+    sr.p_hot = new double[N_seg];
+    sr.p_cold = new double[N_seg];
     sr.N_seg = N_seg;
 
     PCHE * pche = new PCHE(*geo);
@@ -173,8 +173,24 @@ double EXPORT_MY_CODE PCHE_OFFD_Simulation(const char * media_hot, const char * 
     CompleteThermoState(& bc->st_cold_out, media_cold);
 
     pche->simulate(media_hot, media_cold, * bc, * sim_param, sr);
+    // size of returned array is fixed at 2. 
+    int last = N_seg - 1;
+
+    h_hot[0] = sr.h_hot[0];
+    h_hot[1] = sr.h_hot[last];
+    h_cold[0] = sr.h_cold[0];
+    h_cold[1] = sr.h_cold[last];
+
+    p_hot[0] = sr.p_hot[0];
+    p_hot[1] = sr.p_hot[last];
+    p_cold[0] = sr.p_cold[0];
+    p_cold[1] = sr.p_cold[last];
 
     delete pche;
+    delete [] sr.h_hot;
+    delete [] sr.h_cold;
+    delete [] sr.p_hot;
+    delete [] sr.p_cold;
 
 	return 0.0;
 }
@@ -193,13 +209,13 @@ void * EXPORT_MY_CODE init_PCHE_sim_ext_object(PCHE_GEO_PARAM * geo)
     return (void *) ext_obj;
 }
 
-void EXPORT_MY_CODE PCHE_simulate(SIM_PARAM * sim_para, BoundaryCondtion * bc, void * ext_obj)
+void EXPORT_MY_CODE PCHE_simulate(SIM_PARAM * sim_param, BoundaryCondtion * bc, void * ext_obj)
 {
     PCHE_SIM_EXT_OBJ * pche_ext_obj = (PCHE_SIM_EXT_OBJ *)ext_obj;
 
     std::tr1::shared_ptr<PCHE> & pche = handle_manager.get(pche_ext_obj->handle_pche);
     
-    // pche->simulate(*bc,*sim_para);
+    // pche->simulate(*bc,*sim_param);
 
     pche_ext_obj->st_cold_in.T = bc->st_cold_in.T + 123;
 }
@@ -214,13 +230,13 @@ void EXPORT_MY_CODE close_PCHE_sim_ext_object(void * ext_obj)
 }
 */
 
-void EXPORT_MY_CODE test_struct_param(SIM_PARAM * sim_para, PCHE_GEO_PARAM * geo, BoundaryCondtion * bc, double * h_hot, double * h_cold, double * p_hot, double * p_cold, size_t N_seg)
+void EXPORT_MY_CODE test_struct_param(SIM_PARAM * sim_param, PCHE_GEO_PARAM * geo, BoundaryCondtion * bc, double * h_hot, double * h_cold, double * p_hot, double * p_cold, size_t N_seg)
 {
-    // sim_para = new SIM_PARAM();
+    // sim_param = new SIM_PARAM();
 
-    sim_para->err = geo->pitch;
-    sim_para->step_rel = geo->phi + geo->length_cell;
-    sim_para->delta_T_init = 10.0;
+    sim_param->err = geo->pitch;
+    sim_param->step_rel = geo->phi + geo->length_cell;
+    sim_param->delta_T_init = 10.0;
 
     // st_result[1] = 11222;
 
@@ -236,7 +252,7 @@ void EXPORT_MY_CODE test_struct_param(SIM_PARAM * sim_para, PCHE_GEO_PARAM * geo
         p_cold[i] = i * 100 + 7;
     }    
 
-    // return sim_para;
+    // return sim_param;
 }
 
 void EXPORT_MY_CODE setState_C_impl(double p, double M,  State *state)
