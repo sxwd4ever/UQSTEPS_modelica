@@ -12,5 +12,9 @@ record SimParam
     // relative step length between two trial values of T_cold_out
     // T_cold_out[i] += step_rel * (T_bc_cold_in  - T_cold_in[i-1])
     Real step_rel;   
+    
+    // log level for output contorl 
+    // enum log_level {DEBUG = 0, INFO = 1, ERR = 2, SERVE = 3, OFF = 4};
+    Integer log_level;
   
 end SimParam;
