@@ -26,13 +26,13 @@
             "preLaunchTask": "C/C++: g++.exe build active file"
         },
         {
-            "name": "g++ Launch PCHE",
+            "name": "g++ Test PCHE",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/src/build/PCHE.exe",
+            "program": "${workspaceFolder}/src/c/build/TestPCHE.exe",
             "args": [],
             "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
+            "cwd": "${workspaceFolder}/src/c/build",
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
@@ -44,13 +44,14 @@
                     "ignoreFailures": true
                 }
             ],
-            "preLaunchTask": "C/C++: build PCHE"
+            "preLaunchTask": "C/C++: build TestPCHE"
         },
         {
             "name": "Python: TestPCHEMeshram",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/scripts/main.py",
+            "cwd": "${workspaceFolder}/src/python",
+            "program": "main.py",
             "console": "integratedTerminal",
             "python.terminal.activateEnvironment": true
         },
