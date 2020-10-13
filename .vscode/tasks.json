@@ -2,20 +2,20 @@
     // See https://go.microsoft.com/fwlink/?LinkId=733558
     // for the documentation about the tasks.json format
     "version": "2.0.0",
-    "tasks": [		
+    "tasks": [
 		{
 			"type": "shell",
 			"label": "C/C++: build CoolProp",
 			"command": "cmd.exe",
-			"linux":{
+			"linux": {
 				"command": "bash"
 			},
 			"args": [
 				"/c",
-				"buildCoolProp.bat"
+				"../scripts/buildCoolProp.bat"
 			],
 			"options": {
-				"cwd": "${workspaceFolder}/src"
+				"cwd": "${workspaceFolder}/src/c"
 			},
 			"group": "build",
 			"problemMatcher": [
@@ -28,43 +28,46 @@
 			"command": "cmd.exe",
 			"args": [
 				"/c",
-				"buildMyProps.bat"
+				"..\\scripts\\buildMyProps.bat"
 			],
 			"options": {
-				"cwd": "${workspaceFolder}/src"
+				"cwd": "${workspaceFolder}/src/c"
 			},
-			"group": "build",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
 			"problemMatcher": [
 				"$gcc"
 			]
 		},
 		{
 			"type": "shell",
-			"label": "C/C++: buildTest",
+			"label": "C/C++: build Test",
 			"command": "C:\\MinGW\\mingw64\\mingw64\\bin\\gcc.exe",
-			"args": [				
+			"args": [
 				"-std=c++11",
 				"-m64",
 				"-L../../lib",
-				"-I../",				
+				"-I../",
 				"-I../externals/CoolProp/include",
 				"-I../externals/CoolProp/externals/fmtlib",
 				"../main.cpp",
 				"-lMyProps",
-				"-lCoolProp"				
+				"-lCoolProp"
 			],
 			"options": {
-				"cwd": "${workspaceFolder}/src/build"
+				"cwd": "${workspaceFolder}/src/c/build"
 			},
 			"problemMatcher": [
 				"$gcc"
-			],
+			]
 		},
 		{
 			"type": "shell",
-			"label": "C/C++: buildTest_CMake",
+			"label": "C/C++: build Test_CMake",
 			"command": "cmake",
-			"args": [				
+			"args": [
 				"..",
 				"-G",
 				"MinGW Makefiles",
@@ -73,10 +76,10 @@
 				"-I../externals/CoolProp/externals/fmtlib",
 				"../main.cpp",
 				"-lCoolProp",
-				"../../lib/myProps.a"
+				"../../../lib/myProps.a"
 			],
 			"options": {
-				"cwd": "${workspaceFolder}/src/build"
+				"cwd": "${workspaceFolder}/src/c/build"
 			},
 			"problemMatcher": [
 				"$gcc"
@@ -85,24 +88,21 @@
 		},
 		{
 			"type": "shell",
-			"label": "C/C++: build PCHE",
+			"label": "C/C++: build TestPCHE",
 			"command": "cmd.exe",
 			"args": [
 				"/c",
-				"buildPCHE.bat"
+				"..\\scripts\\buildTestPCHE.bat"
 			],
-			"linux":{
+			"linux": {
 				"command": "bash",
-				"args": [				
+				"args": [
 					"buildPCHE.sh"
-				],
+				]
 			},
+			"group": "build",
 			"options": {
-				"cwd": "${workspaceFolder}/src"
-			},
-			"group": {
-				"kind": "build",
-				"isDefault": true
+				"cwd": "${workspaceFolder}/src/c"
 			},
 			"problemMatcher": [
 				"$gcc"
