@@ -1,0 +1,3 @@
+[submodule "src/c/externals/CoolProp"]
+	path = src/c/externals/CoolProp
+	url = https://github.com/CoolProp/CoolProp.git
