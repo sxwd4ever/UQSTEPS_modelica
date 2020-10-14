@@ -293,7 +293,36 @@ bool PCHE::_calc_U(int idx, BoundaryCondtion & bc)
     return heat_exchanged;
 }
 
-bool PCHE::simulate(const char * media_hot, const char * media_cold, BoundaryCondtion & bc, SIM_PARAM & sim_param, SimulationResult & sr)
+double PCHE::_cp_props(long handle_stream, long handle_prop, double def_value, double max, double min)
+{
+    _err_code = 0;
+
+    double prop = AbstractState_keyed_output(handle_stream, handle_prop, &_err_code, _cp_err_buf, _buffer_size);
+
+    if(_err_code != 0)
+    {
+        // handle the err
+        _print_cp_err("error in CoolProp");
+        prop = def_value;
+    }
+
+    return prop;
+}
+
+long PCHE::_cp_new_state(const char * medium)
+{
+    _err_code = 0;
+
+    long handle = AbstractState_factory("HEOS", medium, &_err_code, _cp_err_buf, _buffer_size);
+
+    if(_err_code != 0)
+        _print_cp_err("error in creating new state");
+
+    return handle;
+}
+
+void PCHE::simulate(const char * media_hot, const char * media_cold, BoundaryCondtion & bc, SIM_PARAM & sim_param, SimulationResult & sr)
+>>>>>>> master
 {
     std::ostringstream str_stream;
   

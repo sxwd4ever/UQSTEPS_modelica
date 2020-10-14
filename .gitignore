@@ -126,3 +126,7 @@ src/Modelica/Steps/Resources/Library/libCoolProp.a
 src/Modelica/Steps/Resources/Library/libCoolProp.dll
 src/Modelica/Steps/Resources/Library/win64/libCoolProp.a
 src/Modelica/Steps/Resources/Library/libCoolProp.dll
+src/Modelica/Steps/Resources/Library/bak/CoolProp.dll
+src/Modelica/Steps/Resources/Library/bak/libCoolProp.a
+src/Modelica/Steps/Resources/Library/bak/libCoolProp.dll
+
