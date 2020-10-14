@@ -51,7 +51,7 @@
             "type": "python",
             "request": "launch",
             "cwd": "${workspaceFolder}/src/python",
-            "program": "main.py",
+            "program": "${workspaceFolder}/scripts/main.py",
             "console": "integratedTerminal",
             "python.terminal.activateEnvironment": true
         },
