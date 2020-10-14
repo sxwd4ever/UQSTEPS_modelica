@@ -15,6 +15,12 @@ struct ThermoState
     double p;
     double h;
     double mdot;
+    // optional id, to specify which point this state is assigned to 
+    // because of the mapping constraintns of Modelica and external functions
+    // integer id is used instead of string(char *) name
+    // more detailed naming specificaiton should be provided
+    // hot_in=0, cold_in=1, hot_out=2, cold_out=3
+    int id = -1; 
 };
 
 /**
@@ -238,10 +244,10 @@ private:
     // index of the pinch point cell
     int _idx_pinch;
 
-    // system log level
-    int _log_level; 
+    const char * _name;
+    
 public:
-    PCHE(PCHE_GEO_PARAM & geo);
+    PCHE(const char * name, PCHE_GEO_PARAM & geo);
     ~PCHE();
 
     /**
@@ -249,9 +255,11 @@ public:
      */
     void set_kim_corr_coe(KIM_CORR_COE & coe);
 
-    void simulate(const char * media_hot, const char * media_cold, BoundaryCondtion & bc, SIM_PARAM & sim_param, SimulationResult & sr);
-
-
+    bool simulate(const char * media_hot, const char * media_cold, BoundaryCondtion & bc, SIM_PARAM & sim_param, SimulationResult & sr);
 };
+
+std::string new_state_string(ThermoState & st);
+
+std::string new_state_string(const char * name, ThermoState & st);
 
 #endif

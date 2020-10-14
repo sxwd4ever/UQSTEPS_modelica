@@ -2,11 +2,14 @@
 #include "PCHE.h"
 #include <iostream>
 #include <sstream>
+#include <exception>
 #include <math.h>
 #include "MyPropsLib.h"
 
 // using namespace CoolProp;
 using namespace std;
+
+static int g_log_level = log_level::OFF;
 
 PCHE_CELL::PCHE_CELL()
 {    
@@ -48,13 +51,13 @@ bool PCHE_CELL::validate()
 {
     bool valid = true;
 
-    if(p < 7.5e6 || p > 30e6 )
+    if(p < 7e6 || p > 30e6 )
         valid = false;
     
-    if(T < from_degC(30) || T > from_degC(1000))
+    if(T < from_degC(0) || T > from_degC(1200))
         valid = false;
 
-    if(h < 0 || h > 1e7)
+    if(h < 0 || h > 1e8)
         valid = false;
 
     return valid;
@@ -86,9 +89,9 @@ void PCHE_CELL::clone(PCHE_CELL * src)
     this->hc = src->hc;
 }
 
-PCHE::PCHE(PCHE_GEO_PARAM & geo)
+PCHE::PCHE(const char * name, PCHE_GEO_PARAM & geo)
 {
-    _log_level = log_level::INFO; 
+    _name = name;
  
     _cell_hot = NULL;
     _cell_cold = NULL;
@@ -264,13 +267,15 @@ bool PCHE::_calc_U(int idx, BoundaryCondtion & bc)
     }
     else
     {
+        const char * err = "!!! invalid cell state";
         if(_can_log(log_level::ERR))
         {
-            cout<<"!!! invalid cell state"<<endl;            
+            cout<<_name<<", "<< err<<endl;            
             c_h->print_state();
             c_c->print_state();
         }
-
+        throw std::out_of_range(err);
+        /*
         heat_exchanged = false;
         c_h->dp = 0;
         c_c->dp = 0;
@@ -282,62 +287,27 @@ bool PCHE::_calc_U(int idx, BoundaryCondtion & bc)
             _cell_cold[idx + 1].p = c_c->p;
             _cell_cold[idx + 1].h = c_c->h;
         }
+        */
     }
 
     return heat_exchanged;
 }
 
-void PCHE::_cp_state_update(long handle_stream, long handle_input, double val1, double val2)
-{
-    _err_code = 0;
-
-    AbstractState_update(handle_stream, handle_input, val1, val2,&_err_code, _cp_err_buf, _buffer_size);
-
-    if(_err_code != 0)
-        _print_cp_err("error in state update");
-}
-
-double PCHE::_cp_props(long handle_stream, long handle_prop, double def_value, double max, double min)
-{
-    _err_code = 0;
-
-    double prop = AbstractState_keyed_output(handle_stream, handle_prop, &_err_code, _cp_err_buf, _buffer_size);
-
-    if(_err_code != 0)
-    {
-        // handle the err
-        _print_cp_err("error in CoolProp");
-        prop = def_value;
-    }
-
-    return prop;
-}
-
-long PCHE::_cp_new_state(const char * medium)
-{
-    _err_code = 0;
-
-    long handle = AbstractState_factory("HEOS", medium, &_err_code, _cp_err_buf, _buffer_size);
-
-    if(_err_code != 0)
-        _print_cp_err("error in creating new state");
-
-    return handle;
-}
-
-void PCHE::simulate(const char * media_hot, const char * media_cold, BoundaryCondtion & bc, SIM_PARAM & sim_param, SimulationResult & sr)
+bool PCHE::simulate(const char * media_hot, const char * media_cold, BoundaryCondtion & bc, SIM_PARAM & sim_param, SimulationResult & sr)
 {
     std::ostringstream str_stream;
   
     std::string info;
 
-    _log_level = sim_param.log_level;
+    g_log_level = sim_param.log_level;
 
     _print_geo_param(_geo);
 
     _print_boundary_conditions(bc);
 
     _print_sim_param(sim_param);
+
+    bool converged = false;
     
     // cout<<"ready to start simulation"<<endl;
 
@@ -362,64 +332,97 @@ void PCHE::simulate(const char * media_hot, const char * media_cold, BoundaryCon
     //double h_hot, h_cold; // specific enthalpy for current hot/cold cell
     double diff_per = 0.0;
     bool heat_exchanged = true;
-
-    for (size_t i = 0; i < sim_param.N_iter; i++)
+    int idx_cell = 0;
+    try
     {
-        heat_exchanged = true;
-        _idx_pinch = -1;
-        diff_per = 0.0;
+        for (size_t i = 0; i < sim_param.N_iter; i++)
+        {
+            heat_exchanged = true;
+            _idx_pinch = -1;
+            diff_per = 0.0;
 
-        _cp_state_update(_handle_cp_hot, _handle_PT_INPUT, _cell_hot[0].p, _cell_hot[0].T);
-        _cp_state_update(_handle_cp_cold, _handle_PT_INPUT, _cell_cold[0].p, _cell_cold[0].T);
+            _cp_state_update(_handle_cp_hot, _handle_PT_INPUT, _cell_hot[0].p, _cell_hot[0].T);
+            _cp_state_update(_handle_cp_cold, _handle_PT_INPUT, _cell_cold[0].p, _cell_cold[0].T);
 
-        // h_hot = _cp_props(_handle_cp_hot, _handle_H);
-        // h_cold = _cp_props(_handle_cp_cold, _handle_H);
-        _cell_hot[0].h = _cp_props(_handle_cp_hot, _handle_H);
-        _cell_cold[0].h = _cp_props(_handle_cp_cold, _handle_H);
+            // h_hot = _cp_props(_handle_cp_hot, _handle_H);
+            // h_cold = _cp_props(_handle_cp_cold, _handle_H);
+            _cell_hot[0].h = _cp_props(_handle_cp_hot, _handle_H);
+            _cell_cold[0].h = _cp_props(_handle_cp_cold, _handle_H);
 
-        str_stream<<endl<<"before "<< i<< " th trial:"<<endl;
-        _print_PCHE_state(str_stream.str());
+            str_stream<<endl<<"before "<< i<< " th trial:"<<endl;
+            _print_PCHE_state(str_stream.str());
 
-        for(int idx_cell = 0; idx_cell < _geo.N_seg; idx_cell ++)
-            // heat_exchanged = this->calc_U(idx_cell, h_hot, h_cold, bc);
-            if(heat_exchanged)
-                // heat_exchanged = this->calc_U(idx_cell, h_hot, h_cold, bc);
-                heat_exchanged = this->_calc_U(idx_cell, bc);
-            else 
+            for(idx_cell = 0; idx_cell < _geo.N_seg; idx_cell ++)
             {
-                _cell_hot[idx_cell].clone(&_cell_hot[idx_cell - 1]);
-                _cell_cold[idx_cell].clone(&_cell_cold[idx_cell - 1]);
-                //skip the rest of the cells if no heat exchanged between cold and hot side
-                // T of rest cells remain 0 and the diff in T between bc.T_cold_in and last
-                // cold cell's T will drive next iteration
-                //break;
-            }
-        // calculate delta T for next iteration
-        // dT = bc.st_cold_in->T - _cell_cold[_idx_pinch].T;
-        dT = bc.st_cold_in.T - _cell_cold_in()->T;
-        bool converged = the_same(_cell_cold_in()->T, bc.st_cold_in.T, sim_param.err, diff_per);
+                heat_exchanged = this->_calc_U(idx_cell, bc);
+                if(!heat_exchanged)
+                    throw std::out_of_range("no heat exchanged");
 
-        str_stream.clear();
-        str_stream<<endl<<"after "<< i<< " th trial:"<<endl;
-        _print_PCHE_state(str_stream.str());
+                // if(heat_exchanged)
+                //     // heat_exchanged = this->calc_U(idx_cell, h_hot, h_cold, bc);
+                //     heat_exchanged = this->_calc_U(idx_cell, bc);
+                // else 
+                // {
+
+                //     //skip the rest of the cells if no heat exchanged between cold and hot side
+                //     // T of rest cells remain 0 and the diff in T between bc.T_cold_in and last
+                //     // cold cell's T will drive next iteration
+                //     //break;
+                // }
+            }
+            // calculate delta T for next iteration
+            // dT = bc.st_cold_in->T - _cell_cold[_idx_pinch].T;
+            dT = bc.st_cold_in.T - _cell_cold_in()->T;
+            converged = the_same(_cell_cold_in()->T, bc.st_cold_in.T, sim_param.err, diff_per);
+
+            str_stream.clear();
+            str_stream<<endl<<"after "<< i<< " th trial:"<<endl;
+            _print_PCHE_state(str_stream.str());
+
+            if(_can_log(log_level::DEBUG))
+            {
+                cout<<"-> T_{cold,out}="<<_cell_cold[0].T <<" K; ";
+                if(_idx_pinch > 0)
+                    cout<<"T_{cold, pinch="<<_idx_pinch<<"}="<<_cell_cold[_idx_pinch].T<<" K; ";
+                else
+                    cout<<"T_{cold,in}="<< _cell_cold_in()->T<<" K; ";
+                cout<<"diff(%)="<< diff_per<<"; next dT="<<dT<<" K "<<endl;
+            }
+
+            if(converged)
+                break;
+            // update dt and T_cold_out accordingly, for next iteration
+            _cell_cold[0].T += dT * sim_param.step_rel;
+            _cell_cold[0].p = bc.st_cold_in.p;
+        }
 
         if(_can_log(log_level::DEBUG))
         {
-            cout<<"-> T_{cold,out}="<<_cell_cold[0].T <<" K; ";
-            if(_idx_pinch > 0)
-                cout<<"T_{cold, pinch="<<_idx_pinch<<"}="<<_cell_cold[_idx_pinch].T<<" K; ";
-            else
-                cout<<"T_{cold,in}="<< _cell_cold_in()->T<<" K; ";
-            cout<<"diff(%)="<< diff_per<<"; next dT="<<dT<<" K "<<endl;
+            cout<<"simluation done with result:"<<endl;
+
+            _cell_hot[0].print_state();
+            _cell_hot[sr.N_seg - 1].print_state();
+            _cell_cold[0].print_state();
+            _cell_cold[sr.N_seg - 1].print_state();
+        }
+        
+    }
+    catch(const std::exception& e)
+    {
+        converged = true;
+
+        if(_can_log(log_level::DEBUG))
+            cout<< "clone cell state from " <<idx_cell<<endl;
+
+        for (size_t i = idx_cell; i < _geo.N_seg; i++)
+        {
+            _cell_hot[idx_cell].clone(&_cell_hot[idx_cell - 1]);
+            _cell_cold[idx_cell].clone(&_cell_cold[idx_cell - 1]);
         }
 
-        if(converged)
-            break;
-        // update dt and T_cold_out accordingly, for next iteration
-        _cell_cold[0].T += dT * sim_param.step_rel;
-        _cell_cold[0].p = bc.st_cold_in.p;
+        //std::cerr << e.what() << '\n';
     }
-
+    
     // assign the simulation result as output
     for (size_t i = 0; i < sr.N_seg; i++)
     {
@@ -429,17 +432,52 @@ void PCHE::simulate(const char * media_hot, const char * media_cold, BoundaryCon
         sr.h_cold[i] = _cell_cold[i].h;
     }
 
-    if(_can_log(log_level::INFO))
+    return converged;
+}
+
+
+void PCHE::_cp_state_update(long handle_stream, long handle_input, double val1, double val2)
+{
+    _err_code = 0;
+
+    AbstractState_update(handle_stream, handle_input, val1, val2,&_err_code, _cp_err_buf, _buffer_size);
+
+    if(_err_code != 0)
     {
-        cout<<"simluation done with result:"<<endl;
-        
-        _cell_hot[0].print_state();
-        _cell_hot[sr.N_seg - 1].print_state();
-        _cell_cold[0].print_state();
-        _cell_cold[sr.N_seg - 1].print_state();
+        const char * err = "error in state update";
+        _print_cp_err(err);
+        throw std::out_of_range(err);
+    }
+}
+
+double PCHE::_cp_props(long handle_stream, long handle_prop, double def_value, double max, double min)
+{
+    _err_code = 0;
+
+    double prop = AbstractState_keyed_output(handle_stream, handle_prop, &_err_code, _cp_err_buf, _buffer_size);
+
+    if(_err_code != 0)
+    {
+        // handle the err
+        const char * err = "error in CoolProp's PropsSI";
+        _print_cp_err(err);
+        prop = def_value;
+        throw std::out_of_range(err);
     }
 
-    return;
+    return prop;
+}
+
+long PCHE::_cp_new_state(const char * medium)
+{
+    _err_code = 0;
+
+    long handle = AbstractState_factory("HEOS", medium, &_err_code, _cp_err_buf, _buffer_size);
+
+    if(_err_code != 0)
+        _print_cp_err("error in creating new state");
+
+    return handle;
 }
 
 PCHE_CELL * PCHE::_cell_cold_in()
@@ -479,16 +517,41 @@ const char * PCHE::_get_stream_name(long handle_stream)
     return name;
 }
 
+std::string new_state_string(ThermoState & st)
+{
+    const char * name;
+    // hot_in=0, cold_in=1, hot_out=2, cold_out=3
+    if(st.id == 0 )
+        name = "hot_in";
+    else if(st.id == 1)
+        name = "cold_in";
+    else if(st.id == 2)
+        name = "hot_out";
+    else if(st.id == 3)
+        name = "cold_out";
+    else
+        name = "untitled";
+    
+    return new_state_string(name, st);
+}
+
+std::string new_state_string(const char * name, ThermoState & st)
+{
+    std::ostringstream str_stream;
+    str_stream<< "(p, T, h, mdot)_"<<name<<" = ("<<st.p<<", "<<st.T<<", "<<st.h<<", "<<st.mdot<<");"<< endl;
+    return str_stream.str();
+}
+
 void PCHE::_print_boundary_conditions(BoundaryCondtion & bc)
 {
     if(!_can_log(log_level::DEBUG))
         return;
 
     cout<< "**** boundary condition ****"<<endl;
-    cout<< "(p, T, h)_hot_in    = ("<<bc.st_hot_in.p<<", "<<bc.st_hot_in.T<<", "<<bc.st_hot_in.h<<");"<< endl;
-    cout<< "(p, T, h)_cold_in   = ("<<bc.st_cold_in.p<<", "<<bc.st_cold_in.T<<", "<<bc.st_cold_in.h<<");"<< endl;
-    cout<< "(p, T, h)_hot_out   = ("<<bc.st_hot_out.p<<", "<<bc.st_hot_out.T<<", "<<bc.st_hot_out.h<<");"<< endl;
-    cout<< "(p, T, h)_cold_out  = ("<<bc.st_cold_out.p<<", "<<bc.st_cold_out.T<<", "<<bc.st_cold_out.h<<");"<< endl;
+    cout<< new_state_string(bc.st_hot_in);
+    cout<< new_state_string(bc.st_cold_in);
+    cout<< new_state_string(bc.st_hot_out);
+    cout<< new_state_string(bc.st_cold_out);
 }
 
 void PCHE::_print_geo_param(PCHE_GEO_PARAM & geo)
@@ -515,6 +578,7 @@ void PCHE::_print_sim_param(SIM_PARAM & sim_param)
     cout<< "dT_init   = "<<sim_param.delta_T_init<<endl;
     cout<< "N_iter    = "<<sim_param.N_iter<<endl;
     cout<< "step_rel  = "<<sim_param.step_rel<<endl;
+    cout<< "log_level = "<<sim_param.log_level<<endl;
 }
 
 void PCHE::_print_PCHE_state(std::string title)
@@ -525,7 +589,7 @@ void PCHE::_print_PCHE_state(std::string title)
     cout<<title.c_str();
 
     int idx_last = _geo.N_seg - 1;
-    cout<< "**** state of four ports (p, T, h) ****"<<endl;
+    cout<< "**** "<< _name <<"'s state of four ports (p, T, h) ****"<<endl;
 
     cout<< "st_hot_in      = ";
     _cell_hot[0].print_state();
@@ -550,5 +614,5 @@ void PCHE::_print_cp_err(const char * info)
 
 bool PCHE::_can_log(int level)
 {
-    return level >= _log_level;
+    return level >= g_log_level;
 }

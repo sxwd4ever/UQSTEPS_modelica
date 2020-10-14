@@ -50,14 +50,14 @@ model TestPCHECImpl
   
   Components.Source source_hot(
     p_outlet = p_hot_in,
-    T_outlet = T_hot_in,
+    T_outlet = T_hot_in + 10,
     mdot_init = mdot_hot,
     fix_state = SourceFixed_hot
   );
 
   Components.Source source_cold(
     p_outlet = p_cold_in,
-    T_outlet = T_cold_in,
+    T_outlet = T_cold_in - 10,
     mdot_init = mdot_cold,
     fix_state = SourceFixed_cold // True if set its state as boundary condition
   );

@@ -12,13 +12,17 @@ SET MODELICA_INCLUDE=..\Modelica\Steps\Resources\Include
 
 SET MODELICA_LIBRARY=..\Modelica\Steps\Resources\Library
 
-SET MODELICA_TEST=C:\Users\uqxsui\AppData\Local\Temp\OpenModelica\OMEdit\Steps.Utilities.CoolProp
+SET MODELICA_WS=C:\Users\uqxsui\AppData\Local\Temp\OpenModelica\OMEdit\Steps.Cycle.OffDesignRCBCycle_v2
+
+ECHO OFF
 
 REM build
 
 REM generate dynamic lib
 
 REM libCoolProp.a (static library) should be exsits current directory
+
+ECHO ON
 
 g++ -g -ggdb -c ../MyPropsLib.cpp ../PCHE.cpp -m64 -DBUILDING_DLL -DWITH_SHARED_LIB_WRAPPER -DSHARED_PTR_TR1_NAMESPACE -DSHARED_PTR_TR1_MEMORY_HEADER -I%INCLUDE_COOLPROP% -I%INCLUDE_FMT_LIB%
 
@@ -36,4 +40,4 @@ copy PCHE.h %MODELICA_INCLUDE%
 
 copy build\%TARGET_LIB% %MODELICA_LIBRARY%
 
-copy build\%TARGET_LIB% "%MODELICA_TEST%"
+copy build\%TARGET_LIB% "%MODELICA_WS%"

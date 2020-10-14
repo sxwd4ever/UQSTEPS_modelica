@@ -17,14 +17,16 @@ model PCHECImpl
   replaceable Steps.Interfaces.PBFluidPort_b outlet_cold(redeclare package Medium = PBMedia, p(start= p_start_cold), h_outflow(start = h_start_cold)) "Recuperator outlet";
 */
   
-  replaceable Steps.Interfaces.PBFluidPort_a inlet_hot(redeclare package Medium = PBMedia, p(start = bc_hot_in.p, nominal= bc_hot_in.p), h_outflow(start = bc_hot_in.h, nominal=bc_hot_in.h)) "Inlet port, previous component";
+  replaceable Steps.Interfaces.PBFluidPort_a inlet_hot(redeclare package Medium = PBMedia); //, p(start = bc_hot_in.p, nominal= bc_hot_in.p), h_outflow(start = bc_hot_in.h, nominal=bc_hot_in.h)) "Inlet port, previous component";
   replaceable Steps.Interfaces.PBFluidPort_b outlet_hot(redeclare package Medium = PBMedia) "Outlet port, next component";
-  replaceable Steps.Interfaces.PBFluidPort_a inlet_cold(redeclare package Medium = PBMedia, p(start = bc_cold_in.p, nominal= bc_cold_in.p), h_outflow(start = bc_cold_in.h, nominal=bc_cold_in.h)) "Recuperator inlet";
+  replaceable Steps.Interfaces.PBFluidPort_a inlet_cold(redeclare package Medium = PBMedia); //, p(start = bc_cold_in.p, nominal= bc_cold_in.p), h_outflow(start = bc_cold_in.h, nominal=bc_cold_in.h)) "Recuperator inlet";
   replaceable Steps.Interfaces.PBFluidPort_b outlet_cold(redeclare package Medium = PBMedia) "Recuperator outlet";  
 
   replaceable package PBMedia = Steps.Media.SCO2; 
   
   parameter String name_material = "inconel 750";    
+  
+  parameter String name = "PCHE";
   
   MaterialConductivity mc(name_material = name_material);
   // On design parameters
@@ -51,16 +53,16 @@ model PCHECImpl
   PCHEGeoParam geo(pitch = pitch, phi = phi, length_cell = length_cell, d_c = d_c,
   N_ch = N_ch, N_seg = N_seg);
   
-  SimParam sim_param(err=1e-2, delta_T_init = 5, N_iter = 100, step_rel=0.3, log_level = 1);
+  SimParam sim_param(err=1e-2, delta_T_init = 5, N_iter = 10, step_rel=0.3, log_level = 1);
   
   // only (p, h, mdot) of the hot/cold inlet matters
   BoundaryCondition bc(
-  st_hot_in(T = 0, p = inlet_hot.p, h = inlet_hot.h_outflow, mdot = inlet_hot.m_flow), 
+  st_hot_in(T = 0, id = 0), 
   // st_hot_in(T = 0, p = bc_hot_in.p, h = bc_hot_in.h, mdot = inlet_hot.m_flow), 
-  st_cold_in(T = 0, p = inlet_cold.p, h = inlet_cold.h_outflow, mdot = inlet_cold.m_flow), 
+  st_cold_in(T = 0, id = 1), 
   //st_cold_in(T = 0, p = bc_cold_in.p, h = bc_cold_in.h, mdot = inlet_cold.m_flow), 
-  st_hot_out(T = 0, p = 0, h = 0, mdot = inlet_hot.m_flow),  
-  st_cold_out(T = 0, p = 0, h = 0, mdot = inlet_cold.m_flow));   
+  st_hot_out(T = 0, p = 0, h = 0, mdot = 0, id = 2),  
+  st_cold_out(T = 0,p = 0, h = 0, mdot = 0, id = 3));   
   
   Real h_hot[2];
   Real h_cold[2];
@@ -84,10 +86,56 @@ model PCHECImpl
   inner Modelica.SIunits.Area A_flow = N_ch * A_c "Flow area for all channels";  
  
   Modelica.SIunits.Length length_ch = length_cell * N_seg "length of one pipe in HeatExchanger unit m";   
+/*
+algorithm
+  if initial() then  
+    bc.st_hot_in.p := bc_hot_in.p;
+    bc.st_hot_in.h := bc_hot_in.h;
+    bc.st_hot_in.mdot := bc_hot_in.mdot;
+    
+    bc.st_cold_in.p := bc_cold_in.p;
+    bc.st_cold_in.h := bc_cold_in.h;
+    bc.st_cold_in.mdot := bc_cold_in.mdot;
+  else
+    bc.st_hot_in.p := inlet_hot.p;
+    bc.st_hot_in.h := inlet_hot.h_outflow;
+    bc.st_hot_in.mdot := inlet_hot.m_flow;
+    
+    bc.st_cold_in.p := inlet_cold.p;
+    bc.st_cold_in.h := inlet_cold.h_outflow;
+    bc.st_cold_in.mdot := inlet_cold.m_flow;  
+  end if;
+*/
 
 equation   
+  /*
+  if initial() then  
+    bc.st_hot_in.p = bc_hot_in.p;
+    bc.st_hot_in.h = bc_hot_in.h;
+    bc.st_hot_in.mdot = bc_hot_in.mdot;
+    
+    bc.st_cold_in.p = bc_cold_in.p;
+    bc.st_cold_in.h = bc_cold_in.h;
+    bc.st_cold_in.mdot = bc_cold_in.mdot;
+  else
+    bc.st_hot_in.p = inlet_hot.p;
+    bc.st_hot_in.h = inlet_hot.h_outflow;
+    bc.st_hot_in.mdot = inlet_hot.m_flow;
+    
+    bc.st_cold_in.p = inlet_cold.p;
+    bc.st_cold_in.h = inlet_cold.h_outflow;
+    bc.st_cold_in.mdot = inlet_cold.m_flow;  
+  end if;
+  */ 
+  bc.st_hot_in.p = inlet_hot.p;
+  bc.st_hot_in.h = inlet_hot.h_outflow;
+  bc.st_hot_in.mdot = inlet_hot.m_flow;
   
-  (h_hot, h_cold, p_hot, p_cold) = CP.PCHE_OFFD_Simulation("CO2", "CO2", geo, cor, sim_param, bc, geo.N_seg);
+  bc.st_cold_in.p = inlet_cold.p;
+  bc.st_cold_in.h = inlet_cold.h_outflow;
+  bc.st_cold_in.mdot = inlet_cold.m_flow;  
+   
+  (h_hot, h_cold, p_hot, p_cold) = CP.PCHE_OFFD_Simulation(name, "CO2", "CO2", geo, cor, sim_param, bc);
 
   inlet_hot.m_flow + outlet_hot.m_flow = 0;
 
@@ -100,10 +148,10 @@ equation
 
 // algorithm
   
-  outlet_hot.h_outflow = h_hot[1];
-  outlet_hot.p = p_hot[1];
+  outlet_hot.h_outflow = h_hot[2];
+  outlet_hot.p = p_hot[2];
   
-  outlet_cold.h_outflow = h_cold[0];
-  outlet_cold.p = p_cold[0];
+  outlet_cold.h_outflow = h_cold[1];
+  outlet_cold.p = p_cold[1];
   
 end PCHECImpl;

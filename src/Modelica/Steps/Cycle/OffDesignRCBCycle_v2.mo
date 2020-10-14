@@ -14,18 +14,22 @@ model OffDesignRCBCycle_v2
   
   parameter Modelica.SIunits.Time stop_time = 1.0 "time length of the experiment";
   
-  parameter Real M_CO2 = 100;    //# Co2 flow rate, kg/s
+  parameter Real M_CO2 = 15;    //# Co2 flow rate, kg/s
   parameter Modelica.SIunits.Pressure P_PUMP_I = 8.0 * 1e6 ; //# Pa
-  parameter Modelica.SIunits.Pressure P_PUMP_E = 20.0 * 1e6;    //# Pump exit pressure, Pa
-  parameter Modelica.SIunits.Pressure P_TURBINE_E = P_PUMP_I;
-  
   parameter Modelica.SIunits.SpecificEnthalpy H_PUMP_I = PropsSI("H", "T", T_AMB, "P", P_PUMP_I, PBMedia.mediumName); 
+  
+  
+  parameter Modelica.SIunits.Pressure P_PUMP_E = 20.0 * 1e6;    //# Pump exit pressure, Pa
   parameter Modelica.SIunits.SpecificEnthalpy H_PUMP_E = PropsSI("H", "T", T_AMB, "P", P_PUMP_E, PBMedia.mediumName); 
+  
+  
+  parameter Modelica.SIunits.Temp_K T_HEATER_E = from_degC(730);
+  
   parameter Modelica.SIunits.SpecificEnthalpy H_TURBINE_I = PropsSI("H", "T", T_HEATER_E, "P", P_PUMP_E, PBMedia.mediumName);  
   
-  parameter Modelica.SIunits.SpecificEnthalpy H_TURBINE_E = PropsSI("H", "T", from_degC(578), "P", P_TURBINE_E, PBMedia.mediumName);  
-  
-  parameter Modelica.SIunits.Temp_K T_HEATER_E = from_degC(700);
+  parameter Modelica.SIunits.Pressure P_TURBINE_E = P_PUMP_I;  
+  parameter Modelica.SIunits.Temperature T_TURBINE_E = from_degC(578) "Ambinent temperature";
+  parameter Modelica.SIunits.SpecificEnthalpy H_TURBINE_E = PropsSI("H", "T", T_TURBINE_E, "P", P_TURBINE_E, PBMedia.mediumName);  
   
   parameter Real dT_pcm = 10.0;  
   
@@ -68,70 +72,104 @@ model OffDesignRCBCycle_v2
   
   parameter Boolean SourceFixed_cold = true;  
   /*
-  Steps.Components.Regulator regulator(
+  Steps.Components.Regulator regulator_HTR_hot(
+    T_init = from_degC(578),
+    p_init = P_TURBINE_E,   
+    m_flow_init = M_CO2
+  );
+  
+  Steps.Components.Regulator regulator_HTR_cold(
     T_init = T_AMB,
     p_init = P_PUMP_E,   
-    m_flow_init = M_CO2,
-    inlet.p(start = P_PUMP_E),
-    inlet.h_outflow(start = H_TURBINE_I),
-    outlet.p(start = P_PUMP_E),
-    outlet.h_outflow(start = H_TURBINE_I)
+    m_flow_init = M_CO2
   );
-  */
+  
+  Steps.Components.Regulator regulator_LTR_hot(
+    T_init = from_degC(578),
+    p_init = P_TURBINE_E,   
+    m_flow_init = M_CO2
+  );
+  
+  Steps.Components.Regulator regulator_LTR_cold(
+    T_init = T_AMB,
+    p_init = P_PUMP_E,   
+    m_flow_init = M_CO2
+  );*/
+  
   Steps.Components.FanCooler fan_cooler(
     T_amb = T_AMB,
-    delta_T = DT_COOLER,
+    delta_T = DT_COOLER/*,
+    
+    init_inlet = true,
+    p_init_inlet = P_PUMP_I,
+    T_init_inlet = T_AMB
+    
     outlet.p(start = P_PUMP_I),
     outlet.h_outflow(start = H_PUMP_I),
     inlet.p(start = P_PUMP_I),
     inlet.h_outflow(start = H_PUMP_I)
+    */
   );
   
   // use pump as compressor
   Steps.Components.Pump pump(
     p_outlet = P_PUMP_E, 
     eta = eta_main_compressor,
+    outlet.p(start = P_PUMP_E),
+    outlet.h_outflow(start = H_PUMP_E)/*,
     inlet.p(start = P_PUMP_I),
     inlet.h_outflow(start = H_PUMP_I),
-    outlet.p(start = P_PUMP_E),
-    outlet.h_outflow(start = H_PUMP_E)    
+*/
   );   
   
   Steps.Components.Pump recom_pump(
     p_outlet = P_PUMP_E, 
-    eta = eta_bypass_compressor,
+    eta = eta_bypass_compressor/*,
     inlet.p(start = P_PUMP_I),
     inlet.h_outflow(start = H_PUMP_I),
     outlet.p(start = P_PUMP_E),
-    outlet.h_outflow(start = H_PUMP_E)      
+    outlet.h_outflow(start = H_PUMP_E)*/
   );
   
-  Components.PCHECImpl recup_high(
+  Components.PCHECImpl HTR(
+    name = "HTR", 
     phi = phi, 
     d_c = d_c,
     pitch = pitch,     
     N_ch = N_ch,    
     N_seg = N_seg,
-    length_cell = length_cell,  
+    length_cell = length_cell,
+    sim_param(log_level = 4),
+    /*
+    inlet_hot.p(nominal = P_TURBINE_E),
+    inlet_hot.h_outflow(nominal = PropsSI("H", "T", from_degC(578), "P", P_TURBINE_E, PBMedia.mediumName)),
+    inlet_hot.mdot(nominal = M_CO2),
+    
+    inlet_cold.p(nominal = P_PUMP_E),
+    inlet_cold.h_outflow(nominal = PropsSI("H", "T", from_degC(151), "P", P_PUMP_E, PBMedia.mediumName)),
+    inlet_cold.mdot(nominal = M_CO2)     
+    */
     
     bc_hot_in(p = P_TURBINE_E, T = from_degC(578), h = PropsSI("H", "T", from_degC(578), "P", P_TURBINE_E, PBMedia.mediumName), mdot = M_CO2),    
-    bc_cold_in(p = P_PUMP_E, T = from_degC(151), h = PropsSI("H", "T", from_degC(151), "P", P_PUMP_E, PBMedia.mediumName), mdot = M_CO2),
-    
-    sim_param(log_level = 0)
+    bc_cold_in(p = P_PUMP_E, T = from_degC(151), h = PropsSI("H", "T", from_degC(151), "P", P_PUMP_E, PBMedia.mediumName), mdot = M_CO2)   
         
   );
   
-  Components.PCHECImpl recup_low(
+  Components.PCHECImpl LTR(
+    name = "LTR", 
     phi = phi, 
     d_c = d_c,
     pitch = pitch,     
     N_ch = N_ch,    
     N_seg = N_seg,
-    length_cell = length_cell,    
+    length_cell = length_cell,
+    sim_param(log_level = 0),
+    
+    inlet_hot.p(start = P_TURBINE_E),
+    inlet_hot.h_outflow(start = PropsSI("H", "T", from_degC(578), "P", P_TURBINE_E, PBMedia.mediumName)),   
     
     bc_hot_in(p = P_TURBINE_E, T = from_degC(156), h = PropsSI("H", "T", from_degC(156), "P", P_TURBINE_E, PBMedia.mediumName), mdot = M_CO2),    
-    bc_cold_in(p = P_PUMP_E, T = from_degC(62), h = PropsSI("H", "T", from_degC(62), "P", P_PUMP_E, PBMedia.mediumName), mdot = M_CO2)    
-
+    bc_cold_in(p = P_PUMP_E, T = from_degC(62), h = PropsSI("H", "T", from_degC(62), "P", P_PUMP_E, PBMedia.mediumName), mdot = M_CO2)
   );
 
   Steps.Components.TemperatureOutput temp_out(
@@ -143,41 +181,48 @@ model OffDesignRCBCycle_v2
   
   Steps.Components.PCMHeater pcm_heater(
     mdot_init = M_CO2,
-    T_input = T_HEATER_E,
+    T_input = T_HEATER_E/*,
+    
+    init_outlet = true,
+    p_init_outlet = P_PUMP_E,
+    T_init_outlet = T_AMB
+    
+    
     inlet.p(start = P_PUMP_E),
     inlet.h_outflow(start = H_PUMP_E),
     outlet.p(start = P_PUMP_E),
     outlet.h_outflow(start = H_TURBINE_I)    
+    */
   );  
    
   Steps.Components.Turbine turbine(    
     p_out = P_TURBINE_E,
-    eta = eta_turbine,
+    eta = eta_turbine/*, 
     inlet.p(start = P_PUMP_E, nominal = P_PUMP_E),
-    inlet.h_outflow(start = H_TURBINE_I, nominal = H_TURBINE_I),
+    inlet.h_outflow(start = H_TURBINE_I, nominal = H_TURBINE_I)*/,
     outlet.p(start = P_TURBINE_E, nominal = P_TURBINE_E),
     outlet.h_outflow(start = H_TURBINE_E, nominal = H_TURBINE_E)    
   ); 
   
   Steps.Components.Splitter splitter(
-    split_ratio = splitter_split_ratio,
+    split_ratio = splitter_split_ratio/*,
     outlet.p(start = P_PUMP_I),
     outlet.h_outflow(start = H_PUMP_I),
     inlet.p(start = P_PUMP_I),
     inlet.h_outflow(start = H_PUMP_I),
     outlet_split.p(start = P_PUMP_I),
-    outlet_split.h_outflow(start = H_PUMP_I)
+    outlet_split.h_outflow(start = H_PUMP_I)*/
   );
   
   Steps.Components.Merger merger(
     T_init = T_AMB,
     p_init = P_ATM,
+    outlet.p(start = P_PUMP_E),
+    outlet.h_outflow(start = H_PUMP_E)/*,
     inlet.p(start = P_PUMP_E),
     inlet.h_outflow(start = H_PUMP_E),    
-    outlet.p(start = P_PUMP_E),
-    outlet.h_outflow(start = H_PUMP_E),
     inlet_merge.p(start = P_PUMP_E),
-    inlet_merge.h_outflow(start = H_PUMP_E)
+    inlet_merge.h_outflow(start = H_PUMP_E)*/
   );
   
   //total efficiency
@@ -188,11 +233,16 @@ equation
   
   // connect(regulator.outlet, turbine.inlet);
   
-  connect(turbine.outlet, recup_high.inlet_hot);
+  connect(turbine.outlet, HTR.inlet_hot);
   
-  connect(recup_high.outlet_hot, recup_low.inlet_hot); 
+  // connect(turbine.outlet, regulator_HTR_hot.inlet);  
+  // connect(regulator_HTR_hot.outlet, HTR.inlet_hot);
+  
+  connect(HTR.outlet_hot,LTR.inlet_hot);
+  // connect(HTR.outlet_hot,regulator_LTR_hot.inlet);
+  // connect(regulator_LTR_hot.outlet, LTR.inlet_hot); 
  
-  connect(recup_low.outlet_hot, splitter.inlet);
+  connect(LTR.outlet_hot, splitter.inlet);
   //recompression loop
   connect(splitter.outlet_split, recom_pump.inlet);
   connect(recom_pump.outlet, merger.inlet_merge);  
@@ -201,13 +251,21 @@ equation
   
   connect(fan_cooler.outlet, pump.inlet);
   
-  connect(pump.outlet, recup_low.inlet_cold);  
+  connect(pump.outlet, LTR.inlet_cold);  
+  
+  // connect(pump.outlet, regulator_LTR_cold.inlet);  
+  
+  // connect(regulator_LTR_cold.outlet, LTR.inlet_cold);  
    
-  connect(recup_low.outlet_cold, merger.inlet);
+  connect(LTR.outlet_cold, merger.inlet);
   
-  connect(merger.outlet, recup_high.inlet_cold);
+  connect(merger.outlet, HTR.inlet_cold);
   
-  connect(recup_high.outlet_cold, pcm_heater.inlet);    
+  // connect(merger.outlet, regulator_HTR_cold.inlet);
+  
+  // connect(regulator_HTR_cold.outlet, HTR.inlet_cold);
+  
+  connect(HTR.outlet_cold, pcm_heater.inlet);    
   
   //connect(temp_out.y, pcm_heater.T_input);
   // connect(pcm_heater.outlet, regulator.inlet);

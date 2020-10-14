@@ -52,9 +52,11 @@ model CoolProp
 
   end MyPropsSI_pT;    
 /*
- * PCHE_OFFD_Simulation(const char * media_hot, const char * media_cold, PCHE_GEO_PARAM * geo, KIM_CORR_COE * cor, SIM_PARAM * sim_param, BoundaryCondtion * bc, double * h_hot, double * h_cold, double * p_hot, double * p_cold, size_t N_seg)
+ * PCHE_OFFD_Simulation(const char * name, const char * media_hot, const char * media_cold, PCHE_GEO_PARAM * geo, KIM_CORR_COE * cor, SIM_PARAM * sim_param, BoundaryCondtion * bc, double * h_hot, double * h_cold, double * p_hot, double * p_cold, size_t N_seg)
  */
 function PCHE_OFFD_Simulation "test for transferring c struct as input/output parameter"
+    
+    input String pche_name;
     
     input String media_hot;
     
@@ -68,8 +70,6 @@ function PCHE_OFFD_Simulation "test for transferring c struct as input/output pa
     
     input BoundaryCondition bc;
     
-    input Integer N_seg;       
-    
     output Real h_hot[2];
     output Real h_cold[2];
     output Real p_hot[2];
@@ -82,7 +82,7 @@ function PCHE_OFFD_Simulation "test for transferring c struct as input/output pa
 
     // output Real st[10]; 
     
-    external "C" PCHE_OFFD_Simulation(media_hot, media_cold, geo, cor, sim_param, bc, h_hot, h_cold, p_hot, p_cold, N_seg);
+    external "C" PCHE_OFFD_Simulation(pche_name, media_hot, media_cold, geo, cor, sim_param, bc, h_hot, h_cold, p_hot, p_cold);
     
     annotation(Library={"MyProps"}, LibraryDirectory="modelica://Steps/Resources/Library");
     
@@ -98,9 +98,7 @@ double EXPORT_MY_CODE test_struct_param(SIM_PARAM * sim_para, PCHE_GEO_PARAM * g
     
     input PCHEGeoParam geo;
     
-    input BoundaryCondition bc;
-    
-    input Integer N_seg;       
+    input BoundaryCondition bc;      
     
     output Real h_hot[2];
     output Real h_cold[2];
@@ -114,7 +112,7 @@ double EXPORT_MY_CODE test_struct_param(SIM_PARAM * sim_para, PCHE_GEO_PARAM * g
 
     // output Real st[10]; 
     
-    external "C" test_struct_param(sim_param, geo, bc, h_hot, h_cold, p_hot, p_cold, N_seg);
+    external "C" test_struct_param(sim_param, geo, bc, h_hot, h_cold, p_hot, p_cold);
     
     annotation(Library={"MyProps"}, LibraryDirectory="modelica://Steps/Resources/Library");
     
@@ -160,7 +158,7 @@ equation
   // (h_hot, h_cold, p_hot, p_cold) = TestStructParam(sim_param, geo, bc, geo.N_seg);
 
   
-  (h_hot, h_cold, p_hot, p_cold) = PCHE_OFFD_Simulation("CO2", "CO2", geo, cor, sim_param, bc, geo.N_seg);
+  (h_hot, h_cold, p_hot, p_cold) = PCHE_OFFD_Simulation("CoolPCHE", "CO2", "CO2", geo, cor, sim_param, bc);
   // state = setState(p);
   state = setState(p,M);
   

@@ -5,6 +5,7 @@
 #include "PCHE.h"
 #include <math.h>
 #include <exception>
+#include <sstream>
 
 // #include <string>
 // #include "crossplatform_shared_ptr.h"
@@ -12,6 +13,8 @@
 // #include "example_dll.h"
 
 using namespace CoolProp;
+
+static int log_level = log_level::OFF;
 
 class PCHELibrary{
 private:
@@ -144,13 +147,44 @@ void CompleteThermoState(ThermoState * st, const char * media)
         st->T = PropsSI("T", "P", st->p, "H", st->h, media);
     else if(st->h == 0)
         st->h = PropsSI("H", "P", st->p, "T", st->T, media);
+
+    // modelica may transfer negetive mass flow rate - correct it here
+    if(st->mdot < 0)
+        st->mdot = -st->mdot;
+
+    if(log_level == log_level::DEBUG)
+        cout<<new_state_string(*st);
 }
 
+std::string new_state_string(double p, double h)
+{
+    std::ostringstream str_stream;
+    str_stream<<"(p, h)="<<p<<", "<<h;
+
+    return str_stream.str();
+}
 /**
  * off-design simulation for PCHE
  */
-double EXPORT_MY_CODE PCHE_OFFD_Simulation(const char * media_hot, const char * media_cold, PCHE_GEO_PARAM * geo, KIM_CORR_COE * cor, SIM_PARAM * sim_param, BoundaryCondtion * bc, double * h_hot, double * h_cold, double * p_hot, double * p_cold, size_t N_seg)
+double EXPORT_MY_CODE PCHE_OFFD_Simulation(const char * name, const char * media_hot, const char * media_cold, PCHE_GEO_PARAM * geo, KIM_CORR_COE * cor, SIM_PARAM * sim_param, BoundaryCondtion * bc, double * h_hot, double * h_cold, double * p_hot, double * p_cold)
 {
+    int N_seg = geo->N_seg;
+    bool done = false;
+
+    log_level = sim_param->log_level;
+
+    if(N_seg <= 0)
+    {
+        if(log_level == log_level::DEBUG)
+            cout<< "invalid N_seg="<<N_seg<<"; geo.N_seg="<< geo->N_seg<<endl;
+        return -1;
+    }
+    else
+    {
+        if(log_level == log_level::DEBUG)
+            cout<<name<<" in dll now N_seg="<<N_seg<<"; geo.N_seg="<< geo->N_seg<<endl;
+    }
+
     SimulationResult sr;
     sr.h_hot = new double[N_seg];
     sr.h_cold = new double[N_seg];
@@ -158,10 +192,16 @@ double EXPORT_MY_CODE PCHE_OFFD_Simulation(const char * media_hot, const char * 
     sr.p_cold = new double[N_seg];
     sr.N_seg = N_seg;
 
-    PCHE * pche = new PCHE(*geo);
+    if(log_level == log_level::DEBUG)
+        cout<<name<<" initializing... "<<endl;
+
+    PCHE * pche = new PCHE(name, *geo);    
+
+    if(log_level == log_level::DEBUG)
+        cout<<name<<" initialization done"<<endl;
 
     pche->set_kim_corr_coe(*cor);
-
+    
     // bc->media_cold = "CO2";
     // bc->media_hot = "CO2";
 
@@ -170,27 +210,63 @@ double EXPORT_MY_CODE PCHE_OFFD_Simulation(const char * media_hot, const char * 
     CompleteThermoState(& bc->st_hot_in, media_hot);
     CompleteThermoState(& bc->st_hot_out, media_hot);
     CompleteThermoState(& bc->st_cold_in, media_cold);
-    CompleteThermoState(& bc->st_cold_out, media_cold);
+    CompleteThermoState(& bc->st_cold_out, media_cold);    
+
+    if(log_level == log_level::DEBUG)
+        cout<<"ready to simulate "<<name<<endl;
 
     pche->simulate(media_hot, media_cold, * bc, * sim_param, sr);
-    // size of returned array is fixed at 2. 
-    int last = N_seg - 1;
 
-    h_hot[0] = sr.h_hot[0];
-    h_hot[1] = sr.h_hot[last];
-    h_cold[0] = sr.h_cold[0];
-    h_cold[1] = sr.h_cold[last];
+        int last = N_seg - 1;
 
-    p_hot[0] = sr.p_hot[0];
-    p_hot[1] = sr.p_hot[last];
-    p_cold[0] = sr.p_cold[0];
-    p_cold[1] = sr.p_cold[last];
+        h_hot[0] = sr.h_hot[0];
+        h_hot[1] = sr.h_hot[last];
+        h_cold[0] = sr.h_cold[0];
+        h_cold[1] = sr.h_cold[last];
+
+        p_hot[0] = sr.p_hot[0];
+        p_hot[1] = sr.p_hot[last];
+        p_cold[0] = sr.p_cold[0];
+        p_cold[1] = sr.p_cold[last];
+
+    // if (done)
+    // {
+    // // size of returned array is fixed at 2. 
+    //     int last = N_seg - 1;
+
+    //     h_hot[0] = sr.h_hot[0];
+    //     h_hot[1] = sr.h_hot[last];
+    //     h_cold[0] = sr.h_cold[0];
+    //     h_cold[1] = sr.h_cold[last];
+
+    //     p_hot[0] = sr.p_hot[0];
+    //     p_hot[1] = sr.p_hot[last];
+    //     p_cold[0] = sr.p_cold[0];
+    //     p_cold[1] = sr.p_cold[last];
+    // }
+    // else 
+    // {
+    //     // use input boundary condition
+    //     // treat pche as a direct pipe
+    //     h_hot[0] = bc->st_hot_in.h;
+    //     h_hot[1] = bc->st_hot_in.h;
+    //     h_cold[0] = bc->st_cold_in.h;
+    //     h_cold[1] = bc->st_cold_in.h; //sr.h_cold[last];
+
+    //     p_hot[0] = bc->st_hot_in.p; //sr.p_hot[0];
+    //     p_hot[1] = bc->st_hot_in.p; //sr.p_hot[last];
+    //     p_cold[0] = bc->st_cold_in.p; //sr.p_cold[0];
+    //     p_cold[1] = bc->st_cold_in.p; //sr.p_cold[last];
+
+    // }
 
     delete pche;
     delete [] sr.h_hot;
     delete [] sr.h_cold;
     delete [] sr.p_hot;
     delete [] sr.p_cold;
+
+    cout<<name<<" done simulation: hot "<< new_state_string(p_hot[1], h_hot[1])<<";cold " <<new_state_string(p_cold[0], h_cold[0])<<endl;
 
 	return 0.0;
 }
