@@ -6,6 +6,9 @@
 #include <math.h>
 #include <exception>
 #include <sstream>
+#include <memory>
+#include <string>
+#include <stdexcept>
 
 // #include <string>
 // #include "crossplatform_shared_ptr.h"
@@ -80,6 +83,8 @@ bool EXPORT_MY_CODE the_same(double x, double y, double eps, double & diff_per)
     return  diff_per<= eps;
 }
 
+
+
 double EXPORT_MY_CODE MyPropsSI(const char *Output, const char *Name1, double Prop1, const char *Name2, double Prop2, const char *Ref)
 {
     return PropsSI(Output, Name1, Prop1, Name2, Prop2, Ref);
@@ -128,6 +133,12 @@ double EXPORT_MY_CODE MyPropsSI_pH(double p, double H, const char * FluidName , 
 	k = AbstractState_keyed_output(handle, _K, &errcode, buffer, buffersize);
 	rho = AbstractState_keyed_output(handle, _Dmass, &errcode, buffer, buffersize);
 
+    if( T < 0 || T >= 3000|| mu < 0 || mu > 50e3|| k < 0 || k > 10e3 || rho < 0 || rho > 10e3)
+    {
+        // print error state values for debug
+        cout<<string_format("(T, mu, k, rho)_(%d, %d) = (%d, %d, %d, %d)\n", p, H, T, mu, k, rho);
+    }
+
 	return T;
 }
 
@@ -156,13 +167,15 @@ void CompleteThermoState(ThermoState * st, const char * media)
         cout<<new_state_string(*st);
 }
 
-std::string new_state_string(double p, double h)
+std::string new_state_string(double p, double h, const char * media)
 {
     std::ostringstream str_stream;
-    str_stream<<"(p, h)="<<p<<", "<<h;
+    str_stream<<"(p, h, T)="<<p<<", "<<h<<", "<<PropsSI("T", "P", p, "H", h, media);
 
     return str_stream.str();
 }
+
+
 /**
  * off-design simulation for PCHE
  */
@@ -215,19 +228,19 @@ double EXPORT_MY_CODE PCHE_OFFD_Simulation(const char * name, const char * media
     if(log_level == log_level::DEBUG)
         cout<<"ready to simulate "<<name<<endl;
 
-    pche->simulate(media_hot, media_cold, * bc, * sim_param, sr);
+    done = pche->simulate(media_hot, media_cold, * bc, * sim_param, sr);
 
-        int last = N_seg - 1;
+    int last = N_seg - 1;
 
-        h_hot[0] = sr.h_hot[0];
-        h_hot[1] = sr.h_hot[last];
-        h_cold[0] = sr.h_cold[0];
-        h_cold[1] = sr.h_cold[last];
+    h_hot[0] = sr.h_hot[0];
+    h_hot[1] = sr.h_hot[last];
+    h_cold[0] = sr.h_cold[0];
+    h_cold[1] = sr.h_cold[last];
 
-        p_hot[0] = sr.p_hot[0];
-        p_hot[1] = sr.p_hot[last];
-        p_cold[0] = sr.p_cold[0];
-        p_cold[1] = sr.p_cold[last];
+    p_hot[0] = sr.p_hot[0];
+    p_hot[1] = sr.p_hot[last];
+    p_cold[0] = sr.p_cold[0];
+    p_cold[1] = sr.p_cold[last];
 
     // if (done)
     // {
@@ -266,7 +279,11 @@ double EXPORT_MY_CODE PCHE_OFFD_Simulation(const char * name, const char * media
     delete [] sr.p_hot;
     delete [] sr.p_cold;
 
-    cout<<name<<" done simulation: hot "<< new_state_string(p_hot[1], h_hot[1])<<";cold " <<new_state_string(p_cold[0], h_cold[0])<<endl;
+    if(log_level <= log_level::INFO)
+    {
+        const char * result = done ? "ok": "failed";
+        cout<<name<<" done simulation ("<<result<<"): hot "<< new_state_string(p_hot[1], h_hot[1], media_hot)<<"; cold " <<new_state_string(p_cold[0], h_cold[0], media_cold)<<endl;
+    }
 
 	return 0.0;
 }
@@ -311,7 +328,7 @@ void EXPORT_MY_CODE test_struct_param(SIM_PARAM * sim_param, PCHE_GEO_PARAM * ge
     // sim_param = new SIM_PARAM();
 
     sim_param->err = geo->pitch;
-    sim_param->step_rel = geo->phi + geo->length_cell;
+    sim_param->step_rel = geo->phi + geo->length;
     sim_param->delta_T_init = 10.0;
 
     // st_result[1] = 11222;

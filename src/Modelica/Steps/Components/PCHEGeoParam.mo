@@ -5,16 +5,16 @@ record PCHEGeoParam
   
     /* data */
     // pitch length
-    Real pitch;
+    parameter Real pitch;
     // pitch angle
-    Real phi;
-    // length of segment
-    Real length_cell;
+    parameter Real phi;
+    // length of PCHE
+    parameter Real length;
     // Diameter of semi_circular
-    Real d_c;
+    parameter Real d_c;
     // number of channels
-    Integer N_ch;
+    parameter Integer N_ch;
     // number of segments
-    Integer N_seg; // [Kwon2019]'s maximum node number
+    parameter Integer N_seg; // [Kwon2019]'s maximum node number
   
 end PCHEGeoParam;

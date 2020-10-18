@@ -6,9 +6,9 @@ model FanCooler
   import Steps.Interfaces.PortType;
   import Steps.Utilities.CoolProp.PropsSI;
   
-  parameter Modelica.SIunits.TemperatureDifference delta_T = 18.0 "Incoming temperature difference";  
+  //parameter Modelica.SIunits.TemperatureDifference delta_T = 18.0 "Incoming temperature difference";  
   
-  parameter Modelica.SIunits.Temperature T_amb = Modelica.SIunits.Conversions.from_degC(15) "ambinent temperature";
+  parameter Modelica.SIunits.Temperature T_output = Modelica.SIunits.Conversions.from_degC(15) "ambinent temperature";
   
   Modelica.SIunits.SpecificEnthalpy h_out;
 /*
@@ -28,7 +28,7 @@ equation
 
   // Note that, no matter what the CO2 inlet conditions are, the fan colder CO2 
   // exit temperature is always the same for fixed ITD and ambient air temperature.  
-  h_out = PropsSI("H", "P", inlet.p, "T", T_amb + delta_T, PBMedia.mediumName);
+  h_out = PropsSI("H", "P", inlet.p, "T", T_output, PBMedia.mediumName);
   
   outlet.p = inlet.p;
   outlet.m_flow + inlet.m_flow = 0;

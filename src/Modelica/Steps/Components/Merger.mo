@@ -7,8 +7,8 @@ model Merger
   
   Steps.Interfaces.PBFluidPort_a inlet_merge(redeclare package Medium = PBMedia);
   
-  parameter SIunits.Temperature T_init "initial temperature when no fluid from merge_in";
-  parameter SIunits.Pressure p_init "initial pressure when no fluid from merge_in";
+  // parameter SIunits.Temperature T_init "initial temperature when no fluid from merge_in";
+  // parameter SIunits.Pressure p_init "initial pressure when no fluid from merge_in";
 
   Modelica.SIunits.SpecificEnthalpy h_mix "mixes h of the output stream";
 

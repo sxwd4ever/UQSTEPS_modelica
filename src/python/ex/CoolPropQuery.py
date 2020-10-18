@@ -35,10 +35,10 @@ from math import sin
 
 # print("result=" + str(result))
 
-# result = CP.CoolProp.PropsSI("H", "P", 20e6, 'T', 700 + 273.15, 'CO2')
+result = CP.CoolProp.PropsSI("T", "P", 20e6, 'H', 525480, 'CO2')
 
-# print("result=" + str(result))
+print("result=" + str(result))
 
-AS_SAT = AbstractState("HEOS", "CO2")
-AS_SAT.update(CoolProp.PT_INPUTS, 20e6, 273.15+700)
-print("First saturation derivative:", AS_SAT.hmass(), "Pa/K")
+# AS_SAT = AbstractState("HEOS", "CO2")
+# AS_SAT.update(CoolProp.PT_INPUTS, 20e6, 273.15+700)
+# print("First saturation derivative:", AS_SAT.hmass(), "Pa/K")

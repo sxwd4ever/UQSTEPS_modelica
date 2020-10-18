@@ -89,10 +89,6 @@ equation
   connect(source_hot.outlet, pche.inlet_hot);
   connect(pche.outlet_hot, sink_hot.inlet);
   connect(source_cold.outlet, pche.inlet_cold);
-  connect(pche.outlet_cold, sink_cold.inlet); 
-   
-annotation(
-  experiment(StartTime = 0, StopTime = 1, Interval = 1, Tolerance = 1e-6),
-    __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts");  
-    
+  connect(pche.outlet_cold, sink_cold.inlet);  
+  
 end TestPCHECImpl;

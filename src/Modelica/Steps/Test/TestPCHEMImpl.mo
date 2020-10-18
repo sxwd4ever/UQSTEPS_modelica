@@ -1,14 +1,14 @@
 within Steps.Test;
 
-model TestPCHECImpl
-  "PCHE c-based implementation"      
+model TestPCHEMImpl
+  "Modelica implemented PCHE Test against Meshram [2016]"      
   
-  import Modelica.SIunits.Conversions.{from_bar, from_deg, from_degC};   
+  import Modelica.SIunits.Conversions.{from_bar, from_degC}; 
   import Steps.Utilities.CoolProp.PropsSI;
   import Steps.Components.{BoundaryCondition, PCHEGeoParam, ThermoState};
   
-  replaceable package PBMedia = Steps.Media.SCO2;
-  
+  replaceable package PBMedia = Steps.Media.SCO2;  
+
   parameter Modelica.SIunits.MassFlowRate mdot_hot = 51.91 "mass flow rate for hot stream";
   
   parameter Modelica.SIunits.MassFlowRate mdot_cold = 51.91 "mass flow rate for cold stream";
@@ -31,7 +31,7 @@ model TestPCHECImpl
     // number of channels
     N_ch = integer(94e3),
     // number of segments
-    N_seg = 100);
+    N_seg = 50);
 
   parameter Modelica.SIunits.ReynoldsNumber Re_hot_start = 14.5e3 "Hot stream's start value of Reynolds Number, used to increase convergence";
   
@@ -68,13 +68,7 @@ model TestPCHECImpl
     mdot_init = mdot_cold,
     fix_state = not SourceFixed_cold
   );
-
-  Components.PCHECImpl pche(
-    geo = geo,   
-    bc = bc,   
-    sim_param(log_level = 4)
-  );
- /* 
+ 
   Components.PCHeatExchanger pche(
     geo = geo,   
     bc = bc,
@@ -82,17 +76,17 @@ model TestPCHECImpl
     Re_hot_start = Re_hot_start,     
     ByInlet_hot = SourceFixed_hot,
     ByInlet_cold = SourceFixed_cold
-  );  
- */  
-equation  
+  );
+  
+equation
   
   connect(source_hot.outlet, pche.inlet_hot);
   connect(pche.outlet_hot, sink_hot.inlet);
   connect(source_cold.outlet, pche.inlet_cold);
-  connect(pche.outlet_cold, sink_cold.inlet); 
-   
+  connect(pche.outlet_cold, sink_cold.inlet);  
+
 annotation(
-  experiment(StartTime = 0, StopTime = 1, Interval = 1, Tolerance = 1e-6),
-    __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts");  
-    
-end TestPCHECImpl;
+    experiment(StartTime = 0, StopTime = 1, Interval = 1, Tolerance = 1e-6),
+    __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts");
+  
+end TestPCHEMImpl;

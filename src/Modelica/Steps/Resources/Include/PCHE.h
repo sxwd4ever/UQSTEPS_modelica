@@ -34,7 +34,7 @@ struct PCHE_GEO_PARAM
     // pitch angle
     double phi;
     // length of segment
-    double length_cell;
+    double length;
     // Diameter of semi_circular
     double d_c;
     // number of channels
@@ -228,8 +228,8 @@ private:
     double _A_stack;
     // Flow area for all channels
     double _A_flow;
-    // length of one pipe in HeatExchanger unit m
-    double _length_ch;
+    // length of one segment in a tube, m
+    double _length_cell;
 
     // mass flux for cold/hot side    
     double _G_hot, _G_cold;

@@ -149,7 +149,7 @@ void PCHE::_init(PCHE_GEO_PARAM & geo)
 {
     _geo.pitch = geo.pitch;
     _geo.phi = geo.phi;
-    _geo.length_cell = geo.length_cell;
+    _geo.length = geo.length;
     _geo.d_c = geo.d_c;
     _geo.N_ch = geo.N_ch;
     _geo.N_seg = geo.N_seg;
@@ -180,9 +180,9 @@ void PCHE::_init(PCHE_GEO_PARAM & geo)
     // d_c = ( 1 + 2 / pi) * _d_h
     _d_h = 4 * _A_c / _peri_c;
     _t_wall = ( 2 - M_PI_4) * (_geo.d_c / 2);    
-    _A_stack =  _peri_c * _geo.length_cell * _geo.N_ch;    
+    _length_cell = _geo.length / _geo.N_seg;
+    _A_stack =  _peri_c * _length_cell * _geo.N_ch;    
     _A_flow = _geo.N_ch * _A_c;    
-    _length_ch = _geo.length_cell * _geo.N_seg;
 }
 
 double PCHE::_avg_T(PCHE_CELL * cell_seq, int count)
@@ -254,8 +254,8 @@ bool PCHE::_calc_U(int idx, BoundaryCondtion & bc)
                 _idx_pinch = idx;
         }
 
-        c_h->dp = c_h->f * _geo.length_cell * c_h->rho * pow(c_h->u, 2) / this->_d_h;
-        c_c->dp = c_c->f * _geo.length_cell * c_c->rho * pow(c_c->u, 2) / this->_d_h;
+        c_h->dp = c_h->f * _length_cell * c_h->rho * pow(c_h->u, 2) / this->_d_h;
+        c_c->dp = c_c->f * _length_cell * c_c->rho * pow(c_c->u, 2) / this->_d_h;
 
         if(cal_next)
         {
@@ -293,36 +293,7 @@ bool PCHE::_calc_U(int idx, BoundaryCondtion & bc)
     return heat_exchanged;
 }
 
-double PCHE::_cp_props(long handle_stream, long handle_prop, double def_value, double max, double min)
-{
-    _err_code = 0;
-
-    double prop = AbstractState_keyed_output(handle_stream, handle_prop, &_err_code, _cp_err_buf, _buffer_size);
-
-    if(_err_code != 0)
-    {
-        // handle the err
-        _print_cp_err("error in CoolProp");
-        prop = def_value;
-    }
-
-    return prop;
-}
-
-long PCHE::_cp_new_state(const char * medium)
-{
-    _err_code = 0;
-
-    long handle = AbstractState_factory("HEOS", medium, &_err_code, _cp_err_buf, _buffer_size);
-
-    if(_err_code != 0)
-        _print_cp_err("error in creating new state");
-
-    return handle;
-}
-
-void PCHE::simulate(const char * media_hot, const char * media_cold, BoundaryCondtion & bc, SIM_PARAM & sim_param, SimulationResult & sr)
->>>>>>> master
+bool PCHE::simulate(const char * media_hot, const char * media_cold, BoundaryCondtion & bc, SIM_PARAM & sim_param, SimulationResult & sr)
 {
     std::ostringstream str_stream;
   
@@ -438,17 +409,19 @@ void PCHE::simulate(const char * media_hot, const char * media_cold, BoundaryCon
     }
     catch(const std::exception& e)
     {
-        converged = true;
-
-        if(_can_log(log_level::DEBUG))
-            cout<< "clone cell state from " <<idx_cell<<endl;
+        // converged = true;
 
         for (size_t i = idx_cell; i < _geo.N_seg; i++)
         {
-            _cell_hot[idx_cell].clone(&_cell_hot[idx_cell - 1]);
-            _cell_cold[idx_cell].clone(&_cell_cold[idx_cell - 1]);
+            _cell_hot[i].clone(&_cell_hot[i - 1]);
+            _cell_cold[i].clone(&_cell_cold[i - 1]);
         }
 
+        if(_can_log(log_level::DEBUG))
+        {
+            std::string info = string_format("clone cell state form %d th cell\n", idx_cell);
+            _print_PCHE_state(info);
+        }
         //std::cerr << e.what() << '\n';
     }
     
@@ -591,7 +564,8 @@ void PCHE::_print_geo_param(PCHE_GEO_PARAM & geo)
     cout<< "**** PCHE's Geometry params ****"<<endl;
     cout<< "pitch       = "<<geo.pitch<<endl;
     cout<< "phi         = "<<geo.phi<<endl;
-    cout<< "length_cell = "<<geo.length_cell<<endl;
+    cout<< "length      = "<<geo.length<<endl;
+    cout<< "length_cell = "<<_length_cell<<endl;
     cout<< "d_c         = "<<geo.d_c<<endl;
     cout<< "N_ch        = "<<geo.N_ch<<endl;
     cout<< "N_seg       = "<<geo.N_seg<<endl;

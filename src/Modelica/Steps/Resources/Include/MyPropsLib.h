@@ -3,7 +3,10 @@
 
 #ifdef __cplusplus
 // put it here to avoid error: template with C linkage
+#include <stdio.h>
 #include <string> 
+#include <memory>
+#include <stdexcept>
 #include "PCHE.h"
 
 extern "C" {
@@ -77,6 +80,8 @@ void EXPORT_MY_CODE test_struct_param(SIM_PARAM * sim_param, PCHE_GEO_PARAM * ge
 
 void EXPORT_MY_CODE setState_C_impl(double p, double M,  State *state);
 
+
+
 /** 
  * functions utilizing external objects - not very useful since I have to return data
 
@@ -103,5 +108,25 @@ void EXPORT_MY_CODE close_PCHE_sim_ext_object(void * ext_obj);
 #ifdef __cplusplus
 }
 #endif
+
+// template function needs to be implemented in header file. 
+template<typename ... Args>
+std::string EXPORT_MY_CODE string_format( const std::string& format, Args ... args )
+{
+    try
+    {
+        size_t size = std::snprintf( nullptr, 0, format.c_str(), args ... ) + 1; // Extra space for '\0'
+        if( size <= 0 ){ throw std::runtime_error( "Error during formatting." ); }
+        std::unique_ptr<char[]> buf( new char[ size ] ); 
+        std::snprintf( buf.get(), size, format.c_str(), args ... );
+        return std::string( buf.get(), buf.get() + size - 1 ); // We don't want the '\0' inside
+    }
+    catch(const std::exception& e)
+    {
+        std::cerr << e.what() << '\n';
+        return format;
+    }   
+
+}
 
 #endif

@@ -1,2 +1,10 @@
 TestPCHEMeshram
 TestPCHE
+TestFanCooler
+TestMerger
+TestPCHECImpl
+TestPCMHeater
+TestPump
+TestSplitter
+TestTurbine
+TestPCHEMImpl
