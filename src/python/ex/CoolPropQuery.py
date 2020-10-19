@@ -35,9 +35,47 @@ from math import sin
 
 # print("result=" + str(result))
 
-result = CP.CoolProp.PropsSI("T", "P", 20e6, 'H', 525480, 'CO2')
+# result = CP.CoolProp.PropsSI("T", "P", 20e6, 'H', 525480, 'CO2')
 
-print("result=" + str(result))
+# print("result=" + str(result))
+
+# calculate the eta of Compressor of 'D:\sxwd\Projects\UQ\2019.10.01 Thermal Cycle Simulation\doc\UQMECH05_99_CL02_B 1 MW Power Block (RCBC)_2.pdf' 
+h_in = 309.42e3
+h_out = 329.94e3
+
+s = CP.CoolProp.PropsSI("S", "H", h_in, "P", 7.91e6, 'CO2')
+
+h_isen = CP.CoolProp.PropsSI("H", "S", s, "P", 20.04e6, 'CO2')
+
+eta =  (h_isen - h_in) / (h_out - h_in)
+
+print("result=" + str(eta))
+
+# recompressor
+h_in = 471.73e3
+h_out = 525.39e3
+
+s = CP.CoolProp.PropsSI("S", "H", h_in, "P", 7.91e6, 'CO2')
+
+h_isen = CP.CoolProp.PropsSI("H", "S", s, "P", 20.04e6, 'CO2')
+
+eta =  (h_isen - h_in) / (h_out - h_in)
+
+print("result=" + str(eta))
+
+# turbine
+
+# recompressor
+h_in = 1223.3e3
+h_out = 1078.89e3
+
+s = CP.CoolProp.PropsSI("S", "H", h_in, "P", 20e6, 'CO2')
+
+h_isen = CP.CoolProp.PropsSI("H", "S", s, "P", 8e6, 'CO2')
+
+eta =  (h_in - h_out) / (h_in - h_isen)
+
+print("result=" + str(eta))
 
 # AS_SAT = AbstractState("HEOS", "CO2")
 # AS_SAT.update(CoolProp.PT_INPUTS, 20e6, 273.15+700)

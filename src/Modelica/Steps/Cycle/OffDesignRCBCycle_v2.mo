@@ -6,54 +6,13 @@ model OffDesignRCBCycle_v2
   import Util = Utilities.Util;
   import Modelica.SIunits.Conversions.{from_degC, from_deg};
   import Steps.Utilities.CoolProp.PropsSI;
+  import Steps.Utilities.Util.NewThermoState_pT;
+  import Steps.Components.PCHEBoundaryCondition;
+  import Steps.Components.PCHEGeoParam;
   import Modelica.SIunits.{Temperature, Pressure, SpecificEnthalpy};
   
-  replaceable package PBMedia = Steps.Media.SCO2;
-  
-  parameter Modelica.SIunits.Time stop_time = 1.0 "time length of the experiment";
-  
-  parameter Modelica.SIunits.Pressure P_ATM = 101325; // Pa
-  
-  //parameter Modelica.SIunits.Temperature T_AMB = from_degC(33) "Ambinent temperature";
-  parameter Real M_CO2 = 10;    //# Co2 flow rate, kg/s  
-  
-  // Start values for all components
-  // thermo states for outlet of each component are defined
-  parameter Modelica.SIunits.Pressure P_COOLER_E = 8.0e6;
-  parameter Modelica.SIunits.Temperature T_COOLER_E = from_degC(33);
-  parameter Modelica.SIunits.SpecificEnthalpy H_COOLER_E = PropsSI("H", "T", T_COOLER_E, "P", P_COOLER_E, PBMedia.mediumName);   
-  
-  parameter Modelica.SIunits.Pressure P_PUMP_I = P_COOLER_E ; //# Pa
-  parameter Modelica.SIunits.Temperature T_PUMP_I = T_COOLER_E; //#K
-  parameter Modelica.SIunits.SpecificEnthalpy H_PUMP_I = PropsSI("H", "T", T_PUMP_I, "P", P_PUMP_I, PBMedia.mediumName);   
-  
-  parameter Modelica.SIunits.Pressure P_PUMP_E = 20.0e6;    //# Pump exit pressure, Pa
-  parameter Modelica.SIunits.Temperature T_PUMP_E = from_degC(63); //#K
-  parameter Modelica.SIunits.SpecificEnthalpy H_PUMP_E = PropsSI("H", "T", T_PUMP_E, "P", P_PUMP_E, PBMedia.mediumName);   
-  
-  parameter Modelica.SIunits.Pressure P_HEATER_E = P_PUMP_E;
-  parameter Modelica.SIunits.Temperature T_HEATER_E = from_degC(700);  
-  parameter Modelica.SIunits.SpecificEnthalpy H_HEATER_E = PropsSI("H", "T", T_HEATER_E, "P", P_HEATER_E, PBMedia.mediumName);  
-  
-  parameter Modelica.SIunits.Pressure P_TURBINE_E = P_PUMP_I;  
-  parameter Modelica.SIunits.Temperature T_TURBINE_E = from_degC(578) "Ambinent temperature";
-  parameter Modelica.SIunits.SpecificEnthalpy H_TURBINE_E = PropsSI("H", "T", T_TURBINE_E, "P", P_TURBINE_E, PBMedia.mediumName); 
-  
-  parameter Modelica.SIunits.Pressure P_HTR_H_E = P_TURBINE_E;
-  parameter Modelica.SIunits.Temperature T_HTR_H_E = from_degC(157); 
-  parameter Modelica.SIunits.SpecificEnthalpy H_HTR_H_E = PropsSI("H", "T", T_HTR_H_E, "P", P_HTR_H_E, PBMedia.mediumName);  
-  
-  parameter Modelica.SIunits.Pressure P_LTR_C_E = P_PUMP_E;
-  parameter Modelica.SIunits.Temperature T_LTR_C_E = from_degC(151); 
-  parameter Modelica.SIunits.SpecificEnthalpy H_LTR_C_E = PropsSI("H", "T", T_LTR_C_E, "P", P_LTR_C_E, PBMedia.mediumName);
-  
-  parameter Modelica.SIunits.Pressure P_LTR_H_E = P_TURBINE_E;
-  parameter Modelica.SIunits.Temperature T_LTR_H_E = from_degC(68);
-  parameter Modelica.SIunits.SpecificEnthalpy H_LTR_H_E = PropsSI("H", "T", T_LTR_H_E, "P", P_LTR_H_E, PBMedia.mediumName);
-  
-  parameter Real dT_pcm = 10.0;  
-  
-  //Modelica.SIunits.Temperature T_PUMP_I = T_AMB + DT_COOLER; // K, "Pump inlet temperature - trial value" ;
+  replaceable package PBMedia = Steps.Media.SCO2; 
+ 
   // efficiency of main compressor, bypass_compressor and turbine
   parameter Real eta_main_compressor = 0.89;
   
@@ -61,31 +20,68 @@ model OffDesignRCBCycle_v2
   
   parameter Real eta_turbine = 0.9;
   
-  // effectiveness for two recuperators
-  // these two parameters will effect the difference between crec_in.T and hot_in.T of recuperator
-  parameter Real eta_recuperator_high = 0.99;
-  
-  parameter Real eta_recuperator_low = 0.99;
-  
   // mass split ratio of splitter
-  parameter Real splitter_split_ratio = 0.3; 
-  
-  parameter Modelica.SIunits.Angle phi = from_deg((180 - 108) /2) "phi of zigzag - High Temp range for zigzag in 4.1.2 Meshram [2016]"; // agree with Hal's steps instead of using 4.1.2 of Meshram [2016]
+  parameter Real splitter_split_ratio = mdot_bypass/mdot_main; 
 
-  parameter Integer N_ch = integer(80e3);  
+  parameter Modelica.SIunits.Pressure p_pump_in = 8e6;
+  parameter Modelica.SIunits.Pressure p_pump_out = 20e6;
   
-  parameter Integer N_seg = 100 "number of cells/segment for the discretization of a channel";
+  parameter Modelica.SIunits.MassFlowRate mdot_main = 51.91;
+  parameter Modelica.SIunits.MassFlowRate mdot_pump = 31.31;
+  parameter Modelica.SIunits.MassFlowRate mdot_bypass = mdot_main - mdot_pump;  
   
-  parameter Modelica.SIunits.Length d_c = 2e-3 "diameter of the channel";
+  parameter Modelica.SIunits.Temperature T_HTR_hot_out = from_degC(156.45);
+  parameter Modelica.SIunits.Temperature T_LTR_cold_out = from_degC(151.45);
+  
+  
+  parameter PCHEGeoParam geo_HTR(
+    // pitch length, m
+    pitch = 12e-3,
+    // pitch angle
+    phi = from_deg((180 - 108) /2),
+    // length of pche, m
+    length = 2860e-3,
+    // Diameter of semi_circular, m
+    d_c = 2e-3,
+    // number of channels
+    N_ch = integer(94e3),
+    // number of segments
+    N_seg = 50);
+    
+  parameter PCHEGeoParam geo_LTR(
+    // pitch length, m
+    pitch = 12e-3,
+    // pitch angle
+    phi = from_deg((180 - 108) /2),
+    // length of pche, m
+    length = 3270e-3,
+    // Diameter of semi_circular, m
+    d_c = 2e-3,
+    // number of channels
+    N_ch = integer(125e3),
+    // number of segments
+    N_seg = 50);
+    
+  // **** Boundary Conditions as Start values for all components - start ****  
+  parameter PCHEBoundaryCondition bc_HTR(
+    st_hot_in(p = p_pump_in, T = from_degC(578.22), h = PropsSI("H", "P",  bc_HTR.st_hot_in.p, "T", bc_HTR.st_hot_in.T, PBMedia.mediumName), mdot = mdot_main),    
+    st_cold_in(p = p_pump_out, T = T_LTR_cold_out, h = PropsSI("H", "P", bc_HTR.st_cold_in.p, "T", bc_HTR.st_cold_in.T, PBMedia.mediumName), mdot = mdot_main),
+    st_hot_out(p = p_pump_in, T = T_HTR_hot_out, h = PropsSI("H", "P", bc_HTR.st_hot_out.p, "T", bc_HTR.st_hot_out.T, PBMedia.mediumName), mdot = mdot_main),
+    st_cold_out(p = p_pump_out, T = from_degC(533.5), h = PropsSI("H", "P", bc_HTR.st_cold_out.p, "T", bc_HTR.st_cold_out.T, PBMedia.mediumName), mdot = mdot_main));      
 
-  parameter Modelica.SIunits.Length pitch = 12e-3 "pitch length of zigzag channel";
-
-  parameter Modelica.SIunits.Length length_cell = 12e-3 "length of the discretized cell in a channel";
- 
-  parameter Modelica.SIunits.ReynoldsNumber Re_hot_start = 14.5e3 "Hot stream's start value of Reynolds Number, used to increase convergence";
+  // boundary condition for LTR test @ diff mdot
+  parameter PCHEBoundaryCondition bc_LTR(
+    st_hot_in(p = p_pump_in, T = T_HTR_hot_out, h = PropsSI("H", "P", bc_LTR.st_hot_in.p, "T", bc_LTR.st_hot_in.T, PBMedia.mediumName), mdot = mdot_main),    
+    st_cold_in(p = p_pump_out, T = from_degC(62.229), h = PropsSI("H", "P", bc_LTR.st_cold_in.p, "T", bc_LTR.st_cold_in.T, PBMedia.mediumName), mdot = mdot_pump),
+    st_hot_out(p = p_pump_in, T = from_degC(67.229), h = PropsSI("H", "P", bc_LTR.st_hot_out.p, "T", bc_LTR.st_hot_out.T, PBMedia.mediumName), mdot = mdot_main),
+    st_cold_out(p = p_pump_out, T = T_LTR_cold_out, h = PropsSI("H", "P", bc_LTR.st_cold_out.p, "T", bc_LTR.st_cold_out.T, PBMedia.mediumName), mdot = mdot_pump)); 
+     
+  parameter Steps.Components.ThermoState bc_cooler_out(p = bc_LTR.st_hot_out.p, T = from_degC(33), h = PropsSI("H", "P", bc_cooler_out.p, "T", bc_cooler_out.T, PBMedia.mediumName), mdot = mdot_pump);
   
-  parameter Modelica.SIunits.ReynoldsNumber Re_cold_start = 14.5e3 "Cold stream's start value of Reynolds Number, used to increase convergence";    
+  parameter Steps.Components.ThermoState bc_heater_out(p = bc_HTR.st_cold_out.p, T = from_degC(700), h = PropsSI("H", "P", bc_heater_out.p, "T", bc_heater_out.T, PBMedia.mediumName), mdot = mdot_main);
   
+  // **** Boundary Conditions as Start values for all components - end ****    
+    
   /*
   Steps.Components.Regulator regulator_HTR_hot(
     T_init = from_degC(578),
@@ -112,53 +108,38 @@ model OffDesignRCBCycle_v2
   );*/
   
   Steps.Components.FanCooler fan_cooler(
-    T_output = T_COOLER_E,      
-    inlet.p(start = P_LTR_H_E),
-    inlet.h_outflow(start = H_LTR_H_E),
-    outlet.p(start = P_COOLER_E),
-    outlet.h_outflow(start = H_COOLER_E)
+    T_output = bc_cooler_out.T,      
+    inlet.p(start = bc_LTR.st_hot_out.p),
+    inlet.h_outflow(start = bc_LTR.st_hot_out.h),
+    outlet.p(start = bc_cooler_out.p),
+    outlet.h_outflow(start = bc_cooler_out.h)
   );
   
   // use pump as compressor
   Steps.Components.Pump pump(
-    p_outlet = P_PUMP_E, 
-    eta = eta_main_compressor,/*
-    outlet.p(start = P_PUMP_E),
-    outlet.h_outflow(start = H_PUMP_E),*/
-    inlet.p(start = P_PUMP_I),
-    inlet.h_outflow(start = H_PUMP_I)
+    p_outlet = bc_LTR.st_cold_in.p, 
+    eta = eta_main_compressor,
+    outlet.p(start = bc_LTR.st_cold_in.p),
+    outlet.h_outflow(start = bc_LTR.st_cold_in.h),
+    inlet.p(start = bc_cooler_out.p),
+    inlet.h_outflow(start = bc_cooler_out.h)
   );   
   
   Steps.Components.Pump recom_pump(
-    p_outlet = P_PUMP_E, 
-    eta = eta_bypass_compressor/*,
-    inlet.p(start = P_PUMP_I),
-    inlet.h_outflow(start = H_PUMP_I),
-    outlet.p(start = P_PUMP_E),
-    outlet.h_outflow(start = H_PUMP_E)*/
+    p_outlet = bc_HTR.st_cold_in.p, 
+    eta = eta_bypass_compressor,
+    inlet.p(start = bc_LTR.st_hot_out.p),
+    inlet.h_outflow(start = bc_LTR.st_hot_out.h),
+    outlet.p(start = bc_HTR.st_cold_in.p),
+    outlet.h_outflow(start = bc_HTR.st_cold_in.h)
   );
   
   Components.PCHECImpl HTR(
     name = "HTR", 
-    phi = phi, 
-    d_c = d_c,
-    pitch = pitch,     
-    N_ch = N_ch,    
-    N_seg = N_seg,
-    length_cell = length_cell,
-    sim_param(log_level = 4),
-    
-    inlet_hot.p(start = P_TURBINE_E),
-    inlet_hot.h_outflow(start = H_TURBINE_E),
-    inlet_hot.m_flow(start = M_CO2),
-    
-    inlet_cold.p(start = P_LTR_C_E),
-    inlet_cold.h_outflow(start = H_LTR_C_E),
-    inlet_cold.m_flow(start = M_CO2),
-    
-    outlet_hot.p(start = P_HTR_H_E),
-    outlet_hot.h_outflow(start = H_HTR_H_E),
-    outlet_hot.m_flow(start = M_CO2)   
+    geo = geo_HTR,   
+    bc = bc_HTR,   
+    // enum log_level {DEBUG = 0, INFO = 1, ERR = 2, SERVE = 3, OFF = 4};
+    sim_param(log_level = 4)
     /*
     
     bc_hot_in(p = P_TURBINE_E, T = from_degC(578), h = PropsSI("H", "T", from_degC(578), "P", P_TURBINE_E, PBMedia.mediumName), mdot = M_CO2),    
@@ -168,74 +149,66 @@ model OffDesignRCBCycle_v2
   
   Components.PCHECImpl LTR(
     name = "LTR", 
-    phi = phi, 
-    d_c = d_c,
-    pitch = pitch,     
-    N_ch = N_ch,    
-    N_seg = N_seg,
-    length_cell = length_cell,
-    sim_param(log_level = 4),
-    
-    inlet_hot.p(start = P_HTR_H_E),
-    inlet_hot.h_outflow(start = H_HTR_H_E),
-    inlet_cold.p(start = P_PUMP_E),
-    inlet_cold.h_outflow(start = H_PUMP_E)/*,   
-    
+    geo = geo_LTR,   
+    bc = bc_LTR,   
+    // enum log_level {DEBUG = 0, INFO = 1, ERR = 2, SERVE = 3, OFF = 4};
+    sim_param(log_level = 4, step_rel = 0.13)
+    /* 
     bc_hot_in(p = P_TURBINE_E, T = from_degC(156), h = PropsSI("H", "T", from_degC(156), "P", P_TURBINE_E, PBMedia.mediumName), mdot = M_CO2),    
     bc_cold_in(p = P_PUMP_E, T = from_degC(62), h = PropsSI("H", "T", from_degC(62), "P", P_PUMP_E, PBMedia.mediumName), mdot = M_CO2)*/
   );
 
   Steps.Components.TemperatureOutput temp_out(
-    T_start = T_HEATER_E,
-    T_stop = T_HEATER_E,
+    T_start = bc_heater_out.T,
+    T_stop = bc_heater_out.T,
     dT_step = 50,
-    t_sim_duration = stop_time
+    t_sim_duration = 1
   );
   
   Steps.Components.PCMHeater pcm_heater(
-    mdot_init = M_CO2,
-    T_input = T_HEATER_E,
+    mdot_init = bc_heater_out.mdot,
+    T_output_set = bc_heater_out.T,
     /*
     init_outlet = true,
     p_init_outlet = P_PUMP_E,
     T_init_outlet = T_AMB
+    */
     
-    
-    inlet.p(start = P_PUMP_E),
-    inlet.h_outflow(start = H_PUMP_E),*/
-    outlet.p(start = P_HEATER_E),
-    outlet.h_outflow(start = H_HEATER_E)    
+    inlet.p(start = bc_HTR.st_cold_out.p),
+    inlet.h_outflow(start = bc_HTR.st_cold_out.h),
+    outlet.p(start = bc_heater_out.p),
+    outlet.h_outflow(start = bc_heater_out.h)    
     
   );  
    
   Steps.Components.Turbine turbine(    
-    p_out = P_TURBINE_E,
+    p_out = bc_HTR.st_hot_in.p,
     eta = eta_turbine, 
-    inlet.p(start = P_HEATER_E),
-    inlet.h_outflow(start = H_HEATER_E),
-    outlet.p(start = P_TURBINE_E),
-    outlet.h_outflow(start = H_TURBINE_E)    
+    inlet.p(start = bc_heater_out.p),
+    inlet.h_outflow(start = bc_heater_out.h),
+    outlet.p(start = bc_HTR.st_hot_in.p),
+    outlet.h_outflow(start = bc_HTR.st_hot_in.h)    
   ); 
   
   Steps.Components.Splitter splitter(
-    split_ratio = splitter_split_ratio/*,
-    outlet.p(start = P_PUMP_I),
-    outlet.h_outflow(start = H_PUMP_I),
-    inlet.p(start = P_PUMP_I),
-    inlet.h_outflow(start = H_PUMP_I),
-    outlet_split.p(start = P_PUMP_I),
-    outlet_split.h_outflow(start = H_PUMP_I)*/
+    split_ratio = splitter_split_ratio,
+    outlet.p(start = bc_LTR.st_hot_out.p),
+    outlet.h_outflow(start = bc_LTR.st_hot_out.h),
+    inlet.p(start = bc_LTR.st_hot_out.p),
+    inlet.h_outflow(start = bc_LTR.st_hot_out.h),
+    outlet_split.p(start = bc_LTR.st_hot_out.p),
+    outlet_split.h_outflow(start = bc_LTR.st_hot_out.h)
   );
   
   Steps.Components.Merger merger(
     //T_init = T_AMB,
     //p_init = P_ATM,
-    outlet.p(start = P_PUMP_E),
-    outlet.h_outflow(start = H_PUMP_E)/*,
-    inlet.p(start = P_PUMP_E),
-    inlet.h_outflow(start = H_PUMP_E),    
-    inlet_merge.p(start = P_PUMP_E),
-    inlet_merge.h_outflow(start = H_PUMP_E)*/
+    outlet.p(start = bc_HTR.st_cold_in.p),
+    outlet.h_outflow(start = bc_HTR.st_cold_in.h),
+    inlet.p(start = bc_LTR.st_cold_out.p),
+    inlet.h_outflow(start = bc_LTR.st_cold_out.h),    
+    inlet_merge.p(start = bc_LTR.st_cold_out.p),
+    inlet_merge.h_outflow(start = bc_LTR.st_cold_out.h)
   );
   
   //total efficiency
@@ -287,6 +260,6 @@ equation
 // algorithm
   eta_total = if initial() then 0 else (turbine.W_turbine - pump.W_comp - recom_pump.W_comp) / pcm_heater.Q * 100;
 annotation(
-    experiment(StartTime = 0, StopTime = 1, Tolerance = 1e-6, Interval = 0.002),
-    __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian");
+    experiment(StartTime = 0, StopTime = 1, Tolerance = 1e-6, Interval = 1),
+    __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts");
 end OffDesignRCBCycle_v2;

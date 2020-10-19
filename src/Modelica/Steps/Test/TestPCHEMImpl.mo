@@ -5,7 +5,7 @@ model TestPCHEMImpl
   
   import Modelica.SIunits.Conversions.{from_bar, from_degC}; 
   import Steps.Utilities.CoolProp.PropsSI;
-  import Steps.Components.{BoundaryCondition, PCHEGeoParam, ThermoState};
+  import Steps.Components.{PCHEBoundaryCondition, PCHEGeoParam, ThermoState};
   
   replaceable package PBMedia = Steps.Media.SCO2;  
 
@@ -13,7 +13,7 @@ model TestPCHEMImpl
   
   parameter Modelica.SIunits.MassFlowRate mdot_cold = 51.91 "mass flow rate for cold stream";
   
-  parameter BoundaryCondition bc(
+  parameter PCHEBoundaryCondition bc(
     st_hot_in(p = from_bar(80), T = from_degC(578.22), h = PropsSI("H", "P", bc.st_hot_in.p, "T", bc.st_hot_in.T, PBMedia.mediumName), mdot = mdot_hot),    
     st_cold_in(p = from_bar(200), T = from_degC(151.45), h = PropsSI("H", "P", bc.st_cold_in.p, "T", bc.st_cold_in.T, PBMedia.mediumName), mdot = mdot_hot),
     st_hot_out(p = from_bar(80), T = from_degC(156.5), h = PropsSI("H", "P", bc.st_hot_out.p, "T", bc.st_hot_out.T, PBMedia.mediumName), mdot = mdot_hot),

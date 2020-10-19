@@ -235,7 +235,8 @@ bool PCHE::_calc_U(int idx, BoundaryCondtion & bc)
         c_h->Nu = 4.089 + _corr_coe.c * pow(c_h->Re, _corr_coe.d);
         c_c->Nu = 4.089 + _corr_coe.c * pow(c_c->Re, _corr_coe.d);
         // thermal conductivity of the wall
-        double kw = 27; // mock trial value
+        double kw = material_conductivity((c_h->T + c_c->T) / 2); 
+        //double kw = 27; 
         c_h->hc = c_h->Nu * c_h->k / this->_d_h;
         c_c->hc = c_c->Nu * c_c->k / this->_d_h;
 

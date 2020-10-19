@@ -55,37 +55,29 @@ model PCHeatExchanger
   inner Modelica.SIunits.Length length_cell = geo.length / geo.N_seg "length of a cell";  
   
   // d_c determined variables, d_h, A_c, peri_c
-  inner Modelica.SIunits.Diameter d_h = 4 * A_c / peri_c "Hydraulic Diameter";
-  
-  inner Modelica.SIunits.Area A_c = Modelica.Constants.pi * geo.d_c * geo.d_c / 8 "Area of semi-circular tube";   
-  
-  inner Modelica.SIunits.Length peri_c = geo.d_c * Modelica.Constants.pi / 2 + geo.d_c "perimeter of semi-circular";  
-  
-  inner Modelica.SIunits.Length t_wall = (2 - Modelica.Constants.pi  / 4) * (geo.d_c / 2) "thickness of wall between two neighboring hot and cold";  
-
-  
+  inner Modelica.SIunits.Diameter d_h = 4 * A_c / peri_c "Hydraulic Diameter";  
+  inner Modelica.SIunits.Area A_c = Modelica.Constants.pi * geo.d_c * geo.d_c / 8 "Area of semi-circular tube"; 
+  inner Modelica.SIunits.Length peri_c = geo.d_c * Modelica.Constants.pi / 2 + geo.d_c "perimeter of semi-circular"; 
+  inner Modelica.SIunits.Length t_wall = (2 - Modelica.Constants.pi  / 4) * (geo.d_c / 2) "thickness of wall between two neighboring hot and cold"; 
   inner Modelica.SIunits.Area A_stack = peri_c * length_cell * geo.N_ch "surface area of all cells in a stack";
-  
   inner Modelica.SIunits.Area A_flow = geo.N_ch * A_c "Flow area for all channels";
   
   parameter Boolean ByInlet_hot = false "flag indicate if the fluid state is determined by upstream, which can acelerate the convergence of simulation. "; 
   
   parameter Boolean ByInlet_cold = false "flag indicate if inlet states is fixed 1: fixed; 0: free (cold stream is determined by outlet)"; 
   
-  parameter BoundaryCondition bc(
+  parameter PCHEBoundaryCondition bc(
     st_hot_in(p = from_bar(80), T = from_degC(578.22), h = PropsSI("H", "P", bc.st_hot_in.p, "T", bc.st_hot_in.T, PBMedia.mediumName), mdot = 51.91),   
     st_cold_in(p = from_bar(200), T = from_degC(151.45), h = PropsSI("H", "P", bc.st_cold_in.p, "T", bc.st_cold_in.T, PBMedia.mediumName), mdot = 51.91), 
     st_hot_out(p = from_bar(80), T = from_degC(156.5), h = PropsSI("H", "P", bc.st_hot_out.p, "T", bc.st_hot_out.T, PBMedia.mediumName), mdot = 51.91),
     st_cold_out(p = from_bar(200), T = from_degC(533.5), h = PropsSI("H", "P", bc.st_cold_out.p, "T", bc.st_cold_out.T, PBMedia.mediumName), mdot = 51.91)    
   );  
   
-  Modelica.SIunits.Temperature T_hot_in = cell_hot[1].T;
-  
-  Modelica.SIunits.Temperature T_cold_in = cell_cold[geo.N_seg].T;
-  
-  Modelica.SIunits.Temperature T_hot_out = cell_hot[geo.N_seg].T;
-  
-  Modelica.SIunits.Temperature T_cold_out = cell_cold[1].T;  
+  // output for debug purpose
+  Modelica.SIunits.Temp_C T_hot_in = to_degC(cell_hot[1].T);  
+  Modelica.SIunits.Temp_C T_cold_in = to_degC(cell_cold[geo.N_seg].T);  
+  Modelica.SIunits.Temp_C T_hot_out = to_degC(cell_hot[geo.N_seg].T);  
+  Modelica.SIunits.Temp_C T_cold_out = to_degC(cell_cold[1].T);  
   
   // two sequences of the hx cells
   // use id to distinguish cold and hot cell

@@ -9,6 +9,9 @@
 #include <memory>
 #include <string>
 #include <stdexcept>
+#include <iostream>
+#include <iomanip>
+#include <vector>
 
 // #include <string>
 // #include "crossplatform_shared_ptr.h"
@@ -322,6 +325,40 @@ void EXPORT_MY_CODE close_PCHE_sim_ext_object(void * ext_obj)
     handle_manager.remove(pche_ext_obj->handle_pche);
 }
 */
+
+double EXPORT_MY_CODE material_conductivity(double T, bool extrapolate)
+{
+    // Returns interpolated value at x from parallel arrays ( xData, yData )
+    //   Assumes that xData has at least two elements, is sorted and is strictly monotonic increasing
+    //   boolean argument extrapolate determines behaviour beyond ends of array (if needed)
+
+    // Original data
+    std::vector<double> xData = { 149, 316, 538, 649, 760, 871};
+    std::vector<double> yData = { 16.9, 20.5, 26.5, 28.7, 31.4, 35.3};
+
+    int size = xData.size();
+    double x = T;
+
+    int i = 0;                                                                  // find left end of interval for interpolation
+    if ( x >= xData[size - 2] )                                                 // special case: beyond right end
+    {
+    i = size - 2;
+    }
+    else
+    {
+    while ( x > xData[i+1] ) i++;
+    }
+    double xL = xData[i], yL = yData[i], xR = xData[i+1], yR = yData[i+1];      // points on either side (unless beyond ends)
+    if ( !extrapolate )                                                         // if beyond ends of array and not extrapolating
+    {
+    if ( x < xL ) yR = yL;
+    if ( x > xR ) yL = yR;
+    }
+
+    double dydx = ( yR - yL ) / ( xR - xL );                                    // gradient
+
+    return yL + dydx * ( x - xL );                                              // linear interpolation    
+}
 
 void EXPORT_MY_CODE test_struct_param(SIM_PARAM * sim_param, PCHE_GEO_PARAM * geo, BoundaryCondtion * bc, double * h_hot, double * h_cold, double * p_hot, double * p_cold, size_t N_seg)
 {

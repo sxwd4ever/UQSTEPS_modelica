@@ -76,6 +76,8 @@ double EXPORT_MY_CODE from_degC(double degC);
  */
 bool EXPORT_MY_CODE the_same(double x, double y, double eps, double & diff_per);
 
+double EXPORT_MY_CODE material_conductivity(double T, bool extrapolate = false);
+
 void EXPORT_MY_CODE test_struct_param(SIM_PARAM * sim_param, PCHE_GEO_PARAM * geo, BoundaryCondtion * bc, double * h_hot, double * h_cold, double * p_hot, double * p_cold, size_t N_seg);
 
 void EXPORT_MY_CODE setState_C_impl(double p, double M,  State *state);

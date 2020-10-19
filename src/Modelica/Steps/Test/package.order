@@ -3,8 +3,8 @@ TestPCHE
 TestFanCooler
 TestMerger
 TestPCHECImpl
+TestPCHEMImpl
 TestPCMHeater
 TestPump
 TestSplitter
 TestTurbine
-TestPCHEMImpl

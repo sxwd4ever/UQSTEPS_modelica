@@ -2,7 +2,7 @@ within Steps.Utilities;
 
 model CoolProp
 
-  import Steps.Components.{ThermoState, PCHEGeoParam, KimCorrCoe, SimParam, BoundaryCondition, SimulationResult};
+  import Steps.Components.{ThermoState, PCHEGeoParam, KimCorrCoe, SimParam, PCHEBoundaryCondition, SimulationResult};
   import Modelica.SIunits.Conversions.{from_deg, from_bar};  
   
   function PropsSI "Import the MyPropsLib's PropsSI Function"
@@ -68,7 +68,7 @@ function PCHE_OFFD_Simulation "test for transferring c struct as input/output pa
     
     input SimParam sim_param;    
     
-    input BoundaryCondition bc;
+    input PCHEBoundaryCondition bc;
     
     output Real h_hot[2];
     output Real h_cold[2];
@@ -98,7 +98,7 @@ double EXPORT_MY_CODE test_struct_param(SIM_PARAM * sim_para, PCHE_GEO_PARAM * g
     
     input PCHEGeoParam geo;
     
-    input BoundaryCondition bc;      
+    input PCHEBoundaryCondition bc;      
     
     output Real h_hot[2];
     output Real h_cold[2];
@@ -134,7 +134,7 @@ double EXPORT_MY_CODE test_struct_param(SIM_PARAM * sim_para, PCHE_GEO_PARAM * g
   
   SimParam sim_param(err=1e-2, delta_T_init = 5, N_iter = 10000, step_rel=0.2, log_level = 1);
   
-  BoundaryCondition bc(
+  PCHEBoundaryCondition bc(
   st_hot_in(T = 730, p = from_bar(90), h = 932534, mdot = 10), 
   st_cold_in(T = 500, p = from_bar(225), h = 627426, mdot = 10), 
   st_hot_out(T = 576.69, p = from_bar(90), h = 754560, mdot = 10), 

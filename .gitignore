@@ -121,6 +121,8 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# bin library
 src/Modelica/Steps/Resources/Library/MyProps.dll
 src/Modelica/Steps/Resources/Library/libCoolProp.a
 src/Modelica/Steps/Resources/Library/libCoolProp.dll
@@ -129,4 +131,7 @@ src/Modelica/Steps/Resources/Library/libCoolProp.dll
 src/Modelica/Steps/Resources/Library/bak/CoolProp.dll
 src/Modelica/Steps/Resources/Library/bak/libCoolProp.a
 src/Modelica/Steps/Resources/Library/bak/libCoolProp.dll
+
+# my temperatury backup files
+bak/
 
