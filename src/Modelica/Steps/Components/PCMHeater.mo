@@ -17,12 +17,18 @@ model PCMHeater
   import Steps.Utilities.CoolProp.PropsSI;
   
   parameter Modelica.SIunits.MassFlowRate mdot_init = 100;
+  // TRUE: use pcm heater to set Power block's mass flow rate; false: use upstream component's output
+  parameter Boolean SetMdot = false;
 
 equation
  
   // outlet.m_flow + inlet.m_flow = 0; 
   
-  outlet.m_flow = - mdot_init;
+  if SetMdot then
+    outlet.m_flow = - mdot_init;
+  else
+    outlet.m_flow + inlet.m_flow = 0;
+  end if;
   
   T_output = max(T_output_set, T_inlet);
   

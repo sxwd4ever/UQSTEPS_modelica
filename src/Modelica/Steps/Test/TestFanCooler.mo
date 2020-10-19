@@ -4,6 +4,13 @@ model TestFanCooler
   "StandAlone Component Test For FanCooler"      
   
   import Modelica.SIunits.Conversions.{from_bar, from_degC};    
+  import Steps.Components.PCHEBoundaryCondition;
+  import Steps.Components.ThermoState;
+
+  parameter Steps.Cycle.OffDPBParamSet param;  
+  
+  parameter PCHEBoundaryCondition bc_LTR = param.bc_LTR;
+  parameter ThermoState bc_cooler_out = param.bc_cooler_out;  
 
   parameter Modelica.SIunits.AbsolutePressure p_sys = from_bar(90) "p of hot inlet"; 
   
@@ -18,9 +25,9 @@ model TestFanCooler
   parameter Modelica.SIunits.Temperature T_AMB = from_degC(15) "Ambinent temperature";
   
   Components.Source source(
-    p_outlet = p_sys,
-    T_outlet = T_in,
-    mdot_init = mdot,
+    p_outlet = bc_LTR.st_hot_out.p,
+    T_outlet = bc_LTR.st_hot_out.T,
+    mdot_init = bc_LTR.st_hot_out.mdot,
     fix_state = true
   );
 
@@ -32,14 +39,13 @@ model TestFanCooler
     fix_state = false
   );
 
-  Components.FanCooler colder(
-    T_amb = T_AMB,
-    delta_T = DT_COOLER
+  Components.FanCooler cooler(
+    T_output = bc_cooler_out.T
   );
 
 equation
   
-  connect(source.outlet, colder.inlet);  
-  connect(colder.outlet, sink.inlet);
+  connect(source.outlet, cooler.inlet);  
+  connect(cooler.outlet, sink.inlet);
 
 end TestFanCooler;
