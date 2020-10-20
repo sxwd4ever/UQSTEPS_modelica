@@ -10,7 +10,8 @@ model TestMerger
   parameter Steps.Cycle.OffDPBParamSet param;  
   
   parameter PCHEBoundaryCondition bc_LTR = param.bc_LTR;
-  parameter PCHEBoundaryCondition bc_HTR = param.bc_HTR;  
+  parameter PCHEBoundaryCondition bc_HTR = param.bc_HTR;
+  parameter ThermoState bc_bypass = param.bc_bypass;  
     
   // **** Arbitary inputs ****
   parameter Modelica.SIunits.Pressure P_ATM = 101325; // Pa  
@@ -30,9 +31,11 @@ model TestMerger
   );
 
   Components.Source source_2(
-    p_outlet = bc_HTR.st_cold_in.p,
-    T_outlet = bc_HTR.st_cold_in.T,
-    mdot_init = bc_HTR.st_cold_in.mdot - bc_LTR.st_cold_out.mdot,
+    p_outlet = bc_bypass.p,
+    T_outlet = bc_bypass.T,
+    mdot_init = bc_bypass.mdot,
+    outlet.p(start = bc_bypass.p),
+    outlet.h_outflow(start = bc_bypass.h),   
     fix_state = true
   );
 
@@ -44,8 +47,12 @@ model TestMerger
   );
 
   Components.Merger merger(
-    // T_init = T_AMB,
-    // p_init = P_ATM
+    outlet.p(start = bc_HTR.st_cold_in.p),
+    outlet.h_outflow(start = bc_HTR.st_cold_in.h),
+    inlet.p(start = bc_LTR.st_cold_out.p),
+    inlet.h_outflow(start = bc_LTR.st_cold_out.h),    
+    inlet_merge.p(start = bc_bypass.p),
+    inlet_merge.h_outflow(start = bc_bypass.h)
   );
 
 equation

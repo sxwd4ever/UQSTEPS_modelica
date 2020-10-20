@@ -47,7 +47,7 @@ double EXPORT_MY_CODE MyPropsSI_pH(double p, double H, const char * FluidName, d
 /**
  * off-design simulation for PCHE
  */
-double EXPORT_MY_CODE PCHE_OFFD_Simulation(const char * name, const char * media_hot, const char * media_cold, PCHE_GEO_PARAM * geo, KIM_CORR_COE * cor, SIM_PARAM * sim_param, BoundaryCondtion * bc, double * h_hot, double * h_cold, double * p_hot, double * p_cold);
+double EXPORT_MY_CODE PCHE_OFFD_Simulation(const char * name, const char * media_hot, const char * media_cold, PCHE_GEO_PARAM * geo, KIM_CORR_COE * cor, SIM_PARAM * sim_param, BoundaryCondtion * bc, double * h_hot, double * h_cold, double * p_hot, double * p_cold, double * Q, double * U);
 
 /**
  * Create new ThermoState with given (p, T), mdot and medium name

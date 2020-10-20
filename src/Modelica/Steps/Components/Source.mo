@@ -6,13 +6,14 @@ model Source
   
   import CP = Steps.Utilities.CoolProp;  
   import Modelica.SIunits.Conversions.{from_bar, from_degC};
+  import Modelica.Blocks.Interfaces.RealInput;
   
   replaceable package PBMedia = Steps.Media.SCO2;
   
   // fixed outlet temperautre and pressure
   parameter Modelica.SIunits.AbsolutePressure p_outlet = 9 * 1e6;
   parameter Modelica.SIunits.Temperature T_outlet = from_degC(400);
-
+  
   // fixed mass flow
   parameter Modelica.SIunits.MassFlowRate mdot_init = 8.3;
   
@@ -27,6 +28,7 @@ equation
   if fix_state then 
     outlet.p = p_outlet;
     outlet.m_flow = - mdot_init;  
+    // outlet.h_outflow = max(CP.PropsSI("H", "P", p_outlet, "T", T_outlet, PBMedia.mediumName), h_out_update);
     outlet.h_outflow = CP.PropsSI("H", "P", p_outlet, "T", T_outlet, PBMedia.mediumName);
     T = T_outlet;
   else     

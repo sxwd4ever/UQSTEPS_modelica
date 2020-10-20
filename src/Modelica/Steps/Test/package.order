@@ -8,3 +8,6 @@ TestPCMHeater
 TestPump
 TestSplitter
 TestTurbine
+TestOffDRCBCOpenLoop
+TestComponentSeries
+TestPre

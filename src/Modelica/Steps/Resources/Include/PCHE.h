@@ -237,10 +237,6 @@ private:
     PCHE_CELL * _cell_hot;
     PCHE_CELL * _cell_cold;
     
-    // overall heat transfer coefficients
-    double * _U;
-    // array of local transferred heat 
-    double * _Q;
     // index of the pinch point cell
     int _idx_pinch;
 
@@ -256,6 +252,11 @@ public:
     void set_kim_corr_coe(KIM_CORR_COE & coe);
 
     bool simulate(const char * media_hot, const char * media_cold, BoundaryCondtion & bc, SIM_PARAM & sim_param, SimulationResult & sr);
+
+    // overall heat transfer coefficients
+    double * _U;
+    // array of local transferred heat 
+    double * _Q;    
 };
 
 std::string new_state_string(ThermoState & st);

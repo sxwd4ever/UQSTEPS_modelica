@@ -12,14 +12,14 @@ model TwoPorts
    
   parameter Boolean debug_mode = false;
   
-  Modelica.SIunits.Temperature T_inlet;
-  
-  Modelica.SIunits.Temperature T_outlet;
+  // runtime T of inlet/outlet for debug purpose
+  Modelica.SIunits.Temperature T_inlet_rt;  
+  Modelica.SIunits.Temperature T_outlet_rt;
   
 equation
 
-  T_inlet = PropsSI("T","P", inlet.p, "H", inlet.h_outflow, PBMedia.mediumName); 
+  T_inlet_rt = PropsSI("T","P", inlet.p, "H", inlet.h_outflow, PBMedia.mediumName); 
   
-  T_outlet = PropsSI("T", "P", outlet.p, "H", outlet.h_outflow, PBMedia.mediumName);
+  T_outlet_rt = PropsSI("T", "P", outlet.p, "H", outlet.h_outflow, PBMedia.mediumName);
 
 end TwoPorts;

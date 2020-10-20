@@ -5,17 +5,18 @@ model TestPCHECImpl
   
   import Modelica.SIunits.Conversions.{from_bar, from_deg, from_degC};   
   import Steps.Utilities.CoolProp.PropsSI;
-  import Steps.Components.{PCHEBoundaryCondition, PCHEGeoParam, ThermoState};
+  import Steps.Components.{PCHEBoundaryCondition, PCHEGeoParam, ThermoState, SimParam};
   import Steps.Cycle.OffDPBParamSet;
   
-  parameter OffDPBParamSet param;
+  parameter OffDPBParamSet param(geo_HTR.N_seg = 50);
   
   parameter Boolean SourceFixed_hot = true;  
   parameter Boolean SourceFixed_cold = true;   
   
   // select the group of parameter set as input here
-  parameter PCHEBoundaryCondition bc = param.bc_HTR;
-  parameter PCHEGeoParam geo = param.geo_HTR;  
+  parameter PCHEBoundaryCondition bc = param.bc_LTR;
+  parameter PCHEGeoParam geo = param.geo_LTR;  
+  parameter SimParam sim_param = param.sim_param_def;
 
   Components.Source source_hot(
     p_outlet = bc.st_hot_in.p,
@@ -48,11 +49,12 @@ model TestPCHECImpl
   Components.PCHECImpl pche(
     geo = geo,   
     bc = bc,   
-    sim_param(log_level = 1, step_rel = 0.13) // step_rel will affect result's error and simulation speed
+    sim_param = sim_param // step_rel will affect result's error and simulation speed
+     // step_rel will affect result's error and simulation speed
   );
 
 equation  
-  
+   
   connect(source_hot.outlet, pche.inlet_hot);
   connect(pche.outlet_hot, sink_hot.inlet);
   connect(source_cold.outlet, pche.inlet_cold);

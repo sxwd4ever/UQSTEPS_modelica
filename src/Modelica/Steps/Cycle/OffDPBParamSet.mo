@@ -1,13 +1,13 @@
 within Steps.Cycle;
 
 model OffDPBParamSet
-    "Default param set for Off-design power block test"
+    "Preset param set for Off-design power block test"
     
     import Modelica.SIunits.Conversions.{from_degC, from_deg};
     import Modelica.SIunits.{Temperature, Pressure, SpecificEnthalpy};
     import Util = Utilities.Util;
     import Steps.Utilities.CoolProp.PropsSI;  
-    import Steps.Components.{PCHEBoundaryCondition, ThermoState, PCHEGeoParam}; 
+    import Steps.Components.{PCHEBoundaryCondition, ThermoState, PCHEGeoParam, SimParam}; 
 
     replaceable package PBMedia = Steps.Media.SCO2;   
 
@@ -74,8 +74,13 @@ model OffDPBParamSet
       st_hot_out(p = p_pump_in, T = from_degC(67.229), h = PropsSI("H", "P", bc_LTR.st_hot_out.p, "T", bc_LTR.st_hot_out.T, PBMedia.mediumName), mdot = mdot_main),
       st_cold_out(p = p_pump_out, T = T_LTR_cold_out, h = PropsSI("H", "P", bc_LTR.st_cold_out.p, "T", bc_LTR.st_cold_out.T, PBMedia.mediumName), mdot = mdot_pump)); 
        
-    parameter Steps.Components.ThermoState bc_cooler_out(p = bc_LTR.st_hot_out.p, T = from_degC(33), h = PropsSI("H", "P", bc_cooler_out.p, "T", bc_cooler_out.T, PBMedia.mediumName), mdot = mdot_pump);
+    parameter Steps.Components.ThermoState bc_cooler_out(p = bc_LTR.st_hot_out.p, T = from_degC(33), h = PropsSI("H", "P", bc_cooler_out.p, "T", bc_cooler_out.T, PBMedia.mediumName), mdot = mdot_pump);    
+    parameter Steps.Components.ThermoState bc_heater_out(p = bc_HTR.st_cold_out.p, T = from_degC(700), h = PropsSI("H", "P", bc_heater_out.p, "T", bc_heater_out.T, PBMedia.mediumName), mdot = mdot_main);    
+    parameter Steps.Components.ThermoState bc_bypass(p = bc_HTR.st_cold_in.p, T = bc_HTR.st_cold_in.T, h = bc_HTR.st_cold_in.h, mdot = mdot_bypass);
     
-    parameter Steps.Components.ThermoState bc_heater_out(p = bc_HTR.st_cold_out.p, T = from_degC(700), h = PropsSI("H", "P", bc_heater_out.p, "T", bc_heater_out.T, PBMedia.mediumName), mdot = mdot_main);
    // **** Boundary Conditions as Start values for all components - end ****      
-  end OffDPBParamSet;
+   
+   // default 
+   parameter SimParam sim_param_def(err=1e-3, delta_T_init = 5, N_iter = 10, step_rel=0.13, log_level = 1);
+   parameter SimParam sim_param_fast(err=1e-2, delta_T_init = 5, N_iter = 10, step_rel=0.3, log_level = 1);
+end OffDPBParamSet;

@@ -11,6 +11,7 @@ model PCHECImpl
   import UTIL = Modelica.Utilities;
   import MyUtil = Steps.Utilities.Util;
   import Modelica.SIunits.Conversions.{from_degC, from_bar, to_degC};
+  
 /*  
   replaceable Steps.Interfaces.PBFluidPort_a inlet_hot(redeclare package Medium = PBMedia, p(start= p_start_hot), h_outflow(start = h_start_hot)) "Inlet port, previous component";
   replaceable Steps.Interfaces.PBFluidPort_b outlet_hot(redeclare package Medium = PBMedia, p(start= p_start_hot), h_outflow(start = h_start_hot)) "Outlet port, next component";
@@ -60,7 +61,7 @@ model PCHECImpl
   // Geometry determined correlation coefficients - a, b, c d
   inner KimCorrelations kim_cor(phi = geo.phi, pitch = geo.pitch, d_h = d_h); 
   
-  SimParam sim_param(err=1e-2, delta_T_init = 5, N_iter = 10, step_rel=0.3, log_level = 1);
+  parameter SimParam sim_param(err=1e-3, delta_T_init = 5, N_iter = 10, step_rel=0.3, log_level = 1);
   
   // only (p, h, mdot) of the hot/cold inlet matters
   PCHEBoundaryCondition bc_rt(
@@ -74,13 +75,27 @@ model PCHECImpl
   Real h_hot[2];
   Real h_cold[2];
   Real p_hot[2];
-  Real p_cold[2];    
+  Real p_cold[2];  
+  /*
+  Real h_hot_new[2];
+  Real h_cold_new[2];
+  Real p_hot_new[2];
+  Real p_cold_new[2];
+  */
+  
+  constant Integer MAX_SEG_NUM = 200 "Maximum segment number in [Kwon2019]"; 
+  
+  Real Q[MAX_SEG_NUM];
+  Real U[MAX_SEG_NUM];   
   
   // output for debug purpose
+
   Modelica.SIunits.Temp_C T_hot_in =  to_degC(PropsSI("T", "P", inlet_hot.p, "H", inlet_hot.h_outflow, PBMedia.mediumName));  
-  Modelica.SIunits.Temp_C T_cold_in = to_degC(PropsSI("T", "P", inlet_cold.p, "H", inlet_cold.h_outflow, PBMedia.mediumName));  
+  Modelica.SIunits.Temp_C T_cold_in = to_degC(PropsSI("T", "P", inlet_cold.p, "H", inlet_cold.h_outflow, PBMedia.mediumName)); 
+  Modelica.SIunits.Temp_C T_cold_in_real = to_degC(PropsSI("T", "P", p_cold[2], "H", h_cold[2], PBMedia.mediumName));   
   Modelica.SIunits.Temp_C T_hot_out = to_degC(PropsSI("T", "P", outlet_hot.p, "H", outlet_hot.h_outflow, PBMedia.mediumName));  
   Modelica.SIunits.Temp_C T_cold_out = to_degC(PropsSI("T", "P", outlet_cold.p, "H", outlet_cold.h_outflow, PBMedia.mediumName));  
+
   
   KimCorrCoe cor(a=kim_cor.a, b=kim_cor.b, c=kim_cor.c, d=kim_cor.d);  
   
@@ -135,30 +150,93 @@ equation
     bc.st_cold_in.mdot = inlet_cold.m_flow;  
   end if;
   */ 
+  /*
+  bc_rt.st_hot_in.p = pre(inlet_hot.p);
+  bc_rt.st_hot_in.h = pre(inlet_hot.h_outflow);
+  bc_rt.st_hot_in.mdot = pre(inlet_hot.m_flow);
+  
+  bc_rt.st_cold_in.p = pre(inlet_cold.p);
+  bc_rt.st_cold_in.h = pre(inlet_cold.h_outflow);
+  bc_rt.st_cold_in.mdot = pre(inlet_cold.m_flow);  
+  */
+/*
+  when initial() then
+    p_cold[1] = bc.st_cold_out.p;
+    h_cold[1] = bc.st_cold_out.h;
+    
+    p_cold[2] = bc.st_cold_in.p;
+    h_cold[2] = bc.st_cold_in.h;
+    
+    p_hot[1] = bc.st_hot_in.p;
+    h_hot[1] = bc.st_hot_in.h;
+    
+    p_hot[2] = bc.st_hot_out.p;
+    h_hot[2] = bc.st_hot_out.p;    
+    
+    // inlet_hot.m_flow = bc.st_cold_in.mdot;
+    // inlet_cold.m_flow = bc.st_cold_in.mdot;
+    
+  end when;
+*/
   bc_rt.st_hot_in.p = inlet_hot.p;
   bc_rt.st_hot_in.h = inlet_hot.h_outflow;
   bc_rt.st_hot_in.mdot = inlet_hot.m_flow;
   
   bc_rt.st_cold_in.p = inlet_cold.p;
   bc_rt.st_cold_in.h = inlet_cold.h_outflow;
-  bc_rt.st_cold_in.mdot = inlet_cold.m_flow;  
+  bc_rt.st_cold_in.mdot = inlet_cold.m_flow; 
    
-  (h_hot, h_cold, p_hot, p_cold) = CP.PCHE_OFFD_Simulation(name, "CO2", "CO2", geo, cor, sim_param, bc_rt);
+  (h_hot, h_cold, p_hot, p_cold, Q, U) = CP.PCHE_OFFD_Simulation(name, "CO2", "CO2", geo, cor, sim_param, bc_rt);
 
   inlet_hot.m_flow + outlet_hot.m_flow = 0;
-
   inlet_cold.m_flow + outlet_cold.m_flow = 0;
   
-  inlet_hot.h_outflow = inStream(inlet_hot.h_outflow);
-  
+  inlet_hot.h_outflow = inStream(inlet_hot.h_outflow);  
   inlet_cold.h_outflow = inStream(inlet_cold.h_outflow);   
 
-// algorithm
+  // inlet_hot.h_outflow = h_hot[1];
+  // inlet_hot.p = p_hot[1];
   
+  // inlet_cold.h_outflow = h_cold[2];
+  // inlet_cold.p = p_cold[2];
+
   outlet_hot.h_outflow = h_hot[2];
   outlet_hot.p = p_hot[2];
   
   outlet_cold.h_outflow = h_cold[1];
   outlet_cold.p = p_cold[1];
+
+    
+  //T_hot_in_new = PropsSI("T", "P", p_hot[1], "H", h_hot[1], "CO2");
+
+/*
+algorithm
+
+  when not initial() then
+  
+    inlet_hot.h_outflow := h_hot_new[1];
+    inlet_hot.p := p_hot_new[1];
+    
+    inlet_cold.h_outflow := h_cold_new[2];
+    inlet_cold.p := p_cold_new[2];    
+    
+    outlet_hot.h_outflow := h_hot_new[2];
+    outlet_hot.p := p_hot_new[2];
+    
+    outlet_cold.h_outflow := h_cold_new[1];
+    outlet_cold.p := p_cold_new[1];
+  end when;
+  
+equation
+
+  when time > 0 then
+ 
+    reinit(h_hot, h_hot_new);
+    reinit(p_hot, p_hot_new);
+    reinit(h_cold, h_cold_new);
+    reinit(p_cold, p_cold_new);
+  
+  end when;
+*/  
   
 end PCHECImpl;

@@ -182,7 +182,7 @@ std::string new_state_string(double p, double h, const char * media)
 /**
  * off-design simulation for PCHE
  */
-double EXPORT_MY_CODE PCHE_OFFD_Simulation(const char * name, const char * media_hot, const char * media_cold, PCHE_GEO_PARAM * geo, KIM_CORR_COE * cor, SIM_PARAM * sim_param, BoundaryCondtion * bc, double * h_hot, double * h_cold, double * p_hot, double * p_cold)
+double EXPORT_MY_CODE PCHE_OFFD_Simulation(const char * name, const char * media_hot, const char * media_cold, PCHE_GEO_PARAM * geo, KIM_CORR_COE * cor, SIM_PARAM * sim_param, BoundaryCondtion * bc, double * h_hot, double * h_cold, double * p_hot, double * p_cold, double * Q, double * U)
 {
     int N_seg = geo->N_seg;
     bool done = false;
@@ -244,6 +244,13 @@ double EXPORT_MY_CODE PCHE_OFFD_Simulation(const char * name, const char * media
     p_hot[1] = sr.p_hot[last];
     p_cold[0] = sr.p_cold[0];
     p_cold[1] = sr.p_cold[last];
+
+    for (size_t i = 0; i < N_seg; i++)
+    {
+        Q[i] = pche->_Q[i];
+        U[i] = pche->_U[i];
+    }
+    
 
     // if (done)
     // {
