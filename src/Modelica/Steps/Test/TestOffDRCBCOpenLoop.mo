@@ -112,15 +112,15 @@ model TestOffDRCBCOpenLoop
     outlet_split.h_outflow(start = bc_LTR.st_hot_out.h)
   );
   
-  Steps.Components.Merger merger(
+  Steps.Components.Mixer mixer(
     //T_init = T_AMB,
     //p_init = P_ATM,
     outlet.p(start = bc_HTR.st_cold_in.p),
     outlet.h_outflow(start = bc_HTR.st_cold_in.h),
     inlet.p(start = bc_LTR.st_cold_out.p),
     inlet.h_outflow(start = bc_LTR.st_cold_out.h),    
-    inlet_merge.p(start = bc_LTR.st_cold_out.p),
-    inlet_merge.h_outflow(start = bc_LTR.st_cold_out.h)
+    inlet_mix.p(start = bc_LTR.st_cold_out.p),
+    inlet_mix.h_outflow(start = bc_LTR.st_cold_out.h)
   );
   
   //total efficiency
@@ -146,7 +146,7 @@ equation
   connect(LTR.outlet_hot, splitter.inlet);
   //recompression loop
   connect(splitter.outlet_split, recom_pump.inlet);
-  connect(recom_pump.outlet, merger.inlet_merge);  
+  connect(recom_pump.outlet, mixer.inlet_mix);  
   
   connect(splitter.outlet, fan_cooler.inlet);
   
@@ -158,11 +158,11 @@ equation
   
   // connect(regulator_LTR_cold.outlet, LTR.inlet_cold);  
    
-  connect(LTR.outlet_cold, merger.inlet);
+  connect(LTR.outlet_cold, mixer.inlet);
   
-  connect(merger.outlet, HTR.inlet_cold);
+  connect(mixer.outlet, HTR.inlet_cold);
   
-  // connect(merger.outlet, regulator_HTR_cold.inlet);
+  // connect(mixer.outlet, regulator_HTR_cold.inlet);
   
   // connect(regulator_HTR_cold.outlet, HTR.inlet_cold);
   

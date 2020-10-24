@@ -233,15 +233,15 @@ model OffDesignRCBCycle
     //outlet_split.h_outflow(start = H_PUMP_I)
   );
   
-  Steps.Components.Merger merger(
+  Steps.Components.Mixer mixer(
     //T_init = T_AMB,
     //p_init = P_ATM
     inlet.p(start = P_LTR_C_E),
     inlet.h_outflow(start = H_PUMP_E),    
     outlet.p(start = P_LTR_C_E),
     outlet.h_outflow(start = H_PUMP_E),
-    inlet_merge.p(start = P_PUMP_E),
-    inlet_merge.h_outflow(start = H_PUMP_E)
+    inlet_mix.p(start = P_PUMP_E),
+    inlet_mix.h_outflow(start = H_PUMP_E)
   );
   
   //total efficiency
@@ -258,7 +258,7 @@ equation
   connect(LTR.outlet_hot, splitter.inlet);
   //recompression loop
   connect(splitter.outlet_split, recom_pump.inlet);
-  connect(recom_pump.outlet, merger.inlet_merge);  
+  connect(recom_pump.outlet, mixer.inlet_mix);  
   
   connect(splitter.outlet, fan_cooler.inlet);
   
@@ -266,9 +266,9 @@ equation
   
   connect(pump.outlet, LTR.inlet_cold);  
    
-  connect(LTR.outlet_cold, merger.inlet);
+  connect(LTR.outlet_cold, mixer.inlet);
   
-  connect(merger.outlet, HTR.inlet_cold);
+  connect(mixer.outlet, HTR.inlet_cold);
   
   connect(HTR.outlet_cold, pcm_heater.inlet);    
   

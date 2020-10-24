@@ -1,6 +1,6 @@
 within Steps.Test;
 
-model TestMerger
+model TestMixer
   "StandAlone Component Test For FanCooler"      
   
   import Modelica.SIunits.Conversions.{from_bar, from_degC};
@@ -46,21 +46,21 @@ model TestMerger
     fix_state = false
   );
 
-  Components.Merger merger(
+  Components.Mixer mixer(
     outlet.p(start = bc_HTR.st_cold_in.p),
     outlet.h_outflow(start = bc_HTR.st_cold_in.h),
     inlet.p(start = bc_LTR.st_cold_out.p),
     inlet.h_outflow(start = bc_LTR.st_cold_out.h),    
-    inlet_merge.p(start = bc_bypass.p),
-    inlet_merge.h_outflow(start = bc_bypass.h)
+    inlet_mix.p(start = bc_bypass.p),
+    inlet_mix.h_outflow(start = bc_bypass.h)
   );
 
 equation
   
-  connect(source.outlet, merger.inlet); 
+  connect(source.outlet, mixer.inlet); 
    
-  connect(source_2.outlet, merger.inlet_merge);  
+  connect(source_2.outlet, mixer.inlet_mix);  
   
-  connect(merger.outlet, sink.inlet);
+  connect(mixer.outlet, sink.inlet);
 
-end TestMerger;
+end TestMixer;

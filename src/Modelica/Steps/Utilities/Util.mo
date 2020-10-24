@@ -175,12 +175,6 @@ function checkPortType
     //connect(from, to);
 end checkPortType;
 
-function CalReOffDesignStart
 
-algorithm
-
-  
-
-end CalReOffDesignStart;
   
 end Util;

@@ -42,9 +42,14 @@ void PCHE_CELL::init(int idx, int type, PCHE * pche)
     this->type_stream = type;
 }
 
+std::string PCHE_CELL::to_string()
+{
+    return string_format("(p, T, h)_{%s, %d} = %f, %f, %f\n", type_name(),idx, p, T, h);
+}
+
 void PCHE_CELL::print_state()
 {
-    cout<<"(p, T, h)_{"<<type_name()<<", "<<idx<<"} = "<<p<<", "<<T<<", "<<h<<endl;
+    cout<<to_string();
 }
 
 bool PCHE_CELL::validate()
@@ -267,14 +272,11 @@ bool PCHE::_calc_U(int idx, BoundaryCondtion & bc)
         }
     }
     else
-    {
-        const char * err = "!!! invalid cell state";
-        if(_can_log(log_level::ERR))
-        {
-            cout<<_name<<", "<< err<<endl;            
-            c_h->print_state();
-            c_c->print_state();
-        }
+    {        
+        std::string err = string_format("%s !!! invalid cell state\n", _name);
+        _log(err, log_level::ERR);      
+        _log(c_h->to_string() + c_c->to_string(), log_level::ERR);
+
         throw std::out_of_range(err);
         /*
         heat_exchanged = false;
@@ -302,11 +304,9 @@ bool PCHE::simulate(const char * media_hot, const char * media_cold, BoundaryCon
 
     g_log_level = sim_param.log_level;
 
-    _print_geo_param(_geo);
-
-    _print_boundary_conditions(bc);
-
-    _print_sim_param(sim_param);
+    _log(_geo_param_info(_geo), log_level::INFO);
+    _log(_boundary_condition_info(bc), log_level::INFO);
+    _log(_sim_param_info(sim_param), log_level::INFO);
 
     bool converged = false;
     
@@ -350,14 +350,14 @@ bool PCHE::simulate(const char * media_hot, const char * media_cold, BoundaryCon
             _cell_hot[0].h = _cp_props(_handle_cp_hot, _handle_H);
             _cell_cold[0].h = _cp_props(_handle_cp_cold, _handle_H);
 
-            str_stream<<endl<<"before "<< i<< " th trial:"<<endl;
+            str_stream<<endl<<_name<<": before "<< i<< " th trial:"<<endl;
             _print_PCHE_state(str_stream.str());
 
             for(idx_cell = 0; idx_cell < _geo.N_seg; idx_cell ++)
             {
                 heat_exchanged = this->_calc_U(idx_cell, bc);
                 if(!heat_exchanged)
-                    throw std::out_of_range("no heat exchanged");
+                    throw std::out_of_range(string_format(" %s no heat exchanged", _name));
 
                 // if(heat_exchanged)
                 //     // heat_exchanged = this->calc_U(idx_cell, h_hot, h_cold, bc);
@@ -377,18 +377,17 @@ bool PCHE::simulate(const char * media_hot, const char * media_cold, BoundaryCon
             converged = the_same(_cell_cold_in()->T, bc.st_cold_in.T, sim_param.err, diff_per);
 
             str_stream.clear();
-            str_stream<<endl<<"after "<< i<< " th trial:"<<endl;
+            str_stream<<endl<<_name<<": after "<< i<< " th trial:"<<endl;
             _print_PCHE_state(str_stream.str());
 
-            if(_can_log(log_level::DEBUG))
-            {
-                cout<<"-> T_{cold,out}="<<_cell_cold[0].T <<" K; ";
-                if(_idx_pinch > 0)
-                    cout<<"T_{cold, pinch="<<_idx_pinch<<"}="<<_cell_cold[_idx_pinch].T<<" K; ";
-                else
-                    cout<<"T_{cold,in}="<< _cell_cold_in()->T<<" K; ";
-                cout<<"diff(%)="<< diff_per<<"; next dT="<<dT<<" K "<<endl;
-            }
+            std::string info;
+
+            if(_idx_pinch > 0)
+                info = string_format("-> T_{cold, out}=%f K; T_{cold,pinch=%d}=%f K; diff_rel=%f; dT_next= %f K\n", _cell_cold[0].T, _idx_pinch, _cell_cold[_idx_pinch].T, diff_per, dT);
+            else
+                info = string_format("-> T_{cold, out}=%f K; T_{cold,in}=%f K; diff_rel=%f; dT_next= %f K\n", _cell_cold[0].T, _cell_cold_in()->T, diff_per, dT);
+
+            _log(info, log_level::DEBUG);
 
             if(converged)
                 break;
@@ -397,16 +396,14 @@ bool PCHE::simulate(const char * media_hot, const char * media_cold, BoundaryCon
             _cell_cold[0].p = bc.st_cold_in.p;
         }
 
-        if(_can_log(log_level::DEBUG))
-        {
-            cout<<"simluation done with result:"<<endl;
+        std::string info = 
+        string_format("%s simluation done with result:", _name) +
+        _cell_hot[0].to_string() +
+        _cell_hot[sr.N_seg - 1].to_string() + 
+        _cell_cold[0].to_string() + 
+        _cell_cold[sr.N_seg - 1].to_string();
 
-            _cell_hot[0].print_state();
-            _cell_hot[sr.N_seg - 1].print_state();
-            _cell_cold[0].print_state();
-            _cell_cold[sr.N_seg - 1].print_state();
-        }
-        
+        _log(info, log_level::DEBUG);        
     }
     catch(const std::exception& e)
     {
@@ -418,11 +415,8 @@ bool PCHE::simulate(const char * media_hot, const char * media_cold, BoundaryCon
             _cell_cold[i].clone(&_cell_cold[i - 1]);
         }
 
-        if(_can_log(log_level::DEBUG))
-        {
-            std::string info = string_format("clone cell state form %d th cell\n", idx_cell);
-            _print_PCHE_state(info);
-        }
+        _log(string_format("%s clone cell state form %d th cell\n", _name, idx_cell), log_level::DEBUG);
+        _print_PCHE_state(info);
         //std::cerr << e.what() << '\n';
     }
     
@@ -447,9 +441,9 @@ void PCHE::_cp_state_update(long handle_stream, long handle_input, double val1, 
 
     if(_err_code != 0)
     {
-        const char * err = "error in state update";
-        _print_cp_err(err);
-        throw std::out_of_range(err);
+        std::string err = string_format("%s error in state update\n", _name);
+        _print_cp_err(err.c_str());
+        throw std::out_of_range(err.c_str());
     }
 }
 
@@ -462,7 +456,7 @@ double PCHE::_cp_props(long handle_stream, long handle_prop, double def_value, d
     if(_err_code != 0)
     {
         // handle the err
-        const char * err = "error in CoolProp's PropsSI";
+        std::string err = string_format("%s error in CoolProp's PropsSI\n", _name);
         _print_cp_err(err);
         prop = def_value;
         throw std::out_of_range(err);
@@ -478,7 +472,7 @@ long PCHE::_cp_new_state(const char * medium)
     long handle = AbstractState_factory("HEOS", medium, &_err_code, _cp_err_buf, _buffer_size);
 
     if(_err_code != 0)
-        _print_cp_err("error in creating new state");
+        _print_cp_err(string_format("%s error in creating new state", _name));
 
     return handle;
 }
@@ -545,78 +539,70 @@ std::string new_state_string(const char * name, ThermoState & st)
     return str_stream.str();
 }
 
-void PCHE::_print_boundary_conditions(BoundaryCondtion & bc)
+std::string PCHE::_boundary_condition_info(BoundaryCondtion & bc)
 {
-    if(!_can_log(log_level::DEBUG))
-        return;
+    std::string info = string_format("**** %s 's boundary condition ****\n", _name);
 
-    cout<< "**** boundary condition ****"<<endl;
-    cout<< new_state_string(bc.st_hot_in);
-    cout<< new_state_string(bc.st_cold_in);
-    cout<< new_state_string(bc.st_hot_out);
-    cout<< new_state_string(bc.st_cold_out);
+    return info + new_state_string(bc.st_hot_in) + new_state_string(bc.st_cold_in) + new_state_string(bc.st_hot_out) + new_state_string(bc.st_cold_out);
 }
 
-void PCHE::_print_geo_param(PCHE_GEO_PARAM & geo)
+std::string PCHE::_geo_param_info(PCHE_GEO_PARAM & geo)
 {
-    if(!_can_log(log_level::DEBUG))
-        return;
+    std::string info = 
+    string_format("**** %s's Geometry params ****\n", _name) + 
+    string_format("pitch        = %f\n", geo.pitch) +
+    string_format("phi          = %f\n", geo.phi) + 
+    string_format("length       = %f\n", geo.length) + 
+    string_format("length_cell  = %f\n", _length_cell) + 
+    string_format("d_c          = %f\n", geo.d_c) + 
+    string_format("N_ch         = %d\n", geo.N_ch) + 
+    string_format("N_seg        = %d\n", geo.N_seg);
 
-    cout<< "**** PCHE's Geometry params ****"<<endl;
-    cout<< "pitch       = "<<geo.pitch<<endl;
-    cout<< "phi         = "<<geo.phi<<endl;
-    cout<< "length      = "<<geo.length<<endl;
-    cout<< "length_cell = "<<_length_cell<<endl;
-    cout<< "d_c         = "<<geo.d_c<<endl;
-    cout<< "N_ch        = "<<geo.N_ch<<endl;
-    cout<< "N_seg       = "<<geo.N_seg<<endl;
+    return info;
 }
 
-void PCHE::_print_sim_param(SIM_PARAM & sim_param)
+std::string PCHE::_sim_param_info(SIM_PARAM & sim_param)
 {
-    if(!_can_log(log_level::DEBUG))
-        return;
+    std::string info = 
+    string_format("**** %s 's simulation params ****\n", _name) + 
+    string_format("err          = %f\n", sim_param.err) +
+    string_format("dT_init      = %f\n", sim_param.delta_T_init) + 
+    string_format("N_iter       = %d\n", sim_param.N_iter) + 
+    string_format("step_rel     = %f\n", sim_param.step_rel) + 
+    string_format("log_level    = %d\n", sim_param.log_level);
 
-    cout<< "**** simulation params ****"<<endl;
-    cout<< "err       = "<<sim_param.err<<endl;
-    cout<< "dT_init   = "<<sim_param.delta_T_init<<endl;
-    cout<< "N_iter    = "<<sim_param.N_iter<<endl;
-    cout<< "step_rel  = "<<sim_param.step_rel<<endl;
-    cout<< "log_level = "<<sim_param.log_level<<endl;
+    return info;
 }
 
 void PCHE::_print_PCHE_state(std::string title)
 {
-    if(!_can_log(log_level::DEBUG))
-        return;
-
-    cout<<title.c_str();
-
     int idx_last = _geo.N_seg - 1;
-    cout<< "**** "<< _name <<"'s state of four ports (p, T, h) ****"<<endl;
 
-    cout<< "st_hot_in      = ";
-    _cell_hot[0].print_state();
-    
-    cout<< "st_hot_out     = ";
-    _cell_hot[idx_last].print_state();
+    std::string info = title;
+    info += string_format("**** %s 's state of four ports (p, T, h) ****\n", _name);
+    info += string_format("st_hot_in    = %s\n", _cell_hot[0].to_string());
+    info += string_format("st_hot_out   = %s\n", _cell_hot[idx_last].to_string());
+    info += string_format("st_cold_out  = %s\n", _cell_cold[0].to_string());
+    info += string_format("st_cold_in   = %s\n", _cell_cold[idx_last].to_string());
+    info += string_format("G_hot/cold   = %f/%f\n", _G_hot, _G_cold);
 
-    cout<< "st_cold_out    = ";
-    _cell_cold[0].print_state();
+    _log(info, log_level::DEBUG);
+}
 
-    cout<< "st_cold_in     = ";
-    _cell_cold[idx_last].print_state();
-
-    cout<<"G_hot/cold   ="<<_G_hot<<"/"<<_G_cold<<endl;
+void PCHE::_print_cp_err(std::string err)
+{
+    _print_cp_err(err.c_str());
 }
 
 void PCHE::_print_cp_err(const char * info)
 {
-    if(_can_log(log_level::ERR))
-        cout<<info<<"(code=" << _err_code<<"): "<<_cp_err_buf<<endl;
+    _log(string_format("%s(code=%d): %s\n", info, _err_code, _cp_err_buf));
 }
 
-bool PCHE::_can_log(int level)
+void PCHE::_log(std::string content, log_level level)
 {
-    return level >= g_log_level;
+    if(level < g_log_level) return;
+
+    cout<<content;
+
 }

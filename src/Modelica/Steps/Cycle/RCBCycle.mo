@@ -119,7 +119,7 @@ model RCBCycle
     split_ratio = splitter_split_ratio
   );
   
-  Steps.Components.Merger merger(
+  Steps.Components.Mixer mixer(
     T_init = T_AMB,
     p_init = P_ATM
   );
@@ -138,7 +138,7 @@ equation
   connect(recup_low.outlet_hot, splitter.inlet);
   //recompression loop
   connect(splitter.outlet_split, recom_pump.inlet);
-  connect(recom_pump.outlet, merger.inlet_merge);  
+  connect(recom_pump.outlet, mixer.inlet_mix);  
   
   connect(splitter.outlet, fan_colder.inlet);
   
@@ -146,9 +146,9 @@ equation
   
   connect(pump.outlet, recup_low.inlet_cold);  
    
-  connect(recup_low.outlet_cold, merger.inlet);
+  connect(recup_low.outlet_cold, mixer.inlet);
   
-  connect(merger.outlet, recup_high.inlet_cold);
+  connect(mixer.outlet, recup_high.inlet_cold);
   
   connect(recup_high.outlet_cold, pcm_heater.inlet);    
   

@@ -5,101 +5,58 @@ model TestPCHEMeshram
   
   import Modelica.SIunits.Conversions.{from_bar, from_degC}; 
   import Steps.Utilities.CoolProp.PropsSI;
+  import Steps.Cycle.OffDPBParamSet;
+  import Steps.Components.ThermoState;
+  import Steps.Components.PCHEGeoParam;
+  import Steps.Components.PCHEBoundaryCondition;
   
   replaceable package PBMedia = Steps.Media.SCO2;
   
-  // **** cold_inlet ****   
-  parameter Modelica.SIunits.Temp_K T_cold_in = from_degC(151.5) "T of cold inlet - High Temp range for zigzag in 4.1.2 Meshram [2016]";  
-  parameter Modelica.SIunits.AbsolutePressure p_cold_in = from_bar(200) "p of cold inlet - High Temp range for zigzag in 4.1.2 Meshram [2016]"; // Find THIS.
+  OffDPBParamSet param;
   
-  // **** cold_outlet ****
-  parameter Modelica.SIunits.Temp_K T_cold_out = from_degC(533.5) "T of cold outlet - High Temp range for zigzag in 4.1.2 Meshram [2016]";  
-  parameter Modelica.SIunits.AbsolutePressure p_cold_out = from_bar(200) "p of cold outlet - High Temp range for zigzag in 4.1.2 Meshram [2016]";  
+  parameter PCHEGeoParam geo = param.geo_HTR;
+  parameter PCHEBoundaryCondition bc = param.bc_HTR;
   
-  // **** hot_inlet ****
-  parameter Modelica.SIunits.Temp_K T_hot_in = from_degC(578.22) "T of hot inlet - High Temp range for zigzag in 4.1.2 Meshram [2016]";      
-  parameter Modelica.SIunits.AbsolutePressure p_hot_in = from_bar(80) "p of hot inlet - High Temp range for zigzag in 4.1.2 Meshram [2016]"; // Find THIS.    
-  
-  // **** hot_outlet ****
-  parameter Modelica.SIunits.Temp_K T_hot_out = from_degC(156.5) "T of hot outlet - High Temp range for zigzag in 4.1.2 Meshram [2016]"; 
-  parameter Modelica.SIunits.AbsolutePressure p_hot_out = from_bar(80) "p of hot outlet - High Temp range for zigzag in 4.1.2 Meshram [2016]";  
-  
-  //parameter Modelica.SIunits.Angle phi_array[4] = {from_deg(0), from_deg(0), from_deg((180 - 108) /2), from_deg((180 - 108) /2)}; // 4.1.2 of Meshram [2016]
-  
-  parameter Modelica.SIunits.Angle phi = from_deg((180 - 108) /2) "phi of zigzag - High Temp range for zigzag in 4.1.2 Meshram [2016]"; // agree with Hal's steps instead of using 4.1.2 of Meshram [2016]
-
-  parameter Integer N_ch = integer(94e3);  
-  
-  parameter Modelica.SIunits.ReynoldsNumber Re_hot_start = 14.5e3 "Hot stream's start value of Reynolds Number, used to increase convergence";
-  
+  parameter Modelica.SIunits.ReynoldsNumber Re_hot_start = 14.5e3 "Hot stream's start value of Reynolds Number, used to increase convergence";  
   parameter Modelica.SIunits.ReynoldsNumber Re_cold_start = 14.5e3 "Cold stream's start value of Reynolds Number, used to increase convergence";  
-  
-  parameter Modelica.SIunits.MassFlowRate mdot_hot = 51.91 "mass flow rate for hot stream";
-  
-  parameter Modelica.SIunits.MassFlowRate mdot_cold = 51.91 "mass flow rate for cold stream";
-
-  parameter Modelica.SIunits.Length d_c = 2e-3 "diameter of the channel";
-
-  parameter Modelica.SIunits.Length pitch = 12e-3 "pitch length of zigzag channel";
-
-  parameter Modelica.SIunits.Length length = 2860e-3 "length of the discretized cell in a channel";
-
-  parameter Integer N_seg = 50 "number of cells/segment for the discretization of a channel";
-  
-  parameter Boolean SourceFixed_hot = true;
-  
+  parameter Boolean SourceFixed_hot = true;  
   parameter Boolean SourceFixed_cold = true;
   
   Components.Source source_hot(
-    p_outlet = p_hot_in,
-    T_outlet = T_hot_in,
-    mdot_init = mdot_hot,
+    p_outlet = bc.st_hot_in.p,
+    T_outlet = bc.st_hot_in.T,
+    mdot_init = bc.st_hot_in.mdot,
     fix_state = SourceFixed_hot
   );
 
   Components.Source source_cold(
-    p_outlet = p_cold_in,
-    T_outlet = T_cold_in,
-    mdot_init = mdot_cold,
+    p_outlet = bc.st_cold_in.p,
+    T_outlet = bc.st_cold_in.T,
+    mdot_init = bc.st_cold_in.mdot,
     fix_state = SourceFixed_cold // True if set its state as boundary condition
   );
 
   Components.Sink sink_hot(
-    p_inlet = p_hot_out,
-    T_inlet = T_hot_out,
-    mdot_init = mdot_hot,
+    p_inlet = bc.st_hot_out.p,
+    T_inlet = bc.st_hot_out.T,
+    mdot_init = bc.st_hot_out.mdot,
     fix_state = not SourceFixed_hot
   );
 
   Components.Sink sink_cold(
-    p_inlet = p_cold_out,
-    T_inlet = T_cold_out,
-    mdot_init = mdot_cold,
+    p_inlet = bc.st_cold_out.p,
+    T_inlet = bc.st_cold_out.T,
+    mdot_init = bc.st_cold_out.mdot,
     fix_state = not SourceFixed_cold
   );
  
   Components.PCHeatExchanger pche(
-    phi = phi, 
-    d_c = d_c,
-    pitch = pitch,     
-    N_ch = N_ch,    
+    geo = geo,
+    bc = bc,
     Re_cold_start = Re_cold_start,
-    Re_hot_start = Re_hot_start,
-    T_start_hot = T_hot_out,
-    T_start_cold = T_cold_out,
-    p_start_hot = p_hot_out,
-    p_start_cold = p_cold_out,
-    
-    inlet_hot.p(start = p_hot_in),
-    inlet_hot.h_outflow(start =  PropsSI("H", "P", p_hot_in, "T", T_hot_in, PBMedia.mediumName)),    
-    
-    inlet_cold.p(start = p_cold_in),
-    inlet_cold.h_outflow(start = PropsSI("H", "P", p_cold_in, "T", T_cold_in, PBMedia.mediumName)), 
-     
+    Re_hot_start = Re_hot_start,     
     ByInlet_hot = SourceFixed_hot,
-    ByInlet_cold = SourceFixed_cold,
-    N_seg = N_seg,
-    length = length   
+    ByInlet_cold = SourceFixed_cold 
   );
   
 equation

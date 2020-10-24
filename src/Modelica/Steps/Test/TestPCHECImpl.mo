@@ -14,8 +14,8 @@ model TestPCHECImpl
   parameter Boolean SourceFixed_cold = true;   
   
   // select the group of parameter set as input here
-  parameter PCHEBoundaryCondition bc = param.bc_LTR;
-  parameter PCHEGeoParam geo = param.geo_LTR;  
+  parameter PCHEBoundaryCondition bc = param.bc_HTR;
+  parameter PCHEGeoParam geo = param.geo_HTR;  
   parameter SimParam sim_param = param.sim_param_def;
 
   Components.Source source_hot(
@@ -52,16 +52,19 @@ model TestPCHECImpl
     sim_param = sim_param // step_rel will affect result's error and simulation speed
      // step_rel will affect result's error and simulation speed
   );
+  
+  Components.Peeker peeker(path_name = "source_hot_out->pche_hot_in", log_level=0);
 
 equation  
    
-  connect(source_hot.outlet, pche.inlet_hot);
+  connect(source_hot.outlet, peeker.inlet);
+  connect(peeker.outlet, pche.inlet_hot);
   connect(pche.outlet_hot, sink_hot.inlet);
   connect(source_cold.outlet, pche.inlet_cold);
   connect(pche.outlet_cold, sink_cold.inlet); 
    
 annotation(
   experiment(StartTime = 0, StopTime = 1, Interval = 1, Tolerance = 1e-6),
-    __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts");  
+    __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts,bltdump", __OpenModelica_simulationFlags(lv = "LOG_DEBUG,LOG_EVENTS_V,LOG_INIT,LOG_INIT_V,LOG_LS,LOG_LS_V,LOG_NLS,LOG_NLS_V,LOG_NLS_JAC,LOG_NLS_RES,LOG_RES_INIT,LOG_STATS", outputFormat = "mat", s = "dassl"));      
     
 end TestPCHECImpl;

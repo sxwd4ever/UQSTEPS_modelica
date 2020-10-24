@@ -1,3 +1,5 @@
+setlocal EnableDelayedExpansion
+
 SET CWD=%cd%
 
 cd build
@@ -12,7 +14,9 @@ SET MODELICA_INCLUDE=..\Modelica\Steps\Resources\Include
 
 SET MODELICA_LIBRARY=..\Modelica\Steps\Resources\Library
 
-SET MODELICA_WS=C:\Users\uqxsui\AppData\Local\Temp\OpenModelica\OMEdit\Steps.Cycle.OffDesignRCBCycle_v2
+SET MODELICA_WS[0]="C:\Users\uqxsui\AppData\Local\Temp\OpenModelica\OMEdit\Steps.Cycle.OffDesignRCBCycle_v2"
+SET MODELICA_WS[1]="C:\Users\uqxsui\AppData\Local\Temp\OpenModelica\OMEdit\Steps.Test.TestComponentSeries"
+SET MODELICA_WS[2]="C:\Users\uqxsui\AppData\Local\Temp\OpenModelica\OMEdit\Steps.Test.TestPCHECImpl"
 
 ECHO OFF
 
@@ -40,4 +44,9 @@ copy PCHE.h %MODELICA_INCLUDE%
 
 copy build\%TARGET_LIB% %MODELICA_LIBRARY%
 
-copy build\%TARGET_LIB% "%MODELICA_WS%"
+REM copy build\%TARGET_LIB% %TARGETDIR%
+
+for /L %%i in (0,1,2) do (
+    call echo !MODELICA_WS[%%i]!
+    call copy build\%TARGET_LIB% !MODELICA_WS[%%i]!
+)

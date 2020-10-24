@@ -79,12 +79,29 @@ model CoolProp
       Library = {"MyProps"},
       LibraryDirectory = "modelica://Steps/Resources/Library");
   end PCHE_OFFD_Simulation;
-
+  
+  /*
+   * 
+  void EXPORT_MY_CODE print_path_state(const char * name, const char * media, ThermoState * st, int log_level);
+  */ 
+  function PrintPathState
+    input String name;
+    input String medium;
+    input ThermoState st; 
+    input Integer log_level = 1;    
+    
+    output Real result;
+    external "C" result = print_path_state(name, medium, st, log_level);
+    annotation(
+      Library = {"MyProps"},
+      LibraryDirectory = "modelica://Steps/Resources/Library");      
+      //connect(from, to);
+  end PrintPathState;
+  
   /*
    * 
   double EXPORT_MY_CODE test_struct_param(SIM_PARAM * sim_para, PCHE_GEO_PARAM * geo, BoundaryCondtion * bc)
-  */
-
+  */  
   function TestStructParam "test for transferring c struct as input/output parameter"
     input SimParam sim_param;
     input PCHEGeoParam geo;
@@ -145,6 +162,12 @@ equation
   k = PropsSI("L", "P", p, "H", H, "CO2");
   rho = PropsSI("D", "P", p, "H", H, "CO2");
 */
+
+/*
+void EXPORT_MY_CODE print_path_state(const char * name, const char * media, ThermoState * st_in, ThermoState * st_out, int log_level);
+*/
+
+
 annotation(
   experiment(StartTime = 0, StopTime = 1, Interval = 1, Tolerance = 1e-6),
     __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts");  

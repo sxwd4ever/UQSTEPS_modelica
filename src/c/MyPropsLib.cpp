@@ -20,7 +20,7 @@
 
 using namespace CoolProp;
 
-static int log_level = log_level::OFF;
+static int g_log_level = log_level::OFF;
 
 class PCHELibrary{
 private:
@@ -166,14 +166,14 @@ void CompleteThermoState(ThermoState * st, const char * media)
     if(st->mdot < 0)
         st->mdot = -st->mdot;
 
-    if(log_level == log_level::DEBUG)
+    if(g_log_level == log_level::DEBUG)
         cout<<new_state_string(*st);
 }
 
-std::string new_state_string(double p, double h, const char * media)
+std::string new_state_string_ph(double p, double h, const char * media)
 {
     std::ostringstream str_stream;
-    str_stream<<"(p, h, T)="<<p<<", "<<h<<", "<<PropsSI("T", "P", p, "H", h, media);
+    str_stream<<"("<<p<<", "<< PropsSI("T", "P", p, "H", h, media) - 273.15<<", "<<h<<")";
 
     return str_stream.str();
 }
@@ -187,17 +187,17 @@ double EXPORT_MY_CODE PCHE_OFFD_Simulation(const char * name, const char * media
     int N_seg = geo->N_seg;
     bool done = false;
 
-    log_level = sim_param->log_level;
+    g_log_level = sim_param->log_level;
 
     if(N_seg <= 0)
     {
-        if(log_level == log_level::DEBUG)
+        if(g_log_level == log_level::DEBUG)
             cout<< "invalid N_seg="<<N_seg<<"; geo.N_seg="<< geo->N_seg<<endl;
         return -1;
     }
     else
     {
-        if(log_level == log_level::DEBUG)
+        if(g_log_level == log_level::DEBUG)
             cout<<name<<" in dll now N_seg="<<N_seg<<"; geo.N_seg="<< geo->N_seg<<endl;
     }
 
@@ -208,12 +208,12 @@ double EXPORT_MY_CODE PCHE_OFFD_Simulation(const char * name, const char * media
     sr.p_cold = new double[N_seg];
     sr.N_seg = N_seg;
 
-    if(log_level == log_level::DEBUG)
+    if(g_log_level == log_level::DEBUG)
         cout<<name<<" initializing... "<<endl;
 
     PCHE * pche = new PCHE(name, *geo);    
 
-    if(log_level == log_level::DEBUG)
+    if(g_log_level == log_level::DEBUG)
         cout<<name<<" initialization done"<<endl;
 
     pche->set_kim_corr_coe(*cor);
@@ -228,7 +228,7 @@ double EXPORT_MY_CODE PCHE_OFFD_Simulation(const char * name, const char * media
     CompleteThermoState(& bc->st_cold_in, media_cold);
     CompleteThermoState(& bc->st_cold_out, media_cold);    
 
-    if(log_level == log_level::DEBUG)
+    if(g_log_level == log_level::DEBUG)
         cout<<"ready to simulate "<<name<<endl;
 
     done = pche->simulate(media_hot, media_cold, * bc, * sim_param, sr);
@@ -289,13 +289,30 @@ double EXPORT_MY_CODE PCHE_OFFD_Simulation(const char * name, const char * media
     delete [] sr.p_hot;
     delete [] sr.p_cold;
 
-    if(log_level <= log_level::INFO)
+    if(g_log_level <= log_level::INFO)
     {
-        const char * result = done ? "ok": "failed";
-        cout<<name<<" done simulation ("<<result<<"): hot "<< new_state_string(p_hot[1], h_hot[1], media_hot)<<"; cold " <<new_state_string(p_cold[0], h_cold[0], media_cold)<<endl;
+        const char * result = done ? "OK": "FAILED";
+        cout<<name<<"("<<result<<"): [p, T, h] # MPa|oC|J/K @ ";
+        cout<<"hi="<<new_state_string_ph(p_hot[0], h_hot[0], media_hot)<<"; ";
+        cout<<"ci="<<new_state_string_ph(p_cold[1], h_cold[1], media_cold)<<"; ";
+        cout<<"ho="<<new_state_string_ph(p_hot[1], h_hot[1], media_hot)<<"; ";
+        cout<<"co="<<new_state_string_ph(p_cold[0], h_cold[0], media_cold)<<endl;
     }
 
 	return 0.0;
+}
+
+double EXPORT_MY_CODE print_path_state(const char * name, const char * media, ThermoState * st, int log_level)
+{
+    if(g_log_level <= log_level)
+    {
+        std::string info = 
+        string_format("at %s: (p, T, h)=%s\n", name, 
+        new_state_string_ph(st->p, st->h, media).c_str());
+        cout<<info;
+    }
+
+    return 0.0;
 }
 
 /**

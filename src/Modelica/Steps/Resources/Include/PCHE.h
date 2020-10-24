@@ -117,6 +117,8 @@ public:
     void init(int idx, int type, PCHE * pche);
     void clone(PCHE_CELL * src);
 
+    std::string to_string();
+
     void print_state();
 
     bool validate();
@@ -174,17 +176,19 @@ private:
     double _avg_T(PCHE_CELL * cell_seq, int count);
 
     /*** function outputs parameters for debug ***/
-    bool _can_log(int level);
 
-    void _print_boundary_conditions(BoundaryCondtion & bc);
+    void _log(std::string content, log_level level = log_level::INFO);
 
-    void _print_geo_param(PCHE_GEO_PARAM & geo);
+    std::string _boundary_condition_info(BoundaryCondtion & bc);    
 
-    void _print_sim_param(SIM_PARAM & sim_param);
+    std::string _geo_param_info(PCHE_GEO_PARAM & geo);
+
+    std::string _sim_param_info(SIM_PARAM & sim_param);
 
     void _print_PCHE_state(std::string title);
 
-    void _print_cp_err(const char * info);
+    void _print_cp_err(const char * err);
+    void _print_cp_err(std::string err);
 
     const char * _get_prop_name(long handle_prop);
 

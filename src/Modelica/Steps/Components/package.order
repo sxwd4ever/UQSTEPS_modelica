@@ -6,7 +6,7 @@ FanCooler
 KimCorrelations
 KimCorrCoe
 MaterialConductivity
-Merger
+Mixer
 OilHeater
 PCHeatExchanger
 PCMHeater
@@ -29,3 +29,4 @@ Turbine
 TwoPorts
 Valve
 WaterCooler
+Peeker

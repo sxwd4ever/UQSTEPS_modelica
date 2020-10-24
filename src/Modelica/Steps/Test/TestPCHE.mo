@@ -46,7 +46,8 @@ model TestPCHE
   );
  
   Components.PCHeatExchanger pche(
-    phi = Modelica.SIunits.Conversions.from_deg(45), 
+    
+phi = Modelica.SIunits.Conversions.from_deg(45), 
     Re_design = 5000,
     d_c = 1.51 * 1e-3,
     T_hot_in = Modelica.SIunits.Conversions.from_degC(451),

@@ -11,6 +11,7 @@ model PCHECImpl
   import UTIL = Modelica.Utilities;
   import MyUtil = Steps.Utilities.Util;
   import Modelica.SIunits.Conversions.{from_degC, from_bar, to_degC};
+  import Steps.Utilities.CoolProp.PrintPathState;
   
 /*  
   replaceable Steps.Interfaces.PBFluidPort_a inlet_hot(redeclare package Medium = PBMedia, p(start= p_start_hot), h_outflow(start = h_start_hot)) "Inlet port, previous component";
@@ -19,10 +20,29 @@ model PCHECImpl
   replaceable Steps.Interfaces.PBFluidPort_b outlet_cold(redeclare package Medium = PBMedia, p(start= p_start_cold), h_outflow(start = h_start_cold)) "Recuperator outlet";
 */
   
-  replaceable Steps.Interfaces.PBFluidPort_a inlet_hot(redeclare package Medium = PBMedia, p(start=bc.st_hot_in.p), h_outflow(start=bc.st_hot_in.h), m_flow(start = bc.st_hot_in.mdot)) "Inlet port, previous component";
-  replaceable Steps.Interfaces.PBFluidPort_b outlet_hot(redeclare package Medium = PBMedia, p(start=bc.st_hot_out.p), h_outflow(start=bc.st_hot_out.h), m_flow(start = -bc.st_hot_out.mdot)) "Outlet port, next component";
-  replaceable Steps.Interfaces.PBFluidPort_a inlet_cold(redeclare package Medium = PBMedia, p(start=bc.st_cold_in.p), h_outflow(start=bc.st_cold_in.h), m_flow(start = bc.st_cold_in.mdot)) "Recuperator inlet";
-  replaceable Steps.Interfaces.PBFluidPort_b outlet_cold(redeclare package Medium = PBMedia, p(start=bc.st_cold_out.p), h_outflow(start=bc.st_cold_out.h), m_flow(start = -bc.st_cold_out.mdot)) "Recuperator outlet"; 
+replaceable Steps.Interfaces.PBFluidPort_a inlet_hot(
+redeclare package Medium = PBMedia, 
+p(start=bc.st_hot_in.p, nominal = bc.st_hot_in.p, min = bc.st_hot_in.p * 0.8, max = bc.st_hot_in.p * 1.2), 
+h_outflow(start=bc.st_hot_in.h, nominal = bc.st_hot_in.h, min = bc.st_hot_in.h * 0.8, max = bc.st_hot_in.h * 1.2), 
+m_flow(start = bc.st_hot_in.mdot)) "Inlet port, previous component";
+
+  replaceable Steps.Interfaces.PBFluidPort_b outlet_hot(
+  redeclare package Medium = PBMedia, 
+  p(start=bc.st_hot_out.p, nominal=bc.st_hot_out.p, min=bc.st_hot_out.p * 0.8, max=bc.st_hot_out.p * 1.2), 
+  h_outflow(start=bc.st_hot_out.h, nominal=bc.st_hot_out.h, min=bc.st_hot_out.h * 0.8, max=bc.st_hot_out.h * 1.2), 
+  m_flow(start = -bc.st_hot_out.mdot)) "Outlet port, next component";
+  
+  replaceable Steps.Interfaces.PBFluidPort_a inlet_cold(
+  redeclare package Medium = PBMedia, 
+  p(start=if init_cold_in then bc.st_cold_in.p else bc.st_cold_in.p * 0.8, nominal=bc.st_cold_in.p, min = bc.st_cold_in.p * 0.8, max=bc.st_cold_in.p * 1.2), 
+  h_outflow(start= if init_cold_in then bc.st_cold_in.h else bc.st_cold_in.h * 0.8, nominal=bc.st_cold_in.h, min=bc.st_cold_in.h * 0.8, max=bc.st_cold_in.h * 1.2), 
+  m_flow(start = bc.st_cold_in.mdot)) "Recuperator inlet";
+  
+  replaceable Steps.Interfaces.PBFluidPort_b outlet_cold(
+  redeclare package Medium = PBMedia, 
+  p(start=bc.st_cold_out.p), 
+  h_outflow(start=bc.st_cold_out.h), 
+  m_flow(start = -bc.st_cold_out.mdot)) "Recuperator outlet"; 
   
 
   replaceable package PBMedia = Steps.Media.SCO2; 
@@ -30,6 +50,8 @@ model PCHECImpl
   parameter String name_material = "inconel 750";    
   
   parameter String name = "PCHE";
+  
+  parameter Boolean init_cold_in = true;
   
   MaterialConductivity mc(name_material = name_material);
   // On design parameters
@@ -59,7 +81,7 @@ model PCHECImpl
   );  
 
   // Geometry determined correlation coefficients - a, b, c d
-  inner KimCorrelations kim_cor(phi = geo.phi, pitch = geo.pitch, d_h = d_h); 
+  KimCorrelations kim_cor(phi = geo.phi, pitch = geo.pitch, d_h = d_h); 
   
   parameter SimParam sim_param(err=1e-3, delta_T_init = 5, N_iter = 10, step_rel=0.3, log_level = 1);
   
@@ -101,13 +123,16 @@ model PCHECImpl
   
   // following variables are for debug purpose only
   // d_c determined variables, d_h, A_c, peri_c
-  inner Modelica.SIunits.Diameter d_h = 4 * A_c / peri_c "Hydraulic Diameter";  
-  inner Modelica.SIunits.Area A_c = Modelica.Constants.pi * geo.d_c * geo.d_c / 8 "Area of semi-circular tube";   
-  inner Modelica.SIunits.Length peri_c = geo.d_c * Modelica.Constants.pi / 2 + geo.d_c "perimeter of semi-circular";   
-  inner Modelica.SIunits.Length t_wall = (2 - Modelica.Constants.pi  / 4) * (geo.d_c / 2) "thickness of wall between two neighboring hot and cold";    
-  inner Modelica.SIunits.Area A_stack = peri_c * length_cell * geo.N_ch "surface area of all cells in a stack";  
-  inner Modelica.SIunits.Area A_flow = geo.N_ch * A_c "Flow area for all channels";   
+  Modelica.SIunits.Diameter d_h = 4 * A_c / peri_c "Hydraulic Diameter";  
+  Modelica.SIunits.Area A_c = Modelica.Constants.pi * geo.d_c * geo.d_c / 8 "Area of semi-circular tube";   
+  Modelica.SIunits.Length peri_c = geo.d_c * Modelica.Constants.pi / 2 + geo.d_c "perimeter of semi-circular";   
+  Modelica.SIunits.Length t_wall = (2 - Modelica.Constants.pi  / 4) * (geo.d_c / 2) "thickness of wall between two neighboring hot and cold";    
+  Modelica.SIunits.Area A_stack = peri_c * length_cell * geo.N_ch "surface area of all cells in a stack";  
+  Modelica.SIunits.Area A_flow = geo.N_ch * A_c "Flow area for all channels";   
+  
   parameter Modelica.SIunits.Length length_cell = geo.length / geo.N_seg "length of one pipe in HeatExchanger unit m";  
+  
+  Real result "for test only";
     
 /*
 algorithm
@@ -185,7 +210,10 @@ equation
   bc_rt.st_cold_in.p = inlet_cold.p;
   bc_rt.st_cold_in.h = inlet_cold.h_outflow;
   bc_rt.st_cold_in.mdot = inlet_cold.m_flow; 
-   
+  
+  result = PrintPathState(name + " hot_in", PBMedia.mediumName, bc_rt.st_hot_in, log_level = 0);
+  PrintPathState(name + " cold_in", PBMedia.mediumName, bc_rt.st_cold_in, log_level = 0);
+  
   (h_hot, h_cold, p_hot, p_cold, Q, U) = CP.PCHE_OFFD_Simulation(name, "CO2", "CO2", geo, cor, sim_param, bc_rt);
 
   inlet_hot.m_flow + outlet_hot.m_flow = 0;
@@ -199,12 +227,13 @@ equation
   
   // inlet_cold.h_outflow = h_cold[2];
   // inlet_cold.p = p_cold[2];
-
-  outlet_hot.h_outflow = h_hot[2];
-  outlet_hot.p = p_hot[2];
   
-  outlet_cold.h_outflow = h_cold[1];
-  outlet_cold.p = p_cold[1];
+algorithm
+  outlet_hot.h_outflow := h_hot[2];
+  outlet_hot.p := p_hot[2] + result;
+  
+  outlet_cold.h_outflow := h_cold[1];
+  outlet_cold.p := p_cold[1];
 
     
   //T_hot_in_new = PropsSI("T", "P", p_hot[1], "H", h_hot[1], "CO2");
