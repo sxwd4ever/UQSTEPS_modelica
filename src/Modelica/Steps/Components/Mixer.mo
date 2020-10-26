@@ -24,6 +24,7 @@ equation
   outlet.h_outflow = (inlet.h_outflow * inlet.m_flow + inlet_mix.h_outflow * inlet_mix.m_flow) / (inlet.m_flow + inlet_mix.m_flow);      
   inlet.h_outflow = inStream(inlet.h_outflow);  
   inlet_mix.h_outflow = inStream(inlet_mix.h_outflow);
+  // inlet.h_outflow = outlet.h_outflow;
  
   /*
   outlet.h_outflow * outlet.m_flow = inlet.h_outflow * inlet.m_flow + inlet_mix.h_outflow * inlet_mix.m_flow;

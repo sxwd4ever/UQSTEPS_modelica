@@ -1,7 +1,7 @@
 within Steps.Utilities;
 
 model CoolProp
-  import Steps.Components.{ThermoState,PCHEGeoParam,KimCorrCoe,SimParam,PCHEBoundaryCondition,SimulationResult};
+  import Steps.Components.{ThermoState,PCHEGeoParam,KimCorrCoe, SimParam, PCHEBoundaryCondition, SimulationResult, PCHECImplResult};
   import Modelica.SIunits.Conversions.{from_deg,from_bar};
 
   function PropsSI "Import the MyPropsLib's PropsSI Function"
@@ -51,10 +51,10 @@ model CoolProp
   end MyPropsSI_pT;
 
   /*
-   * PCHE_OFFD_Simulation(const char * name, const char * media_hot, const char * media_cold, PCHE_GEO_PARAM * geo, KIM_CORR_COE * cor, SIM_PARAM * sim_param, BoundaryCondtion * bc, double * h_hot, double * h_cold, double * p_hot, double * p_cold, size_t N_seg)
+   * double EXPORT_MY_CODE PCHE_OFFD_Simulation_UQ_out(const char * name, const char * media_hot, const char * media_cold, PCHE_GEO_PARAM * geo, KIM_CORR_COE * cor, SIM_PARAM * sim_param, BoundaryCondtion * bc, PCHECImplResult * retOutput, double * Q, double * U)
    */
 
-  function PCHE_OFFD_Simulation "test for transferring c struct as input/output parameter"
+  function PCHE_OFFD_Simulation_UQ_out "test for transferring c struct as input/output parameter"
     input String pche_name;
     input String media_hot;
     input String media_cold;
@@ -62,10 +62,7 @@ model CoolProp
     input KimCorrCoe cor;
     input SimParam sim_param;
     input PCHEBoundaryCondition bc;
-    output Real h_hot[2];
-    output Real h_cold[2];
-    output Real p_hot[2];
-    output Real p_cold[2];
+    output PCHECImplResult retOutput;
     output Real Q[200];
     output Real U[200];
   protected
@@ -74,7 +71,32 @@ model CoolProp
     // size of array should be specified as fixed value, could be larger than the real one
     // output Real st[10];
   
-    external "C" PCHE_OFFD_Simulation(pche_name, media_hot, media_cold, geo, cor, sim_param, bc, h_hot, h_cold, p_hot, p_cold, Q, U);
+    external "C" PCHE_OFFD_Simulation_UQ_out(pche_name, media_hot, media_cold, geo, cor, sim_param, bc, retOutput, Q, U);
+    annotation(
+      Library = {"MyProps"},
+      LibraryDirectory = "modelica://Steps/Resources/Library");
+  end PCHE_OFFD_Simulation_UQ_out;
+  
+  /*
+double EXPORT_MY_CODE PCHE_OFFD_Simulation(const char * name, const char * media_hot, const char * media_cold, PCHE_GEO_PARAM * geo, KIM_CORR_COE * cor, SIM_PARAM * sim_param, BoundaryCondtion * bc, PCHECImplResult * retOutput)
+  */
+  
+  function PCHE_OFFD_Simulation "test for transferring c struct as input/output parameter"
+    input String pche_name;
+    input String media_hot;
+    input String media_cold;
+    input PCHEGeoParam geo;
+    input KimCorrCoe cor;
+    input SimParam sim_param;
+    input PCHEBoundaryCondition bc;
+    output PCHECImplResult retOutput;
+  protected
+    // mapping of array of structs or structs with array is not allowed.
+    // so I have to use these 'ugly' approach
+    // size of array should be specified as fixed value, could be larger than the real one
+    // output Real st[10];
+  
+    external "C" PCHE_OFFD_Simulation(pche_name, media_hot, media_cold, geo, cor, sim_param, bc, retOutput);
     annotation(
       Library = {"MyProps"},
       LibraryDirectory = "modelica://Steps/Resources/Library");
@@ -135,10 +157,7 @@ model CoolProp
   PCHEGeoParam geo(pitch = 12e-3, phi = from_deg((180 - 108) / 2), length = 1000e-3, d_c = 1.5e-3, N_ch = 80000, N_seg = 200);
   SimParam sim_param(err = 1e-2, delta_T_init = 5, N_iter = 10000, step_rel = 0.2, log_level = 1);
   PCHEBoundaryCondition bc(st_hot_in(T = 730, p = from_bar(90), h = 932534, mdot = 10), st_cold_in(T = 500, p = from_bar(225), h = 627426, mdot = 10), st_hot_out(T = 576.69, p = from_bar(90), h = 754560, mdot = 10), st_cold_out(T = 639.15, p = from_bar(225), h = 805341, mdot = 10));
-  Real h_hot[2];
-  Real h_cold[2];
-  Real p_hot[2];
-  Real p_cold[2];
+  PCHECImplResult retOutput;
   Real Q[200];
   Real U[200];
   KimCorrCoe cor(a = 0.37934, b = 0.82413, c = 0.03845, d = 0.73793);
@@ -149,7 +168,8 @@ model CoolProp
 equation
 // sr = TestStructParam(sim_param, geo, bc);
 // (h_hot, h_cold, p_hot, p_cold) = TestStructParam(sim_param, geo, bc, geo.N_seg);
-  (h_hot, h_cold, p_hot, p_cold, Q, U) = PCHE_OFFD_Simulation("CoolPCHE", "CO2", "CO2", geo, cor, sim_param, bc);
+  // (retOutput) = PCHE_OFFD_Simulation("CoolPCHE", "CO2", "CO2", geo, cor, sim_param, bc);
+  (retOutput, Q, U) = PCHE_OFFD_Simulation_UQ_out("CoolPCHE", "CO2", "CO2", geo, cor, sim_param, bc);
 // state = setState(p);
   state = setState(p, M);
 // Test if this interface works

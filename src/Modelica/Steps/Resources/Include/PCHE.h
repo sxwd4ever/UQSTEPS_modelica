@@ -101,6 +101,21 @@ typedef struct
 
 } SimulationResult;
 
+
+// Output result work with Modelica model
+// Use this struct to limit the number of outputs and update the dll exported function
+typedef struct 
+{ 
+  // "hot side calculated pressuare, could be in/out"
+  double p_hot; 
+  // "hot side calculated specific enthalphy"
+  double h_hot;
+  // "cold side calculated pressuare, could be in/out"
+  double p_cold; 
+  // "cold side calculated specific enthalphy, could be in/out"
+  double h_cold;     
+}PCHECImplResult;
+
 class PCHE;
 
 class PCHE_CELL

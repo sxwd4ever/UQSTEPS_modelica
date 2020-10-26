@@ -36,7 +36,7 @@ model TestMixer
     mdot_init = bc_bypass.mdot,
     outlet.p(start = bc_bypass.p),
     outlet.h_outflow(start = bc_bypass.h),   
-    fix_state = true
+    fix_state = false
   );
 
   Components.Sink sink(

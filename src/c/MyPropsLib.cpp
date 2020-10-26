@@ -157,6 +157,10 @@ ThermoState * EXPORT_MY_CODE NewThermoState_pT(double p, double T, double mdot, 
 
 void CompleteThermoState(ThermoState * st, const char * media)
 {
+    // st->p *= 1e6;
+    // st->h *= 1e6;
+    // st->h *= 1e6;
+
     if(st->T == 0)
         st->T = PropsSI("T", "P", st->p, "H", st->h, media);
     else if(st->h == 0)
@@ -178,11 +182,24 @@ std::string new_state_string_ph(double p, double h, const char * media)
     return str_stream.str();
 }
 
+double EXPORT_MY_CODE PCHE_OFFD_Simulation(const char * name, const char * media_hot, const char * media_cold, PCHE_GEO_PARAM * geo, KIM_CORR_COE * cor, SIM_PARAM * sim_param, BoundaryCondtion * bc, PCHECImplResult * retOutput)
+{
+    double * U = new double[geo->N_seg];
+    double * Q = new double[geo->N_seg];
+
+    double retVal = PCHE_OFFD_Simulation_UQ_out(name, media_hot, media_cold, geo, cor, sim_param, bc, retOutput, Q, U);
+    
+    delete [] U;
+    delete [] Q;
+
+    return retVal;
+}
+
 
 /**
  * off-design simulation for PCHE
  */
-double EXPORT_MY_CODE PCHE_OFFD_Simulation(const char * name, const char * media_hot, const char * media_cold, PCHE_GEO_PARAM * geo, KIM_CORR_COE * cor, SIM_PARAM * sim_param, BoundaryCondtion * bc, double * h_hot, double * h_cold, double * p_hot, double * p_cold, double * Q, double * U)
+double EXPORT_MY_CODE PCHE_OFFD_Simulation_UQ_out(const char * name, const char * media_hot, const char * media_cold, PCHE_GEO_PARAM * geo, KIM_CORR_COE * cor, SIM_PARAM * sim_param, BoundaryCondtion * bc, PCHECImplResult * retOutput, double * Q, double * U)
 {
     int N_seg = geo->N_seg;
     bool done = false;
@@ -235,22 +252,18 @@ double EXPORT_MY_CODE PCHE_OFFD_Simulation(const char * name, const char * media
 
     int last = N_seg - 1;
 
-    h_hot[0] = sr.h_hot[0];
-    h_hot[1] = sr.h_hot[last];
-    h_cold[0] = sr.h_cold[0];
-    h_cold[1] = sr.h_cold[last];
 
-    p_hot[0] = sr.p_hot[0];
-    p_hot[1] = sr.p_hot[last];
-    p_cold[0] = sr.p_cold[0];
-    p_cold[1] = sr.p_cold[last];
+    retOutput->p_hot = sr.p_hot[last];
+    retOutput->h_hot = sr.h_hot[last];
+
+    retOutput->p_cold = sr.h_cold[0];
+    retOutput->h_cold = sr.p_cold[0];
 
     for (size_t i = 0; i < N_seg; i++)
     {
         Q[i] = pche->_Q[i];
         U[i] = pche->_U[i];
-    }
-    
+    }    
 
     // if (done)
     // {
@@ -283,21 +296,30 @@ double EXPORT_MY_CODE PCHE_OFFD_Simulation(const char * name, const char * media
 
     // }
 
+    if(g_log_level <= log_level::INFO)
+    {
+        const char * result = done ? "OK": "FAILED";
+        cout<<name<<"("<<result<<"): [p, T, h] # MPa|oC|J/K @ ";
+        cout<<"hi="<<new_state_string_ph(sr.p_hot[0], sr.h_hot[0], media_hot)<<"; ";
+        cout<<"ci="<<new_state_string_ph(sr.p_cold[last], sr.p_cold[last], media_cold)<<"; ";
+        cout<<"ho="<<new_state_string_ph(retOutput->p_hot, retOutput->h_hot, media_hot)<<"; ";
+        cout<<"co="<<new_state_string_ph(retOutput->p_cold, retOutput->h_cold, media_cold)<<endl;
+    }
+
     delete pche;
     delete [] sr.h_hot;
     delete [] sr.h_cold;
     delete [] sr.p_hot;
     delete [] sr.p_cold;
 
-    if(g_log_level <= log_level::INFO)
-    {
-        const char * result = done ? "OK": "FAILED";
-        cout<<name<<"("<<result<<"): [p, T, h] # MPa|oC|J/K @ ";
-        cout<<"hi="<<new_state_string_ph(p_hot[0], h_hot[0], media_hot)<<"; ";
-        cout<<"ci="<<new_state_string_ph(p_cold[1], h_cold[1], media_cold)<<"; ";
-        cout<<"ho="<<new_state_string_ph(p_hot[1], h_hot[1], media_hot)<<"; ";
-        cout<<"co="<<new_state_string_ph(p_cold[0], h_cold[0], media_cold)<<endl;
-    }
+    // change magnitude 
+    const int mag = 1e6;
+    // scaling the magnitude
+    retOutput->p_hot /= mag;
+    retOutput->h_hot /= mag;
+
+    retOutput->p_cold /= mag;
+    retOutput->h_cold /= mag;
 
 	return 0.0;
 }

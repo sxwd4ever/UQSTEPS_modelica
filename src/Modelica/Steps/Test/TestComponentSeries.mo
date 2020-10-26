@@ -25,7 +25,19 @@ model TestComponentSeries
   
   parameter OffDPBParamSet param_def; 
   
-  parameter OffDPBParamSet param = param_def; 
+  // parameter I get after a success simulation with a CImpl model
+  parameter OffDPBParamSet param_CImpl_v2(
+  bc_HTR.st_cold_out.T = from_degC(532.62),
+  bc_HTR.st_cold_in.T = from_degC(143.574),
+  bc_HTR.st_hot_out.T = from_degC(144.604),
+  bc_HTR.st_hot_out.p = from_bar(77.3621),
+  bc_LTR.st_cold_out.T = from_degC(138.571),
+  bc_LTR.st_hot_in.T = from_degC(144.604),
+  bc_LTR.st_hot_in.p = from_bar(77.3621),
+  bc_LTR.st_hot_out.T = from_degC(65.0493),
+  bc_LTR.st_hot_out.p = from_bar(76.3718)); 
+  
+  parameter OffDPBParamSet param = param_CImpl_v2; 
   
   parameter PCHEBoundaryCondition bc_LTR = param.bc_LTR;
   parameter PCHEBoundaryCondition bc_HTR = param.bc_HTR;
@@ -81,16 +93,17 @@ model TestComponentSeries
     mdot_init = bc_bypass.mdot,
     fix_state = true 
   );  
-  
+
   Components.PCHECImpl HTR(
     name = "HTR", 
     geo = geo_HTR,   
     bc = bc_HTR,   
     init_cold_in = true,
+    init_hot_out = false,
     // enum log_level {DEBUG = 0, INFO = 1, ERR = 2, SERVE = 3, OFF = 4};
     sim_param = sim_param        
   );
-  
+
   /* 
   Components.PCHeatExchanger HTR(
     geo = geo_HTR,
@@ -106,6 +119,7 @@ model TestComponentSeries
     name = "LTR", 
     geo = geo_LTR,   
     bc = bc_LTR, 
+    init_hot_in = false,
     // enum log_level {DEBUG = 0, INFO = 1, ERR = 2, SERVE = 3, OFF = 4};
     sim_param = sim_param
   );
@@ -134,7 +148,7 @@ model TestComponentSeries
   
    
 equation
- 
+  
   // HTR + LTR + Mixer
   connect(hot_source.outlet, HTR.inlet_hot);
   connect(HTR.outlet_hot, LTR.inlet_hot); 
@@ -173,5 +187,6 @@ equation
   */
 annotation(
     experiment(StartTime = 0, StopTime = 1, Tolerance = 1, Interval = 1),
-    __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts,bltdump", __OpenModelica_simulationFlags(lv = "LOG_DEBUG,LOG_EVENTS_V,LOG_INIT,LOG_INIT_V,LOG_LS,LOG_LS_V,LOG_NLS,LOG_NLS_V,LOG_NLS_JAC,LOG_NLS_RES,LOG_RES_INIT,LOG_STATS,LOG_SOTI,LOG_SIMULATION", outputFormat = "mat", s = "dassl", nls = "homotopy"));
+    __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts,bltdump", 
+    __OpenModelica_simulationFlags(lv = "LOG_DEBUG,LOG_EVENTS_V,LOG_INIT,LOG_INIT_V,LOG_LS,LOG_LS_V,LOG_NLS,LOG_NLS_V,LOG_NLS_JAC,LOG_NLS_RES,LOG_RES_INIT,LOG_STATS,LOG_SOTI,LOG_SIMULATION", outputFormat = "mat", s = "dassl", nls = "homotopy"));
 end TestComponentSeries;

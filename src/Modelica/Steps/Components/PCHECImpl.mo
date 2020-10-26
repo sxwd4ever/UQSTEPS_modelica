@@ -23,18 +23,18 @@ model PCHECImpl
 replaceable Steps.Interfaces.PBFluidPort_a inlet_hot(
 redeclare package Medium = PBMedia, 
 p(start=bc.st_hot_in.p, nominal = bc.st_hot_in.p, min = bc.st_hot_in.p * 0.8, max = bc.st_hot_in.p * 1.2), 
-h_outflow(start=bc.st_hot_in.h, nominal = bc.st_hot_in.h, min = bc.st_hot_in.h * 0.8, max = bc.st_hot_in.h * 1.2), 
+h_outflow(start=if init_hot_in then bc.st_hot_in.h else bc.st_hot_in.h * 0.8, nominal = bc.st_hot_in.h, min = bc.st_hot_in.h * 0.8, max = bc.st_hot_in.h * 1.2), 
 m_flow(start = bc.st_hot_in.mdot)) "Inlet port, previous component";
 
   replaceable Steps.Interfaces.PBFluidPort_b outlet_hot(
   redeclare package Medium = PBMedia, 
   p(start=bc.st_hot_out.p, nominal=bc.st_hot_out.p, min=bc.st_hot_out.p * 0.8, max=bc.st_hot_out.p * 1.2), 
-  h_outflow(start=bc.st_hot_out.h, nominal=bc.st_hot_out.h, min=bc.st_hot_out.h * 0.8, max=bc.st_hot_out.h * 1.2), 
+  h_outflow(start=if init_hot_out then bc.st_hot_out.h else bc.st_hot_out.h * 0.8, nominal=bc.st_hot_out.h, min=bc.st_hot_out.h * 0.8, max=bc.st_hot_out.h * 1.2), 
   m_flow(start = -bc.st_hot_out.mdot)) "Outlet port, next component";
   
   replaceable Steps.Interfaces.PBFluidPort_a inlet_cold(
   redeclare package Medium = PBMedia, 
-  p(start=if init_cold_in then bc.st_cold_in.p else bc.st_cold_in.p * 0.8, nominal=bc.st_cold_in.p, min = bc.st_cold_in.p * 0.8, max=bc.st_cold_in.p * 1.2), 
+  p(start=bc.st_cold_in.p, nominal=bc.st_cold_in.p, min = bc.st_cold_in.p * 0.8, max=bc.st_cold_in.p * 1.2), 
   h_outflow(start= if init_cold_in then bc.st_cold_in.h else bc.st_cold_in.h * 0.8, nominal=bc.st_cold_in.h, min=bc.st_cold_in.h * 0.8, max=bc.st_cold_in.h * 1.2), 
   m_flow(start = bc.st_cold_in.mdot)) "Recuperator inlet";
   
@@ -51,7 +51,11 @@ m_flow(start = bc.st_hot_in.mdot)) "Inlet port, previous component";
   
   parameter String name = "PCHE";
   
+  parameter Boolean init_hot_in = true;
   parameter Boolean init_cold_in = true;
+  parameter Boolean init_hot_out = true;
+  parameter Boolean init_cold_out = true;
+  
   
   MaterialConductivity mc(name_material = name_material);
   // On design parameters
@@ -94,10 +98,14 @@ m_flow(start = bc.st_hot_in.mdot)) "Inlet port, previous component";
   st_hot_out(T = 0, p = 0, h = 0, mdot = 0, id = 2),  
   st_cold_out(T = 0,p = 0, h = 0, mdot = 0, id = 3));   
   
-  Real h_hot[2];
-  Real h_cold[2];
-  Real p_hot[2];
-  Real p_cold[2];  
+  constant Integer MAG = integer(1e6);
+  /*
+  Real h_hot[2](start = {bc.st_hot_in.h / MAG, bc.st_hot_out.h / MAG});
+  Real h_cold[2](start = {bc.st_cold_out.h  / MAG, bc.st_cold_in.h  / MAG});
+  Real p_hot[2](start = {bc.st_hot_in.p / MAG, bc.st_hot_out.p  / MAG});
+  Real p_cold[2](start = {bc.st_cold_out.p  / MAG, bc.st_cold_in.p / MAG}); 
+  */
+  PCHECImplResult retResult(p_hot(start=bc.st_hot_out.p / MAG), h_hot(start=bc.st_hot_out.h / MAG), p_cold(start=bc.st_cold_out.p / MAG), h_cold(start=bc.st_cold_out.h / MAG));
   /*
   Real h_hot_new[2];
   Real h_cold_new[2];
@@ -106,17 +114,18 @@ m_flow(start = bc.st_hot_in.mdot)) "Inlet port, previous component";
   */
   
   constant Integer MAX_SEG_NUM = 200 "Maximum segment number in [Kwon2019]"; 
-  
+  /*
   Real Q[MAX_SEG_NUM];
   Real U[MAX_SEG_NUM];   
-  
+  */
   // output for debug purpose
 
   Modelica.SIunits.Temp_C T_hot_in =  to_degC(PropsSI("T", "P", inlet_hot.p, "H", inlet_hot.h_outflow, PBMedia.mediumName));  
   Modelica.SIunits.Temp_C T_cold_in = to_degC(PropsSI("T", "P", inlet_cold.p, "H", inlet_cold.h_outflow, PBMedia.mediumName)); 
-  Modelica.SIunits.Temp_C T_cold_in_real = to_degC(PropsSI("T", "P", p_cold[2], "H", h_cold[2], PBMedia.mediumName));   
+  // Modelica.SIunits.Temp_C T_cold_in_real = to_degC(PropsSI("T", "P", retResult.p_cold, "H", retResult.h_cold, PBMedia.mediumName));   
   Modelica.SIunits.Temp_C T_hot_out = to_degC(PropsSI("T", "P", outlet_hot.p, "H", outlet_hot.h_outflow, PBMedia.mediumName));  
   Modelica.SIunits.Temp_C T_cold_out = to_degC(PropsSI("T", "P", outlet_cold.p, "H", outlet_cold.h_outflow, PBMedia.mediumName));  
+  // Modelica.SIunits.Temp_C T_cold_out_real = to_degC(PropsSI("T", "P", retResult.p_cold, "H", retResult.h_cold, PBMedia.mediumName));   
 
   
   KimCorrCoe cor(a=kim_cor.a, b=kim_cor.b, c=kim_cor.c, d=kim_cor.d);  
@@ -210,12 +219,15 @@ equation
   bc_rt.st_cold_in.p = inlet_cold.p;
   bc_rt.st_cold_in.h = inlet_cold.h_outflow;
   bc_rt.st_cold_in.mdot = inlet_cold.m_flow; 
-  
+
+
   result = PrintPathState(name + " hot_in", PBMedia.mediumName, bc_rt.st_hot_in, log_level = 0);
   PrintPathState(name + " cold_in", PBMedia.mediumName, bc_rt.st_cold_in, log_level = 0);
   
-  (h_hot, h_cold, p_hot, p_cold, Q, U) = CP.PCHE_OFFD_Simulation(name, "CO2", "CO2", geo, cor, sim_param, bc_rt);
-
+  // (h_hot, h_cold, p_hot, p_cold, Q, U) = CP.PCHE_OFFD_Simulation_UQ_out(name, "CO2", "CO2", geo, cor, sim_param, bc_rt);
+  // (h_hot, h_cold, p_hot, p_cold) = CP.PCHE_OFFD_Simulation(name, "CO2", "CO2", geo, cor, sim_param, bc_rt);
+  retResult = CP.PCHE_OFFD_Simulation(name, "CO2", "CO2", geo, cor, sim_param, bc_rt);  
+  
   inlet_hot.m_flow + outlet_hot.m_flow = 0;
   inlet_cold.m_flow + outlet_cold.m_flow = 0;
   
@@ -228,12 +240,12 @@ equation
   // inlet_cold.h_outflow = h_cold[2];
   // inlet_cold.p = p_cold[2];
   
-algorithm
-  outlet_hot.h_outflow := h_hot[2];
-  outlet_hot.p := p_hot[2] + result;
+// algorithm
+  outlet_hot.h_outflow = retResult.h_hot * MAG;
+  outlet_hot.p = retResult.p_hot * MAG + result;
   
-  outlet_cold.h_outflow := h_cold[1];
-  outlet_cold.p := p_cold[1];
+  outlet_cold.h_outflow = retResult.h_cold * MAG;
+  outlet_cold.p = retResult.p_cold * MAG;
 
     
   //T_hot_in_new = PropsSI("T", "P", p_hot[1], "H", h_hot[1], "CO2");
