@@ -9,9 +9,9 @@ record PCHEBoundaryCondition
     // String media_hot;
     // String media_cold;
   
-    ThermoState st_hot_in;
-    ThermoState st_cold_in;
-    ThermoState st_hot_out;
-    ThermoState st_cold_out;
+    Model.ThermoState st_hot_in;
+    Model.ThermoState st_cold_in;
+    Model.ThermoState st_hot_out;
+    Model.ThermoState st_cold_out;
   
 end PCHEBoundaryCondition;

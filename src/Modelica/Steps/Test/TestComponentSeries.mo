@@ -7,15 +7,15 @@ model TestComponentSeries
   import Modelica.SIunits.{Temperature, Pressure, SpecificEnthalpy};
   import Util = Utilities.Util;
   import Steps.Utilities.CoolProp.PropsSI;  
-  import Steps.Components.{PCHEBoundaryCondition, ThermoState, PCHEGeoParam, SimParam};
-  import Steps.Cycle.OffDPBParamSet;   
+  import Steps.Components.{PCHEGeoParam, PCHEBoundaryCondition};
+  import Steps.Model.{PBConfiguration, SimParam, EntityGeoParam, ThermoState} ;
   
   // parameter OffDPBParamSet param(bc_HTR.st_cold_in.T = from_degC(151.993)); 
   // parameter for modelica implementation
-  parameter OffDPBParamSet param_MImpl(geo_HTR.N_seg = 50, geo_LTR.N_seg = 50); 
+  parameter PBConfiguration param_MImpl(geo_HTR.N_seg = 50, geo_LTR.N_seg = 50); 
   
   // parameter for C++ implementation of PCHE - based on Modelica impl's result
-  parameter OffDPBParamSet param_CImpl(
+  parameter Model.PBConfiguration param_CImpl(
   bc_HTR.st_cold_out.T = from_degC(495.302),
   bc_HTR.st_cold_in.T = from_degC(141.3),
   bc_HTR.st_hot_out.T = from_degC(141.041),
@@ -23,10 +23,10 @@ model TestComponentSeries
   bc_LTR.st_hot_in.T = from_degC(141.007),
   bc_LTR.st_hot_out.T = from_degC(63.6726)); 
   
-  parameter OffDPBParamSet param_def; 
+  parameter PBConfiguration param_def; 
   
   // parameter I get after a success simulation with a CImpl model
-  parameter OffDPBParamSet param_CImpl_v2(
+  parameter PBConfiguration param_CImpl_v2(
   bc_HTR.st_cold_out.T = from_degC(532.62),
   bc_HTR.st_cold_in.T = from_degC(143.574),
   bc_HTR.st_hot_out.T = from_degC(144.604),
@@ -37,7 +37,7 @@ model TestComponentSeries
   bc_LTR.st_hot_out.T = from_degC(65.0493),
   bc_LTR.st_hot_out.p = from_bar(76.3718)); 
   
-  parameter OffDPBParamSet param = param_CImpl_v2; 
+  parameter PBConfiguration param = param_CImpl_v2; 
   
   parameter PCHEBoundaryCondition bc_LTR = param.bc_LTR;
   parameter PCHEBoundaryCondition bc_HTR = param.bc_HTR;

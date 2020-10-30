@@ -2,7 +2,7 @@ within Steps.Utilities;
 
 model CoolProp
 
-  import Steps.Components.{ThermoState,PCHEGeoParam,KimCorrCoe, SimParam, PCHEBoundaryCondition, SimulationResult, PCHECImplResult};
+  import Steps.Components.{ThermoState,PCHEGeoParam,KimCorrelations, SimParam, PCHEBoundaryCondition, SimulationResult, PCHECImplResult};
   import Modelica.SIunits.Conversions.{from_deg,from_bar};
 
   function PropsSI "Import the MyPropsLib's PropsSI Function"
@@ -87,8 +87,8 @@ double EXPORT_MY_CODE PCHE_OFFD_Simulation(const char * name, const char * media
     input String media_hot;
     input String media_cold;
     input PCHEGeoParam geo;
-    input KimCorrCoe cor;
-    input SimParam sim_param;
+    input KimCorrelations.KimCorrCoe cor;
+    input Model.SimParam sim_param;
     input PCHEBoundaryCondition bc;
     output PCHECImplResult retOutput;
   protected
@@ -110,7 +110,7 @@ double EXPORT_MY_CODE PCHE_OFFD_Simulation(const char * name, const char * media
   function PrintPathState
     input String name;
     input String medium;
-    input ThermoState st; 
+    input Model.ThermoState st; 
     input Integer log_level = 1;    
     
     output Real result;

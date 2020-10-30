@@ -12,6 +12,7 @@ model PCHECImpl
   import MyUtil = Steps.Utilities.Util;
   import Modelica.SIunits.Conversions.{from_degC, from_bar, to_degC};
   import Steps.Utilities.CoolProp.PrintPathState;
+  import Steps.Model.SimParam;
   
 /*  
   replaceable Steps.Interfaces.PBFluidPort_a inlet_hot(redeclare package Medium = PBMedia, p(start= p_start_hot), h_outflow(start = h_start_hot)) "Inlet port, previous component";
@@ -128,7 +129,7 @@ m_flow(start = bc.st_hot_in.mdot)) "Inlet port, previous component";
   // Modelica.SIunits.Temp_C T_cold_out_real = to_degC(PropsSI("T", "P", retResult.p_cold, "H", retResult.h_cold, PBMedia.mediumName));   
 
   
-  KimCorrCoe cor(a=kim_cor.a, b=kim_cor.b, c=kim_cor.c, d=kim_cor.d);  
+  KimCorrelations.KimCorrCoe cor(a=kim_cor.a, b=kim_cor.b, c=kim_cor.c, d=kim_cor.d);  
   
   // following variables are for debug purpose only
   // d_c determined variables, d_h, A_c, peri_c
