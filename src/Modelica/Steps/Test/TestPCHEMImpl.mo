@@ -6,6 +6,7 @@ model TestPCHEMImpl
   import Modelica.SIunits.Conversions.{from_bar, from_degC}; 
   import Steps.Utilities.CoolProp.PropsSI;
   import Steps.Components.{PCHEBoundaryCondition, PCHEGeoParam, ThermoState};
+  import Steps.Cycle.OffDPBParamSet;
   
   replaceable package PBMedia = Steps.Media.SCO2;  
 
@@ -13,33 +14,19 @@ model TestPCHEMImpl
   
   parameter Modelica.SIunits.MassFlowRate mdot_cold = 51.91 "mass flow rate for cold stream";
   
-  parameter PCHEBoundaryCondition bc(
-    st_hot_in(p = from_bar(80), T = from_degC(578.22), h = PropsSI("H", "P", bc.st_hot_in.p, "T", bc.st_hot_in.T, PBMedia.mediumName), mdot = mdot_hot),    
-    st_cold_in(p = from_bar(200), T = from_degC(151.45), h = PropsSI("H", "P", bc.st_cold_in.p, "T", bc.st_cold_in.T, PBMedia.mediumName), mdot = mdot_hot),
-    st_hot_out(p = from_bar(80), T = from_degC(156.5), h = PropsSI("H", "P", bc.st_hot_out.p, "T", bc.st_hot_out.T, PBMedia.mediumName), mdot = mdot_hot),
-    st_cold_out(p = from_bar(200), T = from_degC(533.5), h = PropsSI("H", "P", bc.st_cold_out.p, "T", bc.st_cold_out.T, PBMedia.mediumName), mdot = mdot_cold));
+  parameter OffDPBParamSet param; 
   
-  parameter PCHEGeoParam geo(
-    // pitch length, m
-    pitch = 12e-3,
-    // pitch angle
-    phi = from_deg((180 - 108) /2),
-    // length of pche, m
-    length = 2860e-3,
-    // Diameter of semi_circular, m
-    d_c = 2e-3,
-    // number of channels
-    N_ch = integer(94e3),
-    // number of segments
-    N_seg = 50);
+  parameter PCHEBoundaryCondition bc = param.bc_HTR;
+  
+  parameter PCHEGeoParam geo = param.geo_HTR;
 
   parameter Modelica.SIunits.ReynoldsNumber Re_hot_start = 14.5e3 "Hot stream's start value of Reynolds Number, used to increase convergence";
   
   parameter Modelica.SIunits.ReynoldsNumber Re_cold_start = 14.5e3 "Cold stream's start value of Reynolds Number, used to increase convergence";  
   
-  parameter Boolean SourceFixed_hot = true;
+  parameter Boolean SourceFixed_hot = false;
   
-  parameter Boolean SourceFixed_cold = true;
+  parameter Boolean SourceFixed_cold = false;
   
   Components.Source source_hot(
     p_outlet = bc.st_hot_in.p,
@@ -87,6 +74,6 @@ equation
 
 annotation(
     experiment(StartTime = 0, StopTime = 1, Interval = 1, Tolerance = 1e-6),
-    __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts");
+    __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts,bltdump");
   
 end TestPCHEMImpl;

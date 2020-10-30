@@ -11,3 +11,5 @@ TestTurbine
 TestOffDRCBCOpenLoop
 TestComponentSeries
 TestPre
+TestCPExtObj
+TestHEG2G

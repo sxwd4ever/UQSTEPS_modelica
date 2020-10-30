@@ -1,4 +1,4 @@
-within Steps.Components;
+within Steps.Model;
 
 record SimParam
   "Record for the simulation param, align with the struct definition in C"

@@ -256,8 +256,8 @@ double EXPORT_MY_CODE PCHE_OFFD_Simulation_UQ_out(const char * name, const char 
     retOutput->p_hot = sr.p_hot[last];
     retOutput->h_hot = sr.h_hot[last];
 
-    retOutput->p_cold = sr.h_cold[0];
-    retOutput->h_cold = sr.p_cold[0];
+    retOutput->p_cold = sr.p_cold[0];
+    retOutput->h_cold = sr.h_cold[0];
 
     for (size_t i = 0; i < N_seg; i++)
     {
@@ -301,7 +301,7 @@ double EXPORT_MY_CODE PCHE_OFFD_Simulation_UQ_out(const char * name, const char 
         const char * result = done ? "OK": "FAILED";
         cout<<name<<"("<<result<<"): [p, T, h] # MPa|oC|J/K @ ";
         cout<<"hi="<<new_state_string_ph(sr.p_hot[0], sr.h_hot[0], media_hot)<<"; ";
-        cout<<"ci="<<new_state_string_ph(sr.p_cold[last], sr.p_cold[last], media_cold)<<"; ";
+        cout<<"ci="<<new_state_string_ph(sr.p_cold[last], sr.h_cold[last], media_cold)<<"; ";
         cout<<"ho="<<new_state_string_ph(retOutput->p_hot, retOutput->h_hot, media_hot)<<"; ";
         cout<<"co="<<new_state_string_ph(retOutput->p_cold, retOutput->h_cold, media_cold)<<endl;
     }
@@ -311,7 +311,7 @@ double EXPORT_MY_CODE PCHE_OFFD_Simulation_UQ_out(const char * name, const char 
     delete [] sr.h_cold;
     delete [] sr.p_hot;
     delete [] sr.p_cold;
-
+    /*
     // change magnitude 
     const int mag = 1e6;
     // scaling the magnitude
@@ -320,7 +320,7 @@ double EXPORT_MY_CODE PCHE_OFFD_Simulation_UQ_out(const char * name, const char 
 
     retOutput->p_cold /= mag;
     retOutput->h_cold /= mag;
-
+    */    
 	return 0.0;
 }
 
@@ -335,6 +335,74 @@ double EXPORT_MY_CODE print_path_state(const char * name, const char * media, Th
     }
 
     return 0.0;
+}
+
+#include "CoolPropLib.h"
+
+boolean validate_cp_result(CoolPropWrapper * cp_wrapper)
+{
+    if(cp_wrapper->err_code != 0)
+    {
+        // my_log(string_format("error in creating new state for %s: %s", cp_wrapper->name, cp_wrapper->cp_err_buf), log_level::ERR);
+        cout<<string_format("error in creating new state for %s: %s\n", cp_wrapper->name, cp_wrapper->cp_err_buf);
+        return false;
+    }
+
+    return true;
+}
+
+void * EXPORT_MY_CODE init_cp_wrapper(const char * medium, const char * name)
+{
+    CoolPropWrapper * cp_wrapper = new CoolPropWrapper();
+
+    // for coolprop query
+    cp_wrapper->handle_cp_state = 0;
+    cp_wrapper->buffer_size = 500;
+    cp_wrapper->err_code = 0;
+    cp_wrapper->cp_err_buf = new char[cp_wrapper->buffer_size];
+    cp_wrapper->name = name;
+
+    cp_wrapper->handle_cp_state = AbstractState_factory("HEOS", medium, &cp_wrapper->err_code, cp_wrapper->cp_err_buf, cp_wrapper->buffer_size);
+
+    if(!validate_cp_result(cp_wrapper)) return NULL;
+    
+    return (void *)cp_wrapper;
+}
+
+double EXPORT_MY_CODE cp_query(void * wrapper, const char * input_pair,  double val1, double val2, const char * output_name)
+{
+    CoolPropWrapper * cp_wrapper = (CoolPropWrapper *)wrapper;
+
+    cp_wrapper->err_code = 0;
+    long handle_input =  get_input_pair_index(input_pair);   
+
+    long handel_output = get_param_index(output_name);
+
+    AbstractState_update(cp_wrapper->handle_cp_state, handle_input, val1, val2, &cp_wrapper->err_code, cp_wrapper->cp_err_buf, cp_wrapper->buffer_size);
+
+    if(!validate_cp_result(cp_wrapper)) return -1;
+
+    double prop = AbstractState_keyed_output(cp_wrapper->handle_cp_state, handel_output, &cp_wrapper->err_code, cp_wrapper->cp_err_buf, cp_wrapper->buffer_size);
+
+    if(!validate_cp_result(cp_wrapper)) return -1;
+
+    return prop;
+}
+
+void EXPORT_MY_CODE close_cp_wrapper(void * state)
+{
+    CoolPropWrapper * cp_wrapper = (CoolPropWrapper *) state;
+
+    cp_wrapper->err_code = 0;
+
+    if(cp_wrapper->handle_cp_state != 0)
+        AbstractState_free(cp_wrapper->handle_cp_state, & cp_wrapper->err_code, cp_wrapper->cp_err_buf, cp_wrapper->buffer_size);
+
+    validate_cp_result(cp_wrapper);
+
+    delete [] cp_wrapper->cp_err_buf;
+
+    delete cp_wrapper;
 }
 
 /**
@@ -435,4 +503,12 @@ void EXPORT_MY_CODE setState_C_impl(double p, double M,  State *state)
 {
     state->p = p;
     state->M = M;
+}
+
+void my_log(std::string content, log_level level)
+{
+    if(level < g_log_level) return;
+
+    cout<<content;
+
 }

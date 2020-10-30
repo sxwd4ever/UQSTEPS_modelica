@@ -10,7 +10,10 @@ model PCHeatExchanger
   import TB = Modelica.Blocks.Tables;  
   import UTIL = Modelica.Utilities;
   import MyUtil = Steps.Utilities.Util;
+  import Steps.Utilities.CoolPropExternalObject;
+  import Steps.Utilities.CoolProp.QueryProps;
   import Modelica.SIunits.Conversions.{from_degC, from_bar};
+  
 /*  
   replaceable Steps.Interfaces.PBFluidPort_a inlet_hot(redeclare package Medium = PBMedia, p(start= p_start_hot), h_outflow(start = h_start_hot)) "Inlet port, previous component";
   replaceable Steps.Interfaces.PBFluidPort_b outlet_hot(redeclare package Medium = PBMedia, p(start= p_start_hot), h_outflow(start = h_start_hot)) "Outlet port, next component";
@@ -24,6 +27,8 @@ model PCHeatExchanger
   replaceable Steps.Interfaces.PBFluidPort_b outlet_cold(redeclare package Medium = PBMedia, p(start=bc.st_cold_out.p), h_outflow(start=bc.st_cold_out.h), m_flow(start=bc.st_cold_out.mdot)) "Recuperator outlet";  
 
   replaceable package PBMedia = Steps.Media.SCO2; 
+  
+  parameter String name = "PCHE";
   
   parameter String name_material = "inconel 750";    
   
@@ -53,6 +58,8 @@ model PCHeatExchanger
   inner KimCorrelations kim_cor(phi = geo.phi, pitch = geo.pitch, d_h = d_h); 
   
   inner Modelica.SIunits.Length length_cell = geo.length / geo.N_seg "length of a cell";  
+  
+  inner CoolPropExternalObject cp_wrapper(PBMedia.mediumName, name);
   
   // d_c determined variables, d_h, A_c, peri_c
   inner Modelica.SIunits.Diameter d_h = 4 * A_c / peri_c "Hydraulic Diameter";  
@@ -152,6 +159,8 @@ protected
     
     outer PCHEGeoParam geo;
     
+    outer CoolPropExternalObject cp_wrapper;
+    
     //Local temperature
     Modelica.SIunits.Temperature T;
     
@@ -234,6 +243,15 @@ equation
     k = CP.PropsSI("L", "P", p, "T", T, PBMedia.mediumName);   
     
     rho = CP.PropsSI("D", "P", p, "T", T, PBMedia.mediumName);     
+    
+    
+    T = QueryProps(cp_wrapper, "HmassP_INPUTS", h, p, "T"); // ("V", "P", p, "H", h, PBMedia.mediumName); 
+        
+    mu = QueryProps(cp_wrapper, "HmassP_INPUTS", h, p, "VISCOSITY");
+
+    k = QueryProps(cp_wrapper, "HmassP_INPUTS", h, p, "CONDUCTIVITY");  
+    
+    rho = QueryProps(cp_wrapper, "HmassP_INPUTS", h, p, "DMASS");   
     */
     
     Re = G * d_h / mu; 

@@ -187,6 +187,6 @@ equation
   */
 annotation(
     experiment(StartTime = 0, StopTime = 1, Tolerance = 1, Interval = 1),
-    __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts,bltdump", 
-    __OpenModelica_simulationFlags(lv = "LOG_DEBUG,LOG_EVENTS_V,LOG_INIT,LOG_INIT_V,LOG_LS,LOG_LS_V,LOG_NLS,LOG_NLS_V,LOG_NLS_JAC,LOG_NLS_RES,LOG_RES_INIT,LOG_STATS,LOG_SOTI,LOG_SIMULATION", outputFormat = "mat", s = "dassl", nls = "homotopy"));
+    __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts,bltdump");/*, 
+    __OpenModelica_simulationFlags(lv = "LOG_DEBUG,LOG_EVENTS_V,LOG_INIT,LOG_INIT_V,LOG_LS,LOG_LS_V,LOG_NLS,LOG_NLS_V,LOG_NLS_JAC,LOG_NLS_RES,LOG_RES_INIT,LOG_STATS,LOG_SOTI,LOG_SIMULATION", outputFormat = "mat", s = "dassl", nls = "homotopy"));*/
 end TestComponentSeries;

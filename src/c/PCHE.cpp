@@ -120,13 +120,13 @@ PCHE::PCHE(const char * name, PCHE_GEO_PARAM & geo)
 
 PCHE::~PCHE()
 {
-    delete _cp_err_buf;
-
     if(_handle_cp_hot != 0)
         AbstractState_free(_handle_cp_hot, & _err_code, _cp_err_buf, _buffer_size);
 
     if(_handle_cp_cold != 0)    
         AbstractState_free(_handle_cp_cold, &_err_code, _cp_err_buf, _buffer_size);
+
+    delete _cp_err_buf;
 
     delete [] _U;
     delete [] _Q;

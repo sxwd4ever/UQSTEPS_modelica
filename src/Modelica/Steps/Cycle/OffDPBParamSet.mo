@@ -86,7 +86,7 @@ model OffDPBParamSet
    // **** Boundary Conditions as Start values for all components - end ****      
    
    // default sim parameters, 'slow' in solution finding with high accuracy, faster for PB's convergence 
-   parameter SimParam sim_param_def(err=5e-4, delta_T_init = 5, N_iter = 20, step_rel=0.13, log_level = 1);
+   parameter SimParam sim_param_def(err=5e-4, delta_T_init = 5, N_iter = 20, step_rel=0.13, log_level = 4);
    // default sim parameters with verbose output for debug
    parameter SimParam sim_param_def_v(err=5e-4, delta_T_init = 5, N_iter = 20, step_rel=0.13, log_level = 0);
    // fast sim parameters, 'fast' in solution finding with lower accuracy, slower for PB's convergence 

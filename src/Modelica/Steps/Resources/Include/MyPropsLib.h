@@ -29,6 +29,19 @@ typedef struct {
 
 } State;
 
+struct CoolPropWrapper
+{
+    long handle_cp_state;
+
+    //optional name for this state
+    const char * name;
+    /* for CP's error handle */
+    long err_code;
+    char * cp_err_buf;
+    long buffer_size;
+};
+
+void my_log(std::string content, log_level level);
 /**
  * Wrapper of CoolProp's PropsSI function. 
  */
@@ -85,6 +98,17 @@ double EXPORT_MY_CODE print_path_state(const char * name, const char * media, Th
 void EXPORT_MY_CODE test_struct_param(SIM_PARAM * sim_param, PCHE_GEO_PARAM * geo, BoundaryCondtion * bc, double * h_hot, double * h_cold, double * p_hot, double * p_cold, size_t N_seg);
 
 void EXPORT_MY_CODE setState_C_impl(double p, double M,  State *state);
+
+
+/** 
+ * CoolProp query function
+ * Using modelica's external object and low level API of CoolProp to accelerate query speed.
+ */
+void * EXPORT_MY_CODE init_cp_wrapper(const char * medium, const char * name);
+
+double EXPORT_MY_CODE cp_query(void * wrapper, const char * input_pair,  double val1, double val2, const char * output_name);
+
+void EXPORT_MY_CODE close_cp_wrapper(void * state);
 
 /** 
  * functions utilizing external objects - not very useful since I have to return data

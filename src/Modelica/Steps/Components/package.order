@@ -4,7 +4,6 @@ EndPoint
 ExchangerContainer
 FanCooler
 KimCorrelations
-KimCorrCoe
 MaterialConductivity
 Mixer
 OilHeater
@@ -18,16 +17,15 @@ Pump
 Recuperator
 Regulator
 SimplePCHeatExchanger
-SimParam
 SimulationResult
 Sink
 Source
 Splitter
 TemperatureOutput
-ThermoState
 Turbine
 TwoPorts
 Valve
 WaterCooler
 Peeker
 PCHECImplResult
+HEG2G

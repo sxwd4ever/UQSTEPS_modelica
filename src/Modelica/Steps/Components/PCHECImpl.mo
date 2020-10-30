@@ -95,17 +95,17 @@ m_flow(start = bc.st_hot_in.mdot)) "Inlet port, previous component";
   // st_hot_in(T = 0, p = bc_hot_in.p, h = bc_hot_in.h, mdot = inlet_hot.m_flow), 
   st_cold_in(T = 0, id = 1), 
   //st_cold_in(T = 0, p = bc_cold_in.p, h = bc_cold_in.h, mdot = inlet_cold.m_flow), 
-  st_hot_out(T = 0, p = 0, h = 0, mdot = 0, id = 2),  
-  st_cold_out(T = 0,p = 0, h = 0, mdot = 0, id = 3));   
+  st_hot_out(T = 0, id = 2),  
+  st_cold_out(T = 0, id = 3));   
   
-  constant Integer MAG = integer(1e6);
+  // constant Integer MAG = integer(1e6);
   /*
   Real h_hot[2](start = {bc.st_hot_in.h / MAG, bc.st_hot_out.h / MAG});
   Real h_cold[2](start = {bc.st_cold_out.h  / MAG, bc.st_cold_in.h  / MAG});
   Real p_hot[2](start = {bc.st_hot_in.p / MAG, bc.st_hot_out.p  / MAG});
   Real p_cold[2](start = {bc.st_cold_out.p  / MAG, bc.st_cold_in.p / MAG}); 
   */
-  PCHECImplResult retResult(p_hot(start=bc.st_hot_out.p / MAG), h_hot(start=bc.st_hot_out.h / MAG), p_cold(start=bc.st_cold_out.p / MAG), h_cold(start=bc.st_cold_out.h / MAG));
+  PCHECImplResult retResult(p_hot(start=bc.st_hot_out.p), h_hot(start=bc.st_hot_out.h), p_cold(start=bc.st_cold_out.p), h_cold(start=bc.st_cold_out.h));
   /*
   Real h_hot_new[2];
   Real h_cold_new[2];
@@ -141,7 +141,7 @@ m_flow(start = bc.st_hot_in.mdot)) "Inlet port, previous component";
   
   parameter Modelica.SIunits.Length length_cell = geo.length / geo.N_seg "length of one pipe in HeatExchanger unit m";  
   
-  Real result "for test only";
+  //Real result "for test only";
     
 /*
 algorithm
@@ -214,14 +214,22 @@ equation
 */
   bc_rt.st_hot_in.p = inlet_hot.p;
   bc_rt.st_hot_in.h = inlet_hot.h_outflow;
-  bc_rt.st_hot_in.mdot = inlet_hot.m_flow;
+  bc_rt.st_hot_in.mdot = inlet_hot.m_flow;  
   
   bc_rt.st_cold_in.p = inlet_cold.p;
   bc_rt.st_cold_in.h = inlet_cold.h_outflow;
-  bc_rt.st_cold_in.mdot = inlet_cold.m_flow; 
+  bc_rt.st_cold_in.mdot = inlet_cold.m_flow;
+  
+  bc_rt.st_hot_out.p = outlet_hot.p;
+  bc_rt.st_hot_out.h = outlet_hot.h_outflow;
+  bc_rt.st_hot_out.mdot = outlet_hot.m_flow;
+  
+  bc_rt.st_cold_out.p = outlet_cold.p;
+  bc_rt.st_cold_out.h = outlet_cold.h_outflow;
+  bc_rt.st_cold_out.mdot = outlet_cold.m_flow; 
 
 
-  result = PrintPathState(name + " hot_in", PBMedia.mediumName, bc_rt.st_hot_in, log_level = 0);
+  PrintPathState(name + " hot_in", PBMedia.mediumName, bc_rt.st_hot_in, log_level = 0);
   PrintPathState(name + " cold_in", PBMedia.mediumName, bc_rt.st_cold_in, log_level = 0);
   
   // (h_hot, h_cold, p_hot, p_cold, Q, U) = CP.PCHE_OFFD_Simulation_UQ_out(name, "CO2", "CO2", geo, cor, sim_param, bc_rt);
@@ -241,11 +249,11 @@ equation
   // inlet_cold.p = p_cold[2];
   
 // algorithm
-  outlet_hot.h_outflow = retResult.h_hot * MAG;
-  outlet_hot.p = retResult.p_hot * MAG + result;
+  outlet_hot.h_outflow = retResult.h_hot;
+  outlet_hot.p = retResult.p_hot;
   
-  outlet_cold.h_outflow = retResult.h_cold * MAG;
-  outlet_cold.p = retResult.p_cold * MAG;
+  outlet_cold.h_outflow = retResult.h_cold;
+  outlet_cold.p = retResult.p_cold;
 
     
   //T_hot_in_new = PropsSI("T", "P", p_hot[1], "H", h_hot[1], "CO2");

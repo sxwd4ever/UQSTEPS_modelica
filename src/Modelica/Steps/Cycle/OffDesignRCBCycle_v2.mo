@@ -9,7 +9,19 @@ model OffDesignRCBCycle_v2
   import Steps.Utilities.CoolProp.PropsSI;  
   import Steps.Components.{PCHEBoundaryCondition, ThermoState, PCHEGeoParam};   
   
-  parameter OffDPBParamSet param; 
+  // parameter I get after a success simulation with a CImpl model
+  parameter OffDPBParamSet param_CImpl_v2(
+  bc_HTR.st_cold_out.T = from_degC(532.62),
+  bc_HTR.st_cold_in.T = from_degC(143.574),
+  bc_HTR.st_hot_out.T = from_degC(144.604),
+  bc_HTR.st_hot_out.p = from_bar(77.3621),
+  bc_LTR.st_cold_out.T = from_degC(138.571),
+  bc_LTR.st_hot_in.T = from_degC(144.604),
+  bc_LTR.st_hot_in.p = from_bar(77.3621),
+  bc_LTR.st_hot_out.T = from_degC(65.0493),
+  bc_LTR.st_hot_out.p = from_bar(76.3718));
+  
+  parameter OffDPBParamSet param = param_CImpl_v2; 
   
   parameter PCHEBoundaryCondition bc_LTR = param.bc_LTR;
   parameter PCHEBoundaryCondition bc_HTR = param.bc_HTR;

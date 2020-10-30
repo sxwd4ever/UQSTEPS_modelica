@@ -2,6 +2,8 @@ within Steps.Components;
 
 record PCHEBoundaryCondition
   "Record for PCHE's PCHEBoundaryCondition, aligns with the struct definition in C"
+    import Model.ThermoState;
+    
     // error in transferring a string together with array of records within a record
     // so I move these two variables to the interface. 
     // String media_hot;

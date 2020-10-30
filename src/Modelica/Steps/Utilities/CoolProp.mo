@@ -1,6 +1,7 @@
 within Steps.Utilities;
 
 model CoolProp
+
   import Steps.Components.{ThermoState,PCHEGeoParam,KimCorrCoe, SimParam, PCHEBoundaryCondition, SimulationResult, PCHECImplResult};
   import Modelica.SIunits.Conversions.{from_deg,from_bar};
 
@@ -153,7 +154,25 @@ double EXPORT_MY_CODE PCHE_OFFD_Simulation(const char * name, const char * media
       Library = {"MyProps"},
       LibraryDirectory = "modelica://Steps/Resources/Library");
   end setState;
-
+  
+  function QueryProps "using exteranl object to query props"
+  
+    input CoolPropExternalObject cp_ex;
+    input String input_pair "PT_INPUTS/HmassP_INPUTS/PSmass_INPUTS see DataStructures.h in CoolProp";
+    input Real val1;
+    input Real val2;
+    input String output_name;
+    output Real props;
+    
+    //double EXPORT_MY_CODE cp_query(void * wrapper, const char * input_pair,  double val1, double val2, const char * output_name);
+    
+    external "C" props = cp_query(cp_ex, input_pair, val1, val2, output_name);
+    annotation(
+      Library = {"MyProps"},
+      LibraryDirectory = "modelica://Steps/Resources/Library");
+  end QueryProps;
+  
+  /*
   PCHEGeoParam geo(pitch = 12e-3, phi = from_deg((180 - 108) / 2), length = 1000e-3, d_c = 1.5e-3, N_ch = 80000, N_seg = 200);
   SimParam sim_param(err = 1e-2, delta_T_init = 5, N_iter = 10000, step_rel = 0.2, log_level = 1);
   PCHEBoundaryCondition bc(st_hot_in(T = 730, p = from_bar(90), h = 932534, mdot = 10), st_cold_in(T = 500, p = from_bar(225), h = 627426, mdot = 10), st_hot_out(T = 576.69, p = from_bar(90), h = 754560, mdot = 10), st_cold_out(T = 639.15, p = from_bar(225), h = 805341, mdot = 10));
@@ -165,14 +184,26 @@ double EXPORT_MY_CODE PCHE_OFFD_Simulation(const char * name, const char * media
   Real p = 20;
   Real M = 30;
   State state;
+  */
+  CoolPropExternalObject cp_wrapper = CoolPropExternalObject("CO2", "test");
+  Real prop1, prop2, prop3;
 equation
 // sr = TestStructParam(sim_param, geo, bc);
 // (h_hot, h_cold, p_hot, p_cold) = TestStructParam(sim_param, geo, bc, geo.N_seg);
-  // (retOutput) = PCHE_OFFD_Simulation("CoolPCHE", "CO2", "CO2", geo, cor, sim_param, bc);
-  (retOutput, Q, U) = PCHE_OFFD_Simulation_UQ_out("CoolPCHE", "CO2", "CO2", geo, cor, sim_param, bc);
+// (retOutput) = PCHE_OFFD_Simulation("CoolPCHE", "CO2", "CO2", geo, cor, sim_param, bc);
+// (retOutput, Q, U) = PCHE_OFFD_Simulation_UQ_out("CoolPCHE", "CO2", "CO2", geo, cor, sim_param, bc);
 // state = setState(p);
-  state = setState(p, M);
+// state = setState(p, M);
 // Test if this interface works
+/*
+  prop1 = QueryProps(cp_wrapper, "PT_INPUTS", 20e6, from_degC(700), "H");
+  prop2 = QueryProps(cp_wrapper, "PT_INPUTS", 8e6, from_degC(700), "H");
+  prop3 = QueryProps(cp_wrapper, "PT_INPUTS", 8e6, from_degC(35), "H");
+*/
+
+  prop1 = PropsSI("H", "P", 20e6, "T", from_degC(700), "CO2");
+  prop2 = PropsSI("H", "P", 8e6, "T", from_degC(700), "CO2");
+  prop3 = PropsSI("H", "P", 8e6, "T", from_degC(35), "CO2");
 /*
   (T, mu, k , rho) = MyPropsSI(p, H, "CO2");
   //(H, rho) = MyPropsSI_pT(p, T, "CO2");
@@ -186,6 +217,7 @@ equation
 /*
 void EXPORT_MY_CODE print_path_state(const char * name, const char * media, ThermoState * st_in, ThermoState * st_out, int log_level);
 */
+
 
 
 annotation(

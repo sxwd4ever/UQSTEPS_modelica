@@ -17,6 +17,7 @@ SET MODELICA_LIBRARY=..\Modelica\Steps\Resources\Library
 SET MODELICA_WS[0]="C:\Users\uqxsui\AppData\Local\Temp\OpenModelica\OMEdit\Steps.Cycle.OffDesignRCBCycle_v2"
 SET MODELICA_WS[1]="C:\Users\uqxsui\AppData\Local\Temp\OpenModelica\OMEdit\Steps.Test.TestComponentSeries"
 SET MODELICA_WS[2]="C:\Users\uqxsui\AppData\Local\Temp\OpenModelica\OMEdit\Steps.Test.TestPCHECImpl"
+SET MODELICA_WS[3]="C:\Users\uqxsui\AppData\Local\Temp\OpenModelica\OMEdit\Steps.Utilities.CoolProp"
 
 ECHO OFF
 
@@ -46,7 +47,7 @@ copy build\%TARGET_LIB% %MODELICA_LIBRARY%
 
 REM copy build\%TARGET_LIB% %TARGETDIR%
 
-for /L %%i in (0,1,2) do (
+for /L %%i in (0,1,3) do (
     call echo !MODELICA_WS[%%i]!
     call copy build\%TARGET_LIB% !MODELICA_WS[%%i]!
 )
