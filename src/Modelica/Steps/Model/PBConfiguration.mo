@@ -18,23 +18,52 @@ model PBConfiguration
   
   parameter Real eta_turbine = 0.89;
   
-  // mass split ratio of splitter
-  parameter Real splitter_split_ratio = mdot_bypass/mdot_main; 
-  
+  // **** Boundary Conditions as Start values for recuperators - start ****
+  // Core INPUT parameters for boundary conditions **** 
   parameter Modelica.SIunits.Pressure p_pump_in = 8e6;
   parameter Modelica.SIunits.Pressure p_pump_out = 20e6;
   
   parameter Modelica.SIunits.MassFlowRate mdot_main = 51.91;
   parameter Modelica.SIunits.MassFlowRate mdot_pump = 31.31;
-  parameter Modelica.SIunits.MassFlowRate mdot_bypass = mdot_main - mdot_pump;  
+  
+  parameter Modelica.SIunits.Temperature T_HTR_hot_in = from_degC(578.22);
+  parameter Modelica.SIunits.Temperature T_HTR_cold_out = from_degC(533.5);
   
   parameter Modelica.SIunits.Temperature T_HTR_hot_out = from_degC(156.45);
-  parameter Modelica.SIunits.Temperature T_HTR_cold_in = from_degC(151.45);
+  parameter Modelica.SIunits.Temperature T_HTR_cold_in = from_degC(151.45); 
   
-  parameter Modelica.SIunits.Temperature T_LTR_cold_out = from_degC(151.45);
-  parameter Modelica.SIunits.Temperature T_LTR_hot_in =  from_degC(156.45);   
+  parameter Modelica.SIunits.Temperature T_LTR_cold_in = from_degC(62.229);
+  parameter Modelica.SIunits.Temperature T_LTR_hot_out = from_degC(67.229);  
   
-  parameter Modelica.SIunits.Temperature T_bypass_out =  from_degC(151.45);   
+  parameter Modelica.SIunits.Temperature T_heater_hot_out = from_degC(700);
+  parameter Modelica.SIunits.Temperature T_cooler_cold_out = from_degC(33);
+  
+  // parameters based on input parameters.   
+  parameter Real splitter_split_ratio = mdot_bypass/mdot_main "mass split ratio of splitter"; 
+  parameter Modelica.SIunits.MassFlowRate mdot_bypass = mdot_main - mdot_pump "mdot in by pass path"; 
+  
+  parameter Modelica.SIunits.Temperature T_LTR_hot_in =  T_HTR_hot_out; 
+  parameter Modelica.SIunits.Temperature T_LTR_cold_out = T_HTR_cold_in;     
+  parameter Modelica.SIunits.Temperature T_bypass_out =  T_HTR_cold_in;    
+  
+  // DO NOT change following parameters - CHANGE input paramters instead  
+  parameter PCHEBoundaryCondition bc_HTR(
+    st_hot_in(p = p_pump_in, T = T_HTR_hot_in, h = PropsSI("H", "P",  bc_HTR.st_hot_in.p, "T", bc_HTR.st_hot_in.T, PBMedia.mediumName), mdot = mdot_main),    
+    st_cold_in(p = p_pump_out, T = T_HTR_cold_in, h = PropsSI("H", "P", bc_HTR.st_cold_in.p, "T", bc_HTR.st_cold_in.T, PBMedia.mediumName), mdot = mdot_main),
+    st_hot_out(p = p_pump_in, T = T_HTR_hot_out, h = PropsSI("H", "P", bc_HTR.st_hot_out.p, "T", bc_HTR.st_hot_out.T, PBMedia.mediumName), mdot = mdot_main),
+    st_cold_out(p = p_pump_out, T = T_HTR_cold_out, h = PropsSI("H", "P", bc_HTR.st_cold_out.p, "T", bc_HTR.st_cold_out.T, PBMedia.mediumName), mdot = mdot_main));      
+  
+  // boundary condition for LTR test @ diff mdot
+  parameter PCHEBoundaryCondition bc_LTR(
+    st_hot_in(p = p_pump_in, T = T_LTR_hot_in, h = PropsSI("H", "P", bc_LTR.st_hot_in.p, "T", bc_LTR.st_hot_in.T, PBMedia.mediumName), mdot = mdot_main),    
+    st_cold_in(p = p_pump_out, T = T_LTR_cold_in, h = PropsSI("H", "P", bc_LTR.st_cold_in.p, "T", bc_LTR.st_cold_in.T, PBMedia.mediumName), mdot = mdot_pump),
+    st_hot_out(p = p_pump_in, T = T_LTR_hot_out, h = PropsSI("H", "P", bc_LTR.st_hot_out.p, "T", bc_LTR.st_hot_out.T, PBMedia.mediumName), mdot = mdot_main),
+    st_cold_out(p = p_pump_out, T = T_LTR_cold_out, h = PropsSI("H", "P", bc_LTR.st_cold_out.p, "T", bc_LTR.st_cold_out.T, PBMedia.mediumName), mdot = mdot_pump)); 
+       
+  parameter ThermoState bc_cooler_out(p = bc_LTR.st_hot_out.p, T = T_cooler_cold_out, h = PropsSI("H", "P", bc_cooler_out.p, "T", bc_cooler_out.T, PBMedia.mediumName), mdot = mdot_pump);    
+  parameter ThermoState bc_heater_out(p = bc_HTR.st_cold_out.p, T = T_heater_hot_out, h = PropsSI("H", "P", bc_heater_out.p, "T", bc_heater_out.T, PBMedia.mediumName), mdot = mdot_main);    
+  parameter ThermoState bc_bypass(p = bc_HTR.st_cold_in.p, T = T_bypass_out, h = PropsSI("H", "P", bc_bypass.p, "T", bc_bypass.T, PBMedia.mediumName), mdot = mdot_bypass);
+  // **** Boundary Conditions as Start values for recuperators - end ****      
   
   parameter PCHEGeoParam geo_HTR(
     // pitch length, m
@@ -66,39 +95,25 @@ model PBConfiguration
   
   // test configuration for hot/cold/tube side of heatexchanger
   
-  parameter EntityConfig cfg_hot(
+  parameter EntityConfig cfg_HTR_hot(
     geo(V = 10, A_ex = 1708.2, N_seg = 7),
     thermo(gamma_he = 200)
   );
   
-  parameter EntityConfig cfg_cold(
+  parameter EntityConfig cfg_HTR_cold(
     geo(V = 2.234, A_ex = 225.073, N_seg = 7),
     thermo(gamma_he = 200)
   );
   
-  parameter EntityConfig cfg_tube(
+  parameter EntityConfig cfg_HTR_tube(
     geo(V = 0.573, A_ex = 252.286, N_seg = 6),
     thermo(rho_mcm = 7900 * 578.05, lambda = 20)
-  );  
-
-  // **** Boundary Conditions as Start values for all components - start ****  
-  parameter PCHEBoundaryCondition bc_HTR(
-    st_hot_in(p = p_pump_in, T = from_degC(578.22), h = PropsSI("H", "P",  bc_HTR.st_hot_in.p, "T", bc_HTR.st_hot_in.T, PBMedia.mediumName), mdot = mdot_main),    
-    st_cold_in(p = p_pump_out, T = T_HTR_cold_in, h = PropsSI("H", "P", bc_HTR.st_cold_in.p, "T", bc_HTR.st_cold_in.T, PBMedia.mediumName), mdot = mdot_main),
-    st_hot_out(p = p_pump_in, T = T_HTR_hot_out, h = PropsSI("H", "P", bc_HTR.st_hot_out.p, "T", bc_HTR.st_hot_out.T, PBMedia.mediumName), mdot = mdot_main),
-    st_cold_out(p = p_pump_out, T = from_degC(533.5), h = PropsSI("H", "P", bc_HTR.st_cold_out.p, "T", bc_HTR.st_cold_out.T, PBMedia.mediumName), mdot = mdot_main));      
+  ); 
   
-  // boundary condition for LTR test @ diff mdot
-  parameter PCHEBoundaryCondition bc_LTR(
-    st_hot_in(p = p_pump_in, T = T_LTR_hot_in, h = PropsSI("H", "P", bc_LTR.st_hot_in.p, "T", bc_LTR.st_hot_in.T, PBMedia.mediumName), mdot = mdot_main),    
-    st_cold_in(p = p_pump_out, T = from_degC(62.229), h = PropsSI("H", "P", bc_LTR.st_cold_in.p, "T", bc_LTR.st_cold_in.T, PBMedia.mediumName), mdot = mdot_pump),
-    st_hot_out(p = p_pump_in, T = from_degC(67.229), h = PropsSI("H", "P", bc_LTR.st_hot_out.p, "T", bc_LTR.st_hot_out.T, PBMedia.mediumName), mdot = mdot_main),
-    st_cold_out(p = p_pump_out, T = T_LTR_cold_out, h = PropsSI("H", "P", bc_LTR.st_cold_out.p, "T", bc_LTR.st_cold_out.T, PBMedia.mediumName), mdot = mdot_pump)); 
-       
-  parameter ThermoState bc_cooler_out(p = bc_LTR.st_hot_out.p, T = from_degC(33), h = PropsSI("H", "P", bc_cooler_out.p, "T", bc_cooler_out.T, PBMedia.mediumName), mdot = mdot_pump);    
-  parameter ThermoState bc_heater_out(p = bc_HTR.st_cold_out.p, T = from_degC(700), h = PropsSI("H", "P", bc_heater_out.p, "T", bc_heater_out.T, PBMedia.mediumName), mdot = mdot_main);    
-  parameter ThermoState bc_bypass(p = bc_HTR.st_cold_in.p, T = T_bypass_out, h = PropsSI("H", "P", bc_bypass.p, "T", bc_bypass.T, PBMedia.mediumName), mdot = mdot_bypass);
-  // **** Boundary Conditions as Start values for all components - end ****      
+  parameter EntityConfig cfg_mixer(
+    geo(V = 3, A_ex = 1),
+    thermo(gamma_he = 0) //steady state
+  );   
   
   // default sim parameters, 'slow' in solution finding with high accuracy, faster for PB's convergence 
   parameter SimParam sim_param_def(err=5e-4, delta_T_init = 5, N_iter = 20, step_rel=0.13, log_level = 4);

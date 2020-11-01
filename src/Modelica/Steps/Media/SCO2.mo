@@ -55,7 +55,7 @@ package SCO2 "supercritical CO2"
 
   redeclare record extends ThermodynamicState "A selection of variables that uniquely defines the thermodynamic state"
       AbsolutePressure p "Absolute pressure of medium";
-      Temperature T "Temperature of PBMedia";
+      Temperature T "Temperature of medium";
   end ThermodynamicState;
 
   
@@ -75,8 +75,9 @@ package SCO2 "supercritical CO2"
   redeclare replaceable model extends BaseProperties(final standardOrderComponents = true) "Base properties of medium"
     Modelica.SIunits.SpecificEntropy s;
   equation
-      state.p = p;
-      state.T = T;     
+      //state.p = p;
+      // state.T = T;     
+      state = newState_pT(p, T);
       d = CP.PropsSI("D", "P", p, "T", T, mediumName);
       h = CP.PropsSI("H", "P", p, "T", T, mediumName);
       s = CP.PropsSI("S", "P", p, "T", T, mediumName);
@@ -98,6 +99,21 @@ package SCO2 "supercritical CO2"
     state.s := prop.s;
     
   end getFullState;
+  
+  function newState_pT
+    "factory method using to create new state, for debug purpose"
+    
+    input Real p;
+    input Real T;
+    
+    output ThermodynamicState state;
+   
+  algorithm
+    state.p := p;
+    state.T := T; 
+
+    print("p=" + String(p) + " T=" + String(T) +"\n");
+  end newState_pT;
     
   redeclare function setState_pTX "Return thermodynamic state from p, T, and X or Xi"
     extends Modelica.Icons.Function;
