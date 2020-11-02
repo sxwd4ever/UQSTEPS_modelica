@@ -28,6 +28,8 @@ partial model HeatExchangerG2G "Base class for heat exchanger gas - gas (derived
   //Start value
   parameter SI.Temperature Tstartbar_G "Start value of the average gas temperature" annotation(
     Dialog(tab = "Initialization"));
+  parameter SI.Temperature Tstartbar_F "Start value of the average fluid temperature" annotation(
+    Dialog(tab = "Initialization"));    
   parameter SI.Pressure pstart_G = gasNomPressure "Pressure start value, gas side" annotation(
     Dialog(tab = "Initialization"));
   parameter SI.Temperature Tstartbar_M = Tstartbar_G - 50 "Start value of the average metal temperature" annotation(

@@ -12,11 +12,12 @@ model TestHEG2G
   import Model.PBConfiguration;
   import ThermoPower.Choices.Init.Options;
   import ThermoPower.System;
+  import ThermoPower.Gas;
   
+  // package medium_hot = Modelica.Media.IdealGases.SingleGases.CO2;// Steps.Media.CO2;
+  // package medium_cold = Modelica.Media.IdealGases.SingleGases.CO2; // Steps.Media.CO2;
   package medium_hot = Steps.Media.CO2;
   package medium_cold = Steps.Media.CO2;
-  // package medium_cold = Modelica.Media.IdealGases.MixtureGases.CombustionAir;   
-  // package medium_cold = Modelica.Media.IdealGases.SingleGases.O2;
 
   parameter Model.PBConfiguration cfg_def( 
   p_pump_in = 9e6,
@@ -68,21 +69,19 @@ model TestHEG2G
   parameter EntityThermoParam thermo_tube = cfg.cfg_HTR_tube.thermo;  
   parameter EntityThermoParam thermo_mixer = cfg.cfg_mixer.thermo;
 
-  //parameter Modelica.SIunits.SpecificEnthalpy hstart_F_In = medium_cold.specificEnthalpy_pT(fluidNomPressure, bc_HTR.st_cold_in.T) "Nominal specific enthalpy";
-  //parameter Modelica.SIunits.SpecificEnthalpy hstart_F_Out = medium_cold.specificEnthalpy_pT(fluidNomPressure, bc_HTR.st_cold_out.T) "Nominal specific enthalpy";
   //Components
-  inner ThermoPower.System system(allowFlowReversal = false, initOpt=ThermoPower.Choices.Init.Options.fixedState) annotation(
+  inner ThermoPower.System system(allowFlowReversal = false, initOpt=ThermoPower.Choices.Init.Options.noInit) annotation(
     Placement(transformation(extent = {{80, 80}, {100, 100}})));
     
   ThermoPower.Gas.SourceMassFlow sourceW_water(
     redeclare package Medium = medium_cold, 
-    T = bc_LTR.st_cold_out.T, 
-    p0 = bc_LTR.st_cold_out.p, 
+    T = bc_LTR.st_cold_in.T, 
+    p0 = bc_LTR.st_cold_in.p, 
     use_in_T = false, 
-    w0 = bc_LTR.st_cold_out.mdot) 
+    w0 = bc_LTR.st_cold_in.mdot) 
   annotation(
     Placement(transformation(origin = {0, 60}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
-  
+
   ThermoPower.Gas.SourceMassFlow source_mixer_in(
     redeclare package Medium = medium_cold,
     T = st_bypass.T,
@@ -90,7 +89,7 @@ model TestHEG2G
     use_in_T = false,
     w0 = st_bypass.mdot    
   );
-  
+
   ThermoPower.Gas.SinkPressure sinkP_water(
     redeclare package Medium = medium_cold, 
     p0 = bc_HTR.st_cold_out.p, 
@@ -100,8 +99,8 @@ model TestHEG2G
 
   ThermoPower.Gas.SinkPressure sinkP_gas(
     redeclare package Medium = medium_hot,
-    T = bc_HTR.st_hot_out.T, 
-    p0 = bc_HTR.st_hot_out.p) 
+    T = bc_LTR.st_hot_out.T, 
+    p0 = bc_LTR.st_hot_out.p) 
   annotation(
     Placement(transformation(extent = {{60, -10}, {80, 10}}, rotation = 0)));
   
@@ -109,11 +108,13 @@ model TestHEG2G
     redeclare package Medium = medium_hot, 
     T = bc_HTR.st_hot_in.T, 
     p0 = bc_HTR.st_hot_in.p, 
-    w0 = bc_HTR.st_hot_in.mdot) 
+    w0 = bc_HTR.st_hot_in.mdot,
+    use_in_T = false) 
   annotation(
     Placement(transformation(extent = {{-70, -10}, {-50, 10}}, rotation = 0))); 
- 
+
   Components.SSMixer mixer(
+  //Gas.Mixer mixer(
     redeclare package Medium = medium_cold,
     gamma=thermo_mixer.gamma_he,
     S=geo_mixer.A_ex,
@@ -143,6 +144,7 @@ model TestHEG2G
   N_G = geo_hot.N_seg,   
   SSInit = SSInit, 
   Tstartbar_G = bc_HTR.st_hot_in.T, 
+  Tstartbar_F = bc_HTR.st_cold_in.T, 
   exchSurface_F = geo_cold.A_ex, 
   exchSurface_G = geo_hot.A_ex, 
   extSurfaceTub = geo_tube.A_ex, 
@@ -155,13 +157,42 @@ model TestHEG2G
   lambda = thermo_tube.lambda, 
   metalVol = geo_tube.V, 
   pstart_F = bc_HTR.st_cold_in.p, 
-  rhomcm = thermo_tube.rho_mcm) annotation(
+  pstart_G = bc_HTR.st_hot_in.T,
+  rhomcm = thermo_tube.rho_mcm,
+  gasQuasiStatic = true,
+  fluidQuasiStatic = true) annotation(
     Placement(transformation(extent = {{-20, -20}, {20, 20}}, rotation = 0)));
-  //Start value
-  // parameter Modelica.SIunits.Temperature Tstart_G = (bc_HTR.st_hot_in.T + bc_HTR.st_hot_out.T) / 2;
-  // parameter Modelica.SIunits.Temperature Tstart_M = (bc_HTR.st_hot_in.T + bc_HTR.st_hot_out.T + bc_HTR.st_cold_in.T + bc_HTR.st_cold_out.T) / 4;
 
-  parameter Boolean SSInit = true "Steady-state initialization";
+  Components.HEG2G LTR(
+  redeclare package FluidMedium = medium_cold, 
+  redeclare package FlueGasMedium = medium_hot, 
+  redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficient(gamma = thermo_cold.gamma_he), 
+  redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficientTwoGrids(gamma = thermo_hot.gamma_he), 
+  redeclare model HeatExchangerTopology = ThermoPower.Thermal.HeatExchangerTopologies.CounterCurrentFlow,  
+  N_F = geo_cold.N_seg, 
+  N_G = geo_hot.N_seg,   
+  SSInit = SSInit, 
+  Tstartbar_G = bc_LTR.st_hot_in.T, 
+  Tstartbar_F = bc_LTR.st_cold_in.T, 
+  exchSurface_F = geo_cold.A_ex, 
+  exchSurface_G = geo_hot.A_ex, 
+  extSurfaceTub = geo_tube.A_ex, 
+  fluidNomFlowRate = bc_LTR.st_cold_in.mdot, 
+  fluidNomPressure = bc_LTR.st_cold_in.p, 
+  fluidVol = geo_cold.V, 
+  gasNomFlowRate = bc_LTR.st_hot_in.mdot, 
+  gasNomPressure = bc_LTR.st_hot_in.p, 
+  gasVol = geo_hot.V, 
+  lambda = thermo_tube.lambda, 
+  metalVol = geo_tube.V, 
+  pstart_F = bc_LTR.st_cold_in.p, 
+  pstart_G = bc_LTR.st_hot_in.T,
+  rhomcm = thermo_tube.rho_mcm,
+  gasQuasiStatic = true,
+  fluidQuasiStatic = true) annotation(
+    Placement(transformation(extent = {{-20, -20}, {20, 20}}, rotation = 0)));
+
+  parameter Boolean SSInit = false "Steady-state initialization";
 
 initial equation
 //hstart_F_Out = HTR.waterOut.h_outflow;
@@ -192,9 +223,21 @@ equation
     
   connect(T_gasOut.outlet, sinkP_gas.flange) annotation(
     Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));    
-*/
 
-
+  // LTR alone
+  // water/cold side  
+  connect(sourceW_water.flange, LTR.waterIn);
+  
+  connect(LTR.waterOut, sinkP_water.flange) annotation(
+    Line(points = {{1.83697e-015, -70}, {1.83697e-015, -56}, {-8.88178e-016, -56}}, thickness = 0.5, color = {0, 0, 255}));
+  
+  // gas/hot side
+  connect(sourceW_gas.flange, LTR.gasIn);
+  
+  connect(LTR.gasOut, sinkP_gas.flange) annotation(
+    Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));
+  */  
+/*
   //HTR + mixer
   connect(source_mixer_in.flange, mixer.in1);
   
@@ -212,8 +255,54 @@ equation
     Line(points = {{8.88178e-016, -44}, {8.88178e-016, -20}, {0, -20}}, thickness = 0.5, color = {0, 0, 255}));
   
   connect(sourceW_gas.flange, HTR.gasIn) annotation(
-        Line(points = {{-50, 0}, {-20, 0}}, color = {159, 159, 223}, thickness = 0.5, smooth = Smooth.None));
+   Line(points = {{-50, 0}, {-20, 0}}, color = {159, 159, 223}, thickness = 0.5, smooth = Smooth.None));
+*/
+/*
+  // mixer + LTR
+  // water/cold side  
+  connect(source_mixer_in.flange, mixer.in1);
+  
+  connect(sourceW_water.flange, LTR.waterIn);
+  
+  connect(LTR.waterOut, mixer.in2);
+  
+  connect(mixer.out, sinkP_water.flange) annotation(
+    Line(points = {{1.83697e-015, -70}, {1.83697e-015, -56}, {-8.88178e-016, -56}}, thickness = 0.5, color = {0, 0, 255}));
+  
+  // gas/hot side
+  connect(sourceW_gas.flange, LTR.gasIn);
+  
+  connect(LTR.gasOut, sinkP_gas.flange) annotation(
+    Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));
+*/
 
+  //HTR + mixer + LTR
+  // water/cold side  
+  connect(source_mixer_in.flange, mixer.in1);
+  
+  connect(sourceW_water.flange, LTR.waterIn);
+  
+  connect(LTR.waterOut, mixer.in2);
+  
+  connect(mixer.out, HTR.waterIn);
+
+  connect(sinkP_water.flange, T_waterOut.outlet) annotation(
+    Line(points = {{1.83697e-015, -70}, {1.83697e-015, -56}, {-8.88178e-016, -56}}, thickness = 0.5, color = {0, 0, 255}));
+  connect(T_waterOut.inlet, HTR.waterOut) annotation(
+    Line(points = {{8.88178e-016, -44}, {8.88178e-016, -20}, {0, -20}}, thickness = 0.5, color = {0, 0, 255}));
+
+  // gas/hot side
+  connect(sourceW_gas.flange, HTR.gasIn) annotation(
+   Line(points = {{-50, 0}, {-20, 0}}, color = {159, 159, 223}, thickness = 0.5, smooth = Smooth.None));
+
+  connect(HTR.gasOut, LTR.gasIn);
+  
+  connect(LTR.gasOut, T_gasOut.inlet) annotation(
+    Line(points = {{34, 0}, {34, 0}, {20, 0}}, color = {159, 159, 223}, thickness = 0.5));
+    
+  connect(T_gasOut.outlet, sinkP_gas.flange) annotation(
+    Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));
+    
 annotation(
     Diagram(graphics),
     experiment(StartTime = 0, StopTime = 1, Tolerance = 1e-3, Interval = 1),

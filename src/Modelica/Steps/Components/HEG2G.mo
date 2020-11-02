@@ -26,10 +26,13 @@ extends Interfaces.HeatExchangerG2G;
   parameter SI.PerUnit Cfnom_F = 0 "Nominal Fanning friction factor";
   parameter Choices.Flow1D.HCtypes HCtype_F = ThermoPower.Choices.Flow1D.HCtypes.Downstream "Location of the hydraulic capacitance, fluid side";
   parameter Boolean gasQuasiStatic = false "Quasi-static model of the flue gas (mass, energy and momentum static balances";
+  parameter Boolean fluidQuasiStatic = false "Quasi-static model of the fluid (mass, energy and momentum static balances";
   constant Real pi = Modelica.Constants.pi;
   final parameter SI.Distance L = 1 "Tube length";
   parameter Choices.FluidPhase.FluidPhases FluidPhaseStart = Choices.FluidPhase.FluidPhases.Liquid "Fluid phase (only for initialization!)" annotation(
     Dialog(tab = "Initialization"));
+  
+  /*
   Gas.Flow1DFV fluidFlow(
    
   redeclare package Medium = FluidMedium, 
@@ -40,7 +43,7 @@ extends Interfaces.HeatExchangerG2G;
   FFtype = FFtype_F, 
   HydraulicCapacitance = HCtype_F, 
   Kfnom = Kfnom_F, 
-  L = exchSurface_F ^ 2 / (fluidVol * pi * 4), 
+  L = exchSurface_F ^ 2 / (fluidVol * pi * 4), F
   N = N_F,Nt = Nt, 
   Nw = Nw_F, 
   dpnom = dpnom_F, 
@@ -50,13 +53,36 @@ extends Interfaces.HeatExchangerG2G;
   rhonom = rhonom_F, 
   wnom = fluidNomFlowRate) annotation(
     Placement(transformation(extent = {{-10, -66}, {10, -46}}, rotation = 0)));
+  */
+  Gas.Flow1DFV fluidFlow(
+  Nt = 1, 
+  N = N_F, 
+  Nw = Nw_F,
+  wnom = fluidNomFlowRate, 
+  //initOpt = if SSInit then Options.steadyState else Options.noInit, 
+  redeclare package Medium = FluidMedium, 
+  QuasiStatic = fluidQuasiStatic, 
+  pstart = pstart_F, 
+  L = L, 
+  A = fluidVol / L, 
+  omega = exchSurface_F / L,
+  Dhyd = 1,
+  FFtype = FFtype_F, 
+  Kfnom = Kfnom_F, 
+  dpnom = dpnom_F, 
+  rhonom = rhonom_F, 
+  Cfnom = Cfnom_F, 
+  Tstartbar = Tstartbar_F, 
+  redeclare model HeatTransfer = HeatTransfer_F) annotation(
+    Placement(transformation(extent = {{-10, -66}, {10, -46}}, rotation = 0)));
+    
   //changed Medium=FlueGasMedium to Medium=FluidMedium
   Gas.Flow1DFV gasFlow(
   Nt = 1, 
   N = N_G, 
   Nw = Nw_G,
   wnom = gasNomFlowRate, 
-  initOpt = if SSInit then Options.steadyState else Options.noInit, 
+  //initOpt = if SSInit then Options.steadyState else Options.noInit, 
   redeclare package Medium = FlueGasMedium, 
   QuasiStatic = gasQuasiStatic, 
   pstart = pstart_G, 
