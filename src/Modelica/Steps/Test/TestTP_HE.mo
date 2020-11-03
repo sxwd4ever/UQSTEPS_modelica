@@ -58,9 +58,6 @@ model TestTP_HE
   parameter EntityThermoParam thermo_tube = cfg.cfg_HTR_tube.thermo;  
   parameter EntityThermoParam thermo_mixer = cfg.cfg_mixer.thermo;
   parameter EntityThermoParam thermo_heater = cfg.cfg_heater.thermo;
-
-  package FlueGasMedium = Modelica.Media.IdealGases.SingleGases.CO2;
-  package FluidMedium = ThermoPower.Water.StandardWater;
   
   ThermoPower.Water.SourceMassFlow source_heater_hot(
     redeclare package Medium = medium_heater, 
@@ -126,17 +123,7 @@ model TestTP_HE
 
   inner ThermoPower.System system(allowFlowReversal = false) annotation(
     Placement(transformation(extent = {{80, 80}, {100, 100}})));
-   /*
-  ThermoPower.Water.SourceMassFlow source_heater_hot(redeclare package Medium = FluidMedium, w0 = fluidNomFlowRate, p0 = fluidNomPressure, h = hstart_F_In) annotation(
-    Placement(transformation(origin = {0, 60}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
-  ThermoPower.Water.SinkPressure sink_heater_hot(redeclare package Medium = FluidMedium, p0 = fluidNomPressure, h = hstart_F_Out) annotation(
-    Placement(transformation(origin = {0, -80}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
-
-  ThermoPower.Gas.SinkPressure sink_cold(redeclare package Medium = FlueGasMedium, T = Tstart_G_Out, p0 = 10e6) annotation(
-    Placement(transformation(extent = {{60, -10}, {80, 10}}, rotation = 0)));
-  ThermoPower.Gas.SourceMassFlow source_cold(redeclare package Medium = FlueGasMedium, T = Tstart_G_In, p0 = 10e6, w0 = gasNomFlowRate) annotation(
-    Placement(transformation(extent = {{-70, -10}, {-50, 10}}, rotation = 0)));
-    */
+  
   ThermoPower.Water.SensT T_waterOut(redeclare package Medium = FluidMedium) annotation(
     Placement(transformation(origin = {4, -50}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
   ThermoPower.Gas.SensT T_gasOut(redeclare package Medium = FlueGasMedium) annotation(
