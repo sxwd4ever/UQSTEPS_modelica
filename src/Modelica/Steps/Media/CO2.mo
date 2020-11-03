@@ -321,35 +321,35 @@ package CO2 "Ideal gas \"CO2\" from NASA Glenn coefficients"
     Modelica.SIunits.SpecificEntropy s;
   algorithm
     s := specificEntropy(refState);
-    h_is := specificEntropy(setState_ps(p_downstream, s)); 
+    h_is := specificEntropy(setState_psX(p=p_downstream, s=s)); 
     annotation(Inline=true,smoothOrder=2);
   end isentropicEnthalpy;
 
   redeclare function extends isobaricExpansionCoefficient
     "Returns overall the isobaric expansion coefficient beta"
   algorithm
-    beta := 1/state.T;
+    beta := CP.PropsSI("ISOBARIC_EXPANSION_COEFFICIENT", "P", state.p, "T", state.T, mediumName); // 1/state.T;
     annotation(Inline=true,smoothOrder=2);
   end isobaricExpansionCoefficient;
 
   redeclare function extends isothermalCompressibility
     "Returns overall the isothermal compressibility factor"
   algorithm
-    kappa := 1.0/state.p;
+    kappa := CP.PropsSI("ISOTHERMAL_COMPRESSIBILITY", "P", state.p, "T", state.T, mediumName); // 1.0/state.p;
     annotation(Inline=true,smoothOrder=2);
   end isothermalCompressibility;
 
   redeclare function extends density_derp_T
     "Returns the partial derivative of density with respect to pressure at constant temperature"
   algorithm
-    ddpT := 1/(state.T*data.R);
+    ddpT := CP.PropsSI("d(DMASS)/d(P)|T", "P", state.p, "T", state.T, mediumName); //1/(state.T*data.R);
     annotation(Inline=true,smoothOrder=2);
   end density_derp_T;
 
   redeclare function extends density_derT_p
     "Returns the partial derivative of density with respect to temperature at constant pressure"
   algorithm
-    ddTp := -state.p/(state.T*state.T*data.R);
+    ddTp := CP.PropsSI("d(DMASS)/d(P)|T", "P", state.p, "T", state.T, mediumName); //-state.p/(state.T*state.T*data.R);
     annotation(Inline=true,smoothOrder=2);
   end density_derT_p;
 
