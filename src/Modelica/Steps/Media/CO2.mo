@@ -38,6 +38,7 @@ package CO2 "Ideal gas \"CO2\" from NASA Glenn coefficients"
   import Modelica.Media.Interfaces.Choices.ReferenceEnthalpy;  
   import Modelica.Media.IdealGases.Common;
   import Modelica.Media.IdealGases.Common.Functions;
+  import Modelica.Media.Air.ReferenceAir.Air_Utilities;
   
   constant Modelica.Media.IdealGases.Common.DataRecord data(
     name="CO2",
@@ -217,6 +218,14 @@ package CO2 "Ideal gas \"CO2\" from NASA Glenn coefficients"
     h := CP.PropsSI("H", "P", state.p, "T", state.T, mediumName);
     annotation(Inline=true,smoothOrder=2);
   end specificEnthalpy;
+  
+  function specificEnthalpy_pT 
+    input AbsolutePressure p "Pressure";
+    input Temperature T "Temperature";
+    output SpecificEnthalpy h "Specific enthalpy";
+	algorithm
+    h := specificEnthalpy(setState_pT(p, T));
+	end specificEnthalpy_pT;
 
   redeclare function extends specificInternalEnergy
     "Return specific internal energy"
@@ -368,6 +377,19 @@ package CO2 "Ideal gas \"CO2\" from NASA Glenn coefficients"
     MM := data.MM;
     annotation(Inline=true,smoothOrder=2);
   end molarMass;
+  
+  function extends density_derh_p
+    "Density derivative by specific enthalpy"
+  algorithm    
+    ddhp := CP.PropsSI("d(DMASS)/d(Hmass)|P", "P", state.p, "Hmass", specificEnthalpy_pT(state.p, state.T), mediumName);
+    annotation (Inline=true);
+  end density_derh_p;
+
+  function extends density_derp_h "Density derivative by pressure"
+  algorithm
+    ddph := CP.PropsSI("d(DMASS)/d(P)|Hmass", "P", state.p, "Hmass", specificEnthalpy_pT(state.p, state.T), mediumName);
+    annotation (Inline=true);
+  end density_derp_h;  
 /*
   function T_h "Compute temperature from specific enthalpy"
     extends Modelica.Icons.Function;

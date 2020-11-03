@@ -4,3 +4,4 @@ EntityGeoParam
 ThermoState
 PBConfiguration
 SimParam
+HEBoundaryCondition

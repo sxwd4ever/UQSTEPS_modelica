@@ -1,7 +1,7 @@
-within Steps.Components;
+within Steps.Model;
 
-record PCHEBoundaryCondition
-  "Record for PCHE's PCHEBoundaryCondition, aligns with the struct definition in C"
+record HEBoundaryCondition
+  "Record for Heat Exchangers's PCHEBoundaryCondition, aligns with the struct definition in C"
     import Model.ThermoState;
     
     // error in transferring a string together with array of records within a record
@@ -14,4 +14,4 @@ record PCHEBoundaryCondition
     Model.ThermoState st_hot_out;
     Model.ThermoState st_cold_out;
   
-end PCHEBoundaryCondition;
+end HEBoundaryCondition;
