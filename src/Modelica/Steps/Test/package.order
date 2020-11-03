@@ -12,7 +12,7 @@ TestOffDRCBCOpenLoop
 TestComponentSeries
 TestPre
 TestCPExtObj
-TestHEG2G
-TestHEG2G_bak
-TestMixer_ThermoPower
-TestHE_ThermoPower
+TestTP_HEG2G
+TestTP_Mixer
+TestTP_HE
+TestTP_Components

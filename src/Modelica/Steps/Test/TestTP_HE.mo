@@ -1,7 +1,7 @@
 within Steps.Test;
 
-model TestHE_ThermoPower
-  "Test for HE F2G in ThermoPower"  
+model TestTP_HE
+  "Test for HE in ThermoPower"  
   import Modelica.SIunits.Conversions.{from_degC, from_deg};
   import Modelica.SIunits.{Temperature, Pressure, SpecificEnthalpy};
   import Util = Utilities.Util;
@@ -162,4 +162,4 @@ annotation(
     experiment(StartTime = 0, StopTime = 1, Tolerance = 1e-3, Interval = 1),
     __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts,bltdump",    
     __OpenModelica_simulationFlags(lv = "LOG_DEBUG,LOG_NLS,LOG_NLS_V,LOG_STATS,LOG_INIT,LOG_STDOUT, -w", outputFormat = "mat", s = "dassl", nls = "homotopy"));
-end TestHE_ThermoPower;
+end TestTP_HE;

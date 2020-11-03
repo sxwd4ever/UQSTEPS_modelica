@@ -1,7 +1,7 @@
 within Steps.Test;
 
-model TestMixer_ThermoPower
-  "StandAlone Component Test For FanCooler"      
+model TestTP_Mixer
+  "StandAlone Component Test For Mixer in ThermoPower"      
    extends Modelica.Icons.Example;
    
   import ThermoPower.Gas;
@@ -118,4 +118,4 @@ equation
 This model tests the <tt>steady state Mixer</tt> model.
 </html>"));
 
-end TestMixer_ThermoPower;
+end TestTP_Mixer;
