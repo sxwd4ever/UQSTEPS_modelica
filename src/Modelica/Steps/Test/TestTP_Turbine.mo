@@ -61,7 +61,7 @@ model TestTP_Turbine
 */
 //extends Modelica.Icons.Example;
   //package Medium = Modelica.Media.IdealGases.MixtureGases.CombustionAir;
-  package Medium = Modelica.Media.IdealGases.SingleGases.CO2;
+  package Medium = Media.CO2;//Modelica.Media.IdealGases.SingleGases.CO2;
   ThermoPower.Gas.SourcePressure SourceP1(redeclare package Medium = Medium, T = 700 + 273.15, p0 = 20.0e6) annotation(
     Placement(transformation(extent = {{-80, 6}, {-60, 26}}, rotation = 0)));
   Modelica.Mechanics.Rotational.Components.Inertia Inertia1(J = 10000) annotation(

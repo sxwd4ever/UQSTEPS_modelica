@@ -349,7 +349,7 @@ package CO2 "Ideal gas \"CO2\" from NASA Glenn coefficients"
   redeclare function extends density_derT_p
     "Returns the partial derivative of density with respect to temperature at constant pressure"
   algorithm
-    ddTp := CP.PropsSI("d(DMASS)/d(P)|T", "P", state.p, "T", state.T, mediumName); //-state.p/(state.T*state.T*data.R);
+    ddTp := CP.PropsSI("d(DMASS)/d(T)|P", "P", state.p, "T", state.T, mediumName); //-state.p/(state.T*state.T*data.R);
     annotation(Inline=true,smoothOrder=2);
   end density_derT_p;
 
