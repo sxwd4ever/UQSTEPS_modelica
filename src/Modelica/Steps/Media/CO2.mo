@@ -239,7 +239,7 @@ package CO2 "Ideal gas \"CO2\" from NASA Glenn coefficients"
   redeclare function extends specificEntropy "Return specific entropy"
     extends Modelica.Icons.Function;
   algorithm
-    s := CP.PropsSI("V", "P", state.p, "T", state.T, mediumName);
+    s := CP.PropsSI("S", "P", state.p, "T", state.T, mediumName);
     //s := Modelica.Media.IdealGases.Common.Functions.s0_T(
     //         data, state.T) - data.R*Modelica.Math.log(state.p/reference_p);
     annotation(Inline=true,smoothOrder=2);    

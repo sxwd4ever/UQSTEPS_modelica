@@ -20,11 +20,11 @@ model TestTP_Turbine
   // package medium_heater = SolarTherm.Media.Sodium.Sodium_pT;
   package medium_heater = Steps.Media.CO2;
   // package medium_heater = ThermoPower.Water.StandardWater;// Modelica.Media.IdealGases.SingleGases.CO2;
-
+*/
   
   // parameter for C++ implementation of PCHE - based on Modelica impl's result
   parameter Model.PBConfiguration cfg_on_design( 
-  redeclare package medium_heater = medium_hot,
+  //redeclare package medium_heater = medium_hot,
   p_pump_in = 8e6,
   p_pump_out = 20e6,  
   mdot_main = 51.51,
@@ -58,33 +58,68 @@ model TestTP_Turbine
   parameter EntityThermoParam thermo_tube = cfg.cfg_HTR_tube.thermo;  
   parameter EntityThermoParam thermo_mixer = cfg.cfg_mixer.thermo;
   parameter EntityThermoParam thermo_heater = cfg.cfg_heater.thermo;
-*/
+
 //extends Modelica.Icons.Example;
   //package Medium = Modelica.Media.IdealGases.MixtureGases.CombustionAir;
-  package Medium = Modelica.Media.IdealGases.SingleGases.CO2;
-  //package Medium = Media.CO2;//Modelica.Media.IdealGases.SingleGases.CO2;
+  // package Medium = Modelica.Media.IdealGases.SingleGases.CO2;
+  
+  package Medium = Media.CO2;
+  
+  ThermoPower.Gas.SourceMassFlow SourceP1(
+    redeclare package Medium = Medium, 
+    T = bc_heater.st_cold_out.T, 
+    p0 = bc_heater.st_cold_out.p, 
+    use_in_T = false, 
+    w0 = bc_heater.st_cold_out.mdot) 
+  annotation(
+    Placement(transformation(origin = {0, 60}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
+  
+  /*
   ThermoPower.Gas.SourcePressure SourceP1(redeclare package Medium = Medium, T = 700 + 273.15, p0 = 20.0e6) annotation(
     Placement(transformation(extent = {{-80, 6}, {-60, 26}}, rotation = 0)));
+  */ 
   Modelica.Mechanics.Rotational.Components.Inertia Inertia1(J = 10000) annotation(
     Placement(transformation(extent = {{10, -10}, {30, 10}}, rotation = 0)));
-  ThermoPower.Gas.Turbine Turbine1(redeclare package Medium = Medium, tablePhic = tablePhic, tableEta = tableEta, pstart_in = 20.0e6, pstart_out = 8.0e6, Tstart_in = 700 + 273.15, Tstart_out = 616 + 273.15, Ndesign = 60000.0, Tdes_in = 700 + 273.15, Table = ThermoPower.Choices.TurboMachinery.TableTypes.matrix) annotation(
+  
+  ThermoPower.Gas.Turbine Turbine1(
+  redeclare package Medium = Medium, 
+  tablePhic = tablePhic, 
+  tableEta = tableEta, 
+  pstart_in = bc_heater.st_cold_out.p, 
+  pstart_out = bc_HTR.st_hot_in.p, 
+  Tstart_in = bc_heater.st_cold_out.T, 
+  Tstart_out = bc_HTR.st_hot_in.T, 
+  Ndesign = 60000.0, 
+  Tdes_in = bc_heater.st_cold_out.T, 
+  Table = ThermoPower.Choices.TurboMachinery.TableTypes.matrix) 
+  annotation(
     Placement(transformation(extent = {{-40, -20}, {0, 20}}, rotation = 0)));
-  ThermoPower.Gas.SinkPressure SinkP1(redeclare package Medium = Medium, p0 = 8.0e6, T = 616 + 273.15) annotation(
+  
+  ThermoPower.Gas.SinkPressure SinkP1(
+  redeclare package Medium = Medium, 
+  p0 =  bc_HTR.st_hot_in.p, 
+  T =  bc_HTR.st_hot_in.T) 
+  annotation(
     Placement(visible = true, transformation(extent = {{50, 6}, {70, 26}}, rotation = 0)));
-  inner ThermoPower.System system annotation(
+  
+  inner ThermoPower.System system(allowFlowReversal = false, initOpt=ThermoPower.Choices.Init.Options.noInit) annotation(
     Placement(transformation(extent = {{80, 80}, {100, 100}})));
+ 
   ThermoPower.Gas.SensT sensT1(redeclare package Medium = Medium) annotation(
     Placement(visible = true, transformation(origin = {20, 44}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
+
 protected
   parameter Real tablePhic[5, 4] = [1, 37, 80, 100; 1.5, 7.10E-05, 7.10E-05, 7.10E-05; 2, 8.40E-05, 8.40E-05, 8.40E-05; 2.5, 8.70E-05, 8.70E-05, 8.70E-05; 3, 1.04E-04, 1.04E-04, 1.04E-04];
   parameter Real tableEta[5, 4] = [1, 37, 80, 100; 1.5, 0.57, 0.89, 0.81; 2, 0.46, 0.82, 0.88; 2.5, 0.41, 0.76, 0.85; 3, 0.38, 0.72, 0.82];
 equation
   connect(SourceP1.flange, Turbine1.inlet) annotation(
     Line(points = {{-60, 16}, {-36, 16}}, color = {159, 159, 223}, thickness = 0.5));
+
   connect(Turbine1.outlet, sensT1.inlet) annotation(
     Line(points = {{-4, 16}, {6, 16}, {6, 40}, {14, 40}, {14, 40}}, color = {159, 159, 223}));
   connect(sensT1.outlet, SinkP1.flange) annotation(
     Line(points = {{26, 40}, {36, 40}, {36, 16}, {50, 16}}, color = {159, 159, 223}));
+
 initial equation
   Inertia1.w = 60000.0;
 equation
