@@ -48,15 +48,15 @@ import Modelica.SIunits.Conversions.{from_degC, from_deg};
   parameter EntityThermoParam thermo_cold = cfg.cfg_heater_cold.thermo;
   parameter EntityThermoParam thermo_heater = cfg.cfg_heater_tube.thermo;
   
-  ThermoPower.Gas.SourceMassFlow source_cooler_hot(
+  ThermoPower.Gas.SourceMassFlow source(
   redeclare package Medium = medium_hot,
-    w0 = bc_cooler.st_hot_in.mdot,
-    p0 = bc_cooler.st_hot_in.p,
-    T = bc_cooler.st_hot_in.T) 
+    w0 = bc_LTR.st_hot_out.mdot,
+    p0 = bc_LTR.st_hot_out.p,
+    T = bc_LTR.st_hot_out.T) 
     annotation(
     Placement(transformation(origin = {0, 60}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
     
-  ThermoPower.Gas.SinkPressure sink_cooler_hot(
+  ThermoPower.Gas.SinkPressure sink(
   redeclare package Medium = medium_hot,
     p0 = bc_LTR.st_cold_in.p,
     T =bc_LTR.st_cold_in.T) 
@@ -65,11 +65,11 @@ import Modelica.SIunits.Conversions.{from_degC, from_deg};
     
   ThermoPower.Water.SourceMassFlow source_cooler_cold(
   redeclare package Medium = medium_cooler,
-    T = bc_HTR.st_hot_out.T, 
-    p0 = bc_HTR.st_hot_out.p, 
+    T = bc_cooler.st_cold_in.T, 
+    p0 = bc_cooler.st_cold_in.p, 
     use_T = true,
     use_in_T = false, 
-    w0 = bc_HTR.st_hot_out.mdot) 
+    w0 = bc_cooler.st_cold_in.mdot) 
   annotation(
     Placement(transformation(origin = {0, 60}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));      
   
@@ -87,8 +87,7 @@ import Modelica.SIunits.Conversions.{from_degC, from_deg};
     T = st_bypass.T,
     use_T = true) 
   annotation(
-    Placement(transformation(origin = {0, -80}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));  
-   
+    Placement(transformation(origin = {0, -80}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));    
   
   ThermoPower.PowerPlants.HRSG.Components.HE cooler(
   //Components.HEG2G cooler(
@@ -129,7 +128,7 @@ import Modelica.SIunits.Conversions.{from_degC, from_deg};
   ThermoPower.Gas.SensT T_gasOut(redeclare package Medium = medium_hot) annotation(
     Placement(transformation(extent = {{30, -6}, {50, 14}}, rotation = 0)));
   
-  ThermoPower.Gas.FlowSplit splitter(redeclare package Medium = medium_cooler
+  ThermoPower.Gas.FlowSplit splitter(redeclare package Medium = medium_hot
   );
   
   ThermoPower.Gas.Compressor compressor(
@@ -153,9 +152,9 @@ import Modelica.SIunits.Conversions.{from_degC, from_deg};
   ThermoPower.Gas.Compressor compressor_bypass(
     redeclare package Medium = medium_hot,
     pstart_in=bc_HTR.st_hot_out.p,
-    pstart_out=bc_LTR.st_cold_in.p,
+    pstart_out=st_bypass.p,
     Tstart_in=bc_HTR.st_hot_out.T,
-    Tstart_out=bc_LTR.st_cold_in.T,
+    Tstart_out=st_bypass.T,
     tablePhic=tablePhic,
     tableEta=tableEta,
     tablePR=tablePR,
@@ -183,46 +182,39 @@ protected
 initial equation
 //hstart_F_Out = cooler.waterOut.h_outflow;
 equation
-
   
   // Cooler + Main compressor + recompressor + splitter
-  connect(source_cooler_hot.flange, splitter.inlet);
+  connect(source.flange, splitter.inlet);
   connect(splitter.outlet1, cooler.gasIn) annotation(
     Line(points = {{-1.83697e-015, 50}, {-1.83697e-015, 20}, {0, 20}}, color = {0, 0, 255}, thickness = 0.5, smooth = Smooth.None));
   
-  connect(cooler.gasOut, compressor.inlet);
-  connect(ConstantSpeed1.flange, compressor.shaft_a) annotation (Line(
+  connect(cooler.gasOut, T_gasOut.inlet);
+  
+  connect(T_gasOut.outlet, compressor.inlet);
+  connect(compressor.shaft_a, ConstantSpeed1.flange) annotation (Line(
       points={{-30,0},{-30,0},{-26,-0.2},{-12,0}},
       color={0,0,0},
       thickness=0.5));
-  connect(compressor.outlet, sink_cooler_hot.flange) annotation(
+  connect(compressor.outlet, sink.flange) annotation(
     Line(points = {{1.83697e-015, -70}, {1.83697e-015, -56}, {-8.88178e-016, -56}}, thickness = 0.5, color = {0, 0, 255}));
   
   // bypass path 
   connect(splitter.outlet2, compressor_bypass.inlet);  
   connect(compressor_bypass.outlet, sink_bypass.flange); 
-  connect(ConstantSpeed2.flange, compressor_bypass.shaft_a) annotation (Line(
+  connect(compressor_bypass.shaft_a, ConstantSpeed2.flange) annotation (Line(
       points={{-30,0},{-30,0},{-26,-0.2},{-12,0}},
       color={0,0,0},
       thickness=0.5));  
     
-  // connect(cooler.waterOut, T_waterOut.inlet) annotation(
-    //Line(points = {{8.88178e-016, -44}, {8.88178e-016, -20}, {0, -20}}, thickness = 0.5, color = {0, 0, 255}));
-
-  // connect(T_waterOut.outlet, sink_heater_hot.flange) annotation(
-    // Line(points = {{1.83697e-015, -70}, {1.83697e-015, -56}, {-8.88178e-016, -56}}, thickness = 0.5, color = {0, 0, 255}));
-  
   // water cooling path
   connect(source_cooler_cold.flange, cooler.waterIn) annotation(
     Line(points = {{-50, 0}, {-20, 0}}, color = {159, 159, 223}, thickness = 0.5, smooth = Smooth.None));
-  connect(cooler.waterOut, T_gasOut.inlet) annotation(
-    Line(points = {{34, 0}, {34, 0}, {20, 0}}, color = {159, 159, 223}, thickness = 0.5));
-  connect(T_gasOut.outlet, sink_cooler_cold.flange) annotation(
+  connect(cooler.waterOut, sink_cooler_cold.flange) annotation(
     Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));
 
 annotation(
     Diagram(graphics),
-    experiment(StartTime = 0, StopTime = 1, Tolerance = 1e-2, Interval = 1),
+    experiment(StartTime = 0, StopTime = 1, Tolerance = 1e-3, Interval = 1),
     __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts,bltdump",    
     __OpenModelica_simulationFlags(lv = "LOG_DEBUG,LOG_NLS,LOG_NLS_V,LOG_STATS,LOG_INIT,LOG_STDOUT, -w", outputFormat = "mat", s = "dassl", nls = "homotopy"));
 end TestTP_Components_Comp_Path;

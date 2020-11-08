@@ -275,7 +275,6 @@ model TestTP_Components
   ThermoPower.Gas.SensT sens_turbine(redeclare package Medium = medium_hot) annotation(
     Placement(visible = true, transformation(origin = {20, 44}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
 
-
   parameter Boolean SSInit = false "Steady-state initialization";
 
 protected
