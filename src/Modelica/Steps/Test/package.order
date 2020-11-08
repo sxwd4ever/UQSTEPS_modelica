@@ -17,3 +17,6 @@ TestTP_Mixer
 TestTP_HE
 TestTP_Components
 TestTP_Turbine
+TestTP_Cooler
+TestTP_Compressor
+TestTP_Components_Comp_Path

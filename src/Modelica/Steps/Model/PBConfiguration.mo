@@ -100,7 +100,7 @@ model PBConfiguration
     st_hot_out(p = p_heater, T = T_heater_hot_out, h = specificEnthalpy_pT_Sodium(bc_heater.st_hot_out), mdot = mdot_heater),
     st_cold_out(p = bc_HTR.st_cold_out.p, T = T_heater_cold_out, h = specificEnthalpy_pT_CO2(bc_heater.st_cold_out), mdot = mdot_main));   
  
-  parameter ThermoState st_bypass(p = p_pump_out, T = T_bypass_out,  h = specificEnthalpy_pT_CO2(st_bypass), mdot = mdot_bypass);
+  parameter ThermoState st_bypass(p = p_pump_out, T = T_bypass_out, h = specificEnthalpy_pT_CO2(st_bypass), mdot = mdot_bypass);
   // **** Boundary Conditions as Start/Nominal values for recuperators - end ****      
   
   parameter PCHEGeoParam geo_HTR(
