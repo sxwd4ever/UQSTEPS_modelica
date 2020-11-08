@@ -219,6 +219,18 @@ package CO2 "Ideal gas \"CO2\" from NASA Glenn coefficients"
     annotation(Inline=true,smoothOrder=2);
   end specificEnthalpy;
   
+  function specificEnthalpy_pT
+    "Return specific enthalpy from p and T"
+    extends Modelica.Icons.Function;
+    input AbsolutePressure p "Pressure";
+    input Temperature T "Temperature";
+    input FixedPhase phase=0
+      "2 for two-phase, 1 for one-phase, 0 if not known";
+    output SpecificEnthalpy h "Specific enthalpy";
+  algorithm
+    h := specificEnthalpy_pTX(p, T, fill(0, 0));
+  end specificEnthalpy_pT;	  
+  /*
   function specificEnthalpy_pT 
     input AbsolutePressure p "Pressure";
     input Temperature T "Temperature";
@@ -226,7 +238,7 @@ package CO2 "Ideal gas \"CO2\" from NASA Glenn coefficients"
 	algorithm
     h := specificEnthalpy(setState_pT(p, T));
 	end specificEnthalpy_pT;
-
+  */
   redeclare function extends specificInternalEnergy
     "Return specific internal energy"
     extends Modelica.Icons.Function;
