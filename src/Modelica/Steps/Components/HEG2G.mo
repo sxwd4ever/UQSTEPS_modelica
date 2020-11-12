@@ -55,7 +55,7 @@ extends Interfaces.HeatExchangerG2G;
     Placement(transformation(extent = {{-10, -66}, {10, -46}}, rotation = 0)));
   */
   Gas.Flow1DFV fluidFlow(
-  Nt = 1, 
+  Nt = Nt, //1, 
   N = N_F, 
   Nw = Nw_F,
   wnom = fluidNomFlowRate, 
@@ -66,7 +66,7 @@ extends Interfaces.HeatExchangerG2G;
   L = L, 
   A = fluidVol / L, 
   omega = exchSurface_F / L,
-  Dhyd = 1,
+  Dhyd = 1, //fluidVol*4/exchSurface_F,
   FFtype = FFtype_F, 
   Kfnom = Kfnom_F, 
   dpnom = dpnom_F, 
@@ -78,7 +78,7 @@ extends Interfaces.HeatExchangerG2G;
     
   //changed Medium=FlueGasMedium to Medium=FluidMedium
   Gas.Flow1DFV gasFlow(
-  Nt = 1, 
+  Nt = Nt, //1, 
   N = N_G, 
   Nw = Nw_G,
   wnom = gasNomFlowRate, 
@@ -89,7 +89,7 @@ extends Interfaces.HeatExchangerG2G;
   L = L, 
   A = gasVol / L, 
   omega = exchSurface_G / L,
-  Dhyd = 1,
+  Dhyd = 1, //gasVol*4/exchSurface_G,
   FFtype = FFtype_G, 
   Kfnom = Kfnom_G, 
   dpnom = dpnom_G, 
@@ -99,8 +99,16 @@ extends Interfaces.HeatExchangerG2G;
   redeclare model HeatTransfer = HeatTransfer_G) annotation(
     Placement(transformation(extent = {{-12, 66}, {12, 46}}, rotation = 0)));
   
-  Thermal.MetalTubeFV metalTube( L = exchSurface_F ^ 2 / (fluidVol * pi * 4),Nw = Nw_F, Tstartbar = Tstartbar_M, WallRes = false, lambda = lambda, rext = (metalVol + fluidVol) * 4 / extSurfaceTub / 2, rhomcm = rhomcm, rint = fluidVol * 4 / exchSurface_F / 2) annotation(
+  Thermal.MetalTubeFV metalTube(
+  L = exchSurface_F ^ 2 / (fluidVol * pi * 4),
+  Nw = Nw_F, 
+  Tstartbar = Tstartbar_M, 
+  WallRes = false, 
+  lambda = lambda, 
+  rext = (metalVol + fluidVol) * 4 / extSurfaceTub / 2, 
+  rhomcm = rhomcm, rint = fluidVol * 4 / exchSurface_F / 2) annotation(
     Placement(transformation(extent = {{-10, -24}, {10, -4}})));
+  
   Thermal.HeatExchangerTopologyFV heatExchangerTopology(Nw = Nw_F, redeclare model HeatExchangerTopology = HeatExchangerTopology) annotation(
     Placement(transformation(extent = {{-10, 6}, {10, 26}})));
 equation

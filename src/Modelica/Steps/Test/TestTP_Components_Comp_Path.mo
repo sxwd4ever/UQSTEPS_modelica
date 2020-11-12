@@ -18,6 +18,13 @@ import Modelica.SIunits.Conversions.{from_degC, from_deg};
   package medium_cooler = ThermoPower.Water.StandardWater;//Modelica.Media.IdealGases.SingleGases.CO2;  
   
   // parameter for C++ implementation of PCHE - based on Modelica impl's result
+  parameter Model.PBConfiguration cfg_default(
+    mdot_cooler = 40,
+    r_i_c = 15e-3,
+    r_t_c = cfg_default.r_i_c + 5e-3,
+    r_o_c = cfg_default.r_t_c + 200e-3,
+    L_c = 20);
+  
   parameter Model.PBConfiguration cfg_on_design( 
   p_pump_in = 8e6,
   p_pump_out = 20e6,  
@@ -30,7 +37,7 @@ import Modelica.SIunits.Conversions.{from_degC, from_deg};
   T_LTR_hot_out = from_degC(63.6726));        
     
   // select the configuration of parameters
-  parameter Model.PBConfiguration cfg = cfg_on_design;
+  parameter Model.PBConfiguration cfg = cfg_default;
   
   // set the values of parameters accordingly
   parameter HEBoundaryCondition bc_cooler = cfg.bc_cooler;

@@ -1,7 +1,7 @@
 within Steps.Test;
 
 model TestTP_HE
-  "Test for HE in ThermoPower"  
+  "Test against HE as a Heater in ThermoPower"  
   import Modelica.SIunits.Conversions.{from_degC, from_deg};
   import Modelica.SIunits.{Temperature, Pressure, SpecificEnthalpy};
   import Util = Utilities.Util;
@@ -13,77 +13,22 @@ model TestTP_HE
   import ThermoPower.System;
   import ThermoPower.Gas;
   
-  package medium_hot = Steps.Media.CO2;
-  //package medium_cold = Steps.Media.CO2;
   // package medium_hot = Steps.Media.CO2;
-  // package medium_cold = Steps.Media.CO2;
-  // package medium_heater = SolarTherm.Media.Sodium.Sodium_pT;
-  // package medium_heater = Steps.Media.CO2;
-  package medium_heater = SolarTherm.Media.Sodium.Sodium_pT; // ThermoPower.Water.StandardWater;//Modelica.Media.IdealGases.SingleGases.CO2;
+  package medium_heater = SolarTherm.Media.Sodium.Sodium_pT; // ThermoPower.Water.StandardWater; //Modelica.Media.IdealGases.SingleGases.CO2;
   package medium_cold = Steps.Media.CO2; // Modelica.Media.IdealGases.SingleGases.CO2;
-  package medium_cooler = ThermoPower.Water.StandardWater; 
   
-  // parameter for C++ implementation of PCHE - based on Modelica impl's result
-  parameter Model.PBConfiguration cfg_on_design( 
-  p_pump_in = 8e6,
-  p_pump_out = 20e6,  
-  mdot_main = 51.51,
-  mdot_pump = 31.31,
-  mdot_heater = 20,
-  T_HTR_cold_in = from_degC(141.3), 
-  T_HTR_cold_out = from_degC(495.302),
-  T_HTR_hot_out = from_degC(141.041),
-  T_LTR_hot_out = from_degC(63.6726));    
-
-  // for high temperature fluid - low temperature gas test
-  parameter Model.PBConfiguration cfg_HFLG_test( 
-  p_pump_in = 8e6,
-  p_pump_out = 20e6,  
-  mdot_main = 100,
-  mdot_pump = 100,
-  mdot_heater = 100,
-  T_HTR_cold_in = from_degC(141.3), 
-  T_HTR_cold_out = from_degC(495.302),
-  T_HTR_hot_out = from_degC(141.041),
-  T_LTR_hot_out = from_degC(63.6726),
-  T_heater_hot_in = from_degC(600),
-  T_heater_hot_out = from_degC(500),
-  T_heater_cold_out = from_degC(550)  
-  ); 
-  
-  parameter Model.PBConfiguration cfg_liquid_sodium_test( 
-  p_pump_in = 20e6,
-  p_pump_out = 20e6,  
-  p_heater = 20e6, 
-  mdot_main = 100,
-  mdot_pump = 100,
-  mdot_heater = 100,
-  T_HTR_cold_in = from_degC(141.3), 
-  T_HTR_cold_out = from_degC(400),
-  T_HTR_hot_out = from_degC(141.041),
-  T_LTR_hot_out = from_degC(63.6726),
+  parameter Model.PBConfiguration cfg_default( 
+  mdot_heater = 55,
   T_heater_hot_in = from_degC(800),
-  T_heater_hot_out = from_degC(700),
-  T_heater_cold_out = from_degC(500),
-  cfg_heater_hot(thermo(gamma_he = 200))
-  );  
-  
-  parameter Model.PBConfiguration cfg_hxb_test( 
-  p_pump_in = 6.6e5,
-  p_pump_out = 20e6,  
-  mdot_main = 585.5,
-  mdot_pump = 31.31,
-  mdot_heater = 6.91,
-  T_HTR_cold_in = from_degC(141.3), 
-  T_HTR_cold_out = 519.15,
-  T_HTR_hot_out = from_degC(141.041),
-  T_LTR_hot_out = from_degC(63.6726),
-  T_heater_hot_in = 435.75 - 100.0,
-  T_heater_hot_out = 505.04,
-  T_heater_cold_out = 517.44);    
+  T_heater_hot_out = from_degC(600),
+  r_i_h = 6e-3,
+  r_t_h = cfg_default.r_i_h + 2e-3,
+  r_o_h = cfg_default.r_t_h + 10e-3,
+  N_ch_h = 100,
+  L_h = 1); 
     
   // select the configuration of parameters
-  parameter Model.PBConfiguration cfg = cfg_on_design;
+  parameter Model.PBConfiguration cfg = cfg_default;
   
   // set the values of parameters accordingly
   parameter HEBoundaryCondition bc_heater = cfg.bc_heater;
@@ -101,8 +46,10 @@ model TestTP_HE
   redeclare package Medium = medium_heater,
     w0 = bc_heater.st_hot_in.mdot,
     p0 = bc_heater.st_hot_in.p,
-    T = bc_heater.st_hot_in.T, 
-    use_T = true) 
+    h = bc_heater.st_hot_in.h,
+    T = bc_heater.st_hot_in.T) //,
+    // use_T = true,
+    // use_in_T = false) 
     annotation(
     Placement(transformation(origin = {0, 60}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
     
@@ -110,6 +57,7 @@ model TestTP_HE
   redeclare package Medium = medium_heater,
     p0 = bc_heater.st_hot_out.p,
     T = bc_heater.st_hot_out.T,
+    h = bc_heater.st_hot_out.h,
     use_T = true) 
     annotation(
     Placement(transformation(origin = {0, -80}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
@@ -135,6 +83,7 @@ model TestTP_HE
     redeclare package FluidMedium = medium_heater, 
     redeclare package FlueGasMedium = medium_cold, 
     fluidFlow(fixedMassFlowSimplified = true, hstartin = bc_heater.st_hot_in.h, hstartout=bc_heater.st_hot_out.h), // set the fluid flow as fixed mdot for simplarity
+    gasFlow(QuasiStatic = true),
     N_G=geo_heater_cold.N_seg,
     N_F=geo_heater_hot.N_seg,
     Nw_G=geo_heater_tube.N_seg,
@@ -164,29 +113,29 @@ model TestTP_HE
   inner ThermoPower.System system(allowFlowReversal = false, initOpt=ThermoPower.Choices.Init.Options.noInit) annotation(
     Placement(transformation(extent = {{80, 80}, {100, 100}})));
   
-  //ThermoPower.Water.SensT T_waterOut(redeclare package Medium = medium_heater) annotation(
-  //  Placement(transformation(origin = {4, -50}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
+  ThermoPower.Water.SensT T_waterIn(redeclare package Medium = medium_heater) annotation(
+    Placement(transformation(origin = {4, -50}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
+  ThermoPower.Water.SensT T_waterOut(redeclare package Medium = medium_heater) annotation(
+    Placement(transformation(origin = {4, -50}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
+  
+  ThermoPower.Gas.SensT T_gasIn(redeclare package Medium = medium_cold) annotation(
+    Placement(transformation(extent = {{30, -6}, {50, 14}}, rotation = 0)));
   ThermoPower.Gas.SensT T_gasOut(redeclare package Medium = medium_cold) annotation(
     Placement(transformation(extent = {{30, -6}, {50, 14}}, rotation = 0)));
-initial equation
+ initial equation
 //hstart_F_Out = hE.waterOut.h_outflow;
 equation
-  connect(source_heater_hot.flange, hE.waterIn) annotation(
+  connect(source_heater_hot.flange, T_waterIn.inlet);
+  connect(T_waterIn.outlet, hE.waterIn) annotation(
     Line(points = {{-1.83697e-015, 50}, {-1.83697e-015, 20}, {0, 20}}, color = {0, 0, 255}, thickness = 0.5, smooth = Smooth.None));
-  
-  connect(hE.waterOut, sink_heater_hot.flange) annotation(
+  connect(hE.waterOut, T_waterOut.inlet);
+  connect(T_waterOut.outlet, sink_heater_hot.flange) annotation(
     Line(points = {{1.83697e-015, -70}, {1.83697e-015, -56}, {-8.88178e-016, -56}}, thickness = 0.5, color = {0, 0, 255}));
    
-  // connect(hE.waterOut, T_waterOut.inlet) annotation(
-    //Line(points = {{8.88178e-016, -44}, {8.88178e-016, -20}, {0, -20}}, thickness = 0.5, color = {0, 0, 255}));
-
-  // connect(T_waterOut.outlet, sink_heater_hot.flange) annotation(
-    // Line(points = {{1.83697e-015, -70}, {1.83697e-015, -56}, {-8.88178e-016, -56}}, thickness = 0.5, color = {0, 0, 255}));
-  
-  connect(source_cold.flange, hE.gasIn) annotation(
+  connect(source_cold.flange, T_gasIn.inlet);
+  connect(T_gasIn.outlet, hE.gasIn) annotation(
     Line(points = {{-50, 0}, {-20, 0}}, color = {159, 159, 223}, thickness = 0.5, smooth = Smooth.None));
-  connect(hE.gasOut, T_gasOut.inlet) annotation(
-    Line(points = {{34, 0}, {34, 0}, {20, 0}}, color = {159, 159, 223}, thickness = 0.5));
+  connect(hE.gasOut, T_gasOut.inlet);
   connect(T_gasOut.outlet, sink_cold.flange) annotation(
     Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));
 

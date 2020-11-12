@@ -21,7 +21,7 @@ model TP_RCBCycle
  
   // parameter for C++ implementation of PCHE - based on Modelica impl's result
   parameter Model.PBConfiguration cfg_on_design( 
-  p_pump_in = 8e6,
+  p_pump_in = 9e6,
   p_pump_out = 20e6,  
   mdot_main = 51.51,
   mdot_pump = 31.31,
@@ -30,18 +30,11 @@ model TP_RCBCycle
   T_HTR_hot_out = from_degC(141.041),
   T_LTR_hot_out = from_degC(63.6726)); 
   
-  parameter Model.PBConfiguration cfg_sscar_model_1_3( 
-  p_pump_in = 8e6,
-  p_pump_out = 20e6,  
-  mdot_main = 125,
-  mdot_pump = 68.75,    
-  bc_HTR.st_hot_in.T = 883,
-  bc_HTR.st_hot_out.T = 643,
-  bc_HTR.st_cold_in.T = 633,
-  bc_HTR.st_cold_out.T = 843);  
+  // results of sscar's simulation for 10 Mw power block
+  parameter Model.PBConfiguration cfg_default(mdot_cooler = 50);  
   
   // select the configuration of parameters
-  parameter Model.PBConfiguration cfg = cfg_on_design;
+  parameter Model.PBConfiguration cfg = cfg_default;
   
   // set the values of parameters accordingly
   parameter HEBoundaryCondition bc_HTR = cfg.bc_HTR;  
@@ -230,7 +223,7 @@ model TP_RCBCycle
     //Components.HEG2G cooler(
       redeclare package FluidMedium = medium_cooler, 
       redeclare package FlueGasMedium = medium_hot, 
-      fluidFlow(fixedMassFlowSimplified = true), // hstartin = bc_cooler.st_cold_in.h, hstartout=bc_cooler.st_cold_out.h), // set the fluid flow as fixed mdot for simplarity
+      fluidFlow(fixedMassFlowSimplified = true), //hstartin = bc_cooler.st_cold_in.h, hstartout=bc_cooler.st_cold_out.h), // set the fluid flow as fixed mdot for simplarity
       N_G=geo_hot.N_seg,
       N_F=geo_cold.N_seg,
       Nw_G=geo_tube.N_seg,
@@ -295,7 +288,7 @@ model TP_RCBCycle
       w_fixed=523.3, useSupport=false) annotation (Placement(transformation(
           extent={{-50,-10},{-30,10}}, rotation=0)));
   
-  /*
+
   ThermoPower.Gas.SourceMassFlow source(
   redeclare package Medium = medium_hot,
     w0 = bc_LTR.st_hot_out.mdot,
@@ -310,11 +303,12 @@ model TP_RCBCycle
     T =bc_LTR.st_hot_out.T) 
     annotation(
     Placement(transformation(origin = {0, -80}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
-  */
-  
+
+  /*
   ThermoPower.Gas.ThroughMassFlow source_through(
     redeclare package Medium = medium_hot,
     w0 = bc_LTR.st_hot_out.mdot);    
+   */
 
 protected
   parameter Real tableEta_comp[6, 4]=[0, 95, 100, 105; 1, 82.5e-2, 81e-2,
@@ -332,9 +326,8 @@ protected
   
 equation
   
-  //Open Loop source -> sink
-  
-  connect(source_through.outlet, splitter.inlet);
+  //Close Loop with a through mass flow source 
+  connect(source.flange, splitter.inlet);
   connect(splitter.outlet1, cooler.gasIn);
   connect(cooler.gasOut, compressor.inlet);
   connect(compressor.outlet, LTR.waterIn);
@@ -354,7 +347,7 @@ equation
    Line(points = {{-50, 0}, {-20, 0}}, color = {159, 159, 223}, thickness = 0.5, smooth = Smooth.None));  
   connect(sens_turbine.outlet, HTR.gasIn);  
   connect(HTR.gasOut, LTR.gasIn);  
-  connect(LTR.gasOut, source_through.inlet) annotation(
+  connect(LTR.gasOut, sink.flange) annotation(
     Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));
    
   // hot stream for heater

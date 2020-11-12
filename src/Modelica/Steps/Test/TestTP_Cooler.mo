@@ -17,31 +17,28 @@ model TestTP_Cooler
   package medium_cooler = ThermoPower.Water.StandardWater;//Modelica.Media.IdealGases.SingleGases.CO2;  
   
   // parameter for C++ implementation of PCHE - based on Modelica impl's result
-  parameter Model.PBConfiguration cfg_on_design( 
-  p_pump_in = 8e6,
-  p_pump_out = 20e6,  
-  mdot_main = 51.51,
-  mdot_pump = 31.31,
-  mdot_heater = 20,
-  T_HTR_cold_in = from_degC(141.3), 
-  T_HTR_cold_out = from_degC(495.302),
-  T_HTR_hot_out = from_degC(141.041),
-  T_LTR_hot_out = from_degC(63.6726));        
+  parameter Model.PBConfiguration cfg_default(
+  mdot_cooler = 40,
+  r_i_c = 10e-3,
+  r_t_c = cfg_default.r_i_c + 5e-3,
+  r_o_c = cfg_default.r_t_c + 20e-3,
+  N_ch_c = 100,
+  L_c = 1);        
     
   // select the configuration of parameters
-  parameter Model.PBConfiguration cfg = cfg_on_design;
+  parameter Model.PBConfiguration cfg = cfg_default;
   
   // set the values of parameters accordingly
   parameter HEBoundaryCondition bc = cfg.bc_cooler;
   
   // use HTR's geo parameters as default 
-  parameter EntityGeoParam geo_hot = cfg.cfg_heater_hot.geo;
-  parameter EntityGeoParam geo_cold = cfg.cfg_heater_cold.geo;
-  parameter EntityGeoParam geo_tube = cfg.cfg_heater_tube.geo;
+  parameter EntityGeoParam geo_hot = cfg.cfg_cooler_hot.geo;
+  parameter EntityGeoParam geo_cold = cfg.cfg_cooler_cold.geo;
+  parameter EntityGeoParam geo_tube = cfg.cfg_cooler_tube.geo;
   
-  parameter EntityThermoParam thermo_hot = cfg.cfg_heater_hot.thermo;
-  parameter EntityThermoParam thermo_cold = cfg.cfg_heater_cold.thermo;
-  parameter EntityThermoParam thermo_heater = cfg.cfg_heater_tube.thermo;
+  parameter EntityThermoParam thermo_hot = cfg.cfg_cooler_hot.thermo;
+  parameter EntityThermoParam thermo_cold = cfg.cfg_cooler_cold.thermo;
+  parameter EntityThermoParam thermo_tube = cfg.cfg_cooler_tube.thermo;
   
   ThermoPower.Gas.SourceMassFlow source_hot(
   redeclare package Medium = medium_hot,
@@ -80,7 +77,7 @@ model TestTP_Cooler
   //Components.HEG2G hE(
     redeclare package FluidMedium = medium_cooler, 
     redeclare package FlueGasMedium = medium_hot, 
-    fluidFlow(fixedMassFlowSimplified = true), // hstartin = bc.st_cold_in.h, hstartout=bc.st_cold_out.h), // set the fluid flow as fixed mdot for simplarity
+    fluidFlow(fixedMassFlowSimplified = true, hstartin = bc.st_cold_in.h, hstartout=bc.st_cold_out.h), // set the fluid flow as fixed mdot for simplarity
     N_G=geo_hot.N_seg,
     N_F=geo_cold.N_seg,
     Nw_G=geo_tube.N_seg,
@@ -95,8 +92,8 @@ model TestTP_Cooler
     fluidVol=geo_cold.V,
     metalVol=geo_tube.V,
     SSInit=false,
-    rhomcm=thermo_heater.rho_mcm,
-    lambda=thermo_heater.lambda,
+    rhomcm=thermo_tube.rho_mcm,
+    lambda=thermo_tube.lambda,
     Tstartbar_G=bc.st_hot_in.T,
     Tstartbar_M=bc.st_hot_in.T - 50,
     pstart_F = bc.st_cold_in.p, 
@@ -110,30 +107,31 @@ model TestTP_Cooler
   inner ThermoPower.System system(allowFlowReversal = false, initOpt=ThermoPower.Choices.Init.Options.noInit) annotation(
     Placement(transformation(extent = {{80, 80}, {100, 100}})));
   
-  //ThermoPower.Water.SensT T_waterOut(redeclare package Medium = medium_heater) annotation(
-  //  Placement(transformation(origin = {4, -50}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
+  ThermoPower.Water.SensT T_waterIn(redeclare package Medium = medium_cooler) annotation(
+    Placement(transformation(origin = {4, -50}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
+  ThermoPower.Water.SensT T_waterOut(redeclare package Medium = medium_cooler) annotation(
+    Placement(transformation(origin = {4, -50}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
+  
+  ThermoPower.Gas.SensT T_gasIn(redeclare package Medium = medium_hot) annotation(
+    Placement(transformation(extent = {{30, -6}, {50, 14}}, rotation = 0)));
   ThermoPower.Gas.SensT T_gasOut(redeclare package Medium = medium_hot) annotation(
     Placement(transformation(extent = {{30, -6}, {50, 14}}, rotation = 0)));
+  
 initial equation
 //hstart_F_Out = hE.waterOut.h_outflow;
 equation
-  connect(source_hot.flange, hE.gasIn) annotation(
+  connect(source_hot.flange, T_gasIn.inlet);
+  connect(T_gasIn.outlet, hE.gasIn) annotation(
     Line(points = {{-1.83697e-015, 50}, {-1.83697e-015, 20}, {0, 20}}, color = {0, 0, 255}, thickness = 0.5, smooth = Smooth.None));
-  
-  connect(hE.gasOut, sink_hot.flange) annotation(
+  connect(hE.gasOut, T_gasOut.inlet);
+  connect(T_gasOut.outlet, sink_hot.flange) annotation(
     Line(points = {{1.83697e-015, -70}, {1.83697e-015, -56}, {-8.88178e-016, -56}}, thickness = 0.5, color = {0, 0, 255}));
    
-  // connect(hE.waterOut, T_waterOut.inlet) annotation(
-    //Line(points = {{8.88178e-016, -44}, {8.88178e-016, -20}, {0, -20}}, thickness = 0.5, color = {0, 0, 255}));
-
-  // connect(T_waterOut.outlet, sink_heater_hot.flange) annotation(
-    // Line(points = {{1.83697e-015, -70}, {1.83697e-015, -56}, {-8.88178e-016, -56}}, thickness = 0.5, color = {0, 0, 255}));
-  
-  connect(source_cold.flange, hE.waterIn) annotation(
+  connect(source_cold.flange, T_waterIn.inlet);
+  connect(T_waterIn.outlet, hE.waterIn) annotation(
     Line(points = {{-50, 0}, {-20, 0}}, color = {159, 159, 223}, thickness = 0.5, smooth = Smooth.None));
-  connect(hE.waterOut, T_gasOut.inlet) annotation(
-    Line(points = {{34, 0}, {34, 0}, {20, 0}}, color = {159, 159, 223}, thickness = 0.5));
-  connect(T_gasOut.outlet, sink_cold.flange) annotation(
+  connect(hE.waterOut, T_waterOut.inlet);
+  connect(T_waterOut.outlet, sink_cold.flange) annotation(
     Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));
 
 annotation(
