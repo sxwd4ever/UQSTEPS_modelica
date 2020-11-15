@@ -14,10 +14,12 @@ model TestTP_Components
   import ThermoPower.System;
   import ThermoPower.Gas;
   
-  package medium_hot = Steps.Media.CO2;
-  package medium_cold = Steps.Media.CO2;
+  //package medium_hot = Modelica.Media.IdealGases.SingleGases.CO2; //Steps.Media.CO2;
+  //package medium_cold = Modelica.Media.IdealGases.SingleGases.CO2; //Steps.Media.CO2;
   // package medium_hot = Steps.Media.CO2;
   // package medium_cold = Steps.Media.CO2;
+  package medium_hot = Steps.Media.SCO2;
+  package medium_cold = Steps.Media.SCO2;  
   package medium_heater = SolarTherm.Media.Sodium.Sodium_pT;
   //package medium_heater = ThermoPower.Water.StandardWater;// Modelica.Media.IdealGases.SingleGases.CO2;
 
@@ -137,14 +139,16 @@ model TestTP_Components
     use_in_T = false,
     w0 = st_bypass.mdot    
   );
-
+/*
   ThermoPower.Gas.SinkPressure sink_cold(
     redeclare package Medium = medium_cold, 
-    p0 = bc_heater.st_cold_out.p, 
-    T = bc_heater.st_cold_out.T) 
+    p0 = bc_HTR.st_hot_in.p, 
+    // p0 = bc_heater.st_cold_out.p,
+    T = bc_HTR.st_hot_in.T)
+    // T = bc_heater.st_cold_out.T) 
   annotation(
     Placement(transformation(origin = {0, -80}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
-
+*/
   ThermoPower.Gas.SinkPressure sink_hot(
     redeclare package Medium = medium_hot,
     T = bc_LTR.st_hot_out.T, 
@@ -152,15 +156,20 @@ model TestTP_Components
   annotation(
     Placement(transformation(extent = {{60, -10}, {80, 10}}, rotation = 0)));
 
+/*
   ThermoPower.Gas.SourceMassFlow source_hot(
     redeclare package Medium = medium_hot, 
+    // T = from_degC(730.32), 
+    //T = bc_heater.st_cold_out.T, 
     T = bc_HTR.st_hot_in.T, 
+    //p0 = bc_heater.st_cold_out.p, 
     p0 = bc_HTR.st_hot_in.p, 
+    //w0 = bc_heater.st_cold_out.mdot,
     w0 = bc_HTR.st_hot_in.mdot,
     use_in_T = false) 
   annotation(
     Placement(transformation(extent = {{-70, -10}, {-50, 10}}, rotation = 0))); 
-
+*/
   /*
   parameter EntityGeoParam geo_mixer = cfg.cfg_mixer.geo;  
   
@@ -251,20 +260,26 @@ model TestTP_Components
   fluidQuasiStatic = true,
   metalTube(WallRes=false)) annotation(
     Placement(transformation(extent = {{-20, -20}, {20, 20}}, rotation = 0)));
-/*
+
   ThermoPower.Gas.Turbine Turbine1(
   redeclare package Medium = medium_hot, 
   fileName = Modelica.Utilities.Files.loadResource("modelica://Steps/Resources/Data/turbine_map.txt"),   
   tablePhic = fill(0.0, 14, 12), //tablePhic, 
   tableEta = fill(0.0, 14, 12), //tableEta, 
- pstart_in = bc_heater.st_cold_out.p, 
+  pstart_in = bc_heater.st_cold_out.p, 
   pstart_out = bc_HTR.st_hot_in.p, 
   Tstart_in = bc_heater.st_cold_out.T, 
   Tstart_out = bc_HTR.st_hot_in.T, 
   Ndesign = 60000.0, 
-  Tdes_in = bc_heater.st_cold_out.T, 
+  Tdes_in = bc_heater.st_cold_out.T,  
+  Table = ThermoPower.Choices.TurboMachinery.TableTypes.file,
   explicitIsentropicEnthalpy = false,
-  Table = ThermoPower.Choices.TurboMachinery.TableTypes.file) 
+  gas_in(
+    p(nominal = Turbine1.pstart_in), 
+    T(nominal = Turbine1.Tstart_in)),
+  gas_iso(
+    p(nominal = Turbine1.pstart_out), 
+    T(nominal = Turbine1.Tstart_out))) 
   annotation(
     Placement(transformation(extent = {{-40, -20}, {0, 20}}, rotation = 0)));
 
@@ -275,28 +290,27 @@ model TestTP_Components
  
   ThermoPower.Gas.SensT sens_turbine(redeclare package Medium = medium_hot) annotation(
     Placement(visible = true, transformation(origin = {20, 44}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
-*/
+
   parameter Boolean SSInit = false "Steady-state initialization";
 
 protected
   parameter Real tablePhic[5, 4] = [1, 37, 80, 100; 1.5, 7.10E-05, 7.10E-05, 7.10E-05; 2, 8.40E-05, 8.40E-05, 8.40E-05; 2.5, 8.70E-05, 8.70E-05, 8.70E-05; 3, 1.04E-04, 1.04E-04, 1.04E-04];
   parameter Real tableEta[5, 4] = [1, 37, 80, 100; 1.5, 0.57, 0.89, 0.81; 2, 0.46, 0.82, 0.88; 2.5, 0.41, 0.76, 0.85; 3, 0.38, 0.72, 0.82];
-
   
 equation
-/*
-  //HTR + mixer + LTR + Heater + Turbine
+
+  //HTR + mixer + LTR + Heater + Turbine - OPEN LOOP
   // main stream, water/cold side  
   connect(source_mixer_in.flange, mixer.inlet1);  
   connect(source_cold.flange, LTR.waterIn);  
   connect(LTR.waterOut, mixer.inlet2);  
   connect(mixer.outlet, HTR.waterIn);
-  connect(HTR.waterOut, heater.gasIn);  
-  connect(heater.gasOut, T_waterOut.inlet) annotation(
-    Line(points = {{8.88178e-016, -44}, {8.88178e-016, -20}, {0, -20}}, thickness = 0.5, color = {0, 0, 255}));
-  connect(T_waterOut.outlet, Turbine1.inlet) annotation(
-    Line(points = {{1.83697e-015, -70}, {1.83697e-015, -56}, {-8.88178e-016, -56}}, thickness = 0.5, color = {0, 0, 255}));
-  // main stream, gas/hot side
+  connect(HTR.waterOut, heater.gasIn);    
+  connect(heater.gasOut, Turbine1.inlet);
+
+  // connect(heater.gasOut, sink_cold.flange); 
+  // connect(source_hot.flange, Turbine1.inlet);
+  
   connect(Turbine1.outlet, sens_turbine.inlet) annotation(
    Line(points = {{-50, 0}, {-20, 0}}, color = {159, 159, 223}, thickness = 0.5, smooth = Smooth.None));
 
@@ -305,7 +319,11 @@ equation
   connect(speed1.w_ref, const1.y) annotation(
     Line(points = {{96, 0}, {120, 0}, {120, 0}, {118, 0}}, color = {0, 0, 127}));
   
-  connect(sens_turbine.outlet, HTR.gasIn);
+  // connect(sens_turbine.outlet, sink_cold.flange);  
+  // connect(source_hot.flange, HTR.gasIn);  
+  
+  connect(sens_turbine.outlet, HTR.gasIn);   
+
   connect(HTR.gasOut, LTR.gasIn);
   connect(LTR.gasOut, T_gasOut.inlet) annotation(
     Line(points = {{34, 0}, {34, 0}, {20, 0}}, color = {159, 159, 223}, thickness = 0.5));
@@ -315,7 +333,8 @@ equation
   // hot stream for heater
   connect(source_heater_hot.flange, heater.waterIn);
   connect(heater.waterOut, sink_heater_hot.flange);
-*/
+
+/*
   //HTR + mixer + LTR + Heater
   // main stream, water/cold side  
   connect(source_mixer_in.flange, mixer.inlet1);  
@@ -338,7 +357,7 @@ equation
   // hot stream for heater
   connect(source_heater_hot.flange, heater.waterIn);
   connect(heater.waterOut, sink_heater_hot.flange);
-  
+*/
 
 /*
   // mixer alone

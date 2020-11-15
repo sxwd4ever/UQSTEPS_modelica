@@ -13,7 +13,8 @@ model TestTP_Cooler
   import ThermoPower.System;
   import ThermoPower.Gas;
   
-  package medium_hot = Steps.Media.CO2;
+  //package medium_hot = Steps.Media.CO2;
+  package medium_hot = Steps.Media.SCO2; //ExternalMedia.Examples.CO2CoolProp;
   package medium_cooler = ThermoPower.Water.StandardWater;//Modelica.Media.IdealGases.SingleGases.CO2;  
   
   // parameter for C++ implementation of PCHE - based on Modelica impl's result
@@ -44,7 +45,9 @@ model TestTP_Cooler
   redeclare package Medium = medium_hot,
     w0 = bc.st_hot_in.mdot,
     p0 = bc.st_hot_in.p,
-    T = bc.st_hot_in.T) 
+    T = bc.st_hot_in.T,
+    gas(p(nominal = source_hot.p0), 
+    T(nominal=source_hot.T))) 
     annotation(
     Placement(transformation(origin = {0, 60}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
     
@@ -78,6 +81,7 @@ model TestTP_Cooler
     redeclare package FluidMedium = medium_cooler, 
     redeclare package FlueGasMedium = medium_hot, 
     fluidFlow(fixedMassFlowSimplified = true, hstartin = bc.st_cold_in.h, hstartout=bc.st_cold_out.h), // set the fluid flow as fixed mdot for simplarity
+    gasFlow(QuasiStatic = true),
     N_G=geo_hot.N_seg,
     N_F=geo_cold.N_seg,
     Nw_G=geo_tube.N_seg,
@@ -101,7 +105,7 @@ model TestTP_Cooler
     redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer, //ConstantHeatTransferCoefficientTwoGrids(gamma = thermo_hot.gamma_he),     
     redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer, //ConstantHeatTransferCoefficient(gamma =  thermo_cold.gamma_he),     
     redeclare model HeatExchangerTopology = ThermoPower.Thermal.HeatExchangerTopologies.CounterCurrentFlow,
-    metalTube(WallRes=false)) annotation(
+    metalTube(WallRes=false,Tstartbar=bc.st_hot_in.T - 50)) annotation(
     Placement(transformation(extent = {{-20, -20}, {20, 20}}, rotation = 0)));
 
   inner ThermoPower.System system(allowFlowReversal = false, initOpt=ThermoPower.Choices.Init.Options.noInit) annotation(

@@ -45,7 +45,13 @@ from math import sin
 # print("result=" + str(result))
 
 # 2e7,  1.01549e6
-result = CP.CoolProp.PropsSI("H", "P", 2e7, 'T', 130.631+273.15, 'CO2')
+result = CP.CoolProp.PropsSI("S", "P", 2e7, 'H', 1.26204e6, 'CO2')
+print("result=" + str(result))
+
+result = CP.CoolProp.PropsSI("H", "P", 9e6, 'S', result, 'CO2')
+print("result=" + str(result))
+
+result = CP.CoolProp.PropsSI("T", "P", 9e6, 'H', 1.23596e6, 'CO2') - 273.15
 print("result=" + str(result))
 
 # calculate the eta of Compressor of 'D:\sxwd\Projects\UQ\2019.10.01 Thermal Cycle Simulation\doc\UQMECH05_99_CL02_B 1 MW Power Block (RCBC)_2.pdf' 

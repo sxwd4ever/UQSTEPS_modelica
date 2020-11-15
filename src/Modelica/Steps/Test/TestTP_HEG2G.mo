@@ -14,8 +14,14 @@ model TestTP_HEG2G
   import ThermoPower.System;
   import ThermoPower.Gas;
   
-  package medium_hot = Steps.Media.CO2;
-  package medium_cold = Steps.Media.CO2;
+  //  package medium_hot = Steps.Media.CO2;
+  //  package medium_cold = Steps.Media.CO2;
+  // package medium_hot = ExternalMedia.Examples.CO2CoolProp;
+  // package medium_cold = ExternalMedia.Examples.CO2CoolProp;  
+  package medium_hot = Steps.Media.SCO2;
+  package medium_cold = Steps.Media.SCO2; 
+  
+  
   // package medium_hot = Steps.Media.CO2;
   // package medium_cold = Steps.Media.CO2;
  
@@ -36,7 +42,7 @@ model TestTP_HEG2G
   // select the configuration of parameters
   parameter Model.PBConfiguration cfg = cfg_default;
   
-  /*
+  
   // set the values of parameters accordingly - For HTR test
   parameter HEBoundaryCondition bc_HE = cfg.bc_HTR; // cfg.bc_LTR;
   
@@ -47,8 +53,8 @@ model TestTP_HEG2G
   parameter EntityThermoParam thermo_hot = cfg.cfg_HTR_hot.thermo;
   parameter EntityThermoParam thermo_cold = cfg.cfg_HTR_cold.thermo;
   parameter EntityThermoParam thermo_tube = cfg.cfg_HTR_tube.thermo;  
-  */
 
+/*
   // set the values of parameters accordingly - For LTR Test
   parameter HEBoundaryCondition bc_HE = cfg.bc_LTR; // cfg.bc_LTR;
   
@@ -59,7 +65,7 @@ model TestTP_HEG2G
   parameter EntityThermoParam thermo_hot = cfg.cfg_LTR_hot.thermo;
   parameter EntityThermoParam thermo_cold = cfg.cfg_LTR_cold.thermo;
   parameter EntityThermoParam thermo_tube = cfg.cfg_LTR_tube.thermo;    
-
+  */
   //Components
   inner ThermoPower.System system(allowFlowReversal = false, initOpt=ThermoPower.Choices.Init.Options.noInit) annotation(
     Placement(transformation(extent = {{80, 80}, {100, 100}})));  

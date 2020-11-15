@@ -65,7 +65,7 @@ package CO2 "Ideal gas \"CO2\" from NASA Glenn coefficients"
     Modelica.SIunits.SpecificEntropy s;
   equation
       //state.p = p;
-      // state.T = T; 
+// state.T = T;
     MM = data.MM;
     R = data.R;
     /*
@@ -213,8 +213,7 @@ package CO2 "Ideal gas \"CO2\" from NASA Glenn coefficients"
   redeclare function extends specificEnthalpy "Return specific enthalpy"
     extends Modelica.Icons.Function;
   algorithm
-    // h := Modelica.Media.IdealGases.Common.Functions.h_T(data,state.T);    
-    
+// h := Modelica.Media.IdealGases.Common.Functions.h_T(data,state.T);
     h := CP.PropsSI("H", "P", state.p, "T", state.T, mediumName);
     annotation(Inline=true,smoothOrder=2);
   end specificEnthalpy;
@@ -333,7 +332,7 @@ package CO2 "Ideal gas \"CO2\" from NASA Glenn coefficients"
     Modelica.SIunits.SpecificEntropy s;
   algorithm
     s := specificEntropy(refState);
-    h_is := specificEntropy(setState_psX(p=p_downstream, s=s)); 
+    h_is := specificEnthalpy(setState_psX(p=p_downstream, s=s)); 
     annotation(Inline=true,smoothOrder=2);
   end isentropicEnthalpy;
 

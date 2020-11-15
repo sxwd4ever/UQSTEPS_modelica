@@ -18,23 +18,14 @@ import Modelica.SIunits.Conversions.{from_degC, from_deg};
   package medium_cooler = ThermoPower.Water.StandardWater;//Modelica.Media.IdealGases.SingleGases.CO2;  
   
   // parameter for C++ implementation of PCHE - based on Modelica impl's result
-  parameter Model.PBConfiguration cfg_default(
+  parameter Model.PBConfiguration cfg_tune(
     mdot_cooler = 40,
     r_i_c = 15e-3,
     r_t_c = cfg_default.r_i_c + 5e-3,
     r_o_c = cfg_default.r_t_c + 200e-3,
     L_c = 20);
   
-  parameter Model.PBConfiguration cfg_on_design( 
-  p_pump_in = 8e6,
-  p_pump_out = 20e6,  
-  mdot_main = 51.51,
-  mdot_pump = 31.31,
-  mdot_heater = 20,
-  T_HTR_cold_in = from_degC(141.3), 
-  T_HTR_cold_out = from_degC(495.302),
-  T_HTR_hot_out = from_degC(141.041),
-  T_LTR_hot_out = from_degC(63.6726));        
+  parameter Model.PBConfiguration cfg_default;
     
   // select the configuration of parameters
   parameter Model.PBConfiguration cfg = cfg_default;
@@ -100,7 +91,7 @@ import Modelica.SIunits.Conversions.{from_degC, from_deg};
   //Components.HEG2G cooler(
     redeclare package FluidMedium = medium_cooler, 
     redeclare package FlueGasMedium = medium_hot, 
-    fluidFlow(fixedMassFlowSimplified = true), // hstartin = bc_cooler.st_cold_in.h, hstartout=bc_cooler.st_cold_out.h), // set the fluid flow as fixed mdot for simplarity
+    fluidFlow(fixedMassFlowSimplified = true, hstartin = bc_cooler.st_cold_in.h, hstartout=bc_cooler.st_cold_out.h), // set the fluid flow as fixed mdot for simplarity
     N_G=geo_hot.N_seg,
     N_F=geo_cold.N_seg,
     Nw_G=geo_tube.N_seg,

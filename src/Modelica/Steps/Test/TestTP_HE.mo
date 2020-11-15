@@ -15,7 +15,9 @@ model TestTP_HE
   
   // package medium_hot = Steps.Media.CO2;
   package medium_heater = SolarTherm.Media.Sodium.Sodium_pT; // ThermoPower.Water.StandardWater; //Modelica.Media.IdealGases.SingleGases.CO2;
-  package medium_cold = Steps.Media.CO2; // Modelica.Media.IdealGases.SingleGases.CO2;
+  //package medium_cold = Steps.Media.CO2; // Modelica.Media.IdealGases.SingleGases.CO2;
+  package medium_hot = Steps.Media.SCO2;//ExternalMedia.Examples.CO2CoolProp;
+  package medium_cold = Steps.Media.SCO2;//ExternalMedia.Examples.CO2CoolProp;    
   
   parameter Model.PBConfiguration cfg_default( 
   mdot_heater = 55,
@@ -67,7 +69,9 @@ model TestTP_HE
     T = bc_heater.st_cold_in.T, 
     p0 = bc_heater.st_cold_in.p, 
     use_in_T = false, 
-    w0 = bc_heater.st_cold_in.mdot) 
+    w0 = bc_heater.st_cold_in.mdot,
+    gas(p(nominal = bc_heater.st_cold_in.p), 
+    T(nominal=bc_heater.st_cold_in.T)))
   annotation(
     Placement(transformation(origin = {0, 60}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));      
   
@@ -107,7 +111,7 @@ model TestTP_HE
     redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer, //ConstantHeatTransferCoefficientTwoGrids(gamma = thermo_hot.gamma_he),     
     redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer, //ConstantHeatTransferCoefficient(gamma =  thermo_cold.gamma_he),     
     redeclare model HeatExchangerTopology = ThermoPower.Thermal.HeatExchangerTopologies.CounterCurrentFlow,
-    metalTube(WallRes=false)) annotation(
+    metalTube(WallRes=false, Tstartbar=bc_heater.st_hot_in.T - 50)) annotation(
     Placement(transformation(extent = {{-20, -20}, {20, 20}}, rotation = 0)));
 
   inner ThermoPower.System system(allowFlowReversal = false, initOpt=ThermoPower.Choices.Init.Options.noInit) annotation(

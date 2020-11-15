@@ -16,7 +16,10 @@ model TestTP_Compressor
   // package medium_hot = Steps.Media.CO2;
   // package medium_cooler = ThermoPower.Water.StandardWater;//Modelica.Media.IdealGases.SingleGases.CO2;  
   
-  package Medium = Steps.Media.CO2; //Modelica.Media.IdealGases.SingleGases.CO2;
+  // package Medium = Steps.Media.CO2; 
+  // package Medium = ExternalMedia.Examples.CO2CoolProp;
+  package Medium = Steps.Media.SCO2; 
+  // package Medium = Modelica.Media.IdealGases.SingleGases.CO2;
   
   parameter Model.PBConfiguration cfg_on_design( 
   p_pump_in = 8e6,
@@ -38,12 +41,18 @@ model TestTP_Compressor
   ThermoPower.Gas.SourcePressure SourceP1(
     redeclare package Medium = Medium,
     p0=bc.st_hot_out.p,
-    T=bc.st_hot_out.T) annotation (Placement(transformation(extent={{-80,6},{-60,26}},
+    T=bc.st_hot_out.T,
+    gas(p(nominal = SourceP1.p0), 
+    T(nominal=SourceP1.T))) annotation (Placement(transformation(extent={{-80,6},{-60,26}},
           rotation=0)));
+  
   ThermoPower.Gas.SinkPressure SinkP1(
     redeclare package Medium = Medium,
     p0=bc.st_cold_in.p,
-    T=bc.st_cold_in.T) annotation (Placement(transformation(extent={{40,6},{60,26}},
+    T=bc.st_cold_in.T,
+    gas(
+    p(nominal = SinkP1.p0), 
+    T(nominal = SinkP1.T))) annotation (Placement(transformation(extent={{40,6},{60,26}},
           rotation=0)));
           
   ThermoPower.Gas.Compressor Compressor(
@@ -57,8 +66,15 @@ model TestTP_Compressor
     tablePR=tablePR,
     Table=ThermoPower.Choices.TurboMachinery.TableTypes.matrix,
     Ndesign=523.3,
-    Tdes_in=244.4) annotation (Placement(transformation(extent={{-20,-20},{
-            20,20}}, rotation=0)));
+    Tdes_in=from_degC(300), // 244.4,
+    explicitIsentropicEnthalpy = false,
+    gas_in(
+      p(nominal = Compressor.pstart_in), 
+      T(nominal = Compressor.Tstart_in)),
+    gas_iso(
+      p(nominal = Compressor.pstart_out), 
+      T(nominal = Compressor.Tstart_out))) annotation (Placement(transformation(extent={{-20,-20},{
+              20,20}}, rotation=0)));
             
   Modelica.Mechanics.Rotational.Sources.ConstantSpeed ConstantSpeed1(
       w_fixed=523.3, useSupport=false) annotation (Placement(transformation(

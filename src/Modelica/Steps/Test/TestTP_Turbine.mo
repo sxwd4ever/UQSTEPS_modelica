@@ -32,14 +32,18 @@ model TestTP_Turbine
   parameter HEBoundaryCondition bc_HTR = cfg.bc_HTR;  
   parameter HEBoundaryCondition bc_heater = cfg.bc_heater;
   
-  package Medium = Media.CO2;
+  // package Medium = Media.CO2;
+  package Medium = Steps.Media.SCO2;//ExternalMedia.Examples.CO2CoolProp;
   
   ThermoPower.Gas.SourceMassFlow SourceP1(
     redeclare package Medium = Medium, 
-    T = bc_heater.st_cold_out.T, 
-    p0 = bc_heater.st_cold_out.p, 
+    T = from_degC(730.43), 
+    p0 = bc_heater.st_cold_out.p,
+    //h = bc_heater.st_cold_out.h, 
     use_in_T = false, 
-    w0 = bc_heater.st_cold_out.mdot) 
+    w0 = bc_heater.st_cold_out.mdot,    
+    gas(p(nominal = bc_heater.st_cold_out.p), 
+    T(nominal=bc_heater.st_cold_out.T))) 
   annotation(
     Placement(transformation(origin = {0, 60}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
   
@@ -54,14 +58,25 @@ model TestTP_Turbine
   Tstart_out = bc_HTR.st_hot_in.T, 
   Ndesign = 60000.0, 
   Tdes_in = bc_heater.st_cold_out.T, 
-  Table = ThermoPower.Choices.TurboMachinery.TableTypes.file) 
+  Table = ThermoPower.Choices.TurboMachinery.TableTypes.file,
+  explicitIsentropicEnthalpy = false,
+  gas_in(
+    p(nominal = Turbine1.pstart_in), 
+    T(nominal = Turbine1.Tstart_in)),
+  gas_iso(
+    p(nominal = Turbine1.pstart_out), 
+    T(nominal = Turbine1.Tstart_out)))    
   annotation(
     Placement(transformation(extent = {{-40, -20}, {0, 20}}, rotation = 0)));
   
   ThermoPower.Gas.SinkPressure SinkP1(
   redeclare package Medium = Medium, 
   p0 =  bc_HTR.st_hot_in.p, 
-  T =  bc_HTR.st_hot_in.T) 
+  T =  bc_HTR.st_hot_in.T,
+  gas(
+    p(nominal = Turbine1.pstart_out), 
+    T(nominal = Turbine1.Tstart_out)))
+  // h = bc_HTR.st_hot_in.h) 
   annotation(
     Placement(visible = true, transformation(extent = {{50, 6}, {70, 26}}, rotation = 0)));
   
@@ -73,14 +88,15 @@ model TestTP_Turbine
   inner ThermoPower.System system(allowFlowReversal = false, initOpt=ThermoPower.Choices.Init.Options.noInit) annotation(
     Placement(transformation(extent = {{80, 80}, {100, 100}})));
 
-  ThermoPower.Gas.SensT T_gasIn(redeclare package Medium = Medium);
-  ThermoPower.Gas.SensT T_gasOut(redeclare package Medium = Medium);
+  //ThermoPower.Gas.SensT T_gasIn(redeclare package Medium = Medium);
+  //ThermoPower.Gas.SensT T_gasOut(redeclare package Medium = Medium);
  
 protected
   parameter Real tablePhic[5, 4] = [1, 37, 80, 100; 1.5, 7.10E-05, 7.10E-05, 7.10E-05; 2, 8.40E-05, 8.40E-05, 8.40E-05; 2.5, 8.70E-05, 8.70E-05, 8.70E-05; 3, 1.04E-04, 1.04E-04, 1.04E-04];
   parameter Real tableEta[5, 4] = [1, 37, 80, 100; 1.5, 0.57, 0.89, 0.81; 2, 0.46, 0.82, 0.88; 2.5, 0.41, 0.76, 0.85; 3, 0.38, 0.72, 0.82];
 
 equation
+  /*
   connect(SourceP1.flange, T_gasIn.inlet);
   connect(T_gasIn.outlet, Turbine1.inlet) annotation(
     Line(points = {{-60, 16}, {-36, 16}}, color = {159, 159, 223}, thickness = 0.5));
@@ -88,6 +104,13 @@ equation
   connect(Turbine1.outlet, T_gasOut.inlet) annotation(
     Line(points = {{-4, 16}, {6, 16}, {6, 40}, {14, 40}, {14, 40}}, color = {159, 159, 223}));
   connect(T_gasOut.outlet, SinkP1.flange) annotation(
+    Line(points = {{26, 40}, {36, 40}, {36, 16}, {50, 16}}, color = {159, 159, 223}));
+  */
+  
+  connect(SourceP1.flange, Turbine1.inlet) annotation(
+    Line(points = {{-60, 16}, {-36, 16}}, color = {159, 159, 223}, thickness = 0.5));
+
+  connect(Turbine1.outlet, SinkP1.flange) annotation(
     Line(points = {{26, 40}, {36, 40}, {36, 16}, {50, 16}}, color = {159, 159, 223}));
 
   connect(Turbine1.shaft_b, speed1.flange) annotation(

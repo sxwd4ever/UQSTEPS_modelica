@@ -25,7 +25,7 @@ REM build
 
 REM generate dynamic lib
 
-REM libCoolProp.a (static library) should be exsits current directory
+REM libCoolProp.a (static library) should be exsits in working directory
 
 ECHO ON
 

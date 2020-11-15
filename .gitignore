@@ -123,6 +123,8 @@ dmypy.json
 .pyre/
 
 # bin library
+*.dll
+*.a
 src/Modelica/Steps/Resources/Library/MyProps.dll
 src/Modelica/Steps/Resources/Library/libCoolProp.a
 src/Modelica/Steps/Resources/Library/libCoolProp.dll
