@@ -14,11 +14,15 @@ model TestPCHEMImpl
   
   parameter Modelica.SIunits.MassFlowRate mdot_cold = 51.91 "mass flow rate for cold stream";
   
-  parameter OffDPBParamSet param; 
+  // parameter for C++ implementation of PCHE - based on Modelica impl's result
+  parameter Model.PBConfiguration cfg_default;        
+    
+  // select the configuration of parameters
+  parameter Model.PBConfiguration cfg = cfg_default;
   
-  parameter PCHEBoundaryCondition bc = param.bc_HTR;
+  parameter Steps.Model.HEBoundaryCondition bc = cfg.bc_HTR;
   
-  parameter PCHEGeoParam geo = param.geo_HTR;
+  parameter PCHEGeoParam geo = cfg.geo_HTR;
 
   parameter Modelica.SIunits.ReynoldsNumber Re_hot_start = 14.5e3 "Hot stream's start value of Reynolds Number, used to increase convergence";
   

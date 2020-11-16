@@ -9,7 +9,7 @@ package SCO2 "supercritical CO2"
       onePhase = true,
       final reducedX = true, 
       final fixedX = true, 
-      Temperature(min=273.15, max=1200, start=500, nominal=500),
+      Temperature(min=304.128, max=2000, start=304.128, nominal=304.128),
       // SpecificEnthalpy(start=2e5, nominal=1.0e5),
       AbsolutePressure(min=7.377e6, start=7.377e6, nominal=7.377e6),
       SpecificEnthalpy(start=if Functions.referenceChoice==ReferenceEnthalpy.ZeroAt0K then data.H0 else
@@ -36,7 +36,7 @@ package SCO2 "supercritical CO2"
         -1.891053312e-012,6.330036589999999e-016},
     bhigh={-39083.5059,-26.52669281},
     R=188.9244822140674) "Data record of ideal gas substance";
-  
+  /*
     type AbsolutePressure    
       "Type for absolute pressure with medium specific attributes"
     extends SI.AbsolutePressure(
@@ -61,7 +61,7 @@ package SCO2 "supercritical CO2"
       nominal=304.128,
       start=304.128);
     end Temperature;
-            
+  */          
     constant Modelica.Media.Interfaces.Types.IdealGas.FluidConstants CO2Constants = Modelica.Media.IdealGases.Common.FluidData.CO2;
     
     replaceable constant FluidConstants CO2FluidConstants = FluidConstants(
@@ -90,7 +90,7 @@ package SCO2 "supercritical CO2"
     output ThermodynamicState state;
   algorithm
     assert(p >= 7.3773e6, "pressure out of range");
-    assert(T >= 304.128 and T <=1200, "temperature out of critical range");
+    assert(T >= 304.128 and T <=2000, "temperature out of critical range");
     state := setState_pT_lib(p, T, phase);
   end setState_pT;
 

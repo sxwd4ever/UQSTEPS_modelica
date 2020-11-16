@@ -13,6 +13,7 @@ model PCHeatExchanger
   import Steps.Utilities.CoolPropExternalObject;
   import Steps.Utilities.CoolProp.QueryProps;
   import Modelica.SIunits.Conversions.{from_degC, from_bar};
+  import Steps.Model.HEBoundaryCondition;
   
 /*  
   replaceable Steps.Interfaces.PBFluidPort_a inlet_hot(redeclare package Medium = PBMedia, p(start= p_start_hot), h_outflow(start = h_start_hot)) "Inlet port, previous component";
@@ -73,7 +74,7 @@ model PCHeatExchanger
   
   parameter Boolean ByInlet_cold = false "flag indicate if inlet states is fixed 1: fixed; 0: free (cold stream is determined by outlet)"; 
   
-  parameter PCHEBoundaryCondition bc(
+  parameter HEBoundaryCondition bc(
     st_hot_in(p = from_bar(80), T = from_degC(578.22), h = PropsSI("H", "P", bc.st_hot_in.p, "T", bc.st_hot_in.T, PBMedia.mediumName), mdot = 51.91),   
     st_cold_in(p = from_bar(200), T = from_degC(151.45), h = PropsSI("H", "P", bc.st_cold_in.p, "T", bc.st_cold_in.T, PBMedia.mediumName), mdot = 51.91), 
     st_hot_out(p = from_bar(80), T = from_degC(156.5), h = PropsSI("H", "P", bc.st_hot_out.p, "T", bc.st_hot_out.T, PBMedia.mediumName), mdot = 51.91),
@@ -142,6 +143,8 @@ protected
     parameter Boolean ByInlet = true;
     
     parameter Integer id = 0;
+    
+    PBMedia.ThermodynamicState state;
  
     // Heat Flux
     Modelica.SIunits.Heat Q; 
@@ -232,8 +235,16 @@ equation
     (outlet.h_outflow - inlet.h_outflow) * inlet.m_flow = Q;
        
     inlet.p - outlet.p = dp; 
+    
+    state = PBMedia.setState_ph(p,h);
+    
+    T = PBMedia.temperature_ph(p, h);  
+    mu = PBMedia.dynamicViscosity(state);
+    k = PBMedia.thermalConductivity(state);
+    rho = PBMedia.density(state);
+    
      
-    (T, mu, k, rho) = CP.MyPropsSI(p=p, H=h, fluidName=PBMedia.mediumName);
+    //(T, mu, k, rho) = CP.MyPropsSI(p=p, H=h, fluidName=PBMedia.mediumName);
     
     /*
     T = CP.PropsSI("V", "P", p, "H", h, PBMedia.mediumName); 
