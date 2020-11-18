@@ -38,7 +38,7 @@ model ThroughSink
   Modelica.Blocks.Interfaces.RealInput in_X[Medium.nX] if use_in_X annotation(
     Placement(transformation(origin = {60, 50}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
   Modelica.Blocks.Interfaces.RealOutput out_w annotation(
-    Placement(visible = true, transformation(origin = {-30, -82}, extent = {{-10, -10}, {10, 10}}, rotation = -90), iconTransformation(origin = {-30, -82}, extent = {{-10, -10}, {10, 10}}, rotation = -90)));
+    Placement(visible = true, transformation(origin = {-60, -80}, extent = {{-10, -10}, {10, 10}}, rotation = -90), iconTransformation(origin = {-60, -80}, extent = {{-10, -10}, {10, 10}}, rotation = -90)));
   Modelica.Blocks.Interfaces.RealOutput out_T annotation(
     Placement(visible = true, transformation(origin = {36, -82}, extent = {{-10, -10}, {10, 10}}, rotation = -90), iconTransformation(origin = {36, -82}, extent = {{-10, -10}, {10, 10}}, rotation = -90)));
 protected

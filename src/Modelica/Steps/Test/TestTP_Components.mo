@@ -120,7 +120,7 @@ model TestTP_Components
     redeclare replaceable model HeatTransfer_F =  ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer, // ConstantHeatTransferCoefficientTwoGrids(gamma = thermo_HTR_hot.gamma_he),    
     redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer, // ConstantHeatTransferCoefficient(gamma = thermo_HTR_cold.gamma_he),     
     redeclare model HeatExchangerTopology = ThermoPower.Thermal.HeatExchangerTopologies.CounterCurrentFlow,
-    metalTube(WallRes=false)) annotation(
+    metalTube(WallRes=false, Tstartbar=heater.Tstartbar_M)) annotation(
     Placement(transformation(extent = {{-20, -20}, {20, 20}}, rotation = 0)));
   
   ThermoPower.Gas.SourceMassFlow source_cold(
@@ -222,7 +222,7 @@ model TestTP_Components
   lambda = thermo_HTR_tube.lambda, 
   metalVol = geo_HTR_tube.V, 
   pstart_F = bc_HTR.st_cold_in.p, 
-  pstart_G = bc_HTR.st_hot_in.T,
+  pstart_G = bc_HTR.st_hot_in.p,
   rhomcm = thermo_HTR_tube.rho_mcm,
   gasQuasiStatic = true,
   fluidQuasiStatic = true,
@@ -254,7 +254,7 @@ model TestTP_Components
   lambda = thermo_LTR_tube.lambda, 
   metalVol = geo_LTR_tube.V, 
   pstart_F = bc_LTR.st_cold_in.p, 
-  pstart_G = bc_LTR.st_hot_in.T,
+  pstart_G = bc_LTR.st_hot_in.p,
   rhomcm = thermo_LTR_tube.rho_mcm,
   gasQuasiStatic = true,
   fluidQuasiStatic = true,
