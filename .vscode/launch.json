@@ -59,6 +59,7 @@
             "name": "Python: Current File",
             "type": "python",
             "request": "launch",
+            "cwd": "${workspaceFolder}/src/python",
             "program": "${file}",
             "console": "integratedTerminal",
             "justMyCode": true

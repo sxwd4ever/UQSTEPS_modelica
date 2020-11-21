@@ -15,6 +15,7 @@ import numpy as np
 from CoolProp.CoolProp import PropsSI
 import pandas as pd
 from xlwings.main import Book
+import json
 
 
 # my modules
@@ -154,241 +155,9 @@ class TestConstants(object):
     # Format constants
     # column start index in the data storage file
     DATA_FILE_COL_START = 2 
+       
 
-class ParamSet(MutableMapping):
-
-    def __init__(self, *args, **kwargs):
-        self.store = dict()
-        self.update(dict(*args, **kwargs))  # use the free update to set keys
-
-    def __getitem__(self, key):
-        val =  self.store[self.__keytransform__(key)]
-
-        if issubclass(type(val), Quantity):
-            val = val.mag
-
-        return val
-
-    def __setitem__(self, key, value):
-        self.store[self.__keytransform__(key)] = value
-
-    def __delitem__(self, key):
-        del self.store[self.__keytransform__(key)]
-
-    def __iter__(self):
-        return iter(self.store)
-
-    def __len__(self):
-        return len(self.store)
-
-    def __keytransform__(self, key):
-        return key
-
-    def to_dict(self):
-        val_dict = {}
-
-        for k in self.store.keys():
-            val_dict[k] = self.__getitem__(k)
-
-        return val_dict
-
-    def from_dict(self, dict_ : dict):
-        """
-        instansiate a config from a dict_
-        """
-
-        for (k, v) in dict_.items():
-            self.__setitem__(k, v)
-
-    # def to_data_frame(self):
-    #     """
-    #     transform this config into a pandas data frame 
-    #     """
-    #     return pd.DataFrame(self.to_dict(), index=[0])               
-
-class TestConfig(ParamSet):
-    '''
-        configuration of diffrent test cases
-        this class is designed in a flatten way to make the configuration and debug simplier
-    '''
-
-    def __init__(self, name = "default config", group_name = "default group"):
-        super().__init__()
-        # default values of the test case - Meshram [2016] Fig 4(b) - zigzag channel @ High Temperature
-
-        # document property  
-        self.name = name
-
-        self._group_name = group_name        
-
-        self.__init_config()
-
-    def __init_config(self):
-
-        pk = TestConstants
-        # geomerty
-        self[pk.d_c] = Length.mm(2)
-
-        self[pk.pitch] = Length.mm(12.3)
-
-        self[pk.phi] = Angle.deg((180 - 108) / 2)
-
-        # on design propery
-        self[pk.Re_des] = 14500
-        self[pk.N_seg] = 10
-        self[pk.l_cell] = Length.mm(12)
-
-        # fluid property
-        # hot stream state 
-        self[pk.p_hot_in] = Pressure.bar(90)
-        self[pk.T_hot_in] = Temperature(730)
-        self[pk.p_hot_out] = Pressure.bar(90)
-        self[pk.T_hot_out] = Temperature(576.69)
-
-        # cold stream state
-        self[pk.p_cold_in] = Pressure.bar(225)
-        self[pk.T_cold_in] = Temperature(500)
-        self[pk.p_cold_out] = Pressure.bar(90)
-        self[pk.T_cold_out] = Temperature(639.15)
-
-        self[pk.media_hot] = "CO2"
-        self[pk.media_cold] = "CO2"
-
-        # mass flow rate
-        self[pk.mdot_hot] = MDot(100)
-        self[pk.mdot_cold] = MDot(100)
-
-        # off design configuration
-        self[pk.mdot_hot_odes] = MDot(100)
-        self[pk.mdot_cold_odes] = MDot(100)
-
-        self[pk.u_hot_odes] = Velocity(7.564)
-        self[pk.u_cold_odes] = Velocity(1.876)
-
-        p, T = self[pk.p_hot_in], self[pk.T_hot_in]
-        self[pk.rho_hot_odes] = Density(PropsSI('D','P', p, 'T', p, self[pk.media_hot]))
-
-        p, T = self[pk.p_cold_in], self[pk.T_cold_in]
-        self[pk.rho_cold_odes] = Density(PropsSI('D','P', p, 'T', p, self[pk.media_cold]))
-
-    def gen_design_param(self) -> Tuple[DesignParam, OffDesignParam]:
-        pk = TestConstants
-
-        param_des:DesignParam = DesignParam(
-            d_c=self[pk.d_c], 
-            p=[self[pk.p_hot_in], self[pk.p_cold_in]], 
-            T=[self[pk.T_hot_in], self[pk.T_cold_in]], 
-            Re=self[pk.Re_des], 
-            mdot=[self[pk.mdot_hot], self[pk.mdot_cold]],
-            N_seg= self[pk.N_seg], 
-            len_seg= self[pk.l_cell], 
-            pitch = self[pk.pitch], 
-            phi = self[pk.phi])
-
-        # param_odes = OffDesignParam(param_des=param_des, G = np.multiply(u_odes, rho_odes))
-        param_odes:OffDesignParam = OffDesignParam(param_des=param_des, mdot = [self.get(pk.mdot_hot_odes), self.get(pk.mdot_cold_odes)])
-        return (param_des, param_odes)
-
-    @property
-    def group_name(self):
-        """The group_name property."""
-        return self._group_name
-
-    @group_name.setter
-    def group_name(self, value):
-        self._group_name = value
-
-    @property
-    def full_name(self) -> str :
-        """The full_name property."""
-        return self._group_name + '@' + self.name
-
-
-class TestParam(ParamSet):
-
-    def __init__(self, name="", title="", **options) -> None:
-        super().__init__()
-        
-        if title=='':
-            title = name
-
-        self.name = name
-        self.title = name
-
-        for k, v in options.items():
-            if k in TestConstants.__dict__.keys():
-                self[k] = v
-            else:
-                raise KeyError('Invalid para name=' + k)
-
-class ParamGroup(object):
-    """
-        Corresponding to a set of Tests to see the effect of param sweep
-    """
-    def __init__(self, name, enable = True, ):
-        super().__init__()
-        self._name = name
-        self.paras = OrderedDict()
-        self._idx = 0
-        
-        self._enable = enable
-
-    def add_test_param(self, name="", title="", **options):
-        para = TestParam(name=name, title=title, **options)
-        self.paras[name] = para
-        return para
-
-    # def __iter__(self):
-    #     self._idx = 0
-    #     return self
-
-    # def __next__(self) -> TestParam:
-    #     if self._idx < len(self.paras):
-    #         key = self.paras.values()[self._idx]
-    #         self._idx += 1
-    #         return key
-    #     else:
-    #         raise StopIteration
-
-
-    # def add_para_seq(self, param_name, seq):
-    #     if(len(seq) == len(self.test_names)):
-    #         self.para_seqs[param_name] = seq
-    #     else:
-    #         raise ValueError("number of vals not equal to test number")
-            
-    # def get_para_value(self, idx):
-    #     '''
-    #     get param values for a test
-    #     '''
-
-    #     para_vals = []
-
-    #     for name, seq in self.para_seqs.items():
-    #         para_vals.append((name, seq[idx]))
-
-    #     return para_vals
-    
-    @property
-    def enable(self):
-        """The enable property."""
-        return self._enable
-    @enable.setter
-    def enable(self, value):
-        if self._enable == value:
-            return
-
-        self._enable = value
-
-    @property
-    def name(self):
-        """The name of param groupd """
-        return self._name
-    @name.setter
-    def name(self, value):
-        self._name = value
-
-class TestResult(object):
+class TestResult(dict):
     """
     docstring for TestResult.
 
@@ -397,253 +166,134 @@ class TestResult(object):
     The result can be saved into an excel file or loaded accordingly. 
     Test config that generates each individual result will be saved as well
     """
-    def __init__(self, name, para_design : DesignParam):
+    def __init__(self, name, results:dict):
+        self._idx = 0        
+        self.name = name
+        self.results = results 
+    
+    @classmethod
+    def from_keyvalues(cls ,keys:list, values:list):
         """
         :name of this Test Run (parameter sweep)
         """
-        super(TestResult, self).__init__()
-        
-        self.name = name
+        results = OrderedDict()
 
-        self._result_dict = {}
+       # collect data in solutions
+        for i in range(len(keys)):
+            sol = values[i]
+            if not sol is None:
+                # for now, save the first val
+                results[keys[i]] = values[i][0]  
 
-        self.__init_result_dict(para_design)
-
+        return cls("", results)
+   
+    def __iter__(self):        
         self._idx = 0
-        self._keys = []
-    
-    def __init_result_dict(self, para_design : DesignParam):
-                # dict to store solutions under 
-        result_dict = {}
-
-        # for all the component's inlet/outlet that needs to be analyzed.
-        ports_keys = [
-            'source_hot.outlet', 
-            'source_cold.outlet', 
-            'sink_hot.inlet', 
-            'sink_cold.inlet', 
-            'pchx.inlet_hot',
-            'pchx.outlet_hot',
-            'pchx.inlet_cool',
-            'pchx.outlet_cool'        
-            ]
-        
-        # common variables for these port
-        var_keys = ['h_outflow', 'p', 'm_flow']
-
-        # fill in keys of result dict with above 
-        for p_key in ports_keys:
-            for val_key in var_keys:
-                sol_key = p_key + '.' + val_key
-                result_dict[sol_key] = []
-
-        # for each HX cell in PCHE
-        N_seg = int(para_design.N_seg)
-
-        var_keys = ['T', 'p', 'h', 'u', 'k', 'rho', 'mu' ,'dp', 'G', 'Re', 'Nu', 'f', 'Q']
-        node_keys = ['cell_cold', 'cell_hot']
-        for var_key in var_keys:
-            for node_key in node_keys:
-                for i in range(1, N_seg + 1):        
-                    result_dict["pchx.{node}[{idx}].{var}".format(idx = i, var = var_key, node = node_key)] = []
-
-        # some special varible in the model, specify them explicitly like
-        # input parameters
-        result_dict['pchx.N_seg'] = []  
-        result_dict['pchx.length_cell'] = [] 
-        result_dict['pchx.phi'] = []  
-        result_dict['pchx.d_c'] = []  
-        result_dict['pchx.pitch'] = []  
-        result_dict['pchx.kim_cor.a'] = []  
-        result_dict['pchx.kim_cor.b'] = [] 
-        result_dict['pchx.kim_cor.c'] = []  
-        result_dict['pchx.kim_cor.d'] = []          
-
-        # calculated initial parameters
-        result_dict['pchx.d_h'] = []  
-        result_dict['pchx.peri_c'] = [] 
-        result_dict['pchx.t_wall'] = []  
-        result_dict['pchx.N_ch'] = [] 
-        result_dict['pchx.A_c'] = []  
-        result_dict['pchx.A_flow'] = [] 
- 
-        result_dict['pchx.A_stack'] = []                  
-        result_dict['pchx.length_ch'] = []     
-        result_dict['pchx.Re_hot_start'] = [] 
-        result_dict['pchx.Re_cold_start'] = []                           
-        result_dict['mdot_hot'] = []  
-        result_dict['mdot_cold'] = []  
-
-        self._result_dict = result_dict
-
-    def __cal_row(self, vals = [], eval_str = 'x + y'):
-
-        real_eval_str = eval_str.replace('x','op1').replace('y','op2').replace('z', 'op3')
-
-        r = []
-        
-        for i in range(0, len(vals[0])):
-            op1,op2 = vals[0][i], vals[1][i]
-
-            if(len(vals) == 3):
-                op3 = vals[2][i]
-            r.append(eval(real_eval_str))
-
-        return r
-
-    def __gen_cal_map(self):
-        '''
-        map containing all the calculated fields, which are calculated 
-        according to the solutions of model
-        '''
-        # map for calculated values
-        cal_map = []
-        # recheck efficiency 
-        cal_map.append({'key' : 'Q_in', 'vals':['pcm_heater.h_e', 'pcm_heater.h_i', 'pcm_heater.inlet.m_flow'], 'eval_str': 'z * (x - y)'})
-        cal_map.append({'key' : 'W_turbine', 'vals':['turbine.h_i', 'turbine.h_ea', 'turbine.inlet.m_flow'], 'eval_str': 'z * (x - y)'})
-        cal_map.append({'key' : 'W_comp', 'vals':['pump.h_ea', 'pump.h_i', 'pump.inlet.m_flow'], 'eval_str': 'z * (x - y)'})
-        cal_map.append({'key' : 'W_comp_recom', 'vals':['recom_pump.h_ea', 'recom_pump.h_i', 'recom_pump.inlet.m_flow'], 'eval_str': 'z * (x - y)'})
-        cal_map.append({'key' : 'W_net', 'vals':['W_turbine', 'W_comp', 'W_comp_recom'], 'eval_str': 'x - y - z'})
-        cal_map.append({'key' : 'eta_all_recal', 'vals':['W_net', 'Q_in'], 'eval_str': 'x / y * 100'})
-        cal_map.append({'key' : 'eta_all_recal', 'vals':['W_net', 'Q_in'], 'eval_str': 'x / y * 100'})
-
-        # performance
-        # LTR
-        cal_map.append({'key' : 'LTR_cool_dt', 'vals':['recup_low.crec_out.T','recup_low.crec_in.T'], 'eval_str': 'x - y'})
-        cal_map.append({'key' : 'LTR_hot_dt', 'vals':['recup_low.inlet.T','recup_low.outlet.T'], 'eval_str': 'x - y'})
-        cal_map.append({'key' : 'LTR_cool_dQ', 'vals':['recup_low.h_cool_e','recup_low.h_cool_i', 'recup_low.crec_in.m_flow'], 'eval_str': '(x - y) * z'})
-        cal_map.append({'key' : 'LTR_hot_dQ', 'vals':['recup_low.h_hot_i','recup_low.h_hot_e', 'recup_low.inlet.m_flow'], 'eval_str': '(x - y) * z'})
-
-        # HTR
-        cal_map.append({'key' : 'HTR_cool_dt', 'vals':['recup_high.crec_out.T','recup_high.crec_in.T'], 'eval_str': 'x - y'})
-        cal_map.append({'key' : 'HTR_hot_dt', 'vals':['recup_high.inlet.T','recup_high.outlet.T'], 'eval_str': 'x - y'})
-        cal_map.append({'key' : 'HTR_cool_dQ', 'vals':['recup_high.h_cool_e','recup_high.h_cool_i', 'recup_high.crec_in.m_flow'], 'eval_str': '(x - y) * z'})
-        cal_map.append({'key' : 'HTR_hot_dQ', 'vals':['recup_high.h_hot_i','recup_high.h_hot_e', 'recup_high.inlet.m_flow'], 'eval_str': '(x - y) * z'})
-
-        return cal_map
-
-    def update_cal_columns(self, result_dict):
-        # fill calculated fields into the result_dict
-        cal_map = self.__gen_cal_map()
-        result_dict = self._result_dict
-        
-        # fill in the calculated value by python's eval
-        for item in cal_map:
-            vals = item['vals']
-
-            data = result_dict
-
-            if len(vals) == 2:
-                result_dict[item['key']] = self.__cal_row([data[vals[0]], data[vals[1]]], eval_str=item['eval_str'])
-            elif len(vals) == 3:
-                result_dict[item['key']] = self.__cal_row([data[vals[0]], data[vals[1]], data[vals[2]]], eval_str=item['eval_str'])   
-
-    def __iter__(self):
-        self._keys = list(self._result_dict.keys())
-        self._idx = 0
-
         return self
 
     def __next__(self) -> str:
+        result = None    
 
-        if self._idx < len(self._keys):
-            key = self._keys[self._idx]
+        if self._idx < len(self.results):
+            result = list(self.results.values())[self._idx]
             self._idx += 1
-            return key
+            return result
+        else:
+            raise StopIteration   
+
+    def to_dict(self) -> dict:
+        return deepcopy(self.results)
+
+class TestConfig(dict):
+    def __init__(self, name, params:dict):
+        self.name = name
+        self.params = params
+        self._idx = 0
+    
+    @classmethod
+    def from_json(cls, name, json_str):
+        json_dict = json.loads(json_str)
+        return TestConfig(name, **json_dict)
+
+    def to_json(self):
+        return json.dumps(self.params)
+
+    def __iter__(self):
+        self._idx = 0
+        return self
+
+    def __next__(self) -> object:
+        param = None
+
+        if self._idx < len(self.params):
+            param = list(self.params.values())[self._idx]
+            self._idx += 1
         else:
             raise StopIteration
 
-    def set_result(self, para, val_seq):
+        return param        
 
-        self._result_dict[para] = val_seq
-
-    def get_values(self, para_name):
-
-        return self._result_dict[para_name]
-
-    def to_dict(self) -> dict:
-        dict_ = {}
-        for k, v in self._result_dict.items():
-            dict_[k]  = v.tolist()[0] # get the row 1 for 1d list
-            
-        return dict_
-    def from_dict(self, dict_:dict):
-        self._result_dict.clear()
-
-        for k, v in dict_.items():
-            self._result_dict[k] = np.array(v)
-
-class TestDataItem(object):
-
-    def __init__(self, cfg : TestConfig):
-
-        self.cfg = cfg
-
-        self._para_des, self._para_odes = cfg.gen_design_param()
-
-        self._result = TestResult(cfg.name, self._para_des)
-
-    @property
-    def para_des(self):
-        """The para_des property."""
-        return self._para_des
-
-    @property
-    def para_odes(self):
-        """The para_odes property."""
-        return self._para_odes
-
-    @property
-    def name(self):
-        """The name property."""
-        return self.cfg.name
-    @name.setter
-    def name(self, value):
-        self.cfg.name = value
-
-    @property
-    def result(self) -> TestResult:
-        """The result property."""
-        return self._result
-
-    @result.setter
-    def result(self, value: TestResult):
-        self._result = value
-
-    def gen_sim_param(self):
-        # set up on design parameters
-        (hot, cold) = (StreamType.Hot, StreamType.Cold)
-        para_dict = {}
-
-        para = self.para_des
-        para_dict["N_ch"] = para.N_ch
-
-        para_dict["T_cold_in"] = para.T[cold]
-        para_dict["p_cold_in"] = para.p[cold]
-
-        para_dict["T_hot_in"] = para.T[hot]
-        para_dict["p_hot_in"] = para.p[hot]
-
-        para_dict["phi"] = para.phi
-        para_dict["pitch"] = para.pitch
-        para_dict["d_c"] = para.d_c
-        para_dict["length_cell"] = para.len_seg       
-
-        # set up off design parameters
-        para = self.para_odes
-        para_dict["Re_hot_start"] = para.Re[hot]
-        para_dict["Re_cold_start"] = para.Re[cold]
-        
-        para_dict["mdot_hot"] = para.mdot[hot]
-        para_dict["mdot_cold"] = para.mdot[cold]
-
+    def gen_params(self) -> list:
         params = []
-
-        for k, v in para_dict.items():
+        for (k, v) in self.params.items():
             params.append("{0}={1}".format(k, str(v)))
+        
+        return params
+    
+    def to_dict(self) -> dict:
+        return deepcopy(self.params)    
 
-        return params        
+class TestItem:
+    def __init__(self, name, cfg:dict, result:dict):
+        self.name = name
+        self.cfg = TestConfig(name, cfg)
+        self.result = TestResult(name, result)
 
+    @classmethod
+    def from_json(cls, name, json_str):
+        json_dict = json.loads(json_str)
+        return cls(name, **json_dict)
+
+    def to_dict(self):
+        d = {}
+        d['cfg'] = self.cfg.to_dict()
+        d['result'] = self.result.to_dict()
+        return d
+
+class TestGroup(dict):
+    def __init__(self, name:str, tests:dict):
+        self.name = name
+        self.tests = OrderedDict()
+        self._idx = 0
+        for (k,v) in tests.items():
+            self.tests[k] = TestItem(k, **v)
+
+    @classmethod
+    def from_json(cls, name, json_str):
+        json_dict = json.loads(json_str)
+        return cls(name, json_dict)
+    
+    def to_dict(self) -> dict:
+        d = {}
+        for (k, v) in self.tests.items():
+            d[k] = v.to_dict()
+        return d
+
+    def __iter__(self):
+        self._idx = 0
+        return self
+
+    def __next__(self) -> TestItem:
+
+        item = None
+
+        if self._idx < len(self.tests):
+            item = list(self.tests.values())[self._idx]
+            self._idx += 1
+        else:
+            raise StopIteration
+
+        return item
 class TestDataSet(dict):
     """
     TestDataSet
@@ -674,88 +324,45 @@ class TestDataSet(dict):
     each TestDataGroup contains a group of TestData obtained by applying a set of varied tests params,
     each TestDataItem i contains one TestConfig and one TestResult for Test i.      
     """
-
-    def __init__(self, cfg: TestConfig, name = dt.now().strftime("Test_%Y_%m_%d_%H_%M_%S")):
-        super().__init__()
-        
+    def __init__(self, name, groups:dict):
         self.name = name
-        if cfg == None:
-            raise ValueError("None value for test config")
-
-        self.cfg_ref:TestConfig = cfg
-
-        self.test_items = []
-
+        self.groups = OrderedDict()
         self._idx = 0
-        
-        self.test_groups = {}
 
-    def add_para_group(self, group : ParamGroup):
-        name_group = group.name
-
-        if name_group in self.test_groups:
-            print (' Test group with name={0} exsits already'.format(name_group))
-            return
-
-        self.test_groups[name_group] = group
-
-        if not group.enable:
-            # ignore unable cfg
-            return 
-
-        # generate test item for this group of tests
-
-        cfg_ref:TestConfig = self.cfg_ref
-
-        for para in group.paras.values():
-            clone = deepcopy(cfg_ref)
-
-            clone.group_name = name_group
-
-            clone.name = para.name
-
-            for k in para:
-                clone[k] = para[k]
-
-            self.test_items.append(TestDataItem(cfg=clone))
-
-    def remove_para_group(self, name):
-
-        if name in self.test_groups:
-            g = self.test_groups[name]
-            to_move = []
-            # remove related tests
-            for test in self.test_items:
-                if test.cfg.group_name == g.name:
-                    to_move.append(test)
-
-            for test in to_move:
-                self.test_items.remove(test)
-
-            self.test_groups[name] = None
-            return 
-
-        return None
-
-    def addTestDataItem(self, item: TestDataItem):
-        
-        self.test_items.append(item)
+        for (k,v) in groups.items():
+            self.groups[k] = TestGroup(k, v)
+        # map(lambda (k,v): TestItem.from_json(k, v), tests)
 
     def __iter__(self):
         self._idx = 0
         return self
 
-    def __next__(self) -> TestDataItem:
+    def __next__(self) -> TestGroup:
 
         item = None
-
-        if self._idx < len(self.test_items):
-            item = self.test_items[self._idx]
+        if self._idx < len(self.groups):
+            item = list(self.groups.values())[self._idx]
             self._idx += 1
         else:
             raise StopIteration
 
         return item
+
+    @classmethod
+    def from_json(cls, name, json_str):
+        json_dict = json.loads(json_str)
+        return cls(name, json_dict)
+
+    def to_dict(self):
+        d = {}
+        for (k, v) in self.groups.items():
+            d[k] = v.to_dict()
+        return d
+
+    def to_json(self):
+        d = self.to_dict()
+        return json.dumps(d, indent=2)
+
 
 col_start = TestConstants.DATA_FILE_COL_START
 
@@ -768,12 +375,9 @@ def save_test(ds_test: TestDataSet):
     wbs = {}
 
     try:
-        for test in ds_test:
+        for group in ds_test:
             # prepare workbook and sheet
-            result = test.result
-            cfg = test.cfg
-            gname = cfg.group_name
-
+            gname = group.name
             if gname in wbs:
                 wbk = wbs[gname]
                 wbk.activate()                
@@ -781,24 +385,29 @@ def save_test(ds_test: TestDataSet):
                 wbk = app.books.add()
                 wbs[gname] = wbk
 
-            # generate mock results
-            for para in result:
-                result.set_result(para, np.random.rand(1, result_len))
+            for test in group:
+                result = test.result
+                cfg = test.cfg                
+                test_name = test.name
 
-            sht =  wbk.sheets.add(name = cfg.name[0:30]) # max lenth for a sheet name
-            # sht =  wbk.sheets.add()
-            (u, l) = (1, col_start)
+                # generate mock results
+                # for para in result:
+                    # result.set_result(para, np.random.rand(1, result_len))
 
-            ex_helper = ExcelHelper(sht)
-            
-            (b, r) = ex_helper.write_table(test.cfg.to_dict(), title={"table 1": "Config"}, up=u, left=l, linespacing=True)
+                sht =  wbk.sheets.add(name = test.name[0:30]) # max lenth for a sheet name
+                # sht =  wbk.sheets.add()
+                (u, l) = (1, col_start)
 
-            (b, r) = ex_helper.write_table(result.to_dict(), title={"table 2": "Result"}, up=b, left = l, linespacing=True)
+                ex_helper = ExcelHelper(sht)
+                
+                (b, r) = ex_helper.write_table(cfg.params, title={"table 1": "Config"}, up=u, left=l, linespacing=True)
 
-            # sht:xw.Sheet = wbk.sheets['Sheet1']
-            # sht.delete()
-            wbk.save( dt.now().strftime("Test_{0}_%Y_%m_%d_%H_%M_%S.xlsx".format(gname)))
-            # wbk.close()
+                (b, r) = ex_helper.write_table(result.to_dict(), title={"table 2": "Result"}, up=b, left = l, linespacing=True)
+
+                # sht:xw.Sheet = wbk.sheets['Sheet1']
+                # sht.delete()
+                wbk.save( dt.now().strftime("Test_{0}_%Y_%m_%d_%H_%M_%S.xlsx".format(gname)))
+                # wbk.close()
 
     finally:
         app.quit()

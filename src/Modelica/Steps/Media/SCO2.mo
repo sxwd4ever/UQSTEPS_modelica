@@ -79,7 +79,20 @@ package SCO2 "supercritical CO2"
       meltingPoint=  CO2Constants.meltingPoint,
       normalBoilingPoint=  CO2Constants.normalBoilingPoint,
       dipoleMoment=  CO2Constants.dipoleMoment); 	  
-  
+
+  redeclare replaceable function setState_pT
+    "Return thermodynamic state record from p and T"
+    extends Modelica.Icons.Function;
+    input AbsolutePressure p "pressure";
+    input Temperature T "temperature";
+    input FixedPhase phase = 1
+      "2 for two-phase, 1 for one-phase, 0 if not known";
+    output ThermodynamicState state;
+  external "C" TwoPhaseMedium_setState_pT_C_impl(p, T, state, mediumName, libraryName, substanceName)
+    annotation(Include="#include \"externalmedialib.h\"", Library="ExternalMediaLib", IncludeDirectory="modelica://ExternalMedia/Resources/Include", LibraryDirectory="modelica://ExternalMedia/Resources/Library");
+  end setState_pT;
+
+  /*
   redeclare replaceable function setState_pT
     "Return thermodynamic state record from p and T"
     extends Modelica.Icons.Function;
@@ -106,5 +119,5 @@ package SCO2 "supercritical CO2"
   external "C" TwoPhaseMedium_setState_pT_C_impl(p, T, state, mediumName, libraryName, substanceName)
     annotation(Include="#include \"externalmedialib.h\"", Library="ExternalMediaLib", IncludeDirectory="modelica://ExternalMedia/Resources/Include", LibraryDirectory="modelica://ExternalMedia/Resources/Library");
   end setState_pT_lib;
-     
+  */   
 end SCO2;
