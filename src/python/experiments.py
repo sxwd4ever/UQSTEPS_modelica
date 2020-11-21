@@ -10,6 +10,7 @@ import pandas as pd
 import xlwings as xw
 
 from os import path,sep
+import os
 import numpy as np
 
 # from ex.CoolPropQuery import result
@@ -100,12 +101,15 @@ class Experiments(object):
 
     def simulate(self, sim_ops, solution_names, ds_test:TestDataSet):        
         
+        print(f'loading model{self.model_name}...\n')        
         self.model = ModelicaSystem(sep.join([self.path_model,"package.mo"]), self.model_name,self.modelica_libs) 
+        print(f'model{self.model_name}loaded, prepare to simulate\n')
 
         # options for simulation - steady state simulation, no iteration required, so set numberOfIntervals = 2 
 
         for group in ds_test:
             for test in group:
+                print(f' ready to run test={test.name} in group={group.name}\n')
                 self.model.setParameters(test.cfg.gen_params())
                 self.model.setSimulationOptions(sim_ops)
                 self.model.simulate()
@@ -113,37 +117,52 @@ class Experiments(object):
 
                 test.result = TestResult.from_keyvalues(solution_names, solutions) 
         
- 
-
-        # for test in ds_test:
-        #     cfg = test.cfg
-        #     print('prepare to simulate:' + cfg.full_name)
-        #     mod.setParameters(test.gen_sim_param())
-
-        #     mod.simulate()
-
-        #     print('simulation {0} done, retrieving result'.format(cfg.full_name))
-        #     result = test.result
-
-        #     # collect data in solutions
-        #     for sol_key in result:
-        #         sol = mod.getSolutions(sol_key)                    
-        #         if not sol is None:
-        #             result.set_result(sol_key, sol)                        
-        #         else:
-        #             print("solution with key = {0} not exsits".format(sol_key))
-
-        #     # result.update_cal_columns()
-
-        # print('all simulation(s) done, save result next')   
-
-        # self.save_results(ds_test)    
+        print('all simulation(s) done, results saved in Test Data Set')        
 
     def save_results(self, ds_test : TestDataSet):
         '''
         save the simulation result into files    
         '''
-        pass                                  
+        # create directory for current test batch
+        name_batch = path.join(self.path_out, ds_test.name)
+
+        xw_app: xw.App = xw.App(visible=False)
+        wbs = {} # set of names of workbook
+
+        try:
+
+            if not os.path.exists(name_batch):
+                os.mkdir(name_batch)        
+
+            for group in ds_test:                
+                gname = group.name
+                filename = os.path.join(name_batch, gname + '.xlsx')
+                
+                if gname not in wbs:
+                    wbk = xw_app.books.add()                                     
+                    wbs[gname] = wbk.name
+                else:
+                    wbk = xw.Book(filename)
+
+                for test in group:
+                    cfg = test.cfg
+                    sht = wbk.sheets.add(name = cfg.name[0:30]) # 30 - max lenth for a sheet name
+
+                    ex: ExcelHelper = ExcelHelper(sht)
+                    u, l = 1, TestConstants.DATA_FILE_COL_START
+                    title = {"Table 1": "Test Config"}
+
+                    # config
+                    (b, r) = ex.write_table(cfg.to_dict(), title=title, up=u, left=l, linespacing=True)
+
+                    title = {"Table 2": "Results"}
+                    (b, r) = ex.write_table(test.result.to_dict(), title=title, up=b, left=l, linespacing=True)
+
+                    wbk.save(filename)
+                    # wbk.close()
+
+        finally:
+            xw_app.quit() # close the xlwings app finally                                     
 
     def load_result(self, test_name) -> TestDataSet:
         '''

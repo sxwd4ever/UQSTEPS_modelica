@@ -1,7 +1,8 @@
 {
     "python.pythonPath": "C:\\Users\\uqxsui\\AppData\\Local\\Continuum\\anaconda3\\envs\\steps\\python.exe",
     "python.analysis.extraPaths": [
-        "scripts"
+        "scripts",
+        "."
     ],
     "files.associations": {
         "memory": "cpp",
