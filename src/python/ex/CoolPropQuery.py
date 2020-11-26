@@ -45,14 +45,24 @@ from math import sin
 # print("result=" + str(result))
 
 # 2e7,  1.01549e6
-result = CP.CoolProp.PropsSI("S", "P", 2e7, 'H', 1.26204e6, 'CO2')
+# result = CP.CoolProp.PropsSI("S", "P", 2e7, 'H', 1.26204e6, 'CO2')
+# print("result=" + str(result))
+
+# result = CP.CoolProp.PropsSI("H", "P", 9e6, 'S', result, 'CO2')
+# print("result=" + str(result))
+
+# result = CP.CoolProp.PropsSI("T", "P", 9e6, 'H', 1.23596e6, 'CO2') - 273.15
+# print("result=" + str(result))
+
+result = PropsSI("H", "P",20e6, "T" , 273.15 + 162.144, 'CO2')
 print("result=" + str(result))
 
-result = CP.CoolProp.PropsSI("H", "P", 9e6, 'S', result, 'CO2')
-print("result=" + str(result))
+result2 = PropsSI("H", "P",20e6, "T" , 273.15 + 85.8433, 'CO2')
+print("result=" + str(result2))
 
-result = CP.CoolProp.PropsSI("T", "P", 9e6, 'H', 1.23596e6, 'CO2') - 273.15
-print("result=" + str(result))
+P = (result - result2) * 83.75
+print(f'Power={P}')
+
 
 # calculate the eta of Compressor of 'D:\sxwd\Projects\UQ\2019.10.01 Thermal Cycle Simulation\doc\UQMECH05_99_CL02_B 1 MW Power Block (RCBC)_2.pdf' 
 # h_in = 309.42e3

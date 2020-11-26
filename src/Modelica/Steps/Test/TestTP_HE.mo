@@ -19,18 +19,26 @@ model TestTP_HE
   package medium_hot = Steps.Media.SCO2;//ExternalMedia.Examples.CO2CoolProp;
   package medium_cold = Steps.Media.SCO2;//ExternalMedia.Examples.CO2CoolProp;    
   
-  parameter Model.PBConfiguration cfg_default( 
-  mdot_heater = 55,
-  T_heater_hot_in = from_degC(800),
-  T_heater_hot_out = from_degC(600),
-  r_i_h = 6e-3,
-  r_t_h = cfg_default.r_i_h + 2e-3,
-  r_o_h = cfg_default.r_t_h + 10e-3,
+  parameter Model.PBConfiguration cfg_tune( 
+  //mdot_heater = 40,
+  //T_heater_hot_in = from_degC(800),
+  //T_heater_hot_out = from_degC(600),
+  r_i_h = 20e-3,
+  r_t_h = cfg_tune.r_i_h + 10e-3,
+  r_o_h = 1/2, // agree with the final parameter Dhyd = 1 in HE, should be checked to see if it is capable of containing all fluid-metal tubes
   N_ch_h = 100,
   L_h = 1); 
+  
+  parameter Model.PBConfiguration cfg_test( 
+  mdot_main = 93.75,
+  mdot_heater = 55,
+  T_heater_hot_in = from_degC(550),
+  L_h = 1); 
+  
+  parameter Model.PBConfiguration cfg_default;
     
   // select the configuration of parameters
-  parameter Model.PBConfiguration cfg = cfg_default;
+  parameter Model.PBConfiguration cfg = cfg_tune;
   
   // set the values of parameters accordingly
   parameter HEBoundaryCondition bc_heater = cfg.bc_heater;
@@ -87,7 +95,7 @@ model TestTP_HE
     redeclare package FluidMedium = medium_heater, 
     redeclare package FlueGasMedium = medium_cold, 
     fluidFlow(fixedMassFlowSimplified = true, hstartin = bc_heater.st_hot_in.h, hstartout=bc_heater.st_hot_out.h), // set the fluid flow as fixed mdot for simplarity
-    gasFlow(QuasiStatic = true),
+    gasFlow(QuasiStatic = true, Tstartin = bc_heater.st_cold_in.T, Tstartout = bc_heater.st_cold_out.T),
     N_G=geo_heater_cold.N_seg,
     N_F=geo_heater_hot.N_seg,
     Nw_G=geo_heater_tube.N_seg,
@@ -101,7 +109,7 @@ model TestTP_HE
     gasVol=geo_heater_cold.V,
     fluidVol=geo_heater_hot.V,
     metalVol=geo_heater_tube.V,
-    SSInit=false,
+    SSInit=true,
     rhomcm=thermo_heater.rho_mcm,
     lambda=thermo_heater.lambda,
     Tstartbar_G=bc_heater.st_cold_in.T,
@@ -126,7 +134,12 @@ model TestTP_HE
     Placement(transformation(extent = {{30, -6}, {50, 14}}, rotation = 0)));
   ThermoPower.Gas.SensT T_gasOut(redeclare package Medium = medium_cold) annotation(
     Placement(transformation(extent = {{30, -6}, {50, 14}}, rotation = 0)));
- initial equation
+  
+  // variable for validation
+  Modelica.SIunits.Power Q_out = (hE.gasIn.h_outflow - hE.gasOut.h_outflow) * hE.gasIn.m_flow; 
+  Modelica.SIunits.Power Q_in = (hE.waterOut.h_outflow - hE.waterIn.h_outflow) * hE.waterIn.m_flow;
+  Boolean isQMatch = abs(Q_out -Q_in) < 1e-3;
+initial equation
 //hstart_F_Out = hE.waterOut.h_outflow;
 equation
   connect(source_heater_hot.flange, T_waterIn.inlet);

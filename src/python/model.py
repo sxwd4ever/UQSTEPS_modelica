@@ -156,6 +156,22 @@ class TestConstants(object):
     # column start index in the data storage file
     DATA_FILE_COL_START = 2 
        
+class Variable(object):
+    '''
+    definition of a variable in simulation
+    simulation result is a collection of variables 
+    '''
+    def __init__(self, key, unit='[1]', val=0.0, text=None):
+        self.key = key
+        self.unit = unit
+        self.val = val
+        self.text = key if text == None else text
+
+    def __str__(self):
+        return f'{self.val}'
+
+    def __repr__(self):
+        return f'{self.text}={self.val} [{self.unit}]'
 
 class TestResult(dict):
     """
@@ -166,26 +182,31 @@ class TestResult(dict):
     The result can be saved into an excel file or loaded accordingly. 
     Test config that generates each individual result will be saved as well
     """
-    def __init__(self, name, results:dict):
+    def __init__(self, name, results:Dict[str, Variable]):
         self._idx = 0        
         self.name = name
         self.results = results 
     
     @classmethod
-    def from_keyvalues(cls ,keys:list, values:list):
+    def from_keyvalues(cls, sol_dict:Dict[str, Variable], values:list):
         """
         :name of this Test Run (parameter sweep)
         """
-        results = OrderedDict()
+        keys = list(sol_dict.keys())
+        d = OrderedDict() # a copy of values
 
        # collect data in solutions
         for i in range(len(keys)):
+            key = keys[i]
             sol = values[i]
+            var = sol_dict[key]
             if not sol is None:
-                # for now, save the first val
-                results[keys[i]] = values[i][0]  
+                # copy the sol_dict
+                # for now, save the last val, which is the value when system
+                # achive equilibrium
+                d[key] = Variable(var.key, var.unit, sol[-1], var.text)
 
-        return cls("", results)
+        return cls("", d)
    
     def __iter__(self):        
         self._idx = 0
@@ -202,7 +223,10 @@ class TestResult(dict):
             raise StopIteration   
 
     def to_dict(self) -> dict:
-        return deepcopy(self.results)
+        d = OrderedDict()
+        for var_ in self.results.values():
+            d[var_.key] = var_
+        return d
 
 class TestConfig(dict):
     def __init__(self, name, params:dict):

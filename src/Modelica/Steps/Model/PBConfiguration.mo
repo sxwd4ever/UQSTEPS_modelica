@@ -176,49 +176,92 @@ model PBConfiguration
   
   // test configuration for hot/cold/tube side of heatexchanger
   
-  // HTR's's size of heat exchanger
-  parameter Modelica.SIunits.Radius r_i_HTR = 1e-3 "mm tube's internal radius";
-  parameter Modelica.SIunits.Radius r_t_HTR = 2e-3 "tube's external radius";   
-  parameter Modelica.SIunits.Radius r_o_HTR = 3e-3 "radius of external side of heat exchanger"; 
+  // HTR's's size of heat exchanger gas - gas
+  // N_ch_HTR groups of fluid(cold, inner)-tube-gas(hot, outter) tubes 
+  parameter Modelica.SIunits.Radius r_i_HTR = 5e-3 "mm tube's internal radius";
+  parameter Modelica.SIunits.Radius r_t_HTR = 10e-3 "tube's external radius";   
+  parameter Modelica.SIunits.Radius r_o_HTR = 40e-3 "radius of external side of heat exchanger"; 
   parameter Integer N_ch_HTR = 400;
-  parameter Modelica.SIunits.Length L_HTR = 11.5 "m";  
+  parameter Modelica.SIunits.Length L_HTR = 1 "m";  
   
-  parameter EntityConfig cfg_HTR_hot(
-    geo(V = r_i_HTR^2 * pi * L_HTR * N_ch_HTR, A_ex = 2 * pi * r_i_HTR * L_HTR * N_ch_HTR, L = L_HTR, d = 2 * r_i_HTR, N_seg = 7, N_ch = N_ch_HTR),
-    thermo(gamma_he = 3.96538615e6/cfg_HTR_hot.geo.A_ex "200")
-  );
-  
+  // In following calculation, V, A_ex are account for single tube/channel, not for total
+  // check the Calculation in ThemoPower.PowerPlants.HRSG.Components.HE to understand the meaning of 
+  // exsurface_G/F and extSurfaceTub, *Vol     
   parameter EntityConfig cfg_HTR_cold(
-    geo(V = r_o_HTR^2 * pi * L_HTR * N_ch_HTR, A_ex = 2 * pi * r_o_HTR * L_HTR * N_ch_HTR, L = L_HTR, d = 2 * r_o_HTR, N_seg = 7, N_ch = N_ch_HTR),
+    geo(
+    V = r_i_HTR^2 * pi * L_HTR, // * N_ch_LTR, 
+    A_ex = 2 * pi * r_i_HTR * L_HTR, // * N_ch_LTR, exchange surface between fluid-tube
+    L = L_HTR, 
+    d = 2 * r_i_HTR, 
+    N_seg = 7, 
+    N_ch = N_ch_HTR),
     thermo(gamma_he = 3.96538615e6/cfg_HTR_cold.geo.A_ex "200")
   );
   
   parameter EntityConfig cfg_HTR_tube(
-    geo(V = r_t_HTR^2 * pi * L_HTR * N_ch_HTR, A_ex = 2 * pi * r_t_HTR * L_HTR * N_ch_HTR, L = L_HTR, d = 2 * r_t_HTR, N_seg = 6, N_ch = N_ch_HTR),
+    geo(
+    V = r_t_HTR^2 * pi * L_HTR - cfg_HTR_cold.geo.V, //r_t_HTR^2 * pi * L_HTR * N_ch_HTR - cfg_HTR_cold.geo.V,
+    A_ex = 2 * pi * r_t_HTR * L_HTR, //  * N_ch_HTR, // assume thickness of tube approximately 0
+    L = L_HTR, 
+    d = 2 * r_t_HTR, 
+    N_seg = 6, 
+    N_ch = N_ch_HTR),
     thermo(rho_mcm = 7900 * 578.05, lambda = 20)
   ); 
   
-  // LTR's's size of heat exchanger
-  parameter Modelica.SIunits.Radius r_i_LTR = 1e-3 "mm tube's internal radius";
-  parameter Modelica.SIunits.Radius r_t_LTR = 2e-3 "tube's external radius";   
-  parameter Modelica.SIunits.Radius r_o_LTR = 3e-3 "radius of external side of heat exchanger"; 
+  parameter EntityConfig cfg_HTR_hot(
+    geo(
+    V = r_o_HTR^2 * pi * L_HTR - cfg_HTR_tube.geo.V, // r_o_HTR^2 * pi * L_HTR * N_ch_HTR - cfg_HTR_tube.geo.V , 
+    A_ex = 2 * pi * r_o_HTR * L_HTR, // * N_ch_HTR, 
+    L = L_HTR, 
+    d = 2 * r_o_HTR, 
+    N_seg = 7, 
+    N_ch = N_ch_HTR),
+    thermo(gamma_he = 3.96538615e6/cfg_HTR_hot.geo.A_ex "200")
+  );  
+  
+  // LTR's's size of heat exchanger gas - gas
+  // N_ch_LTR groups of fluid(cold, inner)-tube-gas(hot, outter) tubes 
+  parameter Modelica.SIunits.Radius r_i_LTR = 100e-3 "mm tube's internal radius";
+  parameter Modelica.SIunits.Radius r_t_LTR = 110e-3 "tube's external radius";   
+  parameter Modelica.SIunits.Radius r_o_LTR = 170e-3 "radius of external side of one group"; 
   parameter Integer N_ch_LTR = 400;
   parameter Modelica.SIunits.Length L_LTR = 1 "m";  
-  
-  parameter EntityConfig cfg_LTR_hot(
-    geo(V = r_i_LTR^2 * pi * L_LTR * N_ch_LTR, A_ex = 2 * pi * r_i_LTR * L_LTR * N_ch_LTR, L = L_LTR, d = 2 * r_i_LTR, N_seg = 7, N_ch = N_ch_LTR),
-    thermo(gamma_he = 1.938761018e6/cfg_LTR_hot.geo.A_ex "200")
-  );
-  
+  // In following calculation, V, A_ex are account for single tube/channel, not for total
+  // check the Calculation in ThemoPower.PowerPlants.HRSG.Components.HE to understand the meaning of 
+  // exsurface_G/F and extSurfaceTub, *Vol 
   parameter EntityConfig cfg_LTR_cold(
-    geo(V = r_o_LTR^2 * pi * L_LTR * N_ch_LTR, A_ex = 2 * pi * r_o_LTR * L_LTR * N_ch_LTR, L = L_LTR, d = 2 * r_o_LTR, N_seg = 7, N_ch = N_ch_LTR),
+    geo(
+    V = r_i_LTR^2 * pi * L_LTR, // * N_ch_LTR, 
+    A_ex = 2 * pi * r_i_LTR * L_LTR, // * N_ch_LTR, exchange surface between fluid-tube
+    L = L_LTR, 
+    d = 2 * r_i_LTR, 
+    N_seg = 7, 
+    N_ch = N_ch_LTR),
     thermo(gamma_he = 1.938761018e6/cfg_LTR_cold.geo.A_ex "200")
   );
   
   parameter EntityConfig cfg_LTR_tube(
-    geo(V = r_t_LTR^2 * pi * L_LTR * N_ch_LTR, A_ex = 2 * pi * r_t_LTR * L_LTR * N_ch_LTR, L = L_LTR, d = 2 * r_t_LTR, N_seg = 6, N_ch = N_ch_LTR),
+    geo(
+    V = r_t_LTR^2 * pi * L_LTR - cfg_LTR_cold.geo.V,  //r_t_LTR^2 * pi * L_LTR * N_ch_LTR - cfg_LTR_cold.geo.V, 
+    A_ex = 2 * pi * r_t_LTR * L_LTR, // * N_ch_LTR, // assume thickness of tube approximately 0
+    L = L_LTR, 
+    d = 2 * r_t_LTR, 
+    N_seg = 6, 
+    N_ch = N_ch_LTR),
     thermo(rho_mcm = 7900 * 578.05, lambda = 20)
   );   
+  
+  parameter EntityConfig cfg_LTR_hot(
+    geo(
+    V = r_o_LTR^2 * pi * L_LTR - cfg_LTR_tube.geo.V, //r_o_LTR^2 * pi * L_LTR * N_ch_LTR - cfg_LTR_tube.geo.V, 
+    A_ex = 2 * pi * r_o_LTR * L_LTR, // * N_ch_LTR, 
+    L = L_LTR, 
+    d = 2 * r_o_LTR, 
+    N_seg = 7, 
+    N_ch = N_ch_LTR),
+    thermo(gamma_he = 1.938761018e6/cfg_LTR_hot.geo.A_ex "200")
+  );
   
   parameter EntityConfig cfg_mixer(
     geo(V = 3, A_ex = 1),
@@ -226,54 +269,92 @@ model PBConfiguration
   );
      
   // heater's size of heat exchanger
-  parameter Modelica.SIunits.Radius r_i_h = 6e-3 "mm tube's internal radius";
-  parameter Modelica.SIunits.Radius r_t_h = 8e-3 "tube's external radius";   
-  parameter Modelica.SIunits.Radius r_o_h = 18e-3 "radius of external side of heat exchanger"; 
+  // N_ch groups of fluid(hot, inner)-tube vs 1 gas(cold, outter) tube  
+  parameter Modelica.SIunits.Radius r_i_h = 20e-3 "mm tube's internal radius";
+  parameter Modelica.SIunits.Radius r_t_h = 30e-3 "tube's external radius";   
+  parameter Modelica.SIunits.Radius r_o_h = 500e-3 "radius of external side of heat exchanger"; 
   parameter Integer N_ch_h = 100;
   parameter Modelica.SIunits.Length L_h = 1 "m"; 
   
   // cfg for heater's hot/fluid side
   parameter EntityConfig cfg_heater_hot(
-    geo(V = r_i_h^2 * pi * L_h * N_ch_h, A_ex = 2 * pi * r_i_h * L_h * N_ch_h, L = L_h, d = 2 * r_i_h, N_seg = 7, N_ch = N_ch_h),
+    geo(
+    V = r_i_h^2 * pi * L_h, 
+    A_ex = 2 * pi * r_i_h * L_h, 
+    L = L_h, 
+    d = 2 * r_i_h, 
+    N_seg = 7, 
+    N_ch = 1),
     thermo(gamma_he = 200 "4000")
   );
-  
+    
   // cfg for heater's cold/fluid side
   parameter EntityConfig cfg_heater_cold(
-    geo(V = r_o_h^2 * pi * L_h * N_ch_h, A_ex = 2 * pi * r_o_h * L_h * N_ch_h, L = L_h, d = 2 * r_o_h, N_seg = 7, N_ch = N_ch_h),
+    geo(
+    V = r_o_h^2 * pi * L_h, 
+    A_ex = 2 * pi * r_o_h * L_h, 
+    L = L_h, 
+    d = 2 * r_o_h, 
+    N_seg = 7, 
+    N_ch = N_ch_h),
     thermo(gamma_he = 200 "4000")
   );
   
   // cfg for heater's tube
   parameter EntityConfig cfg_heater_tube(
-    geo(V = r_t_h^2 * pi * L_h * N_ch_h, A_ex = 2 * pi * r_t_h * L_h * N_ch_h, L = L_h, d = 2 * r_t_h, N_seg = 6, N_ch = N_ch_h),
+    geo(
+    V = r_t_h^2 * pi * L_h, 
+    A_ex = 2 * pi * r_t_h * L_h, 
+    L = L_h, 
+    d = 2 * r_t_h, 
+    N_seg = 6, 
+    N_ch = N_ch_h),
     thermo(rho_mcm = 7900 * 578.05, lambda = 20)
   );   
   
-  // cooler's size of heat exchanger
+  // cooler's size of heat exchanger  
+  // N_ch groups of fluid(cold, inner)-tube vs 1 gas(hot, outter) tube  
   parameter Modelica.SIunits.Radius r_i_c = 10e-3 "mm, tube's internal radius(single tube)";
   parameter Modelica.SIunits.Radius r_t_c = 15e-3 "tube's external radius(single tube)";   
-  parameter Modelica.SIunits.Radius r_o_c = 35e-3 "radius of external side of heat exchanger"; 
+  parameter Modelica.SIunits.Radius r_o_c = 500e-3 "radius of external side of heat exchanger"; 
   parameter Integer N_ch_c = 100;
   parameter Modelica.SIunits.Length L_c = 1 "m length of the tube/cooler";  
-  
-  // cfg for cooler's hot/fluid side
-  parameter EntityConfig cfg_cooler_hot(
-    geo(V = r_i_c^2 * pi * L_c * N_ch_c, A_ex = 2 * pi * r_i_c * L_c * N_ch_c, L = L_c, d = 2 * r_i_c, N_ch = N_ch_c, N_seg = 7),
-    thermo(gamma_he = 200 "4000")
-  );
-  
+    
   // cfg for heater's cold/fluid side
   parameter EntityConfig cfg_cooler_cold(
-    geo(V = r_o_c^2 * pi * L_c * N_ch_c, A_ex = 2 * pi * r_o_c * L_c * N_ch_c, L = L_c, d = 2 * r_o_c, N_ch = N_ch_c, N_seg = 7),
+    geo(
+    V = r_i_c^2 * pi * L_c, 
+    A_ex = 2 * pi * r_i_c * L_c, 
+    L = L_c, 
+    d = 2 * r_o_c, 
+    N_ch = N_ch_c, 
+    N_seg = 7),
     thermo(gamma_he = 200)
   );
   
   // cfg for heater's tube
   parameter EntityConfig cfg_cooler_tube(
-    geo(V =  r_t_c^2 * pi * L_c * N_ch_c, A_ex = 2 * pi * r_t_c * L_c * N_ch_c, L = L_c, d = 2 * r_t_c, N_ch = N_ch_c, N_seg = 6),
+    geo(
+    V =  r_t_c^2 * pi * L_c, 
+    A_ex = 2 * pi * r_t_c * L_c, 
+    L = L_c, 
+    d = 2 * r_t_c, 
+    N_ch = N_ch_c, 
+    N_seg = 6),
     thermo(rho_mcm = 7900 * 578.05, lambda = 20)
   );   
+  
+  // cfg for cooler's hot/fluid side
+  parameter EntityConfig cfg_cooler_hot(
+    geo(
+    V = r_o_c^2 * pi * L_c, 
+    A_ex = 2 * pi * r_o_c * L_c, 
+    L = L_c, 
+    d = 2 * r_i_c,
+    N_ch = N_ch_c, 
+    N_seg = 7),
+    thermo(gamma_he = 200 "4000")
+  );  
   
   // default sim parameters, 'slow' in solution finding with high accuracy, faster for PB's convergence 
   parameter SimParam sim_param_def(err=5e-4, delta_T_init = 5, N_iter = 20, step_rel=0.13, log_level = 4);

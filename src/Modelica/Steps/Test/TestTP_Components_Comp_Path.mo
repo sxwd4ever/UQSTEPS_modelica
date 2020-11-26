@@ -92,6 +92,7 @@ import Modelica.SIunits.Conversions.{from_degC, from_deg};
     redeclare package FluidMedium = medium_cooler, 
     redeclare package FlueGasMedium = medium_hot, 
     fluidFlow(fixedMassFlowSimplified = true, hstartin = bc_cooler.st_cold_in.h, hstartout=bc_cooler.st_cold_out.h), // set the fluid flow as fixed mdot for simplarity
+    gasFlow(QuasiStatic = true,Tstartin = bc_cooler.st_hot_in.T, Tstartout = bc_cooler.st_hot_out.T),
     N_G=geo_hot.N_seg,
     N_F=geo_cold.N_seg,
     Nw_G=geo_tube.N_seg,
@@ -105,7 +106,7 @@ import Modelica.SIunits.Conversions.{from_degC, from_deg};
     gasVol=geo_hot.V,
     fluidVol=geo_cold.V,
     metalVol=geo_tube.V,
-    SSInit=false,
+    SSInit=true,
     rhomcm=thermo_heater.rho_mcm,
     lambda=thermo_heater.lambda,
     Tstartbar_G=bc_cooler.st_hot_in.T,
@@ -115,7 +116,7 @@ import Modelica.SIunits.Conversions.{from_degC, from_deg};
     redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer, //ConstantHeatTransferCoefficientTwoGrids(gamma = thermo_hot.gamma_he),     
     redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer, //ConstantHeatTransferCoefficient(gamma =  thermo_cold.gamma_he),     
     redeclare model HeatExchangerTopology = ThermoPower.Thermal.HeatExchangerTopologies.CounterCurrentFlow,
-    metalTube(WallRes=false)) annotation(
+    metalTube(WallRes=false, Tstartbar=bc_cooler.st_hot_in.T - 50)) annotation(
     Placement(transformation(extent = {{-20, -20}, {20, 20}}, rotation = 0)));
 
   inner ThermoPower.System system(allowFlowReversal = false, initOpt=ThermoPower.Choices.Init.Options.noInit) annotation(

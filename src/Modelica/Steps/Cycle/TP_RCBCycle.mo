@@ -19,14 +19,17 @@ import Modelica.SIunits.Conversions.{from_degC,from_deg};
   package medium_cooler = ThermoPower.Water.StandardWater;
   
   // input parameters of the power block
-  parameter Modelica.SIunits.MassFlowRate mdot_main = 125 "kg/s, mass flow in the main path of PB, which follows the power demand";
+  parameter Modelica.SIunits.MassFlowRate mdot_main = 125 *0.75 "kg/s, mass flow in the main path of PB, which follows the power demand";
   parameter Modelica.SIunits.MassFlowRate mdot_heater_hot = 55 "kg/s, mass flow rate of heater's hot fluid";
-  parameter Modelica.SIunits.Temperature T_heater_hot = from_degC(800) "K, Temperature of heater's hot fluid";  
-  parameter Modelica.SIunits.Temperature T_cooler_cold = from_degC(45) "K, Temperature of cooler's cold fluid";
+  parameter Real gamma = 0.45 "split ratio, mdot_bypass/mdot_main";
+  
+  parameter Modelica.SIunits.Temperature T_heater_hot = from_degC(500) "K, Temperature of heater's hot fluid";  
+  parameter Modelica.SIunits.Temperature T_cooler_cold = from_degC(30) "K, Temperature of cooler's cold fluid";
  
   // results based on sscar's simulation for 10 Mw power block
   parameter Model.PBConfiguration cfg(
     mdot_main = mdot_main, 
+    mdot_pump = mdot_main * (1 - gamma),
     mdot_heater = mdot_heater_hot,
     T_heater_hot_in = T_heater_hot,
     T_cooler_cold_in = T_cooler_cold
@@ -74,6 +77,8 @@ import Modelica.SIunits.Conversions.{from_degC,from_deg};
   inner ThermoPower.System system(allowFlowReversal = false, initOpt=ThermoPower.Choices.Init.Options.noInit) annotation(
     Placement(transformation(extent = {{100, 80}, {120, 100}})));
 
+  // global init opition (system.initOpt) leads to order reduction error
+  // use this flag to control the initialization of all components instead. 
   parameter Boolean SSInit = false "Steady-state initialization";
  
   ThermoPower.Water.SourceMassFlow source_heater_hot(
@@ -95,7 +100,7 @@ import Modelica.SIunits.Conversions.{from_degC,from_deg};
     redeclare package FluidMedium = medium_heater, 
     redeclare package FlueGasMedium = medium_main, 
     fluidFlow(fixedMassFlowSimplified = true, hstartin = bc_heater.st_hot_in.h, hstartout=bc_heater.st_hot_out.h), // set the fluid flow as fixed mdot for simplarity
-    gasFlow(redeclare package Medium = medium_main, QuasiStatic = true),
+    gasFlow(QuasiStatic = true, Tstartin = bc_heater.st_cold_in.T, Tstartout = bc_heater.st_cold_out.T),
     N_G=geo_heater_cold.N_seg,
     N_F=geo_heater_hot.N_seg,
     Nw_G=geo_heater_tube.N_seg,
@@ -109,7 +114,7 @@ import Modelica.SIunits.Conversions.{from_degC,from_deg};
     gasVol=geo_heater_cold.V,
     fluidVol=geo_heater_hot.V,
     metalVol=geo_heater_tube.V,
-    SSInit=false,
+    SSInit=SSInit,
     rhomcm=thermo_heater_tube.rho_mcm,
     lambda=thermo_heater_tube.lambda,
     Tstartbar_G=bc_heater.st_cold_in.T,
@@ -129,13 +134,25 @@ import Modelica.SIunits.Conversions.{from_degC,from_deg};
   Components.HEG2G HTR(
     redeclare package FluidMedium = medium_main, 
     redeclare package FlueGasMedium = medium_main, 
-    redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficient(gamma = thermo_HTR_cold.gamma_he), 
+    gasFlow(QuasiStatic = true, Tstartin = bc_HTR.st_hot_in.T, Tstartout = bc_HTR.st_hot_out.T),
+    fluidFlow(Tstartin = bc_HTR.st_cold_in.T, Tstartout = bc_HTR.st_cold_out.T),  
+    redeclare replaceable model HeatTransfer_F = 
+     ThermoPower.Thermal.HeatTransferFV.FlowDependentThermalConductance(
+      UAnom = thermo_HTR_cold.gamma_he * geo_HTR_cold.A_ex * HTR.Nt,    
+      alpha = 0.8
+     ), 
+     //ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficient(gamma = thermo_HTR_cold.gamma_he), 
     // redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer,
-    redeclare replaceable model HeatTransfer_G =  ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficientTwoGrids(gamma = thermo_HTR_hot.gamma_he),
-    //redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer,
+    redeclare replaceable model HeatTransfer_G = 
+     ThermoPower.Thermal.HeatTransferFV.FlowDependentThermalConductance(
+      UAnom = thermo_HTR_hot.gamma_he * geo_HTR_hot.A_ex * HTR.Nt,    
+      alpha = 0.8
+     ), 
+     //redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer,
     redeclare model HeatExchangerTopology = ThermoPower.Thermal.HeatExchangerTopologies.CounterCurrentFlow,  
     N_F = geo_HTR_cold.N_seg, 
-    N_G = geo_HTR_hot.N_seg,     
+    N_G = geo_HTR_hot.N_seg,  
+    Nt = geo_HTR_hot.N_ch,     
     Tstartbar_G = bc_HTR.st_hot_in.T, 
     Tstartbar_F = bc_HTR.st_cold_in.T, 
     exchSurface_F = geo_HTR_cold.A_ex, 
@@ -154,20 +171,33 @@ import Modelica.SIunits.Conversions.{from_degC,from_deg};
     rhomcm = thermo_HTR_tube.rho_mcm,
     gasQuasiStatic = true,
     fluidQuasiStatic = true,
+    SSInit=SSInit,
     metalTube(WallRes=false, Tstartbar=HTR.Tstartbar_M)) annotation(
     Placement(visible = true, transformation(origin = {-21, 33}, extent = {{-7, -7}, {7, 7}}, rotation = 0)));
     
   Components.HEG2G LTR(
     redeclare package FluidMedium = medium_main, 
     redeclare package FlueGasMedium = medium_main, 
+    gasFlow(QuasiStatic = true, Tstartin = bc_LTR.st_hot_in.T, Tstartout = bc_LTR.st_hot_out.T),
+    fluidFlow(Tstartin = bc_LTR.st_cold_in.T, Tstartout = bc_LTR.st_cold_out.T),   
     // redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer, 
-    redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficient(gamma = thermo_LTR_cold.gamma_he),
+    redeclare replaceable model HeatTransfer_F =
+    ThermoPower.Thermal.HeatTransferFV.FlowDependentThermalConductance(
+      UAnom = thermo_LTR_cold.gamma_he * geo_LTR_cold.A_ex * LTR.Nt,    
+      alpha = 0.8
+     ),
+    // ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficient(gamma = thermo_LTR_cold.gamma_he),
     // redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer, 
-    redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficientTwoGrids(gamma = thermo_LTR_hot.gamma_he),
+    redeclare replaceable model HeatTransfer_G =
+    ThermoPower.Thermal.HeatTransferFV.FlowDependentThermalConductance(
+      UAnom = thermo_LTR_hot.gamma_he * geo_LTR_hot.A_ex * LTR.Nt,
+      alpha = 0.8
+    ),  
+    // ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficientTwoGrids(gamma = thermo_LTR_hot.gamma_he),
     redeclare model HeatExchangerTopology = ThermoPower.Thermal.HeatExchangerTopologies.CounterCurrentFlow,  
     N_F = geo_LTR_cold.N_seg, 
     N_G = geo_LTR_hot.N_seg,   
-    //SSInit = SSInit, 
+    Nt = geo_LTR_hot.N_ch, 
     Tstartbar_G = bc_LTR.st_hot_in.T, 
     Tstartbar_F = bc_LTR.st_cold_in.T, 
     exchSurface_F = geo_LTR_cold.A_ex, 
@@ -186,6 +216,7 @@ import Modelica.SIunits.Conversions.{from_degC,from_deg};
     rhomcm = thermo_LTR_tube.rho_mcm,
     gasQuasiStatic = true,
     fluidQuasiStatic = true,
+    SSInit=SSInit,
     metalTube(WallRes=false, Tstartbar=LTR.Tstartbar_M)) annotation(
     Placement(visible = true, transformation(origin = {21, 33}, extent = {{-7, -7}, {7, 7}}, rotation = 0)));
   
@@ -235,7 +266,7 @@ import Modelica.SIunits.Conversions.{from_degC,from_deg};
       redeclare package FluidMedium = medium_cooler, 
       redeclare package FlueGasMedium = medium_main, 
       fluidFlow(fixedMassFlowSimplified = true, hstartin = bc_cooler.st_cold_in.h, hstartout=bc_cooler.st_cold_out.h), // set the fluid flow as fixed mdot for simplarity
-      gasFlow(QuasiStatic = true),
+      gasFlow(QuasiStatic = true, Tstartin = bc_cooler.st_hot_in.T, Tstartout = bc_cooler.st_hot_out.T),
       N_G=geo_cooler_hot.N_seg,
       N_F=geo_cooler_cold.N_seg,
       Nw_G=geo_cooler_tube.N_seg,
@@ -249,7 +280,7 @@ import Modelica.SIunits.Conversions.{from_degC,from_deg};
       gasVol=geo_cooler_hot.V,
       fluidVol=geo_cooler_cold.V,
       metalVol=geo_cooler_tube.V,
-      SSInit=false,
+      SSInit=SSInit,
       rhomcm=thermo_cooler_tube.rho_mcm "use thermo props of heater for simplicity",
       lambda=thermo_cooler_tube.lambda "use thermo props of heater for simplicity",
       Tstartbar_G=bc_cooler.st_hot_in.T,
@@ -334,40 +365,74 @@ import Modelica.SIunits.Conversions.{from_degC,from_deg};
     pstart = bc_heater.st_cold_out.p);
 */ 
 
-  ThermoPower.PowerPlants.HRSG.Components.StateReader_gas r01(redeclare package Medium = medium_main) annotation(
+  Components.GasStateReader r01(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {66, -56}, extent = {{-6, -6}, {6, 6}}, rotation = 0)));
-  ThermoPower.PowerPlants.HRSG.Components.StateReader_gas r02(redeclare package Medium = medium_main) annotation(
+  Components.GasStateReader r02(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {96, 44}, extent = {{-6, -6}, {6, 6}}, rotation = 180)));
-  ThermoPower.PowerPlants.HRSG.Components.StateReader_gas r03(redeclare package Medium = medium_main) annotation(
+  Components.GasStateReader r03(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {-22, 50}, extent = {{-6, -6}, {6, 6}}, rotation = -90)));
-  ThermoPower.PowerPlants.HRSG.Components.StateReader_gas r04(redeclare package Medium = medium_main) annotation(
+  Components.GasStateReader r04(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {-32, 20}, extent = {{-6, -6}, {6, 6}}, rotation = 180)));
-  ThermoPower.PowerPlants.HRSG.Components.StateReader_gas r05(redeclare package Medium = medium_main) annotation(
+  Components.GasStateReader r05(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {-92, 18}, extent = {{-6, -6}, {6, 6}}, rotation = -90)));
-  ThermoPower.PowerPlants.HRSG.Components.StateReader_gas r05a(redeclare package Medium = medium_main) annotation(
+  Components.GasStateReader r05a(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {-92, -32}, extent = {{-6, -6}, {6, 6}}, rotation = -90)));
-  ThermoPower.PowerPlants.HRSG.Components.StateReader_gas r06(redeclare package Medium = medium_main) annotation(
+  Components.GasStateReader r06(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {-46, -16}, extent = {{-6, -6}, {6, 6}}, rotation = 90)));
-  ThermoPower.PowerPlants.HRSG.Components.StateReader_gas r07(redeclare package Medium = medium_main) annotation(
+  Components.GasStateReader r07(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {-4, 34}, extent = {{-6, -6}, {6, 6}}, rotation = 0)));
-  ThermoPower.PowerPlants.HRSG.Components.StateReader_gas r08(redeclare package Medium = medium_main) annotation(
+  Components.GasStateReader r08(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {32, 18}, extent = {{-6, -6}, {6, 6}}, rotation = -90)));
-  ThermoPower.PowerPlants.HRSG.Components.StateReader_gas r08a(redeclare package Medium = medium_main) annotation(
+  Components.GasStateReader r08a(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {20, -24}, extent = {{-6, -6}, {6, 6}}, rotation = -90)));
-  ThermoPower.PowerPlants.HRSG.Components.StateReader_gas r08b(redeclare package Medium = medium_main) annotation(
+  Components.GasStateReader r08b(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {34, 4}, extent = {{-6, -6}, {6, 6}}, rotation = 0)));
-  ThermoPower.PowerPlants.HRSG.Components.StateReader_gas r09(redeclare package Medium = medium_main) annotation(
+  Components.GasStateReader r09(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {50, 62}, extent = {{-6, -6}, {6, 6}}, rotation = 180)));
-  ThermoPower.PowerPlants.HRSG.Components.StateReader_gas r10(redeclare package Medium = medium_main) annotation(
+  Components.GasStateReader r10(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {4, 58}, extent = {{-6, -6}, {6, 6}}, rotation = 180)));
-  ThermoPower.PowerPlants.HRSG.Components.StateReader_water rh1(redeclare package Medium = medium_heater) annotation(
+  Components.WaterStateReader rh1(redeclare package Medium = medium_heater) annotation(
     Placement(visible = true, transformation(origin = {-66, 22}, extent = {{-6, -6}, {6, 6}}, rotation = 0)));
-  ThermoPower.PowerPlants.HRSG.Components.StateReader_water rh2(redeclare package Medium = medium_heater) annotation(
+  Components.WaterStateReader rh2(redeclare package Medium = medium_heater) annotation(
     Placement(visible = true, transformation(origin = {-64, 64}, extent = {{-6, -6}, {6, 6}}, rotation = 180)));
-  ThermoPower.PowerPlants.HRSG.Components.StateReader_water rc1(redeclare package Medium = medium_cooler) annotation(
+  Components.WaterStateReader rc1(redeclare package Medium = medium_cooler) annotation(
     Placement(visible = true, transformation(origin = {44, -36}, extent = {{-6, -6}, {6, 6}}, rotation = 0)));
-  ThermoPower.PowerPlants.HRSG.Components.StateReader_water rc2(redeclare package Medium = medium_cooler) annotation(
+  Components.WaterStateReader rc2(redeclare package Medium = medium_cooler) annotation(
     Placement(visible = true, transformation(origin = {44, -74}, extent = {{-6, -6}, {6, 6}}, rotation = 0)));
+
+  // calculated variables
+  // for turbine
+  Modelica.SIunits.Power W_turb = (r05a.h - r06.h) * r05a.w / 1e6 "W->MW, net power for turbine";
+  Modelica.SIunits.Efficiency eta_turb = turbine.eta;
+  // main compressor
+  Modelica.SIunits.Power W_MC = (r02.h - r01.h) * r01.w / 1e6 "W->MW, net power for main compressor";
+  Modelica.SIunits.Efficiency eta_MC = compressor.eta;
+  // re compressor
+  Modelica.SIunits.Power W_RC = (r09.h - r08b.h) * r08b.w / 1e6 "W->MW, net power for recompressor";
+  Modelica.SIunits.Efficiency eta_RC = recompressor.eta;
+  
+  // power block
+  Modelica.SIunits.Power W_net = W_turb - W_MC - W_RC "net power generated";
+  Modelica.SIunits.Power Q_heater = (rh1.h - rh2.h) * rh1.w / 1e6 "heat input for the power block";
+  Modelica.SIunits.Efficiency eta_pb = W_net / Q_heater * 100 "power block efficiency";
+  Real SR = r08b.w / r08.w * 100 "split ratio";
+  
+  // heat transfer coefficient for HTR and LTR
+  // HTR
+  Modelica.SIunits.Power Q_HTR = (r04.h - r03.h) * r03.w / 1e6 "W->MW, heat input for HTR";
+  Modelica.SIunits.TemperatureDifference dT1_HTR = (r06.T - r04.T);
+  Modelica.SIunits.TemperatureDifference dT2_HTR = (r07.T - r03.T);
+  Real T_ltmd_HTR = if dT2_HTR / dT1_HTR > 0 then (dT2_HTR - dT1_HTR) / Modelica.Math.log(dT2_HTR / dT1_HTR) else -1;
+  Real UA_HTR = if T_ltmd_HTR > 0 then Q_HTR / T_ltmd_HTR else 0.0;
+  // LTR
+  Modelica.SIunits.Power Q_LTR = (r10.h - r02.h) * r02.w / 1e6 "W->MW";
+  Modelica.SIunits.TemperatureDifference dT1_LTR = (r07.T - r10.T);
+  Modelica.SIunits.TemperatureDifference dT2_LTR = (r08.T - r02.T);
+  Real T_ltmd_LTR = if dT2_LTR / dT1_LTR > 0 then (dT2_LTR - dT1_LTR) / Modelica.Math.log(dT2_LTR / dT1_LTR) else -1;
+  Real UA_LTR = if T_ltmd_LTR > 0 then Q_LTR / T_ltmd_LTR else 0.0;  
+  
+  // Liquid Na exit temperature
+  Modelica.SIunits.Temperature T_heater_hot_out = rh2.T;
 
 protected
   // performance map for main compressor
@@ -471,7 +536,7 @@ equation
 
   annotation(
     Diagram(coordinateSystem(extent = {{-100, -100}, {120, 100}})),
-    experiment(StartTime = 0, StopTime = 1, Tolerance = 1e-3, Interval = 1),
+    experiment(StartTime = 0, StopTime = 100, Tolerance = 1e-3, Interval = 10),
     __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,bltdump",
     __OpenModelica_simulationFlags(lv = "LOG_DEBUG,LOG_NLS,LOG_NLS_V,LOG_STATS,LOG_INIT,LOG_STDOUT, -w", outputFormat = "mat", s = "dassl", nls = "homotopy"));
 end TP_RCBCycle;

@@ -1,5 +1,7 @@
+from collections import OrderedDict
 from copy import deepcopy
 import datetime
+import shutil
 from logging import exception
 from math import trunc
 from os.path import join, sep
@@ -19,7 +21,7 @@ import json
 import numpy as np
 # from ex.CoolPropQuery import result
 
-from model import TestDataSet, TestConfig, TestResult, TestConstants
+from model import TestDataSet, TestConfig, TestResult,Variable, TestConstants
 from plotlib import PlotManager, DataSeries, AxisType
 from physics import Temperature, Pressure, MDot
 from experiments import Experiments
@@ -39,27 +41,37 @@ class RCBC_simulation(Experiments):
         xw_app: xw.App = xw.App(visible=False)       
 
         try:
-            cfgs = {}
-            results = {}
-            for group in ds_test:                
-                gname = group.name
+            cfg_set = OrderedDict()
+            # head of table config
+            cfg_set['Key'] = ['Name', '', 'Description']
+
+            result_set = OrderedDict()
+            result_set['Key'] = ['Name', 'Unit', 'Description']
+            for group in ds_test:       
                 for test in group:
                     cfg = test.cfg.to_dict()
                     for (k, v) in cfg.items():
-                        if k in cfgs.keys():
-                            cfgs[k].append(v)
+                        if k in cfg_set.keys():
+                            cfg_set[k].append(v)
                         else:
-                            cfgs[k] = [v]
+                            # for first column, add key and two '-' to align with results
+                            cfg_set[k] = [k, '-', '-', v]
 
                     result = test.result.to_dict()
 
                     for (k, v) in result.items():
-                        if k in results.keys():
-                            results[k].append(v)
+                        if k in result_set.keys():
+                            result_set[k].append(v.val)
                         else:
-                            results[k] = [v]
-                    
+                            # for first column, add text, unit
+                            result_set[k] = [v.text, v.unit, '_', v.val]
                     # wbk.close()
+                
+            from pathlib import Path
+
+            ex_file=Path(filename)       
+            if ex_file.exists():
+                shutil.move(filename, filename+".bak")
 
             wbk = xw_app.books.add()      
             sht = wbk.sheets.add() # 30 - max lenth for a sheet name
@@ -68,10 +80,10 @@ class RCBC_simulation(Experiments):
             title = {"Table 1": "Test Config"}
 
             # config
-            (b, r) = ex.write_table(cfgs, title=title, up=u, left=l, linespacing=True)
+            (b, r) = ex.write_table(cfg_set, title=title, up=u, left=l, linespacing=True)
 
             title = {"Table 2": "Results"}
-            (b, r) = ex.write_table(results, title=title, up=b, left=l, linespacing=True)
+            (b, r) = ex.write_table(result_set, title=title, up=b, left=l, linespacing=True)
 
             wbk.save(filename)                    
 
@@ -222,7 +234,7 @@ def main(work_root = []):
     if work_root == []:
         work_root = os.path.abspath(os.curdir)  
 
-    test_mode = True # =True: use mock data to accelerate development
+    test_mode = False # =True: use mock data to accelerate development
     model_name = "Steps.Cycle.TP_RCBCycleMock" if test_mode else "Steps.Cycle.TP_RCBCycle"
 
     mdot_main_des = 125
@@ -231,23 +243,31 @@ def main(work_root = []):
     cfg_ref = {
         "mdot_main":mdot_main_des,
         "mdot_heater_hot": 55,
-        "T_heater_hot" : from_degC(550),
-        "T_cooler_cold" : from_degC(10)
+        "T_heater_hot" : from_degC(800),
+        "T_cooler_cold" : from_degC(35),
+        "gamma": 0.45
     }
 
     # cfg with varied parameters from the base cfg
     cfg_offset = {} 
 
     if test_mode:   
-        cfg_offset["mdot_main"] = list(map(lambda x: x * mdot_main_des/100, [75, 100]))
+        cfg_offset["mdot_main"] = list(map(lambda x: x * mdot_main_des/100, [75, 100, 120]))
         cfg_offset["T_heater_hot"] = list(map(lambda x: from_degC(x), [550, 700]))
     else:
-        cfg_offset["mdot_main"] = list(map(lambda x: x * mdot_main_des/100, [50, 75, 100, 120]))        
+        # reduced size batch
+        # cfg_offset["mdot_main"] = list(map(lambda x: x * mdot_main_des/100, [50, 100]))        
+        # # cfg_offset["T_heater_hot"] = list(map(lambda x: from_degC(x), [550]))
+        # cfg_offset["T_cooler_cold"] = list(map(lambda x: from_degC(x), [30]))
+        # full size batch
+        # cfg_offset["mdot_main"] = list(map(lambda x: x * mdot_main_des/100, [50, 75, 100, 120]))  # load ratio < 0.75 leads error, use following values instead 
+        cfg_offset["mdot_main"] = list(map(lambda x: x * mdot_main_des/100, [75, 90, 100, 120]))       
         cfg_offset["T_heater_hot"] = list(map(lambda x: from_degC(x), [550, 600, 650, 700]))
-        cfg_offset["T_cooler_cold"] = list(map(lambda x: from_degC(x), [10, 20, 30, 40]))
+        cfg_offset["T_cooler_cold"] = list(map(lambda x: from_degC(x), [30, 35, 40, 45]))
         # cfg_offset["mdot_heater_hot"] = 55
+        cfg_offset["gamma"] =[0.3, 0.325, 0.35, 0.375, 0.4, 0.45]	
     ds_name = '10MW off-Desin sim {:%Y-%m-%d-%H-%M-%S}'.format(datetime.datetime.now())
-    ds_test = gen_batch_cfg(cfg_ref, cfg_offset, gname_template='10MW off-Design(%s%%)',ds_name=ds_name)
+    ds_test = gen_batch_cfg(cfg_ref, cfg_offset, gname_template='10MW off-Design(mdot=%s)',ds_name=ds_name)
    
     json_str = ds_test.to_json()
     print(json_str)
@@ -257,13 +277,57 @@ def main(work_root = []):
         'r06', 'r07', 'r08', 'r08a', 'r08b', 'r09', 'r10',
         'rh1', 'rh2', 'rc1', 'rc2']
 
-    props = ['T', 'p', 'h','w']
+    # (propName, unit)
+    props = [
+        # ('fluid', '1'), # error in parsing this props, since returned name(string) are not digitial values
+        ('T', 'K'), 
+        ('p', 'Pa'),
+        ('rho', 'kg/m3'),
+        ('w', 'kg/s'),
+        ('h', 'kJ/kg'),
+        ('s', 'kJ/kgK')]
 
-    sol_keys = []
+    # props = [
+    #     ('T','K'), 
+    #     ('p', 'Pa'),
+    #     ('h', 'kJ/kg'),
+    #     ('w', 'kg/s')]
+
+    sol_dict = OrderedDict()
 
     for p in ports:
-        for prop in props:
-            sol_keys.append(f'{p}.{prop}')
+        for (prop, unit) in props:
+            key = f'{p}.{prop}'
+            text = f'{prop}_{p[1:]}'            
+            sol_dict[key] = Variable(key, unit, text=text)    
+
+    # specilized solutions
+    var_sp = [
+        Variable('W_net', 'MW'),
+        Variable('Q_heater', 'MW'),
+        Variable('eta_pb'),
+        Variable('SR'),
+        Variable('W_turb', 'MW'),
+        Variable('eta_turb', 'MW'),
+        Variable('W_MC', 'MW'),
+        Variable('eta_MC', 'MW'),
+        Variable('W_RC', 'MW'),
+        Variable('eta_RC', 'MW'),
+        Variable('Q_HTR', 'MW'),
+        Variable('dT1_HTR', 'K'),
+        Variable('dT2_HTR', 'K'),
+        Variable('T_ltmd_HTR', 'K'),
+        Variable('UA_HTR'),
+        Variable('Q_LTR', 'MW'),
+        Variable('dT1_LTR', 'K'),
+        Variable('dT2_LTR', 'K'),
+        Variable('T_ltmd_LTR', 'K'),
+        Variable('UA_LTR'),
+        Variable('T_heater_hot_out', 'K')        
+    ]
+
+    for var in var_sp:
+        sol_dict[var.key] = var
 
     exp:Experiments = RCBC_simulation(
         work_root, 
@@ -280,15 +344,15 @@ def main(work_root = []):
     exp.simulate(
         sim_ops=[
             'startTime=0', 
-            'stopTime=1',
-            'stepSize=1',
+            'stopTime=100',
+            'stepSize=10',
             'solver=dassl',
-            'nls=homotopy',
+            '-nls=homotopy',
             '-lv=LOG_DEBUG,LOG_INIT,LOG_NLS,LOG_NLS_V,LOG_STATS'],
-        solution_names=sol_keys, 
+        solution_dict=sol_dict, 
         ds_test=ds_test)   
 
-    exp.save_results(ds_test)
+    # exp.save_results(ds_test)
 
     print('All done!')
 

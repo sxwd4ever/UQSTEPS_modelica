@@ -18,16 +18,18 @@ model TestTP_Cooler
   package medium_cooler = ThermoPower.Water.StandardWater;//Modelica.Media.IdealGases.SingleGases.CO2;  
   
   // parameter for C++ implementation of PCHE - based on Modelica impl's result
-  parameter Model.PBConfiguration cfg_default(
-  mdot_cooler = 40,
+  parameter Model.PBConfiguration cfg_default;
+  
+  parameter Model.PBConfiguration cfg_tune(
+  mdot_cooler = 30,
   r_i_c = 10e-3,
-  r_t_c = cfg_default.r_i_c + 5e-3,
-  r_o_c = cfg_default.r_t_c + 20e-3,
+  r_t_c = cfg_tune.r_i_c + 5e-3,
+  r_o_c = 1/2, // agree with the final parameter Dhyd = 1 in HE, should be checked if it is capable of containing all fluid-metal tubes
   N_ch_c = 100,
   L_c = 1);        
     
   // select the configuration of parameters
-  parameter Model.PBConfiguration cfg = cfg_default;
+  parameter Model.PBConfiguration cfg = cfg_tune;
   
   // set the values of parameters accordingly
   parameter HEBoundaryCondition bc = cfg.bc_cooler;
@@ -81,7 +83,7 @@ model TestTP_Cooler
     redeclare package FluidMedium = medium_cooler, 
     redeclare package FlueGasMedium = medium_hot, 
     fluidFlow(fixedMassFlowSimplified = true, hstartin = bc.st_cold_in.h, hstartout=bc.st_cold_out.h), // set the fluid flow as fixed mdot for simplarity
-    gasFlow(QuasiStatic = true),
+    gasFlow(QuasiStatic = true, Tstartin = bc.st_hot_in.T, Tstartout = bc.st_hot_out.T),
     N_G=geo_hot.N_seg,
     N_F=geo_cold.N_seg,
     Nw_G=geo_tube.N_seg,
@@ -95,7 +97,7 @@ model TestTP_Cooler
     gasVol=geo_hot.V,
     fluidVol=geo_cold.V,
     metalVol=geo_tube.V,
-    SSInit=false,
+    SSInit=true,
     rhomcm=thermo_tube.rho_mcm,
     lambda=thermo_tube.lambda,
     Tstartbar_G=bc.st_hot_in.T,
@@ -120,6 +122,11 @@ model TestTP_Cooler
     Placement(transformation(extent = {{30, -6}, {50, 14}}, rotation = 0)));
   ThermoPower.Gas.SensT T_gasOut(redeclare package Medium = medium_hot) annotation(
     Placement(transformation(extent = {{30, -6}, {50, 14}}, rotation = 0)));
+  
+  // variable for validation
+  Modelica.SIunits.Power Q_out = (hE.gasIn.h_outflow - hE.gasOut.h_outflow) * hE.gasIn.m_flow; 
+  Modelica.SIunits.Power Q_in = (hE.waterOut.h_outflow - hE.waterIn.h_outflow) * hE.waterIn.m_flow;
+  Boolean isQMatch = abs(Q_out -Q_in) < 1e-3;
   
 initial equation
 //hstart_F_Out = hE.waterOut.h_outflow;

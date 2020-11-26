@@ -1,6 +1,8 @@
 from logging import exception
 from math import trunc
+from copy import deepcopy
 from os.path import join, sep
+import shutil
 import sys
 from OMPython import OMCSessionZMQ
 from OMPython import ModelicaSystem
@@ -99,7 +101,7 @@ class Experiments(object):
             else:              
                 print(f'Dll {lib_dll} not Exists')
 
-    def simulate(self, sim_ops, solution_names, ds_test:TestDataSet):        
+    def simulate(self, sim_ops, solution_dict, ds_test:TestDataSet, append_save=True):        
         
         print(f'loading model{self.model_name}...\n')        
         self.model = ModelicaSystem(sep.join([self.path_model,"package.mo"]), self.model_name,self.modelica_libs) 
@@ -109,13 +111,22 @@ class Experiments(object):
 
         for group in ds_test:
             for test in group:
-                print(f' ready to run test={test.name} in group={group.name}\n')
-                self.model.setParameters(test.cfg.gen_params())
-                self.model.setSimulationOptions(sim_ops)
-                self.model.simulate()
-                solutions = self.model.getSolutions(solution_names) 
+                sol_keys = list(solution_dict.keys())
+                solutions = np.ones((len(sol_keys),1)) * -1 # default value
+                
+                try:
+                    print(f' ready to run test={test.name} in group={group.name}\n')
+                    self.model.setParameters(test.cfg.gen_params())
+                    self.model.setSimulationOptions(sim_ops)
+                    self.model.simulate()
+                    solutions = self.model.getSolutions(sol_keys) 
+                except:
+                    pass
 
-                test.result = TestResult.from_keyvalues(solution_names, solutions) 
+                test.result = TestResult.from_keyvalues(solution_dict, solutions) 
+                if(append_save): # append the result each time we finish the simulation
+                    # use the copy for saving. avoid concurrent iteration on same object
+                    self.save_results(deepcopy(ds_test))
         
         print('all simulation(s) done, results saved in Test Data Set')        
 
@@ -138,8 +149,9 @@ class Experiments(object):
                 gname = group.name
                 filename = os.path.join(name_batch, gname + '.xlsx')
                 
-                if gname not in wbs:
-                    wbk = xw_app.books.add()                                     
+                if gname not in wbs:   
+
+                    wbk = xw_app.books.add()
                     wbs[gname] = wbk.name
                 else:
                     wbk = xw.Book(filename)

@@ -74,7 +74,11 @@ model TestTP_Components
   //Components
   inner ThermoPower.System system(allowFlowReversal = false, initOpt=ThermoPower.Choices.Init.Options.noInit) annotation(
     Placement(transformation(extent = {{80, 80}, {100, 100}})));
-
+  
+  // global init opition (system.initOpt) leads to order reduction error
+  // use this flag to control the initialization of all components instead. 
+  parameter Boolean SSInit = false "Steady-state initialization";
+  
   ThermoPower.Water.SourceMassFlow source_heater_hot(
     redeclare package Medium = medium_heater,
     w0 = bc_heater.st_hot_in.mdot,
@@ -96,7 +100,7 @@ model TestTP_Components
     redeclare package FluidMedium = medium_heater, 
     redeclare package FlueGasMedium = medium_cold, 
     fluidFlow(fixedMassFlowSimplified = true, hstartin = bc_heater.st_hot_in.h, hstartout=bc_heater.st_hot_out.h), // set the fluid flow as fixed mdot for simplarity
-    gasFlow(QuasiStatic = true),
+    gasFlow(QuasiStatic = true, Tstartin = bc_heater.st_cold_in.T, Tstartout = bc_heater.st_cold_out.T),
     N_G=geo_heater_cold.N_seg,
     N_F=geo_heater_hot.N_seg,
     Nw_G=geo_heater_tube.N_seg,
@@ -110,7 +114,7 @@ model TestTP_Components
     gasVol=geo_heater_cold.V,
     fluidVol=geo_heater_hot.V,
     metalVol=geo_heater_tube.V,
-    SSInit=false,
+    SSInit=SSInit,
     rhomcm=thermo_heater_tube.rho_mcm,
     lambda=thermo_heater_tube.lambda,
     Tstartbar_G=bc_heater.st_cold_in.T,
@@ -201,13 +205,26 @@ model TestTP_Components
   Components.HEG2G HTR(
   redeclare package FluidMedium = medium_cold, 
   redeclare package FlueGasMedium = medium_hot, 
-  redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficient(gamma = thermo_HTR_cold.gamma_he), 
+  gasFlow(QuasiStatic = true, Tstartin = bc_HTR.st_hot_in.T, Tstartout = bc_HTR.st_hot_out.T),
+  fluidFlow(Tstartin = bc_HTR.st_cold_in.T, Tstartout = bc_HTR.st_cold_out.T),  
+  redeclare replaceable model HeatTransfer_F = 
+   ThermoPower.Thermal.HeatTransferFV.FlowDependentThermalConductance(
+    UAnom = thermo_HTR_cold.gamma_he * geo_HTR_cold.A_ex * HTR.Nt,    
+    alpha = 0.8
+   ), 
+   //ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficient(gamma = thermo_HTR_cold.gamma_he), 
   // redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer,
-  redeclare replaceable model HeatTransfer_G =  ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficientTwoGrids(gamma = thermo_HTR_hot.gamma_he),
+  redeclare replaceable model HeatTransfer_G = 
+   ThermoPower.Thermal.HeatTransferFV.FlowDependentThermalConductance(
+    UAnom = thermo_HTR_hot.gamma_he * geo_HTR_hot.A_ex * HTR.Nt,    
+    alpha = 0.8
+   ), 
+   //ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficientTwoGrids(gamma = thermo_HTR_hot.gamma_he),
   //redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer,
   redeclare model HeatExchangerTopology = ThermoPower.Thermal.HeatExchangerTopologies.CounterCurrentFlow,  
   N_F = geo_HTR_cold.N_seg, 
-  N_G = geo_HTR_hot.N_seg,     
+  N_G = geo_HTR_hot.N_seg,    
+  Nt = geo_HTR_hot.N_ch,   
   Tstartbar_G = bc_HTR.st_hot_in.T, 
   Tstartbar_F = bc_HTR.st_cold_in.T, 
   exchSurface_F = geo_HTR_cold.A_ex, 
@@ -224,22 +241,35 @@ model TestTP_Components
   pstart_F = bc_HTR.st_cold_in.p, 
   pstart_G = bc_HTR.st_hot_in.p,
   rhomcm = thermo_HTR_tube.rho_mcm,
+  SSInit=SSInit,
   gasQuasiStatic = true,
-  fluidQuasiStatic = true,
+  fluidQuasiStatic = true,  
   metalTube(WallRes=false)) annotation(
     Placement(transformation(extent = {{-20, -20}, {20, 20}}, rotation = 0)));
 
   Components.HEG2G LTR(
   redeclare package FluidMedium = medium_cold, 
   redeclare package FlueGasMedium = medium_hot, 
+  gasFlow(QuasiStatic = true, Tstartin = bc_LTR.st_hot_in.T, Tstartout = bc_LTR.st_hot_out.T),
+  fluidFlow(Tstartin = bc_LTR.st_cold_in.T, Tstartout = bc_LTR.st_cold_out.T),   
   // redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer, 
-  redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficient(gamma = thermo_LTR_cold.gamma_he),
+  redeclare replaceable model HeatTransfer_F =
+  ThermoPower.Thermal.HeatTransferFV.FlowDependentThermalConductance(
+    UAnom = thermo_LTR_cold.gamma_he * geo_LTR_cold.A_ex * LTR.Nt,    
+    alpha = 0.8
+   ),
+  // ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficient(gamma = thermo_LTR_cold.gamma_he),
   // redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer, 
-  redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficientTwoGrids(gamma = thermo_LTR_hot.gamma_he),
+  redeclare replaceable model HeatTransfer_G =
+  ThermoPower.Thermal.HeatTransferFV.FlowDependentThermalConductance(
+    UAnom = thermo_LTR_hot.gamma_he * geo_LTR_hot.A_ex * LTR.Nt,
+    alpha = 0.8
+  ),  
+  // ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficientTwoGrids(gamma = thermo_LTR_hot.gamma_he),
   redeclare model HeatExchangerTopology = ThermoPower.Thermal.HeatExchangerTopologies.CounterCurrentFlow,  
   N_F = geo_LTR_cold.N_seg, 
   N_G = geo_LTR_hot.N_seg,   
-  //SSInit = SSInit, 
+  Nt = geo_LTR_hot.N_ch,  
   Tstartbar_G = bc_LTR.st_hot_in.T, 
   Tstartbar_F = bc_LTR.st_cold_in.T, 
   exchSurface_F = geo_LTR_cold.A_ex, 
@@ -256,8 +286,9 @@ model TestTP_Components
   pstart_F = bc_LTR.st_cold_in.p, 
   pstart_G = bc_LTR.st_hot_in.p,
   rhomcm = thermo_LTR_tube.rho_mcm,
+  SSInit=SSInit,
   gasQuasiStatic = true,
-  fluidQuasiStatic = true,
+  fluidQuasiStatic = true,  
   metalTube(WallRes=false)) annotation(
     Placement(transformation(extent = {{-20, -20}, {20, 20}}, rotation = 0)));
 
@@ -291,7 +322,7 @@ model TestTP_Components
   ThermoPower.Gas.SensT sens_turbine(redeclare package Medium = medium_hot) annotation(
     Placement(visible = true, transformation(origin = {20, 44}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
 
-  parameter Boolean SSInit = false "Steady-state initialization";
+
 
 protected
   parameter Real tablePhic[5, 4] = [1, 37, 80, 100; 1.5, 7.10E-05, 7.10E-05, 7.10E-05; 2, 8.40E-05, 8.40E-05, 8.40E-05; 2.5, 8.70E-05, 8.70E-05, 8.70E-05; 3, 1.04E-04, 1.04E-04, 1.04E-04];
@@ -472,7 +503,7 @@ equation
 
 annotation(
     Diagram(graphics),
-    experiment(StartTime = 0, StopTime = 1, Tolerance = 1e-3, Interval = 1),
+    experiment(StartTime = 0, StopTime = 300, Tolerance = 1e-3, Interval = 10),
     __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts,bltdump",    
     __OpenModelica_simulationFlags(lv = "LOG_DEBUG,LOG_NLS,LOG_NLS_V,LOG_STATS,LOG_INIT,LOG_STDOUT, -w", outputFormat = "mat", s = "dassl", nls = "homotopy"));
 end TestTP_Components;

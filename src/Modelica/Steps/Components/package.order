@@ -30,3 +30,5 @@ PCHECImplResult
 HEG2G
 SSMixer
 ThroughSink
+GasStateReader
+WaterStateReader

@@ -56,6 +56,15 @@
             "python.terminal.activateEnvironment": true
         },
         {
+            "name": "Python: Test TP_RCBC",
+            "type": "python",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/src/python",
+            "program": "main_rcbc.py",
+            "console": "integratedTerminal",
+            "python.terminal.activateEnvironment": true
+        },
+        {
             "name": "Python: Current File",
             "type": "python",
             "request": "launch",

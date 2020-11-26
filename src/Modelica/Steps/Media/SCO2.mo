@@ -1,8 +1,9 @@
 within Steps.Media;
 package SCO2 "supercritical CO2"
   extends ExternalMedia.Media.CoolPropMedium(
-      mediumName = "CarbonDioxide",
-      substanceNames = {"CO2|debug=40"},
+      // mediumName = "CarbonDioxide",
+      mediumName = "CO2",
+      substanceNames = {"CO2"},
       ThermoStates = Modelica.Media.Interfaces.Choices.IndependentVariables.pT,
       inputChoice = ExternalMedia.Common.InputChoice.pT,
       singleState=false,

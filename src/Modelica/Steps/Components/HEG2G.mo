@@ -31,7 +31,7 @@ extends Interfaces.HeatExchangerG2G;
   final parameter SI.Distance L = 1 "Tube length";
   parameter Choices.FluidPhase.FluidPhases FluidPhaseStart = Choices.FluidPhase.FluidPhases.Liquid "Fluid phase (only for initialization!)" annotation(
     Dialog(tab = "Initialization"));
-  
+  parameter Boolean SSInit = false "Steady State initialization";
   /*
   Gas.Flow1DFV fluidFlow(
    
@@ -61,12 +61,13 @@ extends Interfaces.HeatExchangerG2G;
   wnom = fluidNomFlowRate, 
   //initOpt = if SSInit then Options.steadyState else Options.noInit, 
   redeclare package Medium = FluidMedium, 
+  initOpt = if SSInit then Options.steadyState else Options.noInit,
   QuasiStatic = fluidQuasiStatic, 
   pstart = pstart_F, 
-  L = L, 
-  A = fluidVol / L, 
-  omega = exchSurface_F / L,
-  Dhyd = 1, //fluidVol*4/exchSurface_F,
+  L = L, // Should be L = exchSurface_F ^ 2 / (fluidVol * pi * 4), instead of fixed L = 1 
+  A = fluidVol / L, // fluidVol is account for single tube
+  omega = exchSurface_F / L,// exchSurface_F is account for single tube
+  Dhyd = fluidVol*4 / exchSurface_F,
   FFtype = FFtype_F, 
   Kfnom = Kfnom_F, 
   dpnom = dpnom_F, 
@@ -81,15 +82,16 @@ extends Interfaces.HeatExchangerG2G;
   Nt = Nt, //1, 
   N = N_G, 
   Nw = Nw_G,
-  wnom = gasNomFlowRate, 
+  wnom = gasNomFlowRate,  // wnom(total) of gasFlow is different from wnom(for single tube, = gasNomFlowRate /Nt) of HeatTransfer_G
   //initOpt = if SSInit then Options.steadyState else Options.noInit, 
   redeclare package Medium = FlueGasMedium, 
+  initOpt = if SSInit then Options.steadyState else Options.noInit,
   QuasiStatic = gasQuasiStatic, 
   pstart = pstart_G, 
-  L = L, 
-  A = gasVol / L, 
-  omega = exchSurface_G / L,
-  Dhyd = 1, //gasVol*4/exchSurface_G,
+  L = L, // Should be L = exchSurface_G ^ 2 / (gasVol * pi * 4), instead of fixed L = 1
+  A = gasVol / L, // gasVol is account for single tube, 
+  omega = exchSurface_G / L, // exchSurface_G is account for single tube, 
+  Dhyd = gasVol*4 / exchSurface_G,
   FFtype = FFtype_G, 
   Kfnom = Kfnom_G, 
   dpnom = dpnom_G, 
@@ -106,7 +108,8 @@ extends Interfaces.HeatExchangerG2G;
   WallRes = false, 
   lambda = lambda, 
   rext = (metalVol + fluidVol) * 4 / extSurfaceTub / 2, 
-  rhomcm = rhomcm, rint = fluidVol * 4 / exchSurface_F / 2) annotation(
+  rhomcm = rhomcm, 
+  rint = fluidVol * 4 / exchSurface_F / 2) annotation(
     Placement(transformation(extent = {{-10, -24}, {10, -4}})));
   
   Thermal.HeatExchangerTopologyFV heatExchangerTopology(Nw = Nw_F, redeclare model HeatExchangerTopology = HeatExchangerTopology) annotation(

@@ -17,8 +17,8 @@ import Modelica.SIunits.Conversions.{from_degC,from_deg};
   // input parameters of the power block
   parameter Modelica.SIunits.MassFlowRate mdot_main = 125 "kg/s, mass flow in the main path of PB, which follows the power demand";
   parameter Modelica.SIunits.MassFlowRate mdot_heater_hot = 55 "kg/s, mass flow rate of heater's hot fluid";
-  parameter Modelica.SIunits.Temperature T_heater_hot = from_degC(800) "K, Temperature of heater's hot fluid";  
-  parameter Modelica.SIunits.Temperature T_cooler_cold = from_degC(45) "K, Temperature of cooler's cold fluid";  
+  parameter Modelica.SIunits.Temperature T_heater_hot = from_degC(700) "K, Temperature of heater's hot fluid";  
+  parameter Modelica.SIunits.Temperature T_cooler_cold = from_degC(35) "K, Temperature of cooler's cold fluid";  
   parameter Modelica.SIunits.AbsolutePressure p_main = from_bar(80);
   parameter Modelica.SIunits.AbsolutePressure p_water = from_bar(10);
 
@@ -42,33 +42,33 @@ import Modelica.SIunits.Conversions.{from_degC,from_deg};
     T = T_heater_hot) annotation(
     Placement(visible = true, transformation(origin = {-92, -4}, extent = {{-4, -4}, {4, 4}}, rotation = 270)));  
 
-  ThermoPower.PowerPlants.HRSG.Components.StateReader_gas r01(redeclare package Medium = medium_main) annotation(
+  Components.GasStateReader r01(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {66, -56}, extent = {{-6, -6}, {6, 6}}, rotation = 0)));
-  ThermoPower.PowerPlants.HRSG.Components.StateReader_gas r02(redeclare package Medium = medium_main) annotation(
+  Components.GasStateReader r02(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {96, 44}, extent = {{-6, -6}, {6, 6}}, rotation = 180)));
-  ThermoPower.PowerPlants.HRSG.Components.StateReader_gas r03(redeclare package Medium = medium_main) annotation(
+  Components.GasStateReader r03(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {-22, 50}, extent = {{-6, -6}, {6, 6}}, rotation = -90)));
-  ThermoPower.PowerPlants.HRSG.Components.StateReader_gas r04(redeclare package Medium = medium_main) annotation(
+  Components.GasStateReader r04(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {-32, 20}, extent = {{-6, -6}, {6, 6}}, rotation = 180)));
-  ThermoPower.PowerPlants.HRSG.Components.StateReader_gas r05(redeclare package Medium = medium_main) annotation(
+  Components.GasStateReader r05(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {-92, 18}, extent = {{-6, -6}, {6, 6}}, rotation = -90)));
-  ThermoPower.PowerPlants.HRSG.Components.StateReader_gas r05a(redeclare package Medium = medium_main) annotation(
+  Components.GasStateReader r05a(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {-92, -32}, extent = {{-6, -6}, {6, 6}}, rotation = -90)));
-  ThermoPower.PowerPlants.HRSG.Components.StateReader_gas r06(redeclare package Medium = medium_main) annotation(
+  Components.GasStateReader r06(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {-46, -16}, extent = {{-6, -6}, {6, 6}}, rotation = 90)));
-  ThermoPower.PowerPlants.HRSG.Components.StateReader_gas r07(redeclare package Medium = medium_main) annotation(
+  Components.GasStateReader r07(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {-4, 34}, extent = {{-6, -6}, {6, 6}}, rotation = 0)));
-  ThermoPower.PowerPlants.HRSG.Components.StateReader_gas r08(redeclare package Medium = medium_main) annotation(
+  Components.GasStateReader r08(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {32, 18}, extent = {{-6, -6}, {6, 6}}, rotation = -90)));
-  ThermoPower.PowerPlants.HRSG.Components.StateReader_gas r08a(redeclare package Medium = medium_main) annotation(
+  Components.GasStateReader r08a(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {20, -24}, extent = {{-6, -6}, {6, 6}}, rotation = -90)));
-  ThermoPower.PowerPlants.HRSG.Components.StateReader_gas r08b(redeclare package Medium = medium_main) annotation(
+  Components.GasStateReader r08b(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {34, 4}, extent = {{-6, -6}, {6, 6}}, rotation = 0)));
-  ThermoPower.PowerPlants.HRSG.Components.StateReader_gas r09(redeclare package Medium = medium_main) annotation(
+  Components.GasStateReader r09(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {50, 62}, extent = {{-6, -6}, {6, 6}}, rotation = 180)));
-  ThermoPower.PowerPlants.HRSG.Components.StateReader_gas r10(redeclare package Medium = medium_main) annotation(
+  Components.GasStateReader r10(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {4, 58}, extent = {{-6, -6}, {6, 6}}, rotation = 180)));
-
+  
   ThermoPower.Water.SourceMassFlow source_water(
   redeclare package Medium = medium_main,
     w0 = mdot_heater_hot,
@@ -81,16 +81,50 @@ import Modelica.SIunits.Conversions.{from_degC,from_deg};
     T = T_cooler_cold);
 
 
-  ThermoPower.PowerPlants.HRSG.Components.StateReader_water rh1(redeclare package Medium = medium_water) annotation(
+  Components.WaterStateReader rh1(redeclare package Medium = medium_water) annotation(
     Placement(visible = true, transformation(origin = {-66, 22}, extent = {{-6, -6}, {6, 6}}, rotation = 0)));
-  ThermoPower.PowerPlants.HRSG.Components.StateReader_water rh2(redeclare package Medium = medium_water) annotation(
+  Components.WaterStateReader rh2(redeclare package Medium = medium_water) annotation(
     Placement(visible = true, transformation(origin = {-64, 64}, extent = {{-6, -6}, {6, 6}}, rotation = 180)));
-  ThermoPower.PowerPlants.HRSG.Components.StateReader_water rc1(redeclare package Medium = medium_water) annotation(
+  Components.WaterStateReader rc1(redeclare package Medium = medium_water) annotation(
     Placement(visible = true, transformation(origin = {44, -36}, extent = {{-6, -6}, {6, 6}}, rotation = 0)));
-  ThermoPower.PowerPlants.HRSG.Components.StateReader_water rc2(redeclare package Medium = medium_water) annotation(
+  Components.WaterStateReader rc2(redeclare package Medium = medium_water) annotation(
     Placement(visible = true, transformation(origin = {44, -74}, extent = {{-6, -6}, {6, 6}}, rotation = 0)));
 
-
+  // (Mock) calculated variables
+  // for turbine
+  Modelica.SIunits.Power W_turb = (r05a.h - r06.h) * r05a.w / 1e6 "W->MW, net power for turbine";
+  Modelica.SIunits.Efficiency eta_turb = 0.85;
+  // main compressor
+  Modelica.SIunits.Power W_MC = (r02.h - r01.h) * r01.w / 1e6 "W->MW, net power for main compressor";
+  Modelica.SIunits.Efficiency eta_MC = 0.86;
+  // re compressor
+  Modelica.SIunits.Power W_RC = (r09.h - r08b.h) * r08b.w / 1e6 "W->MW, net power for recompressor";
+  Modelica.SIunits.Efficiency eta_RC = 0.87;
+  
+  // power block
+  Modelica.SIunits.Power W_net = W_turb - W_MC - W_RC "net power generated";
+  Modelica.SIunits.Power Q_heater = (rh1.h - rh2.h) * rh1.w / 1e6 + 1 "heat input for the power block";
+  Modelica.SIunits.Efficiency eta_pb = W_net / Q_heater * 100 "power block efficiency";
+  Real SR = r08b.w / r08.w * 100 "split ratio";
+  
+  // heat transfer coefficient for HTR and LTR
+  // HTR
+  Modelica.SIunits.Power Q_HTR = (r04.h - r03.h) * r03.w / 1e6 "W->MW, heat input for HTR";
+  Modelica.SIunits.TemperatureDifference dT1_HTR = (r06.T - r04.T) + 1;
+  Modelica.SIunits.TemperatureDifference dT2_HTR = (r07.T - r03.T);
+  Real T_ltmd_HTR = (dT2_HTR - dT1_HTR) / Modelica.Math.log(dT2_HTR / dT1_HTR + 0.5);
+  Real UA_HTR = Q_HTR / T_ltmd_HTR;
+  // LTR
+  Modelica.SIunits.Power Q_LTR = (r10.h - r02.h) * r02.w / 1e6 "W->MW";
+  Modelica.SIunits.TemperatureDifference dT1_LTR = (r07.T - r10.T) + 1;
+  Modelica.SIunits.TemperatureDifference dT2_LTR = (r08.T - r02.T);
+  Real T_ltmd_LTR = (dT2_LTR - dT1_LTR) / Modelica.Math.log(dT2_LTR / dT1_LTR + 0.5);
+  Real UA_LTR = Q_LTR / T_ltmd_LTR;  
+  
+  // Liquid Na exit temperature
+  Modelica.SIunits.Temperature T_heater_hot_out = rh2.T;
+  
+  
 equation
   // open loop with compressor + recompressor
   // main path - source -> sink
