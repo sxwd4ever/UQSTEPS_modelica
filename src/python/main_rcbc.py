@@ -265,7 +265,8 @@ def main(work_root = []):
         cfg_offset["T_heater_hot"] = list(map(lambda x: from_degC(x), [550, 600, 650, 700]))
         cfg_offset["T_cooler_cold"] = list(map(lambda x: from_degC(x), [30, 35, 40, 45]))
         # cfg_offset["mdot_heater_hot"] = 55
-        cfg_offset["gamma"] =[0.3, 0.325, 0.35, 0.375, 0.4, 0.45]	
+        # cfg_offset["gamma"] =[0.3, 0.325, 0.35, 0.375, 0.4, 0.45]	
+        cfg_offset["gamma"] =[0.3, 0.35, 0.4, 0.45]	
     ds_name = '10MW off-Desin sim {:%Y-%m-%d-%H-%M-%S}'.format(datetime.datetime.now())
     ds_test = gen_batch_cfg(cfg_ref, cfg_offset, gname_template='10MW off-Design(mdot=%s)',ds_name=ds_name)
    

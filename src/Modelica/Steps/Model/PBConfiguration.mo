@@ -152,30 +152,68 @@ model PBConfiguration
     // pitch angle
     phi = from_deg((180 - 108) /2),
     // length of pche, m
-    length = 2860e-3,
+    L = 1000e-3, // 2860e-3,
     // Diameter of semi_circular, m
-    d_c = 2e-3,
+    d = 2e-3,
     // number of channels
     N_ch = integer(94e3),
     // number of segments
     N_seg = 50);
-      
+  
+  // test configuration for hot/cold/tube side of heatexchanger
+  
+  // In following calculation, V, A_ex are account for single tube/channel, not for total
+  // check the Calculation in ThemoPower.PowerPlants.HRSG.Components.HE to understand the meaning of 
+  // exsurface_G/F and extSurfaceTub, *Vol     
+  parameter Real r_PCHE_HTR = 1e-3;
+  parameter Real L_PCHE_HTR = 1000e-3;
+  parameter EntityConfig cfg_PCHE_HTR_cold(
+    geo(
+    V = r_PCHE_HTR^2 * pi * L_PCHE_HTR, // * N_ch_LTR, 
+    A_ex = pi * r_PCHE_HTR * L_PCHE_HTR, // * N_ch_LTR, exchange surface between fluid-tube
+    L = L_PCHE_HTR, 
+    d = r_PCHE_HTR * 2, 
+    N_seg = 7, 
+    N_ch = integer(94e3)),
+    thermo(gamma_he = 3.96538615e6/cfg_HTR_cold.geo.A_ex "200")
+  );
+  
+  parameter EntityConfig cfg_PCHE_HTR_tube(
+    geo(
+    V = cfg_PCHE_HTR_cold.geo.V * 2, //r_t_HTR^2 * pi * L_HTR * N_ch_HTR - cfg_HTR_cold.geo.V,
+    A_ex = cfg_PCHE_HTR_cold.geo.A_ex, //  * N_ch_HTR, // assume thickness of tube approximately 0
+    L = cfg_PCHE_HTR_cold.geo.L, 
+    d = cfg_PCHE_HTR_cold.geo.d, 
+    N_seg = 6, 
+    N_ch = cfg_PCHE_HTR_cold.geo.N_ch),
+    thermo(rho_mcm = 100, lambda = 20)
+  ); 
+  
+  parameter EntityConfig cfg_PCHE_HTR_hot(
+    geo(
+    V = cfg_PCHE_HTR_cold.geo.V, // r_o_HTR^2 * pi * L_HTR * N_ch_HTR - cfg_HTR_tube.geo.V , 
+    A_ex = cfg_PCHE_HTR_cold.geo.A_ex, // * N_ch_HTR, 
+    L = cfg_PCHE_HTR_cold.geo.L, 
+    d = cfg_PCHE_HTR_cold.geo.d, 
+    N_seg = 7, 
+    N_ch = cfg_PCHE_HTR_cold.geo.N_ch),
+    thermo(gamma_he = 3.96538615e6/cfg_HTR_hot.geo.A_ex "200")
+  );    
+  
   parameter PCHEGeoParam geo_LTR(
     // pitch length, m
     pitch = 12e-3,
     // pitch angle
     phi = from_deg((180 - 108) /2),
     // length of pche, m
-    length = 3270e-3,
+    L = 3270e-3,
     // Diameter of semi_circular, m
-    d_c = 2e-3,
+    d = 2e-3,
     // number of channels
     N_ch = integer(125e3),
     // number of segments
     N_seg = 50);
-  
-  // test configuration for hot/cold/tube side of heatexchanger
-  
+      
   // HTR's's size of heat exchanger gas - gas
   // N_ch_HTR groups of fluid(cold, inner)-tube-gas(hot, outter) tubes 
   parameter Modelica.SIunits.Radius r_i_HTR = 5e-3 "mm tube's internal radius";

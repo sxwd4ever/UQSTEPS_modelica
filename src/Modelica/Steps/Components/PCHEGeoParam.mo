@@ -8,7 +8,5 @@ record PCHEGeoParam
     parameter Real pitch;
     // pitch angle
     parameter Real phi;    
-    parameter Real length = L;    
-    parameter Real d_c = d;
   
 end PCHEGeoParam;

@@ -19,12 +19,12 @@ import Modelica.SIunits.Conversions.{from_degC,from_deg};
   package medium_cooler = ThermoPower.Water.StandardWater;
   
   // input parameters of the power block
-  parameter Modelica.SIunits.MassFlowRate mdot_main = 125 *0.75 "kg/s, mass flow in the main path of PB, which follows the power demand";
+  parameter Modelica.SIunits.MassFlowRate mdot_main = 125 * 1.10 "kg/s, mass flow in the main path of PB, which follows the power demand";
   parameter Modelica.SIunits.MassFlowRate mdot_heater_hot = 55 "kg/s, mass flow rate of heater's hot fluid";
   parameter Real gamma = 0.45 "split ratio, mdot_bypass/mdot_main";
   
-  parameter Modelica.SIunits.Temperature T_heater_hot = from_degC(500) "K, Temperature of heater's hot fluid";  
-  parameter Modelica.SIunits.Temperature T_cooler_cold = from_degC(30) "K, Temperature of cooler's cold fluid";
+  parameter Modelica.SIunits.Temperature T_heater_hot = from_degC(800) "K, Temperature of heater's hot fluid";  
+  parameter Modelica.SIunits.Temperature T_cooler_cold = from_degC(45) "K, Temperature of cooler's cold fluid";
  
   // results based on sscar's simulation for 10 Mw power block
   parameter Model.PBConfiguration cfg(
@@ -32,6 +32,7 @@ import Modelica.SIunits.Conversions.{from_degC,from_deg};
     mdot_pump = mdot_main * (1 - gamma),
     mdot_heater = mdot_heater_hot,
     T_heater_hot_in = T_heater_hot,
+    T_heater_hot_out = T_heater_hot - 200,
     T_cooler_cold_in = T_cooler_cold
   );       
   
@@ -91,7 +92,7 @@ import Modelica.SIunits.Conversions.{from_degC,from_deg};
     
   ThermoPower.Water.SinkPressure sink_heater_hot(
     redeclare package Medium = medium_heater, 
-    p0 = bc_heater.st_hot_out.mdot, 
+    p0 = bc_heater.st_hot_out.p, 
     T = bc_heater.st_hot_out.T,
     use_T = true) annotation(
     Placement(visible = true, transformation(origin = {-81, 63}, extent = {{-5, -5}, {5, 5}}, rotation = 180)));
@@ -422,13 +423,13 @@ import Modelica.SIunits.Conversions.{from_degC,from_deg};
   Modelica.SIunits.Power Q_HTR = (r04.h - r03.h) * r03.w / 1e6 "W->MW, heat input for HTR";
   Modelica.SIunits.TemperatureDifference dT1_HTR = (r06.T - r04.T);
   Modelica.SIunits.TemperatureDifference dT2_HTR = (r07.T - r03.T);
-  Real T_ltmd_HTR = if dT2_HTR / dT1_HTR > 0 then (dT2_HTR - dT1_HTR) / Modelica.Math.log(dT2_HTR / dT1_HTR) else -1;
+  Real T_ltmd_HTR = if dT2_HTR / dT1_HTR > 0 then (dT2_HTR - dT1_HTR) / Modelica.Math.log(abs(dT2_HTR / dT1_HTR)) else -1;
   Real UA_HTR = if T_ltmd_HTR > 0 then Q_HTR / T_ltmd_HTR else 0.0;
   // LTR
   Modelica.SIunits.Power Q_LTR = (r10.h - r02.h) * r02.w / 1e6 "W->MW";
   Modelica.SIunits.TemperatureDifference dT1_LTR = (r07.T - r10.T);
   Modelica.SIunits.TemperatureDifference dT2_LTR = (r08.T - r02.T);
-  Real T_ltmd_LTR = if dT2_LTR / dT1_LTR > 0 then (dT2_LTR - dT1_LTR) / Modelica.Math.log(dT2_LTR / dT1_LTR) else -1;
+  Real T_ltmd_LTR = if dT2_LTR / dT1_LTR > 0 then (dT2_LTR - dT1_LTR) / Modelica.Math.log(abs(dT2_LTR / dT1_LTR)) else -1;
   Real UA_LTR = if T_ltmd_LTR > 0 then Q_LTR / T_ltmd_LTR else 0.0;  
   
   // Liquid Na exit temperature
@@ -529,9 +530,9 @@ equation
     Line(points = {{34, -36}, {40, -36}, {40, -36}, {40, -36}}, color = {0, 255, 0}, thickness = 0.5));
   connect(rc1.outlet, cooler.waterIn) annotation(
     Line(points = {{48, -36}, {48, -36}, {48, -50}, {48, -50}}, color = {0, 255, 0}, thickness = 0.5));
-  connect(sink_cooler_cold.flange, rc2.inlet) annotation(
+  connect(cooler.waterOut, rc2.inlet) annotation(
     Line(points = {{36, -74}, {40, -74}, {40, -74}, {40, -74}}, color = {0, 255, 0}, thickness = 0.5));
-  connect(rc2.outlet, cooler.waterOut) annotation(
+  connect(rc2.outlet, sink_cooler_cold.flange) annotation(
     Line(points = {{48, -74}, {48, -74}, {48, -64}, {48, -64}}, color = {0, 255, 0}, thickness = 0.5));
 
   annotation(
