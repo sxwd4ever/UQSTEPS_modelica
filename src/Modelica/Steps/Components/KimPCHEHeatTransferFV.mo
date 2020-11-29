@@ -12,7 +12,7 @@ model KimPCHEHeatTransferFV "Kim [2012] heat transfer Correlation"
   import Steps.Components.MaterialConductivity;
   parameter Modelica.SIunits.Length pitch = 24.6 * 1e-3;
   parameter Modelica.SIunits.Angle phi = 0.0 "unit rad";
-  parameter Real Re_min = 6500 "Minimum Reynolds number";
+  parameter Real Re_min = 10000 "Minimum Reynolds number";
   parameter String name_material = "inconel 750";
   SI.Length d_c = (8 * A / Modelica.Constants.pi) ^ 0.5 "Diameter of semi_circular";
   /*
@@ -32,6 +32,7 @@ model KimPCHEHeatTransferFV "Kim [2012] heat transfer Correlation"
   SI.PerUnit Re[Nf] "Reynolds number";
   SI.PerUnit Nu[Nf] "Nussult numbers";
   SI.PerUnit Re_l[Nf] "Reynolds number limited to validity range";
+  Real G[Nf] "mass flow flux";
   Real f[Nf] "Fanning Friction Factor - used to calculate pressure drop";
   SI.PressureDifference dp[Nf];
   SI.ThermalConductivity k_wall[Nw] "wall thermal conductivity - determined by material of wall and local temperature";
@@ -40,17 +41,18 @@ equation
   assert(Nw == Nf - 1, "Number of volumes Nw on wall side should be equal to number of volumes fluid side Nf - 1");
 // Fluid properties at the nodes
   for j in 1:Nf loop
-    mu[j] = Medium.dynamicViscosity(fluidState[j]);
-    k[j] = Medium.thermalConductivity(fluidState[j]);
-    rho[j] = Medium.density(fluidState[j]);
-    Re[j] = abs(w[j]) * Dhyd / mu[j];
-    Re_l[j] = Functions.smoothSat(Re[j], Re_min, 1e9, Re_min / 2);
-    Nu[j] = 4.089 + kim_cor.c * Re_l[j] ^ kim_cor.d;
-    u[j] = abs(w[j]) / A / rho[j];
-    hc[j] = Nu[j] * k[j] / Dhyd;
-    f[j] = (15.78 + kim_cor.a * Re_l[j] ^ kim_cor.b) / Re_l[j];
+    mu[j] = noEvent(Medium.dynamicViscosity(fluidState[j]));
+    k[j] = noEvent(Medium.thermalConductivity(fluidState[j]));
+    rho[j] = noEvent(Medium.density(fluidState[j]));
+    G[j] = noEvent(abs(w[j] / A));
+    Re[j] =  noEvent(G[j]/ A * Dhyd / mu[j]);
+    Re_l[j] = noEvent(Functions.smoothSat(Re[j], Re_min, 1e9, Re_min / 2));
+    Nu[j] = noEvent(4.089 + kim_cor.c * Re_l[j] ^ kim_cor.d);
+    u[j] = noEvent(abs(w[j]) / A / rho[j]);
+    hc[j] = noEvent(Nu[j] * k[j] / Dhyd);
+    f[j] = noEvent((15.78 + kim_cor.a * Re_l[j] ^ kim_cor.b) / Re_l[j]);
 //pressure drop, unit Pa
-    dp[j] = 2 * f[j] * l * rho[j] * u[j] ^ 2 / Dhyd;
+    dp[j] = noEvent(2 * f[j] * l * rho[j] * u[j] ^ 2 / Dhyd);
   end for;
   for j in 1:Nw loop
     Tvol[j] = if useAverageTemperature then (T[j] + T[j + 1]) / 2 else T[j + 1];

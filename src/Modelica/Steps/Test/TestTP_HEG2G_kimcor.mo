@@ -41,7 +41,7 @@ model TestTP_HEG2G_kimcor
   
   // select the configuration of parameters
   parameter Model.PBConfiguration cfg = cfg_default;  
- 
+/* 
   // set the values of parameters accordingly - For HTR test
   parameter HEBoundaryCondition bc_HE = cfg.bc_HTR; 
    
@@ -52,19 +52,19 @@ model TestTP_HEG2G_kimcor
   parameter EntityThermoParam thermo_hot = cfg.cfg_PCHE_HTR_hot.thermo;
   parameter EntityThermoParam thermo_cold = cfg.cfg_PCHE_HTR_hot.thermo;
   parameter EntityThermoParam thermo_tube = cfg.cfg_PCHE_HTR_hot.thermo;  
+*/
 
-/*
   // set the values of parameters accordingly - For LTR Test
   parameter HEBoundaryCondition bc_HE = cfg.bc_LTR; 
+   
+  parameter EntityGeoParam geo_hot = cfg.cfg_PCHE_LTR_hot.geo;
+  parameter EntityGeoParam geo_cold = cfg.cfg_PCHE_LTR_hot.geo;
+  parameter EntityGeoParam geo_tube = cfg.cfg_PCHE_LTR_hot.geo;
   
-  parameter EntityGeoParam geo_hot = cfg.cfg_LTR_hot.geo;
-  parameter EntityGeoParam geo_cold = cfg.cfg_LTR_cold.geo;
-  parameter EntityGeoParam geo_tube = cfg.cfg_LTR_tube.geo;
-  
-  parameter EntityThermoParam thermo_hot = cfg.cfg_LTR_hot.thermo;
-  parameter EntityThermoParam thermo_cold = cfg.cfg_LTR_cold.thermo;
-  parameter EntityThermoParam thermo_tube = cfg.cfg_LTR_tube.thermo;  
-*/
+  parameter EntityThermoParam thermo_hot = cfg.cfg_PCHE_LTR_hot.thermo;
+  parameter EntityThermoParam thermo_cold = cfg.cfg_PCHE_LTR_hot.thermo;
+  parameter EntityThermoParam thermo_tube = cfg.cfg_PCHE_LTR_hot.thermo;   
+
   //Components
   inner ThermoPower.System system(allowFlowReversal = false, initOpt=ThermoPower.Choices.Init.Options.noInit) annotation(
     Placement(transformation(extent = {{80, 80}, {100, 100}})));  
@@ -120,33 +120,22 @@ model TestTP_HEG2G_kimcor
     Components.KimPCHEHeatTransferFV(
     redeclare replaceable package Medium = medium_cold,
     pitch = 12.3e-3,
-    phi = (180 - 108) * Modelica.Constants.pi  / 360),
-   //ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficient(gamma = thermo_cold.gamma_he), 
-   //ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer, 
-   //ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficient(gamma = thermo_cold.gamma_he),  
-  
+    phi = (180 - 108) * Modelica.Constants.pi  / 360),  
   redeclare replaceable model HeatTransfer_G =
     Components.KimPCHEHeatTransferFV(
     redeclare replaceable package Medium = medium_hot,
     pitch = 12.3e-3,
     phi = (180 - 108) * Modelica.Constants.pi  / 360),
-   // ThermoPower.Thermal.HeatTransferFV.FlowDependentThermalConductance(
-   //  UAnom = thermo_hot.gamma_he * geo_hot.A_ex * HE.Nt,
-   //  alpha = 0.8
-   // ),
-   //ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficientTwoGrids(gamma = thermo_hot.gamma_he), 
-   // ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer, 
-   //ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficientTwoGrids(gamma = thermo_hot.gamma_he), 
   redeclare model HeatExchangerTopology = ThermoPower.Thermal.HeatExchangerTopologies.CounterCurrentFlow,  
   gasFlow(
-  QuasiStatic = true, 
-  Tstartin = bc_HE.st_hot_in.T, 
-  Tstartout = bc_HE.st_hot_out.T
+    QuasiStatic = true, 
+    Tstartin = bc_HE.st_hot_in.T, 
+    Tstartout = bc_HE.st_hot_out.T
   ),
   fluidFlow
   (
-  Tstartin = bc_HE.st_cold_in.T, 
-  Tstartout = bc_HE.st_cold_out.T
+    Tstartin = bc_HE.st_cold_in.T, 
+    Tstartout = bc_HE.st_cold_out.T
   ),
   N_F = geo_cold.N_seg, 
   N_G = geo_hot.N_seg,  
@@ -170,7 +159,12 @@ model TestTP_HEG2G_kimcor
   SSInit = false,
   gasQuasiStatic = true,
   fluidQuasiStatic = true,
-  metalTube(WallRes=false, Nt = geo_hot.N_ch)) annotation(
+  // override the values of Am and L of metaltubeFV
+  // to make them agree with semi-circular tube of PCHE
+  // ('final' modifier of Am in metalTubeFv was removed as well)
+  metalTube(WallRes=false, L = 1, rhomcm=200, Am = HE.metalVol / 1) 
+  )
+  annotation(
     Placement(transformation(extent = {{-20, -20}, {20, 20}}, rotation = 0)));
 
   // variable for validation

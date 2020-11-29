@@ -1,6 +1,6 @@
 within Steps.Components;
 
-model HEG2G "Heat Exchanger gas - gas"
+model TP_PCHE "PCHE model based on Thermo Power"
 extends Interfaces.HeatExchangerG2G;
   import SI = Modelica.SIunits;
   import Gas = ThermoPower.Gas;  
@@ -101,7 +101,7 @@ extends Interfaces.HeatExchangerG2G;
   redeclare model HeatTransfer = HeatTransfer_G) annotation(
     Placement(transformation(extent = {{-12, 66}, {12, 46}}, rotation = 0)));
   
-  Thermal.MetalTubeFV metalTube(
+  PCHEMetalTubeFV metalTube(
   L = exchSurface_F ^ 2 / (fluidVol * pi * 4),  
   Nw = Nw_F, 
   Tstartbar = Tstartbar_M, 
@@ -131,4 +131,4 @@ equation
     Line(points = {{0, 19}, {0, 51}}, color = {255, 127, 0}, smooth = Smooth.None));
   annotation(
     Diagram(coordinateSystem(preserveAspectRatio = false, extent = {{-100, -100}, {100, 100}}), graphics));
-end HEG2G;
+end TP_PCHE;

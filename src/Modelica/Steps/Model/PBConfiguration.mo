@@ -174,7 +174,7 @@ model PBConfiguration
     L = L_PCHE_HTR, 
     d = r_PCHE_HTR * 2, 
     N_seg = 7, 
-    N_ch = integer(94e3)),
+    N_ch = 332449), // calculate by steps the python code
     thermo(gamma_he = 3.96538615e6/cfg_HTR_cold.geo.A_ex "200")
   );
   
@@ -214,6 +214,41 @@ model PBConfiguration
     // number of segments
     N_seg = 50);
       
+  parameter Real r_PCHE_LTR = 1e-3;
+  parameter Real L_PCHE_LTR = 1000e-3;
+  parameter EntityConfig cfg_PCHE_LTR_cold(
+    geo(
+    V = r_PCHE_LTR^2 * pi * L_PCHE_LTR, // * N_ch_LTR, 
+    A_ex = pi * r_PCHE_LTR * L_PCHE_LTR, // * N_ch_LTR, exchange surface between fluid-tube
+    L = L_PCHE_LTR, 
+    d = r_PCHE_LTR * 2, 
+    N_seg = 7, 
+    N_ch = 422585), // calculate by steps the python code
+    thermo(gamma_he = 1.938761018e6/cfg_LTR_cold.geo.A_ex "200")
+  );
+  
+  parameter EntityConfig cfg_PCHE_LTR_tube(
+    geo(
+    V = cfg_PCHE_LTR_cold.geo.V * 2, //r_t_LTR^2 * pi * L_LTR * N_ch_LTR - cfg_LTR_cold.geo.V,
+    A_ex = cfg_PCHE_LTR_cold.geo.A_ex, //  * N_ch_LTR, // assume thickness of tube approximately 0
+    L = cfg_PCHE_LTR_cold.geo.L, 
+    d = cfg_PCHE_LTR_cold.geo.d, 
+    N_seg = 6, 
+    N_ch = cfg_PCHE_LTR_cold.geo.N_ch),
+    thermo(rho_mcm = 100, lambda = 20)
+  ); 
+  
+  parameter EntityConfig cfg_PCHE_LTR_hot(
+    geo(
+    V = cfg_PCHE_LTR_cold.geo.V, // r_o_LTR^2 * pi * L_LTR * N_ch_LTR - cfg_LTR_tube.geo.V , 
+    A_ex = cfg_PCHE_LTR_cold.geo.A_ex, // * N_ch_LTR, 
+    L = cfg_PCHE_LTR_cold.geo.L, 
+    d = cfg_PCHE_LTR_cold.geo.d, 
+    N_seg = 7, 
+    N_ch = cfg_PCHE_LTR_cold.geo.N_ch),
+    thermo(gamma_he = 1.938761018e6/cfg_LTR_cold.geo.A_ex "200")
+  );  
+        
   // HTR's's size of heat exchanger gas - gas
   // N_ch_HTR groups of fluid(cold, inner)-tube-gas(hot, outter) tubes 
   parameter Modelica.SIunits.Radius r_i_HTR = 5e-3 "mm tube's internal radius";

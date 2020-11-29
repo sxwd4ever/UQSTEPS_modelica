@@ -1,5 +1,8 @@
 {
+    "python.condaPath": "C:\\Users\\uqxsui\\AppData\\Local\\Continuum\\anaconda3\\condabin\\conda",
     "python.pythonPath": "C:\\Users\\uqxsui\\AppData\\Local\\Continuum\\anaconda3\\envs\\steps\\python.exe",
+    "python.terminal.activateEnvironment": true,
+    "python.terminal.activateEnvInCurrentTerminal": true,    
     "python.analysis.extraPaths": [        
         "src\\python"
     ],
@@ -98,5 +101,6 @@
         "nonlinearoptimization": "cpp",
         "mprealsupport": "cpp"
     },
-    "workbench.tree.indent": 4
+    "workbench.tree.indent": 4,
+    "python.venvPath": "C:\\Users\\uqxsui\\AppData\\Local\\Continuum\\anaconda3\\envs"
 }

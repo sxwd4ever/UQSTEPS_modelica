@@ -162,6 +162,9 @@ class Variable(object):
     simulation result is a collection of variables 
     '''
     def __init__(self, key, unit='[1]', val=0.0, text=None):
+        '''
+            key: key in modelica's solution
+        '''
         self.key = key
         self.unit = unit
         self.val = val
@@ -200,11 +203,13 @@ class TestResult(dict):
             key = keys[i]
             sol = values[i]
             var = sol_dict[key]
-            if not sol is None:
+            v = Variable(var.key, var.unit, -1 , var.text)
+            if not sol is None or not sol:
                 # copy the sol_dict
                 # for now, save the last val, which is the value when system
                 # achive equilibrium
-                d[key] = Variable(var.key, var.unit, sol[-1], var.text)
+                v.val = sol[-1]
+            d[key] = v
 
         return cls("", d)
    
@@ -212,7 +217,7 @@ class TestResult(dict):
         self._idx = 0
         return self
 
-    def __next__(self) -> str:
+    def __next__(self) -> Variable:
         result = None    
 
         if self._idx < len(self.results):
@@ -227,6 +232,32 @@ class TestResult(dict):
         for var_ in self.results.values():
             d[var_.key] = var_
         return d
+class TestDataView(dict):
+    '''
+        Data view mapping Test result to other data views
+    '''
+
+    def __init__(self, name, map:Dict[str, str]) -> None:
+        self.name = name
+        self.mapping = map
+
+    def maps(self, data:TestResult) -> Dict[str, Variable]:
+        view = OrderedDict()
+        results = data.results
+        for (src, dst) in self.mapping.items():
+            v_new = Variable(dst)
+            view[dst] = v_new
+
+            if src in results.keys():
+                v = results[src]
+                v_new.val = v.val 
+                v_new.unit = v.unit
+                v_new.text = v.text               
+
+        return view
+
+    def to_dict(self) -> Dict[str, str]:
+        return deepcopy(self.mapping)
 
 class TestConfig(dict):
     def __init__(self, name, params:dict):
@@ -272,6 +303,13 @@ class TestItem:
         self.name = name
         self.cfg = TestConfig(name, cfg)
         self.result = TestResult(name, result)
+        self.views : Dict[str, TestDataView] = {}
+
+    def add_view(self, view:TestDataView):
+        self.views[view.name] = view
+
+    def has_view(self) -> bool:
+        return len(self.views) != 0
 
     @classmethod
     def from_json(cls, name, json_str):
@@ -282,6 +320,10 @@ class TestItem:
         d = {}
         d['cfg'] = self.cfg.to_dict()
         d['result'] = self.result.to_dict()
+        views = {}
+        for (k, v) in self.views.items():
+            views[k] = v.to_dict()
+        d['views'] = views
         return d
 
 class TestGroup(dict):

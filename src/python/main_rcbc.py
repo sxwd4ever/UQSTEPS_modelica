@@ -21,7 +21,7 @@ import json
 import numpy as np
 # from ex.CoolPropQuery import result
 
-from model import TestDataSet, TestConfig, TestResult,Variable, TestConstants
+from model import TestDataSet, TestConfig, TestDataView, TestResult,Variable, TestConstants
 from plotlib import PlotManager, DataSeries, AxisType
 from physics import Temperature, Pressure, MDot
 from experiments import Experiments
@@ -47,6 +47,8 @@ class RCBC_simulation(Experiments):
 
             result_set = OrderedDict()
             result_set['Key'] = ['Name', 'Unit', 'Description']
+
+            view_set = OrderedDict()            
             for group in ds_test:       
                 for test in group:
                     cfg = test.cfg.to_dict()
@@ -65,8 +67,23 @@ class RCBC_simulation(Experiments):
                         else:
                             # for first column, add text, unit
                             result_set[k] = [v.text, v.unit, '_', v.val]
-                    # wbk.close()
-                
+                    # wbk.close()       
+
+                    if test.has_view():
+                        for view in test.views.values():                          
+                            map_result = view.maps(test.result)
+                            if view.name in view_set.keys():
+                                data_table = view_set[view.name]
+                                for (k, v) in map_result.items():
+                                    data_table[k].append(v.val)
+                            else:                  
+                                data_table = {}
+                                data_table['Key'] = ['Name', 'Unit', 'Description']
+                                for (k, v) in map_result.items():
+                                    data_table[k] = [v.text, v.unit, '_', v.val]
+                                view_set[view.name] = data_table
+
+
             from pathlib import Path
 
             ex_file=Path(filename)       
@@ -84,6 +101,13 @@ class RCBC_simulation(Experiments):
 
             title = {"Table 2": "Results"}
             (b, r) = ex.write_table(result_set, title=title, up=b, left=l, linespacing=True)
+            
+            if view_set: # not empty
+                idx = 3
+                for (view_name, data_table) in view_set.items():                    
+                    title = {f"Table {idx}": view_name}
+                    (b, r) = ex.write_table(data_table, title=title, up=b, left=l, linespacing=True)
+                    idx += 1
 
             wbk.save(filename)                    
 
@@ -250,10 +274,36 @@ def main(work_root = []):
 
     # cfg with varied parameters from the base cfg
     cfg_offset = {} 
-
+    mapping = []
     if test_mode:   
         cfg_offset["mdot_main"] = list(map(lambda x: x * mdot_main_des/100, [75, 100, 120]))
         cfg_offset["T_heater_hot"] = list(map(lambda x: from_degC(x), [550, 700]))
+        mapping = [
+        {
+            "eta_pb":"eta_cycle",
+            "UA_HTR" : "UA_HTR",
+            "UA_LTR" : "UA_LTR",
+            "UA_cooler" : "UA_cooler",
+            "UA_heater" : "UA_heater",
+            "W_MC": "W_comp",
+            "W_RC": "W_recomp",
+            "W_turb": "W_turb",
+            "Q_HTR": "Q_HTR",
+            "Q_LTR": "Q_LTR",
+            "Q_cooler": "Q_cooler",
+            "Q_heater": "Q_heater",
+            "ex_HTR":"ex_HTR",
+            "ex_LTR":"ex_LTR",
+            "ex_comp":"ex_comp",
+            "ex_recomp":"ex_recomp",
+            "ex_turbine":"ex_turbine",
+            "ex_cooler":"ex_cooler",
+            "ex_heater":"ex_heater",
+        },
+        {
+            "rc1.T":"T_amb",
+            "r05.T": "TIT"
+        }]
     else:
         # reduced size batch
         # cfg_offset["mdot_main"] = list(map(lambda x: x * mdot_main_des/100, [50, 100]))        
@@ -267,10 +317,41 @@ def main(work_root = []):
         # cfg_offset["mdot_heater_hot"] = 55
         # cfg_offset["gamma"] =[0.3, 0.325, 0.35, 0.375, 0.4, 0.45]	
         cfg_offset["gamma"] =[0.3, 0.35, 0.4, 0.45]	
+        # src -> dst
+        mapping = [
+        {
+            "eta_pb":"eta_cycle",
+            "UA_HTR" : "UA_HTR",
+            "UA_LTR" : "UA_LTR",
+            "UA_cooler" : "UA_cooler",
+            "UA_heater" : "UA_heater",
+            "W_MC": "W_comp",
+            "W_RC": "W_recomp",
+            "W_turb": "W_turb",
+            "Q_HTR": "Q_HTR",
+            "Q_LTR": "Q_LTR",
+            "Q_cooler": "Q_cooler",
+            "Q_heater": "Q_heater",
+            "ex_HTR":"ex_HTR",
+            "ex_LTR":"ex_LTR",
+            "ex_comp":"ex_comp",
+            "ex_recomp":"ex_recomp",
+            "ex_turbine":"ex_turbine",
+            "ex_cooler":"ex_cooler",
+            "ex_heater":"ex_heater",
+        }]
     ds_name = '10MW off-Desin sim {:%Y-%m-%d-%H-%M-%S}'.format(datetime.datetime.now())
     ds_test = gen_batch_cfg(cfg_ref, cfg_offset, gname_template='10MW off-Design(mdot=%s)',ds_name=ds_name)
-   
-    json_str = ds_test.to_json()
+    
+    
+    for g in ds_test:
+        for t in g:
+            idx = 1
+            for m in mapping:                
+                t.add_view(TestDataView(f"performance map {idx}", m))
+                idx += 1
+
+    json_str = ds_test.to_json()    
     print(json_str)
 
     ports = [
