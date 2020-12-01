@@ -1,6 +1,7 @@
 within Steps.Cycle;
 
-model TP_RCBCycle
+model TP_RCBCycle_PCHE
+  "ThermoPower based RCBCycle with PCHE as recuperator"
 import Modelica.SIunits.Conversions.{from_degC,from_deg};
   import Modelica.SIunits.{Temperature,Pressure,SpecificEnthalpy};
   import Util = Utilities.Util;
@@ -133,23 +134,20 @@ import Modelica.SIunits.Conversions.{from_degC,from_deg};
   Gas.FlowJoin mixer(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {-12, 60}, extent = {{-6, -6}, {6, 6}}, rotation = 180)));
 
-  Components.HEG2G HTR(
+  parameter SI.Length pitch = 12.3e-3 "pitch length";
+  parameter Modelica.SIunits.Radiance phi = (180 - 108) * Modelica.Constants.pi / 360 "pitch angle";
+
+  Components.TP_PCHE HTR(
     redeclare package FluidMedium = medium_main, 
     redeclare package FlueGasMedium = medium_main, 
     gasFlow(QuasiStatic = true, Tstartin = bc_HTR.st_hot_in.T, Tstartout = bc_HTR.st_hot_out.T),
     fluidFlow(Tstartin = bc_HTR.st_cold_in.T, Tstartout = bc_HTR.st_cold_out.T),  
-    redeclare replaceable model HeatTransfer_F = 
-     ThermoPower.Thermal.HeatTransferFV.FlowDependentThermalConductance(
-      UAnom = thermo_HTR_cold.gamma_he * geo_HTR_cold.A_ex * HTR.Nt,    
-      alpha = 0.8
-     ), 
-     //ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficient(gamma = thermo_HTR_cold.gamma_he), 
-    // redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer,
-    redeclare replaceable model HeatTransfer_G = 
-     ThermoPower.Thermal.HeatTransferFV.FlowDependentThermalConductance(
-      UAnom = thermo_HTR_hot.gamma_he * geo_HTR_hot.A_ex * HTR.Nt,    
-      alpha = 0.8
-     ), 
+    redeclare replaceable model HeatTransfer_F = Steps.Components.KimPCHEHeatTransferFV(
+    pitch = pitch,
+    phi = phi), 
+    redeclare replaceable model HeatTransfer_G = Steps.Components.KimPCHEHeatTransferFV(
+    pitch = pitch,
+    phi = phi), 
      //redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer,
     redeclare model HeatExchangerTopology = ThermoPower.Thermal.HeatExchangerTopologies.CounterCurrentFlow,  
     N_F = geo_HTR_cold.N_seg, 
@@ -183,18 +181,14 @@ import Modelica.SIunits.Conversions.{from_degC,from_deg};
     gasFlow(QuasiStatic = true, Tstartin = bc_LTR.st_hot_in.T, Tstartout = bc_LTR.st_hot_out.T),
     fluidFlow(Tstartin = bc_LTR.st_cold_in.T, Tstartout = bc_LTR.st_cold_out.T),   
     // redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer, 
-    redeclare replaceable model HeatTransfer_F =
-    ThermoPower.Thermal.HeatTransferFV.FlowDependentThermalConductance(
-      UAnom = thermo_LTR_cold.gamma_he * geo_LTR_cold.A_ex * LTR.Nt,    
-      alpha = 0.8
-     ),
+    redeclare replaceable model HeatTransfer_F = Steps.Components.KimPCHEHeatTransferFV(
+    pitch = pitch,
+    phi = phi),
     // ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficient(gamma = thermo_LTR_cold.gamma_he),
     // redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer, 
-    redeclare replaceable model HeatTransfer_G =
-    ThermoPower.Thermal.HeatTransferFV.FlowDependentThermalConductance(
-      UAnom = thermo_LTR_hot.gamma_he * geo_LTR_hot.A_ex * LTR.Nt,
-      alpha = 0.8
-    ),  
+    redeclare replaceable model HeatTransfer_G = Steps.Components.KimPCHEHeatTransferFV(
+    pitch = pitch,
+    phi = phi),  
     // ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficientTwoGrids(gamma = thermo_LTR_hot.gamma_he),
     redeclare model HeatExchangerTopology = ThermoPower.Thermal.HeatExchangerTopologies.CounterCurrentFlow,  
     N_F = geo_LTR_cold.N_seg, 
@@ -561,4 +555,4 @@ equation
     experiment(StartTime = 0, StopTime = 100, Tolerance = 1e-3, Interval = 10),
     __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,bltdump",
     __OpenModelica_simulationFlags(lv = "LOG_DEBUG,LOG_NLS,LOG_NLS_V,LOG_STATS,LOG_INIT,LOG_STDOUT, -w", outputFormat = "mat", s = "dassl", nls = "homotopy"));
-end TP_RCBCycle;
+end TP_RCBCycle_PCHE;

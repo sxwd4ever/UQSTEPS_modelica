@@ -1,7 +1,7 @@
 within Steps.Test;
 
-model TestTP_HEG2G_kimcor
-  "Test for Gas to Gas Heat Exchanger in ThermoPower"  
+model TestTP_PCHE
+  "Test for ThermoPower based PCHE model"  
     
   import Modelica.SIunits.Conversions.{from_degC, from_deg};
   import Modelica.SIunits.{Temperature, Pressure, SpecificEnthalpy};
@@ -13,6 +13,8 @@ model TestTP_HEG2G_kimcor
   import ThermoPower.Choices.Init.Options;
   import ThermoPower.System;
   import ThermoPower.Gas;
+  import Steps.Components.KimCorrelations;
+  import Steps.Components.MaterialConductivity;    
   
   // package medium_hot = Steps.Media.CO2;
   // package medium_cold = Steps.Media.CO2;
@@ -24,24 +26,11 @@ model TestTP_HEG2G_kimcor
   // package medium_cold = Modelica.Media.IdealGases.SingleGases.CO2;  
  
   // parameter for C++ implementation of PCHE - based on Modelica impl's result
-  parameter Model.PBConfiguration cfg_default;
-  
-  parameter Model.PBConfiguration cfg_tune( 
-  //mdot_main = 125,
-  r_i_HTR = 5e-3,
-  r_t_HTR = cfg_tune.r_i_HTR + 5e-3,
-  r_o_HTR = cfg_tune.r_t_HTR + 30e-3,
-  N_ch_HTR = 100,
-  L_HTR = 1 "Don't modify this, since L in HE model is fixed as 1m. Modify Nt instead",
-  r_i_LTR = 100e-3,
-  r_t_LTR = cfg_tune.r_i_LTR + 10e-3,
-  r_o_LTR = cfg_tune.r_t_LTR + 60e-3,
-  N_ch_LTR = 400,
-  L_LTR = 1 "Don't modify this, since L in HE model is fixed as 1m. Modify Nt instead");   
+  parameter Model.PBConfiguration cfg_default;  
   
   // select the configuration of parameters
   parameter Model.PBConfiguration cfg = cfg_default;  
-/* 
+ 
   // set the values of parameters accordingly - For HTR test
   parameter HEBoundaryCondition bc_HE = cfg.bc_HTR; 
    
@@ -52,8 +41,8 @@ model TestTP_HEG2G_kimcor
   parameter EntityThermoParam thermo_hot = cfg.cfg_PCHE_HTR_hot.thermo;
   parameter EntityThermoParam thermo_cold = cfg.cfg_PCHE_HTR_hot.thermo;
   parameter EntityThermoParam thermo_tube = cfg.cfg_PCHE_HTR_hot.thermo;  
-*/
 
+/*
   // set the values of parameters accordingly - For LTR Test
   parameter HEBoundaryCondition bc_HE = cfg.bc_LTR; 
    
@@ -64,7 +53,7 @@ model TestTP_HEG2G_kimcor
   parameter EntityThermoParam thermo_hot = cfg.cfg_PCHE_LTR_hot.thermo;
   parameter EntityThermoParam thermo_cold = cfg.cfg_PCHE_LTR_hot.thermo;
   parameter EntityThermoParam thermo_tube = cfg.cfg_PCHE_LTR_hot.thermo;   
-
+*/
   //Components
   inner ThermoPower.System system(allowFlowReversal = false, initOpt=ThermoPower.Choices.Init.Options.noInit) annotation(
     Placement(transformation(extent = {{80, 80}, {100, 100}})));  
@@ -104,7 +93,7 @@ model TestTP_HEG2G_kimcor
     T(nominal=bc_HE.st_hot_in.T))) 
   annotation(
     Placement(transformation(extent = {{-70, -10}, {-50, 10}}, rotation = 0))); 
-  /*  
+  
   ThermoPower.Gas.SensT T_waterIn(redeclare package Medium = medium_cold) annotation(
     Placement(transformation(origin = {4, -50}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
   ThermoPower.Gas.SensT T_waterOut(redeclare package Medium = medium_cold) annotation(
@@ -112,57 +101,59 @@ model TestTP_HEG2G_kimcor
   
   ThermoPower.Gas.SensT T_gasIn(redeclare package Medium = medium_hot);
   ThermoPower.Gas.SensT T_gasOut(redeclare package Medium = medium_hot);
- */
-  Components.HEG2G HE(
-  redeclare package FluidMedium = medium_cold, 
-  redeclare package FlueGasMedium = medium_hot, 
-  redeclare replaceable model HeatTransfer_F =
-    Components.KimPCHEHeatTransferFV(
-    redeclare replaceable package Medium = medium_cold,
-    pitch = 12.3e-3,
-    phi = (180 - 108) * Modelica.Constants.pi  / 360),  
-  redeclare replaceable model HeatTransfer_G =
-    Components.KimPCHEHeatTransferFV(
-    redeclare replaceable package Medium = medium_hot,
-    pitch = 12.3e-3,
-    phi = (180 - 108) * Modelica.Constants.pi  / 360),
-  redeclare model HeatExchangerTopology = ThermoPower.Thermal.HeatExchangerTopologies.CounterCurrentFlow,  
-  gasFlow(
-    QuasiStatic = true, 
-    Tstartin = bc_HE.st_hot_in.T, 
-    Tstartout = bc_HE.st_hot_out.T
-  ),
-  fluidFlow
-  (
-    Tstartin = bc_HE.st_cold_in.T, 
-    Tstartout = bc_HE.st_cold_out.T
-  ),
-  N_F = geo_cold.N_seg, 
-  N_G = geo_hot.N_seg,  
-  Nt = geo_hot.N_ch,  
-  Tstartbar_G = bc_HE.st_hot_in.T, 
-  Tstartbar_F = bc_HE.st_cold_in.T, 
-  exchSurface_F = geo_cold.A_ex, 
-  exchSurface_G = geo_hot.A_ex, 
-  extSurfaceTub = geo_tube.A_ex, 
-  fluidNomFlowRate = bc_HE.st_cold_in.mdot, 
-  fluidNomPressure = bc_HE.st_cold_in.p, 
-  fluidVol = geo_cold.V, 
-  gasNomFlowRate = bc_HE.st_hot_in.mdot, 
-  gasNomPressure = bc_HE.st_hot_in.p, 
-  gasVol = geo_hot.V, 
-  lambda = thermo_tube.lambda, 
-  metalVol = geo_tube.V, 
-  pstart_F = bc_HE.st_cold_in.p, 
-  pstart_G = bc_HE.st_hot_in.p,
-  rhomcm = thermo_tube.rho_mcm,
-  SSInit = false,
-  gasQuasiStatic = true,
-  fluidQuasiStatic = true,
-  // override the values of Am and L of metaltubeFV
-  // to make them agree with semi-circular tube of PCHE
-  // ('final' modifier of Am in metalTubeFv was removed as well)
-  metalTube(WallRes=false, L = 1, rhomcm=200, Am = HE.metalVol / 1) 
+
+  //Real kim_cor_coe[4] = {kim.a, kim.b, kim.c, kim.d};
+  parameter SI.Length pitch = 12.3e-3 "pitch length";
+  parameter Modelica.SIunits.Radiance phi = (180 - 108) * Modelica.Constants.pi / 360 "pitch angle";
+    
+  Components.TP_PCHE HE(
+    redeclare package FluidMedium = medium_cold, 
+    redeclare package FlueGasMedium = medium_hot,     
+    redeclare replaceable model HeatTransfer_F = Steps.Components.KimPCHEHeatTransferFV(
+    pitch = pitch,
+    phi = phi),
+    // ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficient(gamma = thermo_LTR_cold.gamma_he),
+    // redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer, 
+    redeclare replaceable model HeatTransfer_G = Steps.Components.KimPCHEHeatTransferFV(
+    pitch = pitch,
+    phi = phi),
+    redeclare model HeatExchangerTopology = ThermoPower.Thermal.HeatExchangerTopologies.CounterCurrentFlow,  
+    gasFlow(
+      QuasiStatic = true, 
+      Tstartin = bc_HE.st_hot_in.T, 
+      Tstartout = bc_HE.st_hot_out.T
+    ),
+    fluidFlow
+    (
+      Tstartin = bc_HE.st_cold_in.T, 
+      Tstartout = bc_HE.st_cold_out.T
+    ),
+    N_F = geo_cold.N_seg, 
+    N_G = geo_hot.N_seg,  
+    Nt = geo_hot.N_ch,  
+    Tstartbar_G = bc_HE.st_hot_in.T, 
+    Tstartbar_F = bc_HE.st_cold_in.T, 
+    exchSurface_F = geo_cold.A_ex, 
+    exchSurface_G = geo_hot.A_ex, 
+    extSurfaceTub = geo_tube.A_ex, 
+    fluidNomFlowRate = bc_HE.st_cold_in.mdot, 
+    fluidNomPressure = bc_HE.st_cold_in.p, 
+    fluidVol = geo_cold.V, 
+    gasNomFlowRate = bc_HE.st_hot_in.mdot, 
+    gasNomPressure = bc_HE.st_hot_in.p, 
+    gasVol = geo_hot.V, 
+    lambda = thermo_tube.lambda, 
+    metalVol = geo_tube.V, 
+    pstart_F = bc_HE.st_cold_in.p, 
+    pstart_G = bc_HE.st_hot_in.p,
+    rhomcm = thermo_tube.rho_mcm,
+    SSInit = false,
+    gasQuasiStatic = true,
+    fluidQuasiStatic = true
+    // override the values of Am and L of metaltubeFV
+    // to make them agree with semi-circular tube of PCHE
+    // ('final' modifier of Am in metalTubeFv was removed as well)
+    //metalTube(WallRes=false, L = 1, rhomcm=200, Am = HE.metalVol / 1) 
   )
   annotation(
     Placement(transformation(extent = {{-20, -20}, {20, 20}}, rotation = 0)));
@@ -173,6 +164,7 @@ model TestTP_HEG2G_kimcor
   Boolean isQMatch = abs(Q_out -Q_in) < 1e-3;  
 equation
 
+/*
   // HE alone
   connect(source_cold.flange, HE.waterIn) annotation(
     Line(points = {{-1.83697e-015, 50}, {-1.83697e-015, 20}, {0, 20}}, color = {0, 0, 255}, thickness = 0.5, smooth = Smooth.None));
@@ -183,8 +175,8 @@ equation
         Line(points = {{-50, 0}, {-20, 0}}, color = {159, 159, 223}, thickness = 0.5, smooth = Smooth.None)); 
   connect(HE.gasOut, sink_hot.flange) annotation(
     Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));    
-   
-  /*
+*/   
+  
   connect(source_cold.flange, T_waterIn.inlet);
   connect(T_waterIn.outlet, HE.waterIn) annotation(
     Line(points = {{-1.83697e-015, 50}, {-1.83697e-015, 20}, {0, 20}}, color = {0, 0, 255}, thickness = 0.5, smooth = Smooth.None));
@@ -200,10 +192,10 @@ equation
     Line(points = {{34, 0}, {34, 0}, {20, 0}}, color = {159, 159, 223}, thickness = 0.5));
   connect(T_gasOut.outlet, sink_hot.flange) annotation(
     Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));    
-  */
+  
 annotation(
     Diagram(graphics),
     experiment(StartTime = 0, StopTime = 10, Tolerance = 1e-3, Interval = 2),
     __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts,bltdump",    
     __OpenModelica_simulationFlags(lv = "LOG_DEBUG,LOG_NLS,LOG_NLS_V,LOG_STATS,LOG_INIT,LOG_STDOUT, -w", outputFormat = "mat", s = "dassl", nls = "homotopy"));
-end TestTP_HEG2G_kimcor;
+end TestTP_PCHE;

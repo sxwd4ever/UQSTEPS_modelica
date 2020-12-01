@@ -7,7 +7,9 @@ extends Interfaces.HeatExchangerG2G;
   import Choices = ThermoPower.Choices;
   import Thermal = ThermoPower.Thermal;
   import Options = ThermoPower.Choices.Init.Options;
-  
+  import Steps.Components.KimCorrelations;
+  import Steps.Components.MaterialConductivity;  
+
   replaceable model HeatTransfer_F = Thermal.HeatTransferFV.IdealHeatTransfer constrainedby ThermoPower.Thermal.BaseClasses.DistributedHeatTransferFV annotation(
      choicesAllMatching = true);
   replaceable model HeatTransfer_G = Thermal.HeatTransferFV.IdealHeatTransfer constrainedby ThermoPower.Thermal.BaseClasses.DistributedHeatTransferFV annotation(
@@ -27,11 +29,14 @@ extends Interfaces.HeatExchangerG2G;
   parameter Choices.Flow1D.HCtypes HCtype_F = ThermoPower.Choices.Flow1D.HCtypes.Downstream "Location of the hydraulic capacitance, fluid side";
   parameter Boolean gasQuasiStatic = false "Quasi-static model of the flue gas (mass, energy and momentum static balances";
   parameter Boolean fluidQuasiStatic = false "Quasi-static model of the fluid (mass, energy and momentum static balances";
+
   constant Real pi = Modelica.Constants.pi;
   final parameter SI.Distance L = 1 "Tube length";
   parameter Choices.FluidPhase.FluidPhases FluidPhaseStart = Choices.FluidPhase.FluidPhases.Liquid "Fluid phase (only for initialization!)" annotation(
     Dialog(tab = "Initialization"));
-  parameter Boolean SSInit = false "Steady State initialization";
+  parameter Boolean SSInit = false "Steady State initialization";  
+ 
+  //MaterialConductivity mc(name_material = name_material);  
   /*
   Gas.Flow1DFV fluidFlow(
    
@@ -102,8 +107,9 @@ extends Interfaces.HeatExchangerG2G;
     Placement(transformation(extent = {{-12, 66}, {12, 46}}, rotation = 0)));
   
   PCHEMetalTubeFV metalTube(
-  L = exchSurface_F ^ 2 / (fluidVol * pi * 4),  
-  Nw = Nw_F, 
+  L = L,  
+  Nw = Nw_F,
+  Am = metalVol / L,  
   Tstartbar = Tstartbar_M, 
   WallRes = false, 
   lambda = lambda, 
@@ -115,6 +121,12 @@ extends Interfaces.HeatExchangerG2G;
   Thermal.HeatExchangerTopologyFV heatExchangerTopology(Nw = Nw_F, redeclare model HeatExchangerTopology = HeatExchangerTopology) annotation(
     Placement(transformation(extent = {{-10, 6}, {10, 26}})));
 equation
+  /*
+  kim_a = kim.a;
+  kim_b = kim.a;
+  kim_c = kim.a;  
+  kim_d = kim.a;
+    */ 
   connect(gasFlow.infl, gasIn) annotation(
     Line(points = {{-12, 56}, {-100, 56}, {-100, 0}}, color = {159, 159, 223}, thickness = 0.5));
   connect(gasFlow.outfl, gasOut) annotation(

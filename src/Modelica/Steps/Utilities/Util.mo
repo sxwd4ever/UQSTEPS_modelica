@@ -48,6 +48,19 @@ algorithm
   
 end thermal_conductivity;   
 
+function metal_conductivity "cal thermal conductivity of a material"
+  extends Modelica.Icons.Function;
+  input Modelica.Blocks.Types.ExternalCombiTable1D tableID;
+  input Modelica.SIunits.Temp_C temperature;  
+  output Modelica.SIunits.ThermalConductivity k;  
+algorithm
+  /*
+  table.u := temperature;
+  k := table.y[1];
+  */
+  k := Modelica.Blocks.Tables.CombiTable1D.getTableValue(tableID, icol = 1, u = temperature, tableAvailable = 1.0); 
+end metal_conductivity;   
+
 function myAssert "customerized assert function to generate more detailed information"
   input Boolean debug = false;
   input Real val_test;

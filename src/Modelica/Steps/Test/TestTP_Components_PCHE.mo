@@ -1,7 +1,7 @@
 within Steps.Test;
 
-model TestTP_Components
-  "Test for combination of components: heater + turbine + HTR + LTR in ThermoPower"  
+model TestTP_Components_PCHE
+  "Test for combination of components: heater + turbine + HTR + LTR in ThermoPower, PCHE as recuperator"  
     
   import Modelica.SIunits.Conversions.{from_degC, from_deg};
   import Modelica.SIunits.{Temperature, Pressure, SpecificEnthalpy};
@@ -14,8 +14,8 @@ model TestTP_Components
   import ThermoPower.System;
   import ThermoPower.Gas;
   
-  // package medium_hot = Modelica.Media.IdealGases.SingleGases.CO2; //Steps.Media.CO2;
-  // package medium_cold = Modelica.Media.IdealGases.SingleGases.CO2; //Steps.Media.CO2;
+  //package medium_hot = Modelica.Media.IdealGases.SingleGases.CO2; //Steps.Media.CO2;
+  //package medium_cold = Modelica.Media.IdealGases.SingleGases.CO2; //Steps.Media.CO2;
   // package medium_hot = Steps.Media.CO2;
   // package medium_cold = Steps.Media.CO2;
   package medium_hot = Steps.Media.SCO2;
@@ -47,30 +47,30 @@ model TestTP_Components
   
   parameter ThermoState st_bypass = cfg.st_bypass;
   
-  parameter EntityGeoParam geo_HTR_hot = cfg.cfg_HTR_hot.geo;
-  parameter EntityGeoParam geo_HTR_cold = cfg.cfg_HTR_cold.geo;
-  parameter EntityGeoParam geo_HTR_tube = cfg.cfg_HTR_tube.geo;
+  parameter EntityGeoParam geo_HTR_hot = cfg.cfg_PCHE_HTR_hot.geo;
+  parameter EntityGeoParam geo_HTR_cold = cfg.cfg_PCHE_HTR_cold.geo;
+  parameter EntityGeoParam geo_HTR_tube = cfg.cfg_PCHE_HTR_tube.geo;
   
-  parameter EntityGeoParam geo_LTR_hot = cfg.cfg_LTR_hot.geo;
-  parameter EntityGeoParam geo_LTR_cold = cfg.cfg_LTR_cold.geo;
-  parameter EntityGeoParam geo_LTR_tube = cfg.cfg_LTR_tube.geo;  
+  parameter EntityGeoParam geo_LTR_hot = cfg.cfg_PCHE_LTR_hot.geo;
+  parameter EntityGeoParam geo_LTR_cold = cfg.cfg_PCHE_LTR_cold.geo;
+  parameter EntityGeoParam geo_LTR_tube = cfg.cfg_PCHE_LTR_tube.geo;  
   
+  parameter EntityThermoParam thermo_HTR_hot = cfg.cfg_PCHE_HTR_hot.thermo;
+  parameter EntityThermoParam thermo_HTR_cold = cfg.cfg_PCHE_HTR_cold.thermo;
+  parameter EntityThermoParam thermo_HTR_tube = cfg.cfg_PCHE_HTR_tube.thermo;  
+  
+  parameter EntityThermoParam thermo_LTR_hot = cfg.cfg_PCHE_LTR_hot.thermo;
+  parameter EntityThermoParam thermo_LTR_cold = cfg.cfg_PCHE_LTR_cold.thermo;
+  parameter EntityThermoParam thermo_LTR_tube = cfg.cfg_PCHE_LTR_tube.thermo;  
+
   // use HTR's geo parameters as default 
   parameter EntityGeoParam geo_heater_hot = cfg.cfg_HTR_hot.geo;
   parameter EntityGeoParam geo_heater_cold = cfg.cfg_HTR_cold.geo;
   parameter EntityGeoParam geo_heater_tube = cfg.cfg_HTR_tube.geo;
-  
-  parameter EntityThermoParam thermo_HTR_hot = cfg.cfg_HTR_hot.thermo;
-  parameter EntityThermoParam thermo_HTR_cold = cfg.cfg_HTR_cold.thermo;
-  parameter EntityThermoParam thermo_HTR_tube = cfg.cfg_HTR_tube.thermo;  
-  
-  parameter EntityThermoParam thermo_LTR_hot = cfg.cfg_LTR_hot.thermo;
-  parameter EntityThermoParam thermo_LTR_cold = cfg.cfg_LTR_cold.thermo;
-  parameter EntityThermoParam thermo_LTR_tube = cfg.cfg_LTR_tube.thermo;  
-    
-  parameter EntityThermoParam thermo_mixer = cfg.cfg_mixer.thermo;
+
   parameter EntityThermoParam thermo_heater_tube = cfg.cfg_heater_tube.thermo;
 
+  parameter EntityThermoParam thermo_mixer = cfg.cfg_mixer.thermo;
   //Components
   inner ThermoPower.System system(allowFlowReversal = false, initOpt=ThermoPower.Choices.Init.Options.noInit) annotation(
     Placement(transformation(extent = {{80, 80}, {100, 100}})));
@@ -126,7 +126,7 @@ model TestTP_Components
     redeclare model HeatExchangerTopology = ThermoPower.Thermal.HeatExchangerTopologies.CounterCurrentFlow,
     metalTube(WallRes=false, Tstartbar=heater.Tstartbar_M)) annotation(
     Placement(transformation(extent = {{-20, -20}, {20, 20}}, rotation = 0)));
- 
+
   ThermoPower.Gas.SourceMassFlow source_cold(
     redeclare package Medium = medium_cold, 
     T = bc_LTR.st_cold_in.T, 
@@ -135,21 +135,21 @@ model TestTP_Components
     w0 = bc_LTR.st_cold_in.mdot) 
   annotation(
     Placement(transformation(origin = {0, 60}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
-  
+
   ThermoPower.Gas.SourceMassFlow source_mixer_in(
     redeclare package Medium = medium_cold,
     T = st_bypass.T,
-    p0 = st_bypass.p,    
+    p0 = st_bypass.p,
     use_in_T = false,
     w0 = st_bypass.mdot    
   );
 /*
   ThermoPower.Gas.SinkPressure sink_cold(
     redeclare package Medium = medium_cold, 
-    p0 = bc_HTR.st_hot_in.p, 
-    // p0 = bc_heater.st_cold_out.p,
-    T = bc_HTR.st_hot_in.T)
-    // T = bc_heater.st_cold_out.T) 
+    // p0 = bc_HTR.st_cold_out.p, 
+    p0 = bc_heater.st_cold_out.p,
+    // T = bc_HTR.st_cold_out.T)
+    T = bc_heater.st_cold_out.T) 
   annotation(
     Placement(transformation(origin = {0, -80}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
 */
@@ -159,54 +159,44 @@ model TestTP_Components
     p0 = bc_LTR.st_hot_out.p) 
   annotation(
     Placement(transformation(extent = {{60, -10}, {80, 10}}, rotation = 0)));
-
 /*
   ThermoPower.Gas.SourceMassFlow source_hot(
     redeclare package Medium = medium_hot, 
     // T = from_degC(730.32), 
     //T = bc_heater.st_cold_out.T, 
-    T = bc_LTR.st_hot_in.T, 
+    T = bc_HTR.st_hot_in.T, 
     //p0 = bc_heater.st_cold_out.p, 
-    p0 = bc_LTR.st_hot_in.p, 
+    p0 = bc_HTR.st_hot_in.p, 
     //w0 = bc_heater.st_cold_out.mdot,
-    w0 = bc_LTR.st_hot_in.mdot,
+    w0 = bc_HTR.st_hot_in.mdot,
     use_in_T = false) 
   annotation(
     Placement(transformation(extent = {{-70, -10}, {-50, 10}}, rotation = 0))); 
 */
- 
   // use FlowJoin to mix flow
   Gas.FlowJoin mixer(redeclare package Medium = medium_cold);  
-/*
+ /*
   ThermoPower.Gas.SensT T_waterOut(
     redeclare package Medium = medium_cold) 
   annotation(
     Placement(transformation(origin = {4, -50}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
-*/
+
   ThermoPower.Gas.SensT T_gasOut(
     redeclare package Medium = medium_hot) 
   annotation(
     Placement(transformation(extent = {{30, -6}, {50, 14}}, rotation = 0)));
- 
-  Components.HEG2G HTR(
+*/
+  Components.TP_PCHE HTR(
   redeclare package FluidMedium = medium_cold, 
   redeclare package FlueGasMedium = medium_hot, 
   gasFlow(QuasiStatic = true, Tstartin = bc_HTR.st_hot_in.T, Tstartout = bc_HTR.st_hot_out.T),
-  fluidFlow(Tstartin = bc_HTR.st_cold_in.T, Tstartout = bc_HTR.st_cold_out.T),  
-  redeclare replaceable model HeatTransfer_F = 
-   ThermoPower.Thermal.HeatTransferFV.FlowDependentThermalConductance(
-    UAnom = thermo_HTR_cold.gamma_he * geo_HTR_cold.A_ex * HTR.Nt,    
-    alpha = 0.8
-   ), 
-   //ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficient(gamma = thermo_HTR_cold.gamma_he), 
-  // redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer,
-  redeclare replaceable model HeatTransfer_G = 
-   ThermoPower.Thermal.HeatTransferFV.FlowDependentThermalConductance(
-    UAnom = thermo_HTR_hot.gamma_he * geo_HTR_hot.A_ex * HTR.Nt,    
-    alpha = 0.8
-   ), 
-   //ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficientTwoGrids(gamma = thermo_HTR_hot.gamma_he),
-  //redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer,
+  fluidFlow(Tstartin = bc_HTR.st_cold_in.T, Tstartout = bc_HTR.st_cold_out.T),     
+  redeclare replaceable model HeatTransfer_F = Steps.Components.KimPCHEHeatTransferFV(
+  pitch = pitch,
+  phi = phi), 
+  redeclare replaceable model HeatTransfer_G = Steps.Components.KimPCHEHeatTransferFV(
+  pitch = pitch,
+  phi = phi), 
   redeclare model HeatExchangerTopology = ThermoPower.Thermal.HeatExchangerTopologies.CounterCurrentFlow,  
   N_F = geo_HTR_cold.N_seg, 
   N_G = geo_HTR_hot.N_seg,    
@@ -233,24 +223,26 @@ model TestTP_Components
   metalTube(WallRes=false)) annotation(
     Placement(transformation(extent = {{-20, -20}, {20, 20}}, rotation = 0)));
 
-  Components.HEG2G LTR(
+
+  parameter SI.Length pitch = 12.3e-3 "pitch length";
+  parameter Modelica.SIunits.Radiance phi = (180 - 108) * Modelica.Constants.pi / 360 "pitch angle";
+  
+  Components.TP_PCHE LTR(
   redeclare package FluidMedium = medium_cold, 
   redeclare package FlueGasMedium = medium_hot, 
-  gasFlow(QuasiStatic = true, Tstartin = bc_LTR.st_hot_in.T, Tstartout = bc_LTR.st_hot_out.T),
-  fluidFlow(Tstartin = bc_LTR.st_cold_in.T, Tstartout = bc_LTR.st_cold_out.T),   
-  // redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer, 
-  redeclare replaceable model HeatTransfer_F =
-  ThermoPower.Thermal.HeatTransferFV.FlowDependentThermalConductance(
-    UAnom = thermo_LTR_cold.gamma_he * geo_LTR_cold.A_ex * LTR.Nt,    
-    alpha = 0.8
-   ),
+  redeclare replaceable model HeatTransfer_F = Steps.Components.KimPCHEHeatTransferFV(
+  pitch = pitch,
+  phi = phi),
   // ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficient(gamma = thermo_LTR_cold.gamma_he),
   // redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer, 
-  redeclare replaceable model HeatTransfer_G =
-  ThermoPower.Thermal.HeatTransferFV.FlowDependentThermalConductance(
-    UAnom = thermo_LTR_hot.gamma_he * geo_LTR_hot.A_ex * LTR.Nt,
-    alpha = 0.8
-  ),  
+  redeclare replaceable model HeatTransfer_G = Steps.Components.KimPCHEHeatTransferFV(
+  pitch = pitch,
+  phi = phi),  
+  gasFlow(QuasiStatic = true, Tstartin = bc_LTR.st_hot_in.T, Tstartout = bc_LTR.st_hot_out.T),
+  fluidFlow(Tstartin = bc_LTR.st_cold_in.T, Tstartout = bc_LTR.st_cold_out.T),   
+  // redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer,   
+  // ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficient(gamma = thermo_LTR_cold.gamma_he),
+  // redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer,  
   // ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficientTwoGrids(gamma = thermo_LTR_hot.gamma_he),
   redeclare model HeatExchangerTopology = ThermoPower.Thermal.HeatExchangerTopologies.CounterCurrentFlow,  
   N_F = geo_LTR_cold.N_seg, 
@@ -340,9 +332,7 @@ equation
   connect(sens_turbine.outlet, HTR.gasIn);   
 
   connect(HTR.gasOut, LTR.gasIn);
-  connect(LTR.gasOut, T_gasOut.inlet) annotation(
-    Line(points = {{34, 0}, {34, 0}, {20, 0}}, color = {159, 159, 223}, thickness = 0.5));
-  connect(T_gasOut.outlet, sink_hot.flange) annotation(
+  connect(LTR.gasOut, sink_hot.flange) annotation(
     Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));
    
   // hot stream for heater
@@ -364,9 +354,7 @@ equation
   connect(source_hot.flange, HTR.gasIn) annotation(
    Line(points = {{-50, 0}, {-20, 0}}, color = {159, 159, 223}, thickness = 0.5, smooth = Smooth.None));
   connect(HTR.gasOut, LTR.gasIn);  
-  connect(LTR.gasOut, T_gasOut.inlet) annotation(
-    Line(points = {{34, 0}, {34, 0}, {20, 0}}, color = {159, 159, 223}, thickness = 0.5));    
-  connect(T_gasOut.outlet, sink_hot.flange) annotation(
+  connect(LTR.gasOut, sink_hot.flange) annotation(
     Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));
    
   // hot stream for heater
@@ -376,10 +364,10 @@ equation
 
 /*
   // mixer alone
-  connect(source_mixer_in.flange, mixer.inlet1);
-  connect(source_cold.flange, mixer.inlet2);
-  connect(mixer.outlet, sink_cold.flange);
-*/ 
+  connect(source_mixer_in.flange, mixer.in1);
+  connect(source_cold.flange, mixer.in2);
+  connect(mixer.out, sink_cold.flange);
+*/  
 
 /*
   // HTR alone
@@ -417,23 +405,23 @@ equation
  
 /*
   //HTR + mixer
-  connect(source_mixer_in.flange, mixer.in1);
-  
-  connect(source_cold.flange, mixer.in2);
-  
+
+  connect(source_mixer_in.flange, mixer.in1);  
+  connect(source_cold.flange, mixer.in2);  
   connect(mixer.out, HTR.waterIn);
 
-  connect(T_gasOut.inlet, HTR.gasOut) annotation(
+  connect(source_cold.flange, HTR.waterIn);
+  connect(HTR.waterOut, T_waterOut.inlet) annotation(
+    Line(points = {{8.88178e-016, -44}, {8.88178e-016, -20}, {0, -20}}, thickness = 0.5, color = {0, 0, 255}));
+  connect(sink_cold.flange, T_waterOut.outlet) annotation(
+    Line(points = {{1.83697e-015, -70}, {1.83697e-015, -56}, {-8.88178e-016, -56}}, thickness = 0.5, color = {0, 0, 255}));
+    
+  connect(source_hot.flange, HTR.gasIn) annotation(
+   Line(points = {{-50, 0}, {-20, 0}}, color = {159, 159, 223}, thickness = 0.5, smooth = Smooth.None));   
+  connect(HTR.gasOut, T_gasOut.inlet ) annotation(
     Line(points = {{34, 0}, {34, 0}, {20, 0}}, color = {159, 159, 223}, thickness = 0.5));
   connect(T_gasOut.outlet, sink_hot.flange) annotation(
     Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));
-  connect(sink_cold.flange, T_waterOut.outlet) annotation(
-    Line(points = {{1.83697e-015, -70}, {1.83697e-015, -56}, {-8.88178e-016, -56}}, thickness = 0.5, color = {0, 0, 255}));
-  connect(T_waterOut.inlet, HTR.waterOut) annotation(
-    Line(points = {{8.88178e-016, -44}, {8.88178e-016, -20}, {0, -20}}, thickness = 0.5, color = {0, 0, 255}));
-  
-  connect(source_hot.flange, HTR.gasIn) annotation(
-   Line(points = {{-50, 0}, {-20, 0}}, color = {159, 159, 223}, thickness = 0.5, smooth = Smooth.None));
 */
 /*
   // mixer + LTR
@@ -452,6 +440,7 @@ equation
   
   connect(LTR.gasOut, sink_hot.flange) annotation(
     Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));
+
 */
 /*
   //HTR + mixer + LTR 
@@ -464,11 +453,7 @@ equation
   
   connect(mixer.outlet, HTR.waterIn);
 
-  connect(HTR.waterOut, T_waterOut.inlet) annotation(
-    Line(points = {{8.88178e-016, -44}, {8.88178e-016, -20}, {0, -20}}, thickness = 0.5, color = {0, 0, 255}));
-
-
-  connect(T_waterOut.outlet, sink_cold.flange) annotation(
+  connect(HTR.waterOut, sink_cold.flange) annotation(
     Line(points = {{1.83697e-015, -70}, {1.83697e-015, -56}, {-8.88178e-016, -56}}, thickness = 0.5, color = {0, 0, 255}));
   
   // gas/hot side
@@ -477,10 +462,7 @@ equation
 
   connect(HTR.gasOut, LTR.gasIn);
   
-  connect(LTR.gasOut, T_gasOut.inlet) annotation(
-    Line(points = {{34, 0}, {34, 0}, {20, 0}}, color = {159, 159, 223}, thickness = 0.5));
-    
-  connect(T_gasOut.outlet, sink_hot.flange) annotation(
+  connect(LTR.gasOut, sink_hot.flange) annotation(
     Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));
 */
 
@@ -490,4 +472,4 @@ annotation(
     experiment(StartTime = 0, StopTime = 300, Tolerance = 1e-3, Interval = 10),
     __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts,bltdump",    
     __OpenModelica_simulationFlags(lv = "LOG_DEBUG,LOG_NLS,LOG_NLS_V,LOG_STATS,LOG_INIT,LOG_STDOUT, -w", outputFormat = "mat", s = "dassl", nls = "homotopy"));
-end TestTP_Components;
+end TestTP_Components_PCHE;

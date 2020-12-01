@@ -2,6 +2,9 @@ within Steps.Components;
 
 model PCHEMetalTubeFV "Kim [2012] heat transfer Correlation"
   extends ThermoPower.Icons.MetalWall;
+  import ThermoPower.Choices;
+  import ThermoPower.Functions;
+  
   parameter Integer Nw = 1 "Number of volumes on the wall ports";
   parameter Integer Nt = 1 "Number of tubes in parallel";
   parameter SI.Length L "Tube length";

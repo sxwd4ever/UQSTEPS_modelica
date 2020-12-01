@@ -103,21 +103,6 @@ model PBConfiguration
   parameter Modelica.SIunits.Temperature T_bypass_out =  T_HTR_cold_in;    
   
   // DO NOT change following parameters - CHANGE input paramters instead  
-  /*
-  parameter HEBoundaryCondition bc_HTR(
-    //st_hot_in = newThermoState_pT_CO2(p = p_pump_in, T = T_HTR_hot_in, mdot = mdot_main),    
-    st_cold_in = newThermoState_pT_CO2(p = p_pump_out, T = T_HTR_cold_in, mdot = mdot_main),
-    st_hot_out = newThermoState_pT_CO2(p = p_pump_in, T = T_HTR_hot_out, mdot = mdot_main),
-    st_cold_out = newThermoState_pT_CO2(p = p_pump_out, T = T_HTR_cold_out, mdot = mdot_main));      
-
-
-       
-  parameter HEBoundaryCondition bc_heater(
-    st_hot_in(newThermoState_pT_Sodium(p = p_heater, T = T_heater_hot_in, mdot = mdot_heater)),  
-    st_cold_in = newThermoState_pT_CO2(p = bc_HTR.st_cold_out.p, T = bc_HTR.st_cold_out.T, mdot = mdot_main),
-    st_hot_out = newThermoState_pT_Sodium(p = p_heater, T = T_heater_hot_out, mdot = mdot_heater),
-    st_cold_out = newThermoState_pT_CO2(p = bc_HTR.st_cold_out.p, T = T_heater_cold_out, mdot = mdot_main));   
-  */
   parameter HEBoundaryCondition bc_HTR(
     st_hot_in(p = p_pump_in, T = T_HTR_hot_in, h = specificEnthalpy_CO2(bc_HTR.st_hot_in), mdot = mdot_main),    
     st_cold_in(p = p_pump_out, T = T_HTR_cold_in, h = specificEnthalpy_CO2(bc_HTR.st_cold_in), mdot = mdot_main),

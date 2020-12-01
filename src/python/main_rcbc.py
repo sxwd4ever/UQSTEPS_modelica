@@ -259,7 +259,9 @@ def main(work_root = []):
         work_root = os.path.abspath(os.curdir)  
 
     test_mode = False # =True: use mock data to accelerate development
-    model_name = "Steps.Cycle.TP_RCBCycleMock" if test_mode else "Steps.Cycle.TP_RCBCycle"
+    use_PCHE = True # =True: use PCHE as recuperator
+
+    model_name = "Steps.Cycle.TP_RCBCycleMock" if test_mode else "Steps.Cycle.TP_RCBCycle_PCHE" if use_PCHE else "Steps.Cycle.TP_RCBCycle"
 
     mdot_main_des = 125
 
@@ -306,11 +308,12 @@ def main(work_root = []):
         }]
     else:
         # reduced size batch
-        # cfg_offset["mdot_main"] = list(map(lambda x: x * mdot_main_des/100, [50, 100]))        
-        # # cfg_offset["T_heater_hot"] = list(map(lambda x: from_degC(x), [550]))
+        # cfg_offset["mdot_main"] = list(map(lambda x: x * mdot_main_des/100, [75, 100]))        
+        # cfg_offset["T_heater_hot"] = list(map(lambda x: from_degC(x), [550, 700]))
         # cfg_offset["T_cooler_cold"] = list(map(lambda x: from_degC(x), [30]))
         # full size batch
-        # cfg_offset["mdot_main"] = list(map(lambda x: x * mdot_main_des/100, [50, 75, 100, 120]))  # load ratio < 0.75 leads error, use following values instead 
+        # load ratio < 0.75 leads error, use following values instead 
+        # cfg_offset["mdot_main"] = list(map(lambda x: x * mdot_main_des/100, [50, 75, 100, 120]))  
         cfg_offset["mdot_main"] = list(map(lambda x: x * mdot_main_des/100, [75, 90, 100, 120]))       
         cfg_offset["T_heater_hot"] = list(map(lambda x: from_degC(x), [550, 600, 650, 700]))
         cfg_offset["T_cooler_cold"] = list(map(lambda x: from_degC(x), [30, 35, 40, 45]))
@@ -321,6 +324,9 @@ def main(work_root = []):
         mapping = [
         {
             "eta_pb":"eta_cycle",
+            "eta_turb":"eta_turb",
+            "eta_MC":"eta_MC",
+            "eta_RC":"eta_RC",            
             "UA_HTR" : "UA_HTR",
             "UA_LTR" : "UA_LTR",
             "UA_cooler" : "UA_cooler",
@@ -328,6 +334,7 @@ def main(work_root = []):
             "W_MC": "W_comp",
             "W_RC": "W_recomp",
             "W_turb": "W_turb",
+            "W_net": "W_net",
             "Q_HTR": "Q_HTR",
             "Q_LTR": "Q_LTR",
             "Q_cooler": "Q_cooler",
@@ -340,7 +347,8 @@ def main(work_root = []):
             "ex_cooler":"ex_cooler",
             "ex_heater":"ex_heater",
         }]
-    ds_name = '10MW off-Desin sim {:%Y-%m-%d-%H-%M-%S}'.format(datetime.datetime.now())
+    
+    ds_name = f'10MW off-Design{"_PCHE" if use_PCHE else ""}' + ' sim {:%Y-%m-%d-%H-%M-%S}'.format(datetime.datetime.now())
     ds_test = gen_batch_cfg(cfg_ref, cfg_offset, gname_template='10MW off-Design(mdot=%s)',ds_name=ds_name)
     
     
@@ -355,8 +363,8 @@ def main(work_root = []):
     print(json_str)
 
     ports = [
-        'r01', 'r02', 'r03', 'r04', 'r05', 'r05a',
-        'r06', 'r07', 'r08', 'r08a', 'r08b', 'r09', 'r10',
+        'r01', 'r02', 'r03', 'r04', 'r05',
+        'r06', 'r07', 'r08', 'r08_source', 'r08a', 'r08b', 'r09', 'r10',
         'rh1', 'rh2', 'rc1', 'rc2']
 
     # (propName, unit)
@@ -387,24 +395,24 @@ def main(work_root = []):
     var_sp = [
         Variable('W_net', 'MW'),
         Variable('Q_heater', 'MW'),
-        Variable('eta_pb'),
-        Variable('SR'),
+        Variable('eta_pb', '%'),
+        Variable('SR', '%'),
         Variable('W_turb', 'MW'),
-        Variable('eta_turb', 'MW'),
+        Variable('eta_turb', '%'),
         Variable('W_MC', 'MW'),
-        Variable('eta_MC', 'MW'),
+        Variable('eta_MC', '%'),
         Variable('W_RC', 'MW'),
-        Variable('eta_RC', 'MW'),
+        Variable('eta_RC', '%'),
         Variable('Q_HTR', 'MW'),
         Variable('dT1_HTR', 'K'),
         Variable('dT2_HTR', 'K'),
         Variable('T_ltmd_HTR', 'K'),
-        Variable('UA_HTR'),
+        Variable('UA_HTR', 'MW/(S^2 K)'),
         Variable('Q_LTR', 'MW'),
         Variable('dT1_LTR', 'K'),
         Variable('dT2_LTR', 'K'),
         Variable('T_ltmd_LTR', 'K'),
-        Variable('UA_LTR'),
+        Variable('UA_LTR', 'MW/(S^2 K)'),
         Variable('T_heater_hot_out', 'K')        
     ]
 
