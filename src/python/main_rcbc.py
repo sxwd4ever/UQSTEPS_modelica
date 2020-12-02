@@ -268,7 +268,7 @@ def main(work_root = []):
     # referred base cfg
     cfg_ref = {
         "mdot_main":mdot_main_des,
-        "mdot_heater_hot": 55,
+        "mdot_heater_hot": 90, # 55,
         "T_heater_hot" : from_degC(800),
         "T_cooler_cold" : from_degC(35),
         "gamma": 0.45

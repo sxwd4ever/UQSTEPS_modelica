@@ -152,10 +152,12 @@ model PBConfiguration
   // exsurface_G/F and extSurfaceTub, *Vol     
   parameter Real r_PCHE_HTR = 1e-3;
   parameter Real L_PCHE_HTR = 1000e-3;
+  parameter Real p_PCHE_HTR = (pi + 2) * r_PCHE_HTR;
+  //parameter Real p_PCHE_HTR = pi * r_PCHE_HTR;
   parameter EntityConfig cfg_PCHE_HTR_cold(
     geo(
-    V = r_PCHE_HTR^2 * pi * L_PCHE_HTR, // * N_ch_LTR, 
-    A_ex = pi * r_PCHE_HTR * L_PCHE_HTR, // * N_ch_LTR, exchange surface between fluid-tube
+    V = r_PCHE_HTR^2 * pi * L_PCHE_HTR / 2, // * N_ch_LTR, 
+    A_ex = p_PCHE_HTR * L_PCHE_HTR, // * N_ch_LTR, exchange surface between fluid-tube
     L = L_PCHE_HTR, 
     d = r_PCHE_HTR * 2, 
     N_seg = 7, 
@@ -201,10 +203,11 @@ model PBConfiguration
       
   parameter Real r_PCHE_LTR = 1e-3;
   parameter Real L_PCHE_LTR = 1000e-3;
+  parameter Real p_PCHE_LTR = (pi + 2) * r_PCHE_LTR;
   parameter EntityConfig cfg_PCHE_LTR_cold(
     geo(
-    V = r_PCHE_LTR^2 * pi * L_PCHE_LTR, // * N_ch_LTR, 
-    A_ex = pi * r_PCHE_LTR * L_PCHE_LTR, // * N_ch_LTR, exchange surface between fluid-tube
+    V = r_PCHE_LTR^2 * pi * L_PCHE_LTR / 2, // * N_ch_LTR, 
+    A_ex = p_PCHE_LTR * L_PCHE_LTR, // * N_ch_LTR, exchange surface between fluid-tube
     L = L_PCHE_LTR, 
     d = r_PCHE_LTR * 2, 
     N_seg = 7, 

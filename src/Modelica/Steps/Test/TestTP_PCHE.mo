@@ -30,29 +30,15 @@ model TestTP_PCHE
   
   // select the configuration of parameters
   parameter Model.PBConfiguration cfg = cfg_default;  
- 
+
   // set the values of parameters accordingly - For HTR test
-  parameter HEBoundaryCondition bc_HE = cfg.bc_HTR; 
-   
-  parameter EntityGeoParam geo_hot = cfg.cfg_PCHE_HTR_hot.geo;
-  parameter EntityGeoParam geo_cold = cfg.cfg_PCHE_HTR_hot.geo;
-  parameter EntityGeoParam geo_tube = cfg.cfg_PCHE_HTR_hot.geo;
-  
-  parameter EntityThermoParam thermo_hot = cfg.cfg_PCHE_HTR_hot.thermo;
-  parameter EntityThermoParam thermo_cold = cfg.cfg_PCHE_HTR_hot.thermo;
-  parameter EntityThermoParam thermo_tube = cfg.cfg_PCHE_HTR_hot.thermo;  
+  parameter Boolean test_LTR = false;
+  parameter HEBoundaryCondition bc_HE = cfg.bc_HTR; // use if-then-else clause leads simulation error???
 
 /*
-  // set the values of parameters accordingly - For LTR Test
-  parameter HEBoundaryCondition bc_HE = cfg.bc_LTR; 
-   
-  parameter EntityGeoParam geo_hot = cfg.cfg_PCHE_LTR_hot.geo;
-  parameter EntityGeoParam geo_cold = cfg.cfg_PCHE_LTR_hot.geo;
-  parameter EntityGeoParam geo_tube = cfg.cfg_PCHE_LTR_hot.geo;
-  
-  parameter EntityThermoParam thermo_hot = cfg.cfg_PCHE_LTR_hot.thermo;
-  parameter EntityThermoParam thermo_cold = cfg.cfg_PCHE_LTR_hot.thermo;
-  parameter EntityThermoParam thermo_tube = cfg.cfg_PCHE_LTR_hot.thermo;   
+  // set the values of parameters accordingly - for LTR test
+  parameter Boolean test_LTR = true;
+  parameter HEBoundaryCondition bc_HE = cfg.bc_LTR; // use if-then-else clause leads simulation error???
 */
   //Components
   inner ThermoPower.System system(allowFlowReversal = false, initOpt=ThermoPower.Choices.Init.Options.noInit) annotation(
@@ -104,7 +90,7 @@ model TestTP_PCHE
 
   //Real kim_cor_coe[4] = {kim.a, kim.b, kim.c, kim.d};
   parameter SI.Length pitch = 12.3e-3 "pitch length";
-  parameter Modelica.SIunits.Radiance phi = (180 - 108) * Modelica.Constants.pi / 360 "pitch angle";
+  parameter Real phi = 35 "pitch angle °";
     
   Components.TP_PCHE HE(
     redeclare package FluidMedium = medium_cold, 
@@ -117,37 +103,15 @@ model TestTP_PCHE
     redeclare replaceable model HeatTransfer_G = Steps.Components.KimPCHEHeatTransferFV(
     pitch = pitch,
     phi = phi),
-    redeclare model HeatExchangerTopology = ThermoPower.Thermal.HeatExchangerTopologies.CounterCurrentFlow,  
-    gasFlow(
-      QuasiStatic = true, 
-      Tstartin = bc_HE.st_hot_in.T, 
-      Tstartout = bc_HE.st_hot_out.T
-    ),
-    fluidFlow
-    (
-      Tstartin = bc_HE.st_cold_in.T, 
-      Tstartout = bc_HE.st_cold_out.T
-    ),
-    N_F = geo_cold.N_seg, 
-    N_G = geo_hot.N_seg,  
-    Nt = geo_hot.N_ch,  
-    Tstartbar_G = bc_HE.st_hot_in.T, 
-    Tstartbar_F = bc_HE.st_cold_in.T, 
-    exchSurface_F = geo_cold.A_ex, 
-    exchSurface_G = geo_hot.A_ex, 
-    extSurfaceTub = geo_tube.A_ex, 
-    fluidNomFlowRate = bc_HE.st_cold_in.mdot, 
-    fluidNomPressure = bc_HE.st_cold_in.p, 
-    fluidVol = geo_cold.V, 
-    gasNomFlowRate = bc_HE.st_hot_in.mdot, 
-    gasNomPressure = bc_HE.st_hot_in.p, 
-    gasVol = geo_hot.V, 
-    lambda = thermo_tube.lambda, 
-    metalVol = geo_tube.V, 
-    pstart_F = bc_HE.st_cold_in.p, 
-    pstart_G = bc_HE.st_hot_in.p,
-    rhomcm = thermo_tube.rho_mcm,
-    SSInit = false,
+    redeclare model HeatExchangerTopology = ThermoPower.Thermal.HeatExchangerTopologies.CounterCurrentFlow, 
+    bc = bc_HE, 
+    geo_hot = if test_LTR then cfg.cfg_PCHE_LTR_hot.geo else cfg.cfg_PCHE_HTR_hot.geo,
+    geo_cold = if test_LTR then cfg.cfg_PCHE_LTR_cold.geo else cfg.cfg_PCHE_HTR_cold.geo,
+    geo_tube = if test_LTR then cfg.cfg_PCHE_LTR_tube.geo else cfg.cfg_PCHE_HTR_tube.geo,  
+    thermo_hot = if test_LTR then cfg.cfg_PCHE_LTR_hot.thermo else cfg.cfg_PCHE_HTR_hot.thermo,
+    thermo_cold = if test_LTR then cfg.cfg_PCHE_LTR_cold.thermo else cfg.cfg_PCHE_HTR_cold.thermo,
+    thermo_tube = if test_LTR then cfg.cfg_PCHE_LTR_tube.thermo else cfg.cfg_PCHE_HTR_tube.thermo,  
+    SSInit = true,
     gasQuasiStatic = true,
     fluidQuasiStatic = true
     // override the values of Am and L of metaltubeFV

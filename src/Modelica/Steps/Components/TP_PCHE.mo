@@ -1,7 +1,8 @@
 within Steps.Components;
 
 model TP_PCHE "PCHE model based on Thermo Power"
-extends Interfaces.HeatExchangerG2G;
+  extends Interfaces.HeatExchangerG2G;
+    
   import SI = Modelica.SIunits;
   import Gas = ThermoPower.Gas;  
   import Choices = ThermoPower.Choices;
@@ -9,14 +10,16 @@ extends Interfaces.HeatExchangerG2G;
   import Options = ThermoPower.Choices.Init.Options;
   import Steps.Components.KimCorrelations;
   import Steps.Components.MaterialConductivity;  
-
+  import Steps.Model.{EntityConfig, EntityGeoParam, EntityThermoParam, HEBoundaryCondition};
+  
   replaceable model HeatTransfer_F = Thermal.HeatTransferFV.IdealHeatTransfer constrainedby ThermoPower.Thermal.BaseClasses.DistributedHeatTransferFV annotation(
      choicesAllMatching = true);
   replaceable model HeatTransfer_G = Thermal.HeatTransferFV.IdealHeatTransfer constrainedby ThermoPower.Thermal.BaseClasses.DistributedHeatTransferFV annotation(
      choicesAllMatching = true);
   replaceable model HeatExchangerTopology = Thermal.HeatExchangerTopologies.CoCurrentFlow constrainedby ThermoPower.Thermal.BaseClasses.HeatExchangerTopologyData annotation(
      choicesAllMatching = true);
-  parameter Choices.Flow1D.FFtypes FFtype_G = ThermoPower.Choices.Flow1D.FFtypes.NoFriction "Friction Factor Type, gas side";
+  parameter Choices.Flow1D.FFtypes FFtype_G = ThermoPower.Choices.Flow1D.FFtypes.NoFriction "Friction Factor Type, gas side"; 
+  
   parameter Real Kfnom_G = 0 "Nominal hydraulic resistance coefficient, gas side";
   parameter SI.Pressure dpnom_G = 0 "Nominal pressure drop, gas side (friction term only!)";
   parameter SI.Density rhonom_G = 0 "Nominal inlet density, gas side";
@@ -79,6 +82,8 @@ extends Interfaces.HeatExchangerG2G;
   rhonom = rhonom_F, 
   Cfnom = Cfnom_F, 
   Tstartbar = Tstartbar_F, 
+  Tstartin = bc.st_cold_in.T, 
+  Tstartout = bc.st_cold_out.T, 
   redeclare model HeatTransfer = HeatTransfer_F) annotation(
     Placement(transformation(extent = {{-10, -66}, {10, -46}}, rotation = 0)));
     
@@ -103,6 +108,8 @@ extends Interfaces.HeatExchangerG2G;
   rhonom = rhonom_G, 
   Cfnom = Cfnom_G, 
   Tstartbar = Tstartbar_G, 
+  Tstartin = bc.st_hot_in.T, 
+  Tstartout = bc.st_hot_out.T,   
   redeclare model HeatTransfer = HeatTransfer_G) annotation(
     Placement(transformation(extent = {{-12, 66}, {12, 46}}, rotation = 0)));
   
@@ -121,12 +128,6 @@ extends Interfaces.HeatExchangerG2G;
   Thermal.HeatExchangerTopologyFV heatExchangerTopology(Nw = Nw_F, redeclare model HeatExchangerTopology = HeatExchangerTopology) annotation(
     Placement(transformation(extent = {{-10, 6}, {10, 26}})));
 equation
-  /*
-  kim_a = kim.a;
-  kim_b = kim.a;
-  kim_c = kim.a;  
-  kim_d = kim.a;
-    */ 
   connect(gasFlow.infl, gasIn) annotation(
     Line(points = {{-12, 56}, {-100, 56}, {-100, 0}}, color = {159, 159, 223}, thickness = 0.5));
   connect(gasFlow.outfl, gasOut) annotation(

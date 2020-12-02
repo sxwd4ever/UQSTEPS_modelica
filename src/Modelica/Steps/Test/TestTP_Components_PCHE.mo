@@ -23,17 +23,19 @@ model TestTP_Components_PCHE
   package medium_heater = SolarTherm.Media.Sodium.Sodium_pT;
   //package medium_heater = ThermoPower.Water.StandardWater;// Modelica.Media.IdealGases.SingleGases.CO2;
 
-  parameter Model.PBConfiguration cfg_default;
+  parameter Model.PBConfiguration cfg_default(
+    mdot_heater = 80
+  );
   
   parameter Model.PBConfiguration cfg_tune(
   r_i_HTR = 5e-3,
-  r_t_HTR = cfg_default.r_i_HTR + 2e-3,
-  r_o_HTR = cfg_default.r_t_HTR + 2e-3,
+  r_t_HTR = cfg_tune.r_i_HTR + 2e-3,
+  r_o_HTR = cfg_tune.r_t_HTR + 2e-3,
   N_ch_HTR = 200,
   L_HTR = 1 "Don't modify this, since L in HE model is fixed as 1m. Modify Nt instead",
   r_i_LTR = 2e-3,
-  r_t_LTR = cfg_default.r_i_LTR + 1e-3,
-  r_o_LTR = cfg_default.r_t_LTR + 1e-3,
+  r_t_LTR = cfg_tune.r_i_LTR + 1e-3,
+  r_o_LTR = cfg_tune.r_t_LTR + 1e-3,
   N_ch_LTR = 200,
   L_LTR = 1);    
  
@@ -223,9 +225,9 @@ model TestTP_Components_PCHE
   metalTube(WallRes=false)) annotation(
     Placement(transformation(extent = {{-20, -20}, {20, 20}}, rotation = 0)));
 
-
+  //Real kim_cor_coe[4] = {kim.a, kim.b, kim.c, kim.d};
   parameter SI.Length pitch = 12.3e-3 "pitch length";
-  parameter Modelica.SIunits.Radiance phi = (180 - 108) * Modelica.Constants.pi / 360 "pitch angle";
+  parameter Real phi = 35 "pitch angle °";
   
   Components.TP_PCHE LTR(
   redeclare package FluidMedium = medium_cold, 

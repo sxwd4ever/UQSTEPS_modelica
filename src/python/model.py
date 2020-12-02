@@ -204,7 +204,7 @@ class TestResult(dict):
             sol = values[i]
             var = sol_dict[key]
             v = Variable(var.key, var.unit, -1 , var.text)
-            if not sol is None or not sol:
+            if not sol is None and len(sol) > 0:
                 # copy the sol_dict
                 # for now, save the last val, which is the value when system
                 # achive equilibrium

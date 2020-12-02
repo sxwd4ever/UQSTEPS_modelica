@@ -20,8 +20,8 @@ import Modelica.SIunits.Conversions.{from_degC,from_deg};
   package medium_cooler = ThermoPower.Water.StandardWater;
   
   // input parameters of the power block
-  parameter Modelica.SIunits.MassFlowRate mdot_main = 120 "kg/s, mass flow in the main path of PB, which follows the power demand";
-  parameter Modelica.SIunits.MassFlowRate mdot_heater_hot = 55 "kg/s, mass flow rate of heater's hot fluid";
+  parameter Modelica.SIunits.MassFlowRate mdot_main = 125 "kg/s, mass flow in the main path of PB, which follows the power demand";
+  parameter Modelica.SIunits.MassFlowRate mdot_heater_hot = 90 "kg/s, mass flow rate of heater's hot fluid";
   parameter Real gamma = 0.4 "split ratio, mdot_bypass/mdot_main";
   
   parameter Modelica.SIunits.Temperature T_heater_hot = from_degC(800) "K, Temperature of heater's hot fluid";  
@@ -46,36 +46,39 @@ import Modelica.SIunits.Conversions.{from_degC,from_deg};
   
   parameter ThermoState st_bypass = cfg.st_bypass;
   
-  // load design parameters such as geometry values.
-  parameter EntityGeoParam geo_HTR_hot = cfg.cfg_HTR_hot.geo;
-  parameter EntityGeoParam geo_HTR_cold = cfg.cfg_HTR_cold.geo;
-  parameter EntityGeoParam geo_HTR_tube = cfg.cfg_HTR_tube.geo;
+  // load design parameters such as geometry values.  
+ 
+  parameter EntityGeoParam geo_HTR_hot = cfg.cfg_PCHE_HTR_hot.geo;
+  parameter EntityGeoParam geo_HTR_cold = cfg.cfg_PCHE_HTR_cold.geo;
+  parameter EntityGeoParam geo_HTR_tube = cfg.cfg_PCHE_HTR_tube.geo;
+
+  parameter EntityThermoParam thermo_HTR_hot = cfg.cfg_PCHE_HTR_hot.thermo;
+  parameter EntityThermoParam thermo_HTR_cold = cfg.cfg_PCHE_HTR_cold.thermo;
+  parameter EntityThermoParam thermo_HTR_tube = cfg.cfg_PCHE_HTR_tube.thermo; 
   
-  parameter EntityGeoParam geo_LTR_hot = cfg.cfg_LTR_hot.geo;
-  parameter EntityGeoParam geo_LTR_cold = cfg.cfg_LTR_cold.geo;
-  parameter EntityGeoParam geo_LTR_tube = cfg.cfg_LTR_tube.geo;    
+  parameter EntityGeoParam geo_LTR_hot = cfg.cfg_PCHE_LTR_hot.geo;
+  parameter EntityGeoParam geo_LTR_cold = cfg.cfg_PCHE_LTR_cold.geo;
+  parameter EntityGeoParam geo_LTR_tube = cfg.cfg_PCHE_LTR_tube.geo;   
   
+  parameter EntityThermoParam thermo_LTR_hot = cfg.cfg_PCHE_LTR_hot.thermo;
+  parameter EntityThermoParam thermo_LTR_cold = cfg.cfg_PCHE_LTR_cold.thermo;
+  parameter EntityThermoParam thermo_LTR_tube = cfg.cfg_PCHE_LTR_tube.thermo;  
+
+  // use HTR's geo parameters as default 
   parameter EntityGeoParam geo_heater_hot = cfg.cfg_HTR_hot.geo;
   parameter EntityGeoParam geo_heater_cold = cfg.cfg_HTR_cold.geo;
   parameter EntityGeoParam geo_heater_tube = cfg.cfg_HTR_tube.geo;
+  parameter EntityThermoParam thermo_heater_tube = cfg.cfg_heater_tube.thermo;
   
   parameter EntityGeoParam geo_cooler_hot = cfg.cfg_cooler_hot.geo;
   parameter EntityGeoParam geo_cooler_cold = cfg.cfg_cooler_cold.geo;
   parameter EntityGeoParam geo_cooler_tube = cfg.cfg_cooler_tube.geo;  
   
-  // load thermodynamic parameters. 
-  parameter EntityThermoParam thermo_HTR_hot = cfg.cfg_HTR_hot.thermo;
-  parameter EntityThermoParam thermo_HTR_cold = cfg.cfg_HTR_cold.thermo;
-  parameter EntityThermoParam thermo_HTR_tube = cfg.cfg_HTR_tube.thermo;  
+  parameter EntityThermoParam thermo_cooler_tube = cfg.cfg_cooler_tube.thermo;  
   
-  parameter EntityThermoParam thermo_LTR_hot = cfg.cfg_LTR_hot.thermo;
-  parameter EntityThermoParam thermo_LTR_cold = cfg.cfg_LTR_cold.thermo;
-  parameter EntityThermoParam thermo_LTR_tube = cfg.cfg_LTR_tube.thermo;  
-    
+  // load thermodynamic parameters.     
   parameter EntityThermoParam thermo_mixer = cfg.cfg_mixer.thermo;
-  parameter EntityThermoParam thermo_heater_tube = cfg.cfg_heater_tube.thermo;
-  parameter EntityThermoParam thermo_cooler_tube = cfg.cfg_cooler_tube.thermo;
-  
+    
   //Components
   inner ThermoPower.System system(allowFlowReversal = false, initOpt=ThermoPower.Choices.Init.Options.noInit) annotation(
     Placement(transformation(extent = {{100, 80}, {120, 100}})));
@@ -134,8 +137,9 @@ import Modelica.SIunits.Conversions.{from_degC,from_deg};
   Gas.FlowJoin mixer(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {-12, 60}, extent = {{-6, -6}, {6, 6}}, rotation = 180)));
 
+  //Real kim_cor_coe[4] = {kim.a, kim.b, kim.c, kim.d};
   parameter SI.Length pitch = 12.3e-3 "pitch length";
-  parameter Modelica.SIunits.Radiance phi = (180 - 108) * Modelica.Constants.pi / 360 "pitch angle";
+  parameter Real phi = 35 "pitch angle °";
 
   Components.TP_PCHE HTR(
     redeclare package FluidMedium = medium_main, 
@@ -175,7 +179,7 @@ import Modelica.SIunits.Conversions.{from_degC,from_deg};
     metalTube(WallRes=false, Tstartbar=HTR.Tstartbar_M)) annotation(
     Placement(visible = true, transformation(origin = {-21, 33}, extent = {{-7, -7}, {7, 7}}, rotation = 0)));
     
-  Components.HEG2G LTR(
+  Components.TP_PCHE LTR(
     redeclare package FluidMedium = medium_main, 
     redeclare package FlueGasMedium = medium_main, 
     gasFlow(QuasiStatic = true, Tstartin = bc_LTR.st_hot_in.T, Tstartout = bc_LTR.st_hot_out.T),

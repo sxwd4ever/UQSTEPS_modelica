@@ -11,7 +11,7 @@ model KimPCHEHeatTransferFV "Kim [2012] heat transfer Correlation"
 
   //parameter Modelica.SIunits.Length pitch = 24.6 * 1e-3;
   //parameter Modelica.SIunits.Angle phi = 0.0 "unit rad";
-  parameter Real Re_min = 10000 "Minimum Reynolds number";
+  parameter Real Re_min = 2300 "Minimum Reynolds number";
   
   SI.Length d_c = (8 * A / Modelica.Constants.pi) ^ 0.5 "Diameter of semi_circular";
   /*
@@ -37,7 +37,7 @@ model KimPCHEHeatTransferFV "Kim [2012] heat transfer Correlation"
   SI.ThermalConductivity k_wall[Nw] "wall thermal conductivity - determined by material of wall and local temperature";
   Modelica.SIunits.Length t_wall = (2 - Modelica.Constants.pi / 4) * (d_c / 2) "thickness of wall between two neighboring hot and cold";
   parameter SI.Length pitch = 12.3e-3 "pitch length";
-  parameter Modelica.SIunits.Radiance phi = (180 - 108) * Modelica.Constants.pi / 360 "pitch angle";
+  parameter Real phi = 35 "pitch angle °";
   parameter String name_material = "inconel 750";
 
   // default value for d_c = 2mm(Dhyd=0.922mm) in Kim [2012]
@@ -84,12 +84,14 @@ equation
     k[j] = noEvent(Medium.thermalConductivity(fluidState[j]));
     rho[j] = noEvent(Medium.density(fluidState[j]));
     G[j] = noEvent(abs(w[j] / A));
-    Re[j] =  noEvent(G[j]/ A * Dhyd / mu[j]);
+    Re[j] =  noEvent(G[j] * Dhyd / mu[j]);
     Re_l[j] = noEvent(Functions.smoothSat(Re[j], Re_min, 1e9, Re_min / 2));
     Nu[j] = noEvent(4.089 + kim_cor_c.y * Re_l[j] ^ kim_cor_d.y);
+    //Nu[j] = noEvent(4.089 + 0.04247 * Re_l[j] ^ 0.70055);
     u[j] = noEvent(abs(w[j]) / A / rho[j]);
     hc[j] = noEvent(Nu[j] * k[j] / Dhyd);
     f[j] = noEvent((15.78 + kim_cor_a.y * Re_l[j] ^ kim_cor_b.y) / Re_l[j]);
+    //f[j] = noEvent((15.78 + 0.35159 * Re_l[j] ^ 0.78015) / Re_l[j]);
 //pressure drop, unit Pa
     dp[j] = noEvent(2 * f[j] * l * rho[j] * u[j] ^ 2 / Dhyd);
   end for;
@@ -97,7 +99,8 @@ equation
   for j in 1:Nw loop
     Tvol[j] = if useAverageTemperature then (T[j] + T[j + 1]) / 2 else T[j + 1];
     //th_conductivity.u[1] = (Tw[j] + Tvol[j]) / 2;
-    k_wall[j] =  MyUtil.metal_conductivity(th_conductivity.tableID, (Tw[j] + Tvol[j]) / 2);
+    //k_wall[j] =  MyUtil.metal_conductivity(th_conductivity.tableID, (Tw[j] + Tvol[j]) / 2);
+    k_wall[j] =  MyUtil.metal_conductivity(th_conductivity.tableID, Tw[j]);
     gamma[j] = 1 / (1 / hc[j] + t_wall / k_wall[j]);
     Qw[j] = (Tw[j] - Tvol[j]) * kc * omega * l * gamma[j] * Nt;
   end for;
