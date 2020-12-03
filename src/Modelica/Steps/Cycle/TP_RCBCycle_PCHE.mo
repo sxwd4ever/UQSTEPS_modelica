@@ -123,8 +123,9 @@ import Modelica.SIunits.Conversions.{from_degC,from_deg};
     thermo_tube = cfg.cfg_HTR_tube.thermo, 
     gasQuasiStatic = true,
     fluidQuasiStatic = true,
+    metalQuasiStatic = true,
     SSInit=SSInit,
-    metalTube(WallRes=false, Tstartbar=HTR.Tstartbar_M)) annotation(
+    metalWall(WallRes=false)) annotation(
     Placement(visible = true, transformation(origin = {-21, 33}, extent = {{-7, -7}, {7, 7}}, rotation = 0)));
     
   TPComponents.PCHE LTR(
@@ -152,8 +153,9 @@ import Modelica.SIunits.Conversions.{from_degC,from_deg};
     thermo_tube = cfg.cfg_LTR_tube.thermo,  
     gasQuasiStatic = true,
     fluidQuasiStatic = true,
+    metalQuasiStatic = true,
     SSInit=SSInit,
-    metalTube(WallRes=false, Tstartbar=LTR.Tstartbar_M)) annotation(
+    metalWall(WallRes=false)) annotation(
     Placement(visible = true, transformation(origin = {21, 33}, extent = {{-7, -7}, {7, 7}}, rotation = 0)));
   
   ThermoPower.Gas.Turbine turbine(

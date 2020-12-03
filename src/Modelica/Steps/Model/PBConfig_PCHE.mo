@@ -21,7 +21,7 @@ model PBConfig_PCHE
         d = r_LTR * 2, 
         N_seg = 6, 
         N_ch = N_ch_LTR),
-      thermo(rho_mcm = 100, lambda = 20)
+      thermo(rho_mcm = 8.28e6 * 0.431, lambda = 12) // refer http://www.matweb.com/search/datasheet_print.aspx?matguid=9612aa3272134531b8b33eb80e61a1af&n=1 for INCONEL® Alloy X-750
     ),
     cfg_LTR_hot(
       geo(
@@ -51,8 +51,8 @@ model PBConfig_PCHE
         L = L_HTR, 
         d = r_HTR * 2, 
         N_seg = 6, 
-        N_ch = N_ch_HTR),
-      thermo(rho_mcm = 100, lambda = 20)
+        N_ch = N_ch_HTR),        
+      thermo(rho_mcm = 8.28e6 * 0.431, lambda = 12) // refer http://www.matweb.com/search/datasheet_print.aspx?matguid=9612aa3272134531b8b33eb80e61a1af&n=1 for INCONEL® Alloy X-750
     ),
     cfg_HTR_hot(
       geo(

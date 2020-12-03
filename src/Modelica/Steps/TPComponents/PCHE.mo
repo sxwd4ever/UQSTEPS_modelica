@@ -32,7 +32,7 @@ model PCHE "PCHE model based on Thermo Power"
   parameter Choices.Flow1D.HCtypes HCtype_F = ThermoPower.Choices.Flow1D.HCtypes.Downstream "Location of the hydraulic capacitance, fluid side";
   parameter Boolean gasQuasiStatic = false "Quasi-static model of the flue gas (mass, energy and momentum static balances";
   parameter Boolean fluidQuasiStatic = false "Quasi-static model of the fluid (mass, energy and momentum static balances";
-
+  parameter Boolean metalQuasiStatic = true "Quasi-static model of the metalWall (energy static balances)";
   constant Real pi = Modelica.Constants.pi;
   final parameter SI.Distance L = 1 "Tube length";
   parameter Choices.FluidPhase.FluidPhases FluidPhaseStart = Choices.FluidPhase.FluidPhases.Liquid "Fluid phase (only for initialization!)" annotation(
@@ -113,16 +113,19 @@ model PCHE "PCHE model based on Thermo Power"
   redeclare model HeatTransfer = HeatTransfer_G) annotation(
     Placement(transformation(extent = {{-12, 66}, {12, 46}}, rotation = 0)));
   
-  PCHEMetalTubeFV metalTube(
+  PCHEMetalWallFV metalWall(
   L = L,  
+  r_c = geo_tube.d / 2, 
   Nw = Nw_F,
-  Am = metalVol / L,  
+  Nt = Nt, 
   Tstartbar = Tstartbar_M, 
+  Tstart1 =  bc.st_hot_out.T, 
+  TstartN = bc.st_hot_in.T,   
   WallRes = false, 
-  lambda = lambda, 
-  rext = (metalVol + fluidVol) * 4 / extSurfaceTub / 2, 
-  rhomcm = rhomcm, 
-  rint = fluidVol * 4 / exchSurface_F / 2) annotation(
+  lambda = lambda,
+  QuasiStatic = metalQuasiStatic, 
+  rhomcm = rhomcm 
+  ) annotation(
     Placement(transformation(extent = {{-10, -24}, {10, -4}})));
   
   Thermal.HeatExchangerTopologyFV heatExchangerTopology(Nw = Nw_F, redeclare model HeatExchangerTopology = HeatExchangerTopology) annotation(
@@ -136,9 +139,9 @@ equation
     Line(points = {{10, -56}, {40, -56}, {40, -100}, {0, -100}}, thickness = 0.5, color = {0, 0, 255}));
   connect(fluidFlow.infl, waterIn) annotation(
     Line(points = {{-10, -56}, {-40, -56}, {-40, 100}, {0, 100}}, thickness = 0.5, color = {0, 0, 255}));
-  connect(metalTube.ext, fluidFlow.wall) annotation(
+  connect(metalWall.ext, fluidFlow.wall) annotation(
     Line(points = {{0, -17.1}, {0, -51}}, color = {255, 127, 0}, smooth = Smooth.None));
-  connect(heatExchangerTopology.side2, metalTube.int) annotation(
+  connect(heatExchangerTopology.side2, metalWall.int) annotation(
     Line(points = {{0, 12.9}, {0, -11}}, color = {255, 127, 0}, smooth = Smooth.None));
   connect(heatExchangerTopology.side1, gasFlow.wall) annotation(
     Line(points = {{0, 19}, {0, 51}}, color = {255, 127, 0}, smooth = Smooth.None));

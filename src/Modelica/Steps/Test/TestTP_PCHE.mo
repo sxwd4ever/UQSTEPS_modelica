@@ -25,17 +25,17 @@ model TestTP_PCHE
   // package medium_hot = Modelica.Media.IdealGases.SingleGases.CO2;
   // package medium_cold = Modelica.Media.IdealGases.SingleGases.CO2;    
 
-  parameter Model.PBConfig_PCHE cfg;
-/*  
+  parameter Model.PBConfig_PCHE cfg(mdot_heater = 90);
+  
   // set the values of parameters accordingly - For HTR test
   parameter Boolean test_LTR = false;
   parameter HEBoundaryCondition bc_HE = cfg.bc_HTR; // use if-then-else clause leads simulation error???
-*/
+/*
 
   // set the values of parameters accordingly - for LTR test
   parameter Boolean test_LTR = true;
   parameter HEBoundaryCondition bc_HE = cfg.bc_LTR; // use if-then-else clause leads simulation error???
-
+*/
   //Components
   inner ThermoPower.System system(allowFlowReversal = false, initOpt=ThermoPower.Choices.Init.Options.noInit) annotation(
     Placement(transformation(extent = {{80, 80}, {100, 100}})));  

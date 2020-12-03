@@ -25,7 +25,7 @@ model TestTP_Components_PCHE
 
   // select the configuration of parameters
   parameter Model.PBConfig_PCHE cfg(
-    mdot_heater = 80
+    mdot_heater = 90
   );
   
   // set the values of parameters accordingly
@@ -175,8 +175,9 @@ model TestTP_Components_PCHE
   thermo_tube = cfg.cfg_HTR_tube.thermo, 
   SSInit=SSInit,
   gasQuasiStatic = true,
-  fluidQuasiStatic = true,  
-  metalTube(WallRes=false)) annotation(
+  fluidQuasiStatic = true, 
+  metalQuasiStatic = false,   
+  metalWall(WallRes=false)) annotation(
     Placement(transformation(extent = {{-20, -20}, {20, 20}}, rotation = 0)));
 
   //Real kim_cor_coe[4] = {kim.a, kim.b, kim.c, kim.d};
@@ -210,8 +211,9 @@ model TestTP_Components_PCHE
   thermo_tube = cfg.cfg_LTR_tube.thermo,   
   SSInit=SSInit,
   gasQuasiStatic = true,
-  fluidQuasiStatic = true,  
-  metalTube(WallRes=false)) annotation(
+  fluidQuasiStatic = true, 
+  metalQuasiStatic = false, 
+  metalWall(WallRes=false)) annotation(
     Placement(transformation(extent = {{-20, -20}, {20, 20}}, rotation = 0)));
 
   ThermoPower.Gas.Turbine Turbine1(
