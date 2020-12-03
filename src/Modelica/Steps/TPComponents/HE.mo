@@ -1,13 +1,13 @@
-within Steps.Components;
+within Steps.TPComponents;
 
-model HEG2G "Heat Exchanger gas - gas"
-extends Interfaces.HeatExchangerG2G;
-  import SI = Modelica.SIunits;
+model HE "Heat Exchanger fluid - gas"
+  extends Interfaces.HeatExchanger;
   import Gas = ThermoPower.Gas;  
+  import Water = ThermoPower.Water;
   import Choices = ThermoPower.Choices;
   import Thermal = ThermoPower.Thermal;
   import Options = ThermoPower.Choices.Init.Options;
-  
+    
   replaceable model HeatTransfer_F = Thermal.HeatTransferFV.IdealHeatTransfer constrainedby ThermoPower.Thermal.BaseClasses.DistributedHeatTransferFV annotation(
      choicesAllMatching = true);
   replaceable model HeatTransfer_G = Thermal.HeatTransferFV.IdealHeatTransfer constrainedby ThermoPower.Thermal.BaseClasses.DistributedHeatTransferFV annotation(
@@ -26,93 +26,69 @@ extends Interfaces.HeatExchangerG2G;
   parameter SI.PerUnit Cfnom_F = 0 "Nominal Fanning friction factor";
   parameter Choices.Flow1D.HCtypes HCtype_F = ThermoPower.Choices.Flow1D.HCtypes.Downstream "Location of the hydraulic capacitance, fluid side";
   parameter Boolean gasQuasiStatic = false "Quasi-static model of the flue gas (mass, energy and momentum static balances";
-  parameter Boolean fluidQuasiStatic = false "Quasi-static model of the fluid (mass, energy and momentum static balances";
   constant Real pi = Modelica.Constants.pi;
   final parameter SI.Distance L = 1 "Tube length";
   parameter Choices.FluidPhase.FluidPhases FluidPhaseStart = Choices.FluidPhase.FluidPhases.Liquid "Fluid phase (only for initialization!)" annotation(
     Dialog(tab = "Initialization"));
-  parameter Boolean SSInit = false "Steady State initialization";
-  /*
-  Gas.Flow1DFV fluidFlow(
-   
-  redeclare package Medium = FluidMedium, 
-  redeclare model HeatTransfer = HeatTransfer_F, 
-  A = (fluidVol * 4 / exchSurface_F) ^ 2 / 4 * pi, 
-  Cfnom = Cfnom_F, 
-  Dhyd = fluidVol * 4 / exchSurface_F, 
-  FFtype = FFtype_F, 
-  HydraulicCapacitance = HCtype_F, 
-  Kfnom = Kfnom_F, 
-  L = exchSurface_F ^ 2 / (fluidVol * pi * 4), F
-  N = N_F,Nt = Nt, 
-  Nw = Nw_F, 
-  dpnom = dpnom_F, 
-  initOpt = if SSInit then Options.steadyState else Options.noInit, 
-  omega = fluidVol * 4 / exchSurface_F * pi, 
-  pstart = pstart_F, 
-  rhonom = rhonom_F, 
-  wnom = fluidNomFlowRate) annotation(
+  Water.Flow1DFV fluidFlow(
+    Nt = Nt, 
+    N = N_F, 
+    Nw = Nw_F, 
+    wnom = fluidNomFlowRate, 
+    initOpt = if SSInit then Options.steadyState else Options.noInit, 
+    redeclare package Medium = FluidMedium, 
+    L = exchSurface_F ^ 2 / (fluidVol * pi * 4), 
+    A = (fluidVol * 4 / exchSurface_F) ^ 2 / 4 * pi,
+    omega = fluidVol * 4 / exchSurface_F * pi, 
+    Dhyd = fluidVol * 4 / exchSurface_F, 
+    FFtype = FFtype_F, 
+    HydraulicCapacitance = HCtype_F, 
+    Kfnom = Kfnom_F, dpnom = dpnom_F, 
+    rhonom = rhonom_F, Cfnom = Cfnom_F, 
+    FluidPhaseStart = FluidPhaseStart,
+    pstart = pstart_F, 
+    redeclare model HeatTransfer = HeatTransfer_F) 
+    annotation(
     Placement(transformation(extent = {{-10, -66}, {10, -46}}, rotation = 0)));
-  */
-  Gas.Flow1DFV fluidFlow(
-  Nt = Nt, //1, 
-  N = N_F, 
-  Nw = Nw_F,
-  wnom = fluidNomFlowRate, 
-  //initOpt = if SSInit then Options.steadyState else Options.noInit, 
-  redeclare package Medium = FluidMedium, 
-  initOpt = if SSInit then Options.steadyState else Options.noInit,
-  QuasiStatic = fluidQuasiStatic, 
-  pstart = pstart_F, 
-  L = L, // Should be L = exchSurface_F ^ 2 / (fluidVol * pi * 4), instead of fixed L = 1 
-  A = fluidVol / L, // fluidVol is account for single tube
-  omega = exchSurface_F / L,// exchSurface_F is account for single tube
-  Dhyd = fluidVol*4 / exchSurface_F,
-  FFtype = FFtype_F, 
-  Kfnom = Kfnom_F, 
-  dpnom = dpnom_F, 
-  rhonom = rhonom_F, 
-  Cfnom = Cfnom_F, 
-  Tstartbar = Tstartbar_F, 
-  redeclare model HeatTransfer = HeatTransfer_F) annotation(
-    Placement(transformation(extent = {{-10, -66}, {10, -46}}, rotation = 0)));
-    
-  //changed Medium=FlueGasMedium to Medium=FluidMedium
+  
   Gas.Flow1DFV gasFlow(
-  Nt = Nt, //1, 
-  N = N_G, 
-  Nw = Nw_G,
-  wnom = gasNomFlowRate,  // wnom(total) of gasFlow is different from wnom(for single tube, = gasNomFlowRate /Nt) of HeatTransfer_G
-  //initOpt = if SSInit then Options.steadyState else Options.noInit, 
-  redeclare package Medium = FlueGasMedium, 
-  initOpt = if SSInit then Options.steadyState else Options.noInit,
-  QuasiStatic = gasQuasiStatic, 
-  pstart = pstart_G, 
-  L = L, // Should be L = exchSurface_G ^ 2 / (gasVol * pi * 4), instead of fixed L = 1
-  A = gasVol / L, // gasVol is account for single tube, 
-  omega = exchSurface_G / L, // exchSurface_G is account for single tube, 
-  Dhyd = gasVol*4 / exchSurface_G,
-  FFtype = FFtype_G, 
-  Kfnom = Kfnom_G, 
-  dpnom = dpnom_G, 
-  rhonom = rhonom_G, 
-  Cfnom = Cfnom_G, 
-  Tstartbar = Tstartbar_G, 
-  redeclare model HeatTransfer = HeatTransfer_G) annotation(
+    Nt = 1, 
+    N = N_G, 
+    Nw = Nw_G, 
+    Dhyd = 1, 
+    wnom = gasNomFlowRate, 
+    initOpt = if SSInit then Options.steadyState else Options.noInit, 
+    redeclare package Medium = FlueGasMedium, 
+    QuasiStatic = gasQuasiStatic, 
+    pstart = pstart_G, 
+    L = L, 
+    A = gasVol / L, 
+    omega = exchSurface_G / L, 
+    FFtype = FFtype_G, 
+    Kfnom = Kfnom_G, 
+    dpnom = dpnom_G, 
+    rhonom = rhonom_G, 
+    Cfnom = Cfnom_G, 
+    Tstartbar = Tstartbar_G, 
+    redeclare model HeatTransfer = HeatTransfer_G) 
+    annotation(
     Placement(transformation(extent = {{-12, 66}, {12, 46}}, rotation = 0)));
   
   Thermal.MetalTubeFV metalTube(
-  L = exchSurface_F ^ 2 / (fluidVol * pi * 4),  
-  Nw = Nw_F, 
-  Tstartbar = Tstartbar_M, 
-  WallRes = false, 
-  lambda = lambda, 
-  rext = (metalVol + fluidVol) * 4 / extSurfaceTub / 2, 
-  rhomcm = rhomcm, 
-  rint = fluidVol * 4 / exchSurface_F / 2) annotation(
+    Nw = Nw_F, 
+    L = exchSurface_F ^ 2 / (fluidVol * pi * 4), 
+    rint = fluidVol * 4 / exchSurface_F / 2, 
+    rext = (metalVol + fluidVol) * 4 / extSurfaceTub / 2, 
+    rhomcm = rhomcm, 
+    lambda = lambda, 
+    WallRes = false) 
+    annotation(
     Placement(transformation(extent = {{-10, -24}, {10, -4}})));
-  
-  Thermal.HeatExchangerTopologyFV heatExchangerTopology(Nw = Nw_F, redeclare model HeatExchangerTopology = HeatExchangerTopology) annotation(
+
+  Thermal.HeatExchangerTopologyFV heatExchangerTopology(
+    Nw = Nw_F, 
+    redeclare model HeatExchangerTopology = HeatExchangerTopology) 
+    annotation(
     Placement(transformation(extent = {{-10, 6}, {10, 26}})));
 equation
   connect(gasFlow.infl, gasIn) annotation(
@@ -131,4 +107,4 @@ equation
     Line(points = {{0, 19}, {0, 51}}, color = {255, 127, 0}, smooth = Smooth.None));
   annotation(
     Diagram(coordinateSystem(preserveAspectRatio = false, extent = {{-100, -100}, {100, 100}}), graphics));
-end HEG2G;
+end HE;

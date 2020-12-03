@@ -21,30 +21,19 @@ import Modelica.SIunits.Conversions.{from_degC, from_deg};
   parameter Model.PBConfiguration cfg_tune(
     mdot_cooler = 40,
     r_i_c = 15e-3,
-    r_t_c = cfg_default.r_i_c + 5e-3,
-    r_o_c = cfg_default.r_t_c + 200e-3,
-    L_c = 20);
-  
-  parameter Model.PBConfiguration cfg_default;
-    
-  // select the configuration of parameters
-  parameter Model.PBConfiguration cfg = cfg_default;
+    r_t_c = cfg.r_i_c + 5e-3,
+    r_o_c = cfg.r_t_c + 200e-3,
+    L_c = 20);  
+ 
+  // default configuration of parameters
+  parameter Model.PBConfiguration cfg;
   
   // set the values of parameters accordingly
   parameter HEBoundaryCondition bc_cooler = cfg.bc_cooler;
   parameter HEBoundaryCondition bc_LTR = cfg.bc_LTR;
   parameter HEBoundaryCondition bc_HTR = cfg.bc_HTR;
   
-  parameter ThermoState st_bypass = cfg.st_bypass;
-  
-  // use HTR's geo parameters as default 
-  parameter EntityGeoParam geo_hot = cfg.cfg_heater_hot.geo;
-  parameter EntityGeoParam geo_cold = cfg.cfg_heater_cold.geo;
-  parameter EntityGeoParam geo_tube = cfg.cfg_heater_tube.geo;
-  
-  parameter EntityThermoParam thermo_hot = cfg.cfg_heater_hot.thermo;
-  parameter EntityThermoParam thermo_cold = cfg.cfg_heater_cold.thermo;
-  parameter EntityThermoParam thermo_heater = cfg.cfg_heater_tube.thermo;
+  parameter ThermoState st_bypass = cfg.st_bypass;  
   
   ThermoPower.Gas.SourceMassFlow source(
   redeclare package Medium = medium_hot,
@@ -87,31 +76,20 @@ import Modelica.SIunits.Conversions.{from_degC, from_deg};
   annotation(
     Placement(transformation(origin = {0, -80}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));    
   
-  ThermoPower.PowerPlants.HRSG.Components.HE cooler(
+  TPComponents.HE cooler(
   //Components.HEG2G cooler(
     redeclare package FluidMedium = medium_cooler, 
     redeclare package FlueGasMedium = medium_hot, 
     fluidFlow(fixedMassFlowSimplified = true, hstartin = bc_cooler.st_cold_in.h, hstartout=bc_cooler.st_cold_out.h), // set the fluid flow as fixed mdot for simplarity
     gasFlow(QuasiStatic = true,Tstartin = bc_cooler.st_hot_in.T, Tstartout = bc_cooler.st_hot_out.T),
-    N_G=geo_hot.N_seg,
-    N_F=geo_cold.N_seg,
-    Nw_G=geo_tube.N_seg,
-    gasNomFlowRate=bc_cooler.st_hot_in.mdot,
-    gasNomPressure=bc_cooler.st_hot_in.p,
-    fluidNomFlowRate=bc_cooler.st_cold_in.mdot,
-    fluidNomPressure=bc_cooler.st_cold_in.p,
-    exchSurface_G=geo_hot.A_ex,
-    exchSurface_F=geo_cold.A_ex,
-    extSurfaceTub=geo_tube.A_ex,
-    gasVol=geo_hot.V,
-    fluidVol=geo_cold.V,
-    metalVol=geo_tube.V,
+    bc = bc_cooler, 
+    geo_hot = cfg.cfg_cooler_hot.geo,
+    geo_cold = cfg.cfg_cooler_cold.geo,
+    geo_tube = cfg.cfg_cooler_tube.geo,  
+    thermo_hot = cfg.cfg_cooler_hot.thermo,
+    thermo_cold = cfg.cfg_cooler_cold.thermo,
+    thermo_tube = cfg.cfg_cooler_tube.thermo, 
     SSInit=true,
-    rhomcm=thermo_heater.rho_mcm,
-    lambda=thermo_heater.lambda,
-    Tstartbar_G=bc_cooler.st_hot_in.T,
-    Tstartbar_M=bc_cooler.st_hot_in.T - 50,
-    pstart_F = bc_cooler.st_cold_in.p, 
     FluidPhaseStart=ThermoPower.Choices.FluidPhase.FluidPhases.Liquid,    
     redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer, //ConstantHeatTransferCoefficientTwoGrids(gamma = thermo_hot.gamma_he),     
     redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer, //ConstantHeatTransferCoefficient(gamma =  thermo_cold.gamma_he),     

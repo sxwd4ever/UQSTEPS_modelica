@@ -1,16 +1,12 @@
-within Steps.Components;
+within Steps.TPComponents;
 
-model TP_PCHE "PCHE model based on Thermo Power"
-  extends Interfaces.HeatExchangerG2G;
-    
+model HEG2G "Heat Exchanger gas - gas"
+extends Interfaces.HeatExchangerG2G;
   import SI = Modelica.SIunits;
   import Gas = ThermoPower.Gas;  
   import Choices = ThermoPower.Choices;
   import Thermal = ThermoPower.Thermal;
-  import Options = ThermoPower.Choices.Init.Options;
-  import Steps.Components.KimCorrelations;
-  import Steps.Components.MaterialConductivity;  
-  import Steps.Model.{EntityConfig, EntityGeoParam, EntityThermoParam, HEBoundaryCondition};
+  import Options = ThermoPower.Choices.Init.Options;  
   
   replaceable model HeatTransfer_F = Thermal.HeatTransferFV.IdealHeatTransfer constrainedby ThermoPower.Thermal.BaseClasses.DistributedHeatTransferFV annotation(
      choicesAllMatching = true);
@@ -18,8 +14,7 @@ model TP_PCHE "PCHE model based on Thermo Power"
      choicesAllMatching = true);
   replaceable model HeatExchangerTopology = Thermal.HeatExchangerTopologies.CoCurrentFlow constrainedby ThermoPower.Thermal.BaseClasses.HeatExchangerTopologyData annotation(
      choicesAllMatching = true);
-  parameter Choices.Flow1D.FFtypes FFtype_G = ThermoPower.Choices.Flow1D.FFtypes.NoFriction "Friction Factor Type, gas side"; 
-  
+  parameter Choices.Flow1D.FFtypes FFtype_G = ThermoPower.Choices.Flow1D.FFtypes.NoFriction "Friction Factor Type, gas side";
   parameter Real Kfnom_G = 0 "Nominal hydraulic resistance coefficient, gas side";
   parameter SI.Pressure dpnom_G = 0 "Nominal pressure drop, gas side (friction term only!)";
   parameter SI.Density rhonom_G = 0 "Nominal inlet density, gas side";
@@ -32,36 +27,12 @@ model TP_PCHE "PCHE model based on Thermo Power"
   parameter Choices.Flow1D.HCtypes HCtype_F = ThermoPower.Choices.Flow1D.HCtypes.Downstream "Location of the hydraulic capacitance, fluid side";
   parameter Boolean gasQuasiStatic = false "Quasi-static model of the flue gas (mass, energy and momentum static balances";
   parameter Boolean fluidQuasiStatic = false "Quasi-static model of the fluid (mass, energy and momentum static balances";
-
   constant Real pi = Modelica.Constants.pi;
   final parameter SI.Distance L = 1 "Tube length";
   parameter Choices.FluidPhase.FluidPhases FluidPhaseStart = Choices.FluidPhase.FluidPhases.Liquid "Fluid phase (only for initialization!)" annotation(
     Dialog(tab = "Initialization"));
-  parameter Boolean SSInit = false "Steady State initialization";  
- 
-  //MaterialConductivity mc(name_material = name_material);  
-  /*
-  Gas.Flow1DFV fluidFlow(
-   
-  redeclare package Medium = FluidMedium, 
-  redeclare model HeatTransfer = HeatTransfer_F, 
-  A = (fluidVol * 4 / exchSurface_F) ^ 2 / 4 * pi, 
-  Cfnom = Cfnom_F, 
-  Dhyd = fluidVol * 4 / exchSurface_F, 
-  FFtype = FFtype_F, 
-  HydraulicCapacitance = HCtype_F, 
-  Kfnom = Kfnom_F, 
-  L = exchSurface_F ^ 2 / (fluidVol * pi * 4), F
-  N = N_F,Nt = Nt, 
-  Nw = Nw_F, 
-  dpnom = dpnom_F, 
-  initOpt = if SSInit then Options.steadyState else Options.noInit, 
-  omega = fluidVol * 4 / exchSurface_F * pi, 
-  pstart = pstart_F, 
-  rhonom = rhonom_F, 
-  wnom = fluidNomFlowRate) annotation(
-    Placement(transformation(extent = {{-10, -66}, {10, -46}}, rotation = 0)));
-  */
+  parameter Boolean SSInit = false "Steady State initialization";
+  
   Gas.Flow1DFV fluidFlow(
   Nt = Nt, //1, 
   N = N_F, 
@@ -82,8 +53,6 @@ model TP_PCHE "PCHE model based on Thermo Power"
   rhonom = rhonom_F, 
   Cfnom = Cfnom_F, 
   Tstartbar = Tstartbar_F, 
-  Tstartin = bc.st_cold_in.T, 
-  Tstartout = bc.st_cold_out.T, 
   redeclare model HeatTransfer = HeatTransfer_F) annotation(
     Placement(transformation(extent = {{-10, -66}, {10, -46}}, rotation = 0)));
     
@@ -108,15 +77,12 @@ model TP_PCHE "PCHE model based on Thermo Power"
   rhonom = rhonom_G, 
   Cfnom = Cfnom_G, 
   Tstartbar = Tstartbar_G, 
-  Tstartin = bc.st_hot_in.T, 
-  Tstartout = bc.st_hot_out.T,   
   redeclare model HeatTransfer = HeatTransfer_G) annotation(
     Placement(transformation(extent = {{-12, 66}, {12, 46}}, rotation = 0)));
   
-  PCHEMetalTubeFV metalTube(
-  L = L,  
-  Nw = Nw_F,
-  Am = metalVol / L,  
+  Thermal.MetalTubeFV metalTube(
+  L = exchSurface_F ^ 2 / (fluidVol * pi * 4),  
+  Nw = Nw_F, 
   Tstartbar = Tstartbar_M, 
   WallRes = false, 
   lambda = lambda, 
@@ -144,4 +110,4 @@ equation
     Line(points = {{0, 19}, {0, 51}}, color = {255, 127, 0}, smooth = Smooth.None));
   annotation(
     Diagram(coordinateSystem(preserveAspectRatio = false, extent = {{-100, -100}, {100, 100}}), graphics));
-end TP_PCHE;
+end HEG2G;

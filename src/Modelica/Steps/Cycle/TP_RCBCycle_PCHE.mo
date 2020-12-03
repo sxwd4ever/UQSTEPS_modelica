@@ -28,7 +28,7 @@ import Modelica.SIunits.Conversions.{from_degC,from_deg};
   parameter Modelica.SIunits.Temperature T_cooler_cold = from_degC(45) "K, Temperature of cooler's cold fluid";
  
   // results based on sscar's simulation for 10 Mw power block
-  parameter Model.PBConfiguration cfg(
+  parameter Model.PBConfig_PCHE cfg(
     mdot_main = mdot_main, 
     mdot_pump = mdot_main * (1 - gamma),
     mdot_heater = mdot_heater_hot,
@@ -42,41 +42,12 @@ import Modelica.SIunits.Conversions.{from_degC,from_deg};
   parameter HEBoundaryCondition bc_HTR = cfg.bc_HTR;  
   parameter HEBoundaryCondition bc_LTR = cfg.bc_LTR;
   parameter HEBoundaryCondition bc_heater = cfg.bc_heater;
-  parameter HEBoundaryCondition bc_cooler = cfg.bc_cooler;
-  
+  parameter HEBoundaryCondition bc_cooler = cfg.bc_cooler;  
   parameter ThermoState st_bypass = cfg.st_bypass;
   
-  // load design parameters such as geometry values.  
- 
-  parameter EntityGeoParam geo_HTR_hot = cfg.cfg_PCHE_HTR_hot.geo;
-  parameter EntityGeoParam geo_HTR_cold = cfg.cfg_PCHE_HTR_cold.geo;
-  parameter EntityGeoParam geo_HTR_tube = cfg.cfg_PCHE_HTR_tube.geo;
-
-  parameter EntityThermoParam thermo_HTR_hot = cfg.cfg_PCHE_HTR_hot.thermo;
-  parameter EntityThermoParam thermo_HTR_cold = cfg.cfg_PCHE_HTR_cold.thermo;
-  parameter EntityThermoParam thermo_HTR_tube = cfg.cfg_PCHE_HTR_tube.thermo; 
-  
-  parameter EntityGeoParam geo_LTR_hot = cfg.cfg_PCHE_LTR_hot.geo;
-  parameter EntityGeoParam geo_LTR_cold = cfg.cfg_PCHE_LTR_cold.geo;
-  parameter EntityGeoParam geo_LTR_tube = cfg.cfg_PCHE_LTR_tube.geo;   
-  
-  parameter EntityThermoParam thermo_LTR_hot = cfg.cfg_PCHE_LTR_hot.thermo;
-  parameter EntityThermoParam thermo_LTR_cold = cfg.cfg_PCHE_LTR_cold.thermo;
-  parameter EntityThermoParam thermo_LTR_tube = cfg.cfg_PCHE_LTR_tube.thermo;  
-
-  // use HTR's geo parameters as default 
-  parameter EntityGeoParam geo_heater_hot = cfg.cfg_HTR_hot.geo;
-  parameter EntityGeoParam geo_heater_cold = cfg.cfg_HTR_cold.geo;
-  parameter EntityGeoParam geo_heater_tube = cfg.cfg_HTR_tube.geo;
-  parameter EntityThermoParam thermo_heater_tube = cfg.cfg_heater_tube.thermo;
-  
-  parameter EntityGeoParam geo_cooler_hot = cfg.cfg_cooler_hot.geo;
-  parameter EntityGeoParam geo_cooler_cold = cfg.cfg_cooler_cold.geo;
-  parameter EntityGeoParam geo_cooler_tube = cfg.cfg_cooler_tube.geo;  
-  
-  parameter EntityThermoParam thermo_cooler_tube = cfg.cfg_cooler_tube.thermo;  
-  
   // load thermodynamic parameters.     
+  parameter EntityThermoParam thermo_heater_tube = cfg.cfg_heater_tube.thermo;
+  parameter EntityThermoParam thermo_cooler_tube = cfg.cfg_cooler_tube.thermo;  
   parameter EntityThermoParam thermo_mixer = cfg.cfg_mixer.thermo;
     
   //Components
@@ -102,30 +73,19 @@ import Modelica.SIunits.Conversions.{from_degC,from_deg};
     use_T = true) annotation(
     Placement(visible = true, transformation(origin = {-81, 63}, extent = {{-5, -5}, {5, 5}}, rotation = 180)));
     
-  ThermoPower.PowerPlants.HRSG.Components.HE heater(
+  TPComponents.HE heater(
     redeclare package FluidMedium = medium_heater, 
     redeclare package FlueGasMedium = medium_main, 
     fluidFlow(fixedMassFlowSimplified = true, hstartin = bc_heater.st_hot_in.h, hstartout=bc_heater.st_hot_out.h), // set the fluid flow as fixed mdot for simplarity
     gasFlow(QuasiStatic = true, Tstartin = bc_heater.st_cold_in.T, Tstartout = bc_heater.st_cold_out.T),
-    N_G=geo_heater_cold.N_seg,
-    N_F=geo_heater_hot.N_seg,
-    Nw_G=geo_heater_tube.N_seg,
-    gasNomFlowRate=bc_heater.st_cold_in.mdot,
-    gasNomPressure=bc_heater.st_cold_in.p,
-    fluidNomFlowRate=bc_heater.st_hot_in.mdot,
-    fluidNomPressure=bc_heater.st_hot_in.p,
-    exchSurface_G=geo_heater_cold.A_ex,
-    exchSurface_F=geo_heater_hot.A_ex,
-    extSurfaceTub=geo_heater_tube.A_ex,
-    gasVol=geo_heater_cold.V,
-    fluidVol=geo_heater_hot.V,
-    metalVol=geo_heater_tube.V,
+    bc = bc_heater, 
+    geo_hot = cfg.cfg_heater_hot.geo,
+    geo_cold = cfg.cfg_heater_cold.geo,
+    geo_tube = cfg.cfg_heater_tube.geo,  
+    thermo_hot = cfg.cfg_heater_hot.thermo,
+    thermo_cold = cfg.cfg_heater_cold.thermo,
+    thermo_tube = cfg.cfg_heater_tube.thermo,      
     SSInit=SSInit,
-    rhomcm=thermo_heater_tube.rho_mcm,
-    lambda=thermo_heater_tube.lambda,
-    Tstartbar_G=bc_heater.st_cold_in.T,
-    Tstartbar_M=bc_heater.st_hot_in.T - 50,
-    pstart_F = bc_heater.st_hot_in.p, 
     FluidPhaseStart=ThermoPower.Choices.FluidPhase.FluidPhases.Liquid,    
     redeclare replaceable model HeatTransfer_F =  ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer, // ConstantHeatTransferCoefficientTwoGrids(gamma = thermo_HTR_hot.gamma_he),    
     redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer, // ConstantHeatTransferCoefficient(gamma = thermo_HTR_cold.gamma_he),     
@@ -141,79 +101,55 @@ import Modelica.SIunits.Conversions.{from_degC,from_deg};
   parameter SI.Length pitch = 12.3e-3 "pitch length";
   parameter Real phi = 35 "pitch angle °";
 
-  Components.TP_PCHE HTR(
+  TPComponents.PCHE HTR(
     redeclare package FluidMedium = medium_main, 
     redeclare package FlueGasMedium = medium_main, 
     gasFlow(QuasiStatic = true, Tstartin = bc_HTR.st_hot_in.T, Tstartout = bc_HTR.st_hot_out.T),
     fluidFlow(Tstartin = bc_HTR.st_cold_in.T, Tstartout = bc_HTR.st_cold_out.T),  
-    redeclare replaceable model HeatTransfer_F = Steps.Components.KimPCHEHeatTransferFV(
+    redeclare replaceable model HeatTransfer_F = Steps.TPComponents.KimPCHEHeatTransferFV(
     pitch = pitch,
     phi = phi), 
-    redeclare replaceable model HeatTransfer_G = Steps.Components.KimPCHEHeatTransferFV(
+    redeclare replaceable model HeatTransfer_G = Steps.TPComponents.KimPCHEHeatTransferFV(
     pitch = pitch,
     phi = phi), 
      //redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer,
     redeclare model HeatExchangerTopology = ThermoPower.Thermal.HeatExchangerTopologies.CounterCurrentFlow,  
-    N_F = geo_HTR_cold.N_seg, 
-    N_G = geo_HTR_hot.N_seg,  
-    Nt = geo_HTR_hot.N_ch,     
-    Tstartbar_G = bc_HTR.st_hot_in.T, 
-    Tstartbar_F = bc_HTR.st_cold_in.T, 
-    exchSurface_F = geo_HTR_cold.A_ex, 
-    exchSurface_G = geo_HTR_hot.A_ex, 
-    extSurfaceTub = geo_HTR_tube.A_ex, 
-    fluidNomFlowRate = bc_HTR.st_cold_in.mdot, 
-    fluidNomPressure = bc_HTR.st_cold_in.p, 
-    fluidVol = geo_HTR_cold.V, 
-    gasNomFlowRate = bc_HTR.st_hot_in.mdot, 
-    gasNomPressure = bc_HTR.st_hot_in.p, 
-    gasVol = geo_HTR_hot.V, 
-    lambda = thermo_HTR_tube.lambda, 
-    metalVol = geo_HTR_tube.V, 
-    pstart_F = bc_HTR.st_cold_in.p, 
-    pstart_G = bc_HTR.st_hot_in.p,
-    rhomcm = thermo_HTR_tube.rho_mcm,
+    bc = bc_HTR, 
+    geo_hot = cfg.cfg_HTR_hot.geo,
+    geo_cold = cfg.cfg_HTR_cold.geo,
+    geo_tube = cfg.cfg_HTR_tube.geo,  
+    thermo_hot = cfg.cfg_HTR_hot.thermo,
+    thermo_cold = cfg.cfg_HTR_cold.thermo,
+    thermo_tube = cfg.cfg_HTR_tube.thermo, 
     gasQuasiStatic = true,
     fluidQuasiStatic = true,
     SSInit=SSInit,
     metalTube(WallRes=false, Tstartbar=HTR.Tstartbar_M)) annotation(
     Placement(visible = true, transformation(origin = {-21, 33}, extent = {{-7, -7}, {7, 7}}, rotation = 0)));
     
-  Components.TP_PCHE LTR(
+  TPComponents.PCHE LTR(
     redeclare package FluidMedium = medium_main, 
     redeclare package FlueGasMedium = medium_main, 
     gasFlow(QuasiStatic = true, Tstartin = bc_LTR.st_hot_in.T, Tstartout = bc_LTR.st_hot_out.T),
     fluidFlow(Tstartin = bc_LTR.st_cold_in.T, Tstartout = bc_LTR.st_cold_out.T),   
     // redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer, 
-    redeclare replaceable model HeatTransfer_F = Steps.Components.KimPCHEHeatTransferFV(
+    redeclare replaceable model HeatTransfer_F = Steps.TPComponents.KimPCHEHeatTransferFV(
     pitch = pitch,
     phi = phi),
     // ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficient(gamma = thermo_LTR_cold.gamma_he),
     // redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer, 
-    redeclare replaceable model HeatTransfer_G = Steps.Components.KimPCHEHeatTransferFV(
+    redeclare replaceable model HeatTransfer_G = Steps.TPComponents.KimPCHEHeatTransferFV(
     pitch = pitch,
     phi = phi),  
     // ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficientTwoGrids(gamma = thermo_LTR_hot.gamma_he),
     redeclare model HeatExchangerTopology = ThermoPower.Thermal.HeatExchangerTopologies.CounterCurrentFlow,  
-    N_F = geo_LTR_cold.N_seg, 
-    N_G = geo_LTR_hot.N_seg,   
-    Nt = geo_LTR_hot.N_ch, 
-    Tstartbar_G = bc_LTR.st_hot_in.T, 
-    Tstartbar_F = bc_LTR.st_cold_in.T, 
-    exchSurface_F = geo_LTR_cold.A_ex, 
-    exchSurface_G = geo_LTR_hot.A_ex, 
-    extSurfaceTub = geo_LTR_tube.A_ex, 
-    fluidNomFlowRate = bc_LTR.st_cold_in.mdot, 
-    fluidNomPressure = bc_LTR.st_cold_in.p, 
-    fluidVol = geo_LTR_cold.V, 
-    gasNomFlowRate = bc_LTR.st_hot_in.mdot, 
-    gasNomPressure = bc_LTR.st_hot_in.p, 
-    gasVol = geo_LTR_hot.V, 
-    lambda = thermo_LTR_tube.lambda, 
-    metalVol = geo_LTR_tube.V, 
-    pstart_F = bc_LTR.st_cold_in.p, 
-    pstart_G = bc_LTR.st_hot_in.p,
-    rhomcm = thermo_LTR_tube.rho_mcm,
+    bc = bc_LTR, 
+    geo_hot = cfg.cfg_LTR_hot.geo,
+    geo_cold = cfg.cfg_LTR_cold.geo,
+    geo_tube = cfg.cfg_LTR_tube.geo,  
+    thermo_hot = cfg.cfg_LTR_hot.thermo,
+    thermo_cold = cfg.cfg_LTR_cold.thermo,
+    thermo_tube = cfg.cfg_LTR_tube.thermo,  
     gasQuasiStatic = true,
     fluidQuasiStatic = true,
     SSInit=SSInit,
@@ -261,31 +197,20 @@ import Modelica.SIunits.Conversions.{from_degC,from_deg};
     use_T = true) annotation(
     Placement(visible = true, transformation(origin = {31, -75}, extent = {{-5, -5}, {5, 5}}, rotation = 180)));
       
-  ThermoPower.PowerPlants.HRSG.Components.HE cooler(
+  TPComponents.HE cooler(
     //Components.HEG2G cooler(
       redeclare package FluidMedium = medium_cooler, 
       redeclare package FlueGasMedium = medium_main, 
       fluidFlow(fixedMassFlowSimplified = true, hstartin = bc_cooler.st_cold_in.h, hstartout=bc_cooler.st_cold_out.h), // set the fluid flow as fixed mdot for simplarity
       gasFlow(QuasiStatic = true, Tstartin = bc_cooler.st_hot_in.T, Tstartout = bc_cooler.st_hot_out.T),
-      N_G=geo_cooler_hot.N_seg,
-      N_F=geo_cooler_cold.N_seg,
-      Nw_G=geo_cooler_tube.N_seg,
-      gasNomFlowRate=bc_cooler.st_hot_in.mdot,
-      gasNomPressure=bc_cooler.st_hot_in.p,
-      fluidNomFlowRate=bc_cooler.st_cold_in.mdot,
-      fluidNomPressure=bc_cooler.st_cold_in.p,
-      exchSurface_G=geo_cooler_hot.A_ex,
-      exchSurface_F=geo_cooler_cold.A_ex,
-      extSurfaceTub=geo_cooler_tube.A_ex,
-      gasVol=geo_cooler_hot.V,
-      fluidVol=geo_cooler_cold.V,
-      metalVol=geo_cooler_tube.V,
+      bc = bc_cooler, 
+      geo_hot = cfg.cfg_cooler_hot.geo,
+      geo_cold = cfg.cfg_cooler_cold.geo,
+      geo_tube = cfg.cfg_cooler_tube.geo,  
+      thermo_hot = cfg.cfg_cooler_hot.thermo,
+      thermo_cold = cfg.cfg_cooler_cold.thermo,
+      thermo_tube = cfg.cfg_cooler_tube.thermo, 
       SSInit=SSInit,
-      rhomcm=thermo_cooler_tube.rho_mcm "use thermo props of heater for simplicity",
-      lambda=thermo_cooler_tube.lambda "use thermo props of heater for simplicity",
-      Tstartbar_G=bc_cooler.st_hot_in.T,
-      Tstartbar_M=bc_cooler.st_hot_in.T - 50,
-      pstart_F = bc_cooler.st_cold_in.p, 
       FluidPhaseStart=ThermoPower.Choices.FluidPhase.FluidPhases.Liquid,    
       redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer, //ConstantHeatTransferCoefficientTwoGrids(gamma = thermo_hot.gamma_he),     
       redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer, //ConstantHeatTransferCoefficient(gamma =  thermo_cold.gamma_he),     
@@ -369,44 +294,44 @@ import Modelica.SIunits.Conversions.{from_degC,from_deg};
     w0 = bc_heater.st_cold_out.mdot);
 */ 
 
-  Components.GasStateReader r01(redeclare package Medium = medium_main) annotation(
+  TPComponents.GasStateReader r01(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {66, -56}, extent = {{-6, -6}, {6, 6}}, rotation = 0)));
-  Components.GasStateReader r02(redeclare package Medium = medium_main) annotation(
+  TPComponents.GasStateReader r02(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {96, 44}, extent = {{-6, -6}, {6, 6}}, rotation = 180)));
-  Components.GasStateReader r03(redeclare package Medium = medium_main) annotation(
+  TPComponents.GasStateReader r03(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {-22, 50}, extent = {{-6, -6}, {6, 6}}, rotation = -90)));
-  Components.GasStateReader r04(redeclare package Medium = medium_main) annotation(
+  TPComponents.GasStateReader r04(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {-32, 20}, extent = {{-6, -6}, {6, 6}}, rotation = 180)));
-  Components.GasStateReader r05(redeclare package Medium = medium_main) annotation(
+  TPComponents.GasStateReader r05(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {-92, 18}, extent = {{-6, -6}, {6, 6}}, rotation = -90)));
   //Components.GasStateReader r05a(redeclare package Medium = medium_main) annotation(
   //  Placement(visible = true, transformation(origin = {-92, -32}, extent = {{-6, -6}, {6, 6}}, rotation = -90)));
-  Components.GasStateReader r06(redeclare package Medium = medium_main) annotation(
+  TPComponents.GasStateReader r06(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {-46, -16}, extent = {{-6, -6}, {6, 6}}, rotation = 90)));
-  Components.GasStateReader r07(redeclare package Medium = medium_main) annotation(
+  TPComponents.GasStateReader r07(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {-4, 34}, extent = {{-6, -6}, {6, 6}}, rotation = 0)));
-  Components.GasStateReader r08(redeclare package Medium = medium_main) annotation(
+  TPComponents.GasStateReader r08(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {32, 18}, extent = {{-6, -6}, {6, 6}}, rotation = -90)));
 
-  Components.GasStateReader r08_source(redeclare package Medium = medium_main) annotation(
+  TPComponents.GasStateReader r08_source(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {32, 18}, extent = {{-6, -6}, {6, 6}}, rotation = -90)));
 
   
-  Components.GasStateReader r08a(redeclare package Medium = medium_main) annotation(
+  TPComponents.GasStateReader r08a(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {20, -24}, extent = {{-6, -6}, {6, 6}}, rotation = -90)));
-  Components.GasStateReader r08b(redeclare package Medium = medium_main) annotation(
+  TPComponents.GasStateReader r08b(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {34, 4}, extent = {{-6, -6}, {6, 6}}, rotation = 0)));
-  Components.GasStateReader r09(redeclare package Medium = medium_main) annotation(
+  TPComponents.GasStateReader r09(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {50, 62}, extent = {{-6, -6}, {6, 6}}, rotation = 180)));
-  Components.GasStateReader r10(redeclare package Medium = medium_main) annotation(
+  TPComponents.GasStateReader r10(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {4, 58}, extent = {{-6, -6}, {6, 6}}, rotation = 180)));
-  Components.WaterStateReader rh1(redeclare package Medium = medium_heater) annotation(
+  TPComponents.WaterStateReader rh1(redeclare package Medium = medium_heater) annotation(
     Placement(visible = true, transformation(origin = {-66, 22}, extent = {{-6, -6}, {6, 6}}, rotation = 0)));
-  Components.WaterStateReader rh2(redeclare package Medium = medium_heater) annotation(
+  TPComponents.WaterStateReader rh2(redeclare package Medium = medium_heater) annotation(
     Placement(visible = true, transformation(origin = {-64, 64}, extent = {{-6, -6}, {6, 6}}, rotation = 180)));
-  Components.WaterStateReader rc1(redeclare package Medium = medium_cooler) annotation(
+  TPComponents.WaterStateReader rc1(redeclare package Medium = medium_cooler) annotation(
     Placement(visible = true, transformation(origin = {44, -36}, extent = {{-6, -6}, {6, 6}}, rotation = 0)));
-  Components.WaterStateReader rc2(redeclare package Medium = medium_cooler) annotation(
+  TPComponents.WaterStateReader rc2(redeclare package Medium = medium_cooler) annotation(
     Placement(visible = true, transformation(origin = {44, -74}, extent = {{-6, -6}, {6, 6}}, rotation = 0)));
 
   // calculated variables

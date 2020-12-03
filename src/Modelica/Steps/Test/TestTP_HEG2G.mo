@@ -113,7 +113,7 @@ model TestTP_HEG2G
   ThermoPower.Gas.SensT T_gasIn(redeclare package Medium = medium_hot);
   ThermoPower.Gas.SensT T_gasOut(redeclare package Medium = medium_hot);
  */
-  Components.HEG2G HE(
+  TPComponents.HEG2G HE(
   redeclare package FluidMedium = medium_cold, 
   redeclare package FlueGasMedium = medium_hot, 
   redeclare replaceable model HeatTransfer_F =

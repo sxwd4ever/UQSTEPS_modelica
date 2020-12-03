@@ -43,15 +43,6 @@ model TestTP_HE
   // set the values of parameters accordingly
   parameter HEBoundaryCondition bc_heater = cfg.bc_heater;
   
-  // use HTR's geo parameters as default 
-  parameter EntityGeoParam geo_heater_hot = cfg.cfg_heater_hot.geo;
-  parameter EntityGeoParam geo_heater_cold = cfg.cfg_heater_cold.geo;
-  parameter EntityGeoParam geo_heater_tube = cfg.cfg_heater_tube.geo;
-  
-  parameter EntityThermoParam thermo_hot = cfg.cfg_heater_hot.thermo;
-  parameter EntityThermoParam thermo_cold = cfg.cfg_heater_cold.thermo;
-  parameter EntityThermoParam thermo_heater = cfg.cfg_heater_tube.thermo;
-  
   ThermoPower.Water.SourceMassFlow source_heater_hot(
   redeclare package Medium = medium_heater,
     w0 = bc_heater.st_hot_in.mdot,
@@ -90,31 +81,20 @@ model TestTP_HE
   annotation(
     Placement(transformation(origin = {0, -80}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));  
   
-  ThermoPower.PowerPlants.HRSG.Components.HE hE(
+  TPComponents.HE hE(
   //Components.HEG2G hE(
     redeclare package FluidMedium = medium_heater, 
     redeclare package FlueGasMedium = medium_cold, 
     fluidFlow(fixedMassFlowSimplified = true, hstartin = bc_heater.st_hot_in.h, hstartout=bc_heater.st_hot_out.h), // set the fluid flow as fixed mdot for simplarity
     gasFlow(QuasiStatic = true, Tstartin = bc_heater.st_cold_in.T, Tstartout = bc_heater.st_cold_out.T),
-    N_G=geo_heater_cold.N_seg,
-    N_F=geo_heater_hot.N_seg,
-    Nw_G=geo_heater_tube.N_seg,
-    gasNomFlowRate=bc_heater.st_cold_in.mdot,
-    gasNomPressure=bc_heater.st_cold_in.p,
-    fluidNomFlowRate=bc_heater.st_hot_in.mdot,
-    fluidNomPressure=bc_heater.st_hot_in.p,
-    exchSurface_G=geo_heater_cold.A_ex,
-    exchSurface_F=geo_heater_hot.A_ex,
-    extSurfaceTub=geo_heater_tube.A_ex,
-    gasVol=geo_heater_cold.V,
-    fluidVol=geo_heater_hot.V,
-    metalVol=geo_heater_tube.V,
+    bc = bc_heater, 
+    geo_hot = cfg.cfg_heater_hot.geo,
+    geo_cold = cfg.cfg_heater_cold.geo,
+    geo_tube = cfg.cfg_heater_tube.geo,  
+    thermo_hot = cfg.cfg_heater_hot.thermo,
+    thermo_cold = cfg.cfg_heater_cold.thermo,
+    thermo_tube = cfg.cfg_heater_tube.thermo, 
     SSInit=true,
-    rhomcm=thermo_heater.rho_mcm,
-    lambda=thermo_heater.lambda,
-    Tstartbar_G=bc_heater.st_cold_in.T,
-    Tstartbar_M=bc_heater.st_hot_in.T - 50,
-    pstart_F = bc_heater.st_hot_in.p, 
     FluidPhaseStart=ThermoPower.Choices.FluidPhase.FluidPhases.Liquid,    
     redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer, //ConstantHeatTransferCoefficientTwoGrids(gamma = thermo_hot.gamma_he),     
     redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer, //ConstantHeatTransferCoefficient(gamma =  thermo_cold.gamma_he),     

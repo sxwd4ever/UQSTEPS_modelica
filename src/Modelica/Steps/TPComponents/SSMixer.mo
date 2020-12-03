@@ -1,4 +1,4 @@
-within Steps.Components;
+within Steps.TPComponents;
 
 model SSMixer "Steady state mixer based on ThermoPower's Mixer"
   extends ThermoPower.Icons.Gas.Mixer;

@@ -1,4 +1,4 @@
-within Steps.Components;
+within Steps.TPComponents;
 
 model GasStateReader   
   "Gas state reader which extends ThermoPower's StateReader_gas"

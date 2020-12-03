@@ -23,24 +23,10 @@ model TestTP_Components_PCHE
   package medium_heater = SolarTherm.Media.Sodium.Sodium_pT;
   //package medium_heater = ThermoPower.Water.StandardWater;// Modelica.Media.IdealGases.SingleGases.CO2;
 
-  parameter Model.PBConfiguration cfg_default(
+  // select the configuration of parameters
+  parameter Model.PBConfig_PCHE cfg(
     mdot_heater = 80
   );
-  
-  parameter Model.PBConfiguration cfg_tune(
-  r_i_HTR = 5e-3,
-  r_t_HTR = cfg_tune.r_i_HTR + 2e-3,
-  r_o_HTR = cfg_tune.r_t_HTR + 2e-3,
-  N_ch_HTR = 200,
-  L_HTR = 1 "Don't modify this, since L in HE model is fixed as 1m. Modify Nt instead",
-  r_i_LTR = 2e-3,
-  r_t_LTR = cfg_tune.r_i_LTR + 1e-3,
-  r_o_LTR = cfg_tune.r_t_LTR + 1e-3,
-  N_ch_LTR = 200,
-  L_LTR = 1);    
- 
-  // select the configuration of parameters
-  parameter Model.PBConfiguration cfg = cfg_default;
   
   // set the values of parameters accordingly
   parameter HEBoundaryCondition bc_HTR = cfg.bc_HTR;  
@@ -48,31 +34,22 @@ model TestTP_Components_PCHE
   parameter HEBoundaryCondition bc_heater = cfg.bc_heater;
   
   parameter ThermoState st_bypass = cfg.st_bypass;
-  
-  parameter EntityGeoParam geo_HTR_hot = cfg.cfg_PCHE_HTR_hot.geo;
-  parameter EntityGeoParam geo_HTR_cold = cfg.cfg_PCHE_HTR_cold.geo;
-  parameter EntityGeoParam geo_HTR_tube = cfg.cfg_PCHE_HTR_tube.geo;
-  
-  parameter EntityGeoParam geo_LTR_hot = cfg.cfg_PCHE_LTR_hot.geo;
-  parameter EntityGeoParam geo_LTR_cold = cfg.cfg_PCHE_LTR_cold.geo;
-  parameter EntityGeoParam geo_LTR_tube = cfg.cfg_PCHE_LTR_tube.geo;  
-  
-  parameter EntityThermoParam thermo_HTR_hot = cfg.cfg_PCHE_HTR_hot.thermo;
-  parameter EntityThermoParam thermo_HTR_cold = cfg.cfg_PCHE_HTR_cold.thermo;
-  parameter EntityThermoParam thermo_HTR_tube = cfg.cfg_PCHE_HTR_tube.thermo;  
-  
-  parameter EntityThermoParam thermo_LTR_hot = cfg.cfg_PCHE_LTR_hot.thermo;
-  parameter EntityThermoParam thermo_LTR_cold = cfg.cfg_PCHE_LTR_cold.thermo;
-  parameter EntityThermoParam thermo_LTR_tube = cfg.cfg_PCHE_LTR_tube.thermo;  
-
-  // use HTR's geo parameters as default 
-  parameter EntityGeoParam geo_heater_hot = cfg.cfg_HTR_hot.geo;
-  parameter EntityGeoParam geo_heater_cold = cfg.cfg_HTR_cold.geo;
-  parameter EntityGeoParam geo_heater_tube = cfg.cfg_HTR_tube.geo;
-
-  parameter EntityThermoParam thermo_heater_tube = cfg.cfg_heater_tube.thermo;
-
   parameter EntityThermoParam thermo_mixer = cfg.cfg_mixer.thermo;
+  
+  // load design parameters such as geometry values.
+  parameter EntityGeoParam geo_HTR_hot = cfg.cfg_HTR_hot.geo;
+  parameter EntityGeoParam geo_HTR_cold = cfg.cfg_HTR_cold.geo;
+  
+  parameter EntityGeoParam geo_LTR_hot = cfg.cfg_LTR_hot.geo;
+  parameter EntityGeoParam geo_LTR_cold = cfg.cfg_LTR_cold.geo; 
+
+  // load thermodynamic parameters. 
+  parameter EntityThermoParam thermo_HTR_hot = cfg.cfg_HTR_hot.thermo;
+  parameter EntityThermoParam thermo_HTR_cold = cfg.cfg_HTR_cold.thermo;
+  
+  parameter EntityThermoParam thermo_LTR_hot = cfg.cfg_LTR_hot.thermo;
+  parameter EntityThermoParam thermo_LTR_cold = cfg.cfg_LTR_cold.thermo;
+
   //Components
   inner ThermoPower.System system(allowFlowReversal = false, initOpt=ThermoPower.Choices.Init.Options.noInit) annotation(
     Placement(transformation(extent = {{80, 80}, {100, 100}})));
@@ -98,30 +75,19 @@ model TestTP_Components_PCHE
     annotation(
     Placement(transformation(origin = {0, -80}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
 
-  ThermoPower.PowerPlants.HRSG.Components.HE heater(
+  TPComponents.HE heater(
     redeclare package FluidMedium = medium_heater, 
     redeclare package FlueGasMedium = medium_cold, 
     fluidFlow(fixedMassFlowSimplified = true, hstartin = bc_heater.st_hot_in.h, hstartout=bc_heater.st_hot_out.h), // set the fluid flow as fixed mdot for simplarity
     gasFlow(QuasiStatic = true, Tstartin = bc_heater.st_cold_in.T, Tstartout = bc_heater.st_cold_out.T),
-    N_G=geo_heater_cold.N_seg,
-    N_F=geo_heater_hot.N_seg,
-    Nw_G=geo_heater_tube.N_seg,
-    gasNomFlowRate=bc_heater.st_cold_in.mdot,
-    gasNomPressure=bc_heater.st_cold_in.p,
-    fluidNomFlowRate=bc_heater.st_hot_in.mdot,
-    fluidNomPressure=bc_heater.st_hot_in.p,
-    exchSurface_G=geo_heater_cold.A_ex,
-    exchSurface_F=geo_heater_hot.A_ex,
-    extSurfaceTub=geo_heater_tube.A_ex,
-    gasVol=geo_heater_cold.V,
-    fluidVol=geo_heater_hot.V,
-    metalVol=geo_heater_tube.V,
+    bc = bc_heater, 
+    geo_hot = cfg.cfg_heater_hot.geo,
+    geo_cold = cfg.cfg_heater_cold.geo,
+    geo_tube = cfg.cfg_heater_tube.geo,  
+    thermo_hot = cfg.cfg_heater_hot.thermo,
+    thermo_cold = cfg.cfg_heater_cold.thermo,
+    thermo_tube = cfg.cfg_heater_tube.thermo,     
     SSInit=SSInit,
-    rhomcm=thermo_heater_tube.rho_mcm,
-    lambda=thermo_heater_tube.lambda,
-    Tstartbar_G=bc_heater.st_cold_in.T,
-    Tstartbar_M=bc_heater.st_hot_in.T - 50,
-    pstart_F = bc_heater.st_hot_in.p, 
     FluidPhaseStart=ThermoPower.Choices.FluidPhase.FluidPhases.Liquid,    
     redeclare replaceable model HeatTransfer_F =  ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer, // ConstantHeatTransferCoefficientTwoGrids(gamma = thermo_HTR_hot.gamma_he),    
     redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer, // ConstantHeatTransferCoefficient(gamma = thermo_HTR_cold.gamma_he),     
@@ -188,37 +154,25 @@ model TestTP_Components_PCHE
   annotation(
     Placement(transformation(extent = {{30, -6}, {50, 14}}, rotation = 0)));
 */
-  Components.TP_PCHE HTR(
+  TPComponents.PCHE HTR(
   redeclare package FluidMedium = medium_cold, 
   redeclare package FlueGasMedium = medium_hot, 
   gasFlow(QuasiStatic = true, Tstartin = bc_HTR.st_hot_in.T, Tstartout = bc_HTR.st_hot_out.T),
   fluidFlow(Tstartin = bc_HTR.st_cold_in.T, Tstartout = bc_HTR.st_cold_out.T),     
-  redeclare replaceable model HeatTransfer_F = Steps.Components.KimPCHEHeatTransferFV(
+  redeclare replaceable model HeatTransfer_F = TPComponents.KimPCHEHeatTransferFV(
   pitch = pitch,
   phi = phi), 
-  redeclare replaceable model HeatTransfer_G = Steps.Components.KimPCHEHeatTransferFV(
+  redeclare replaceable model HeatTransfer_G = TPComponents.KimPCHEHeatTransferFV(
   pitch = pitch,
   phi = phi), 
   redeclare model HeatExchangerTopology = ThermoPower.Thermal.HeatExchangerTopologies.CounterCurrentFlow,  
-  N_F = geo_HTR_cold.N_seg, 
-  N_G = geo_HTR_hot.N_seg,    
-  Nt = geo_HTR_hot.N_ch,   
-  Tstartbar_G = bc_HTR.st_hot_in.T, 
-  Tstartbar_F = bc_HTR.st_cold_in.T, 
-  exchSurface_F = geo_HTR_cold.A_ex, 
-  exchSurface_G = geo_HTR_hot.A_ex, 
-  extSurfaceTub = geo_HTR_tube.A_ex, 
-  fluidNomFlowRate = bc_HTR.st_cold_in.mdot, 
-  fluidNomPressure = bc_HTR.st_cold_in.p, 
-  fluidVol = geo_HTR_cold.V, 
-  gasNomFlowRate = bc_HTR.st_hot_in.mdot, 
-  gasNomPressure = bc_HTR.st_hot_in.p, 
-  gasVol = geo_HTR_hot.V, 
-  lambda = thermo_HTR_tube.lambda, 
-  metalVol = geo_HTR_tube.V, 
-  pstart_F = bc_HTR.st_cold_in.p, 
-  pstart_G = bc_HTR.st_hot_in.p,
-  rhomcm = thermo_HTR_tube.rho_mcm,
+  bc = bc_HTR, 
+  geo_hot = cfg.cfg_HTR_hot.geo,
+  geo_cold = cfg.cfg_HTR_cold.geo,
+  geo_tube = cfg.cfg_HTR_tube.geo,  
+  thermo_hot = cfg.cfg_HTR_hot.thermo,
+  thermo_cold = cfg.cfg_HTR_cold.thermo,
+  thermo_tube = cfg.cfg_HTR_tube.thermo, 
   SSInit=SSInit,
   gasQuasiStatic = true,
   fluidQuasiStatic = true,  
@@ -229,15 +183,15 @@ model TestTP_Components_PCHE
   parameter SI.Length pitch = 12.3e-3 "pitch length";
   parameter Real phi = 35 "pitch angle °";
   
-  Components.TP_PCHE LTR(
+  TPComponents.PCHE LTR(
   redeclare package FluidMedium = medium_cold, 
   redeclare package FlueGasMedium = medium_hot, 
-  redeclare replaceable model HeatTransfer_F = Steps.Components.KimPCHEHeatTransferFV(
+  redeclare replaceable model HeatTransfer_F = TPComponents.KimPCHEHeatTransferFV(
   pitch = pitch,
   phi = phi),
   // ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficient(gamma = thermo_LTR_cold.gamma_he),
   // redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer, 
-  redeclare replaceable model HeatTransfer_G = Steps.Components.KimPCHEHeatTransferFV(
+  redeclare replaceable model HeatTransfer_G = TPComponents.KimPCHEHeatTransferFV(
   pitch = pitch,
   phi = phi),  
   gasFlow(QuasiStatic = true, Tstartin = bc_LTR.st_hot_in.T, Tstartout = bc_LTR.st_hot_out.T),
@@ -247,25 +201,13 @@ model TestTP_Components_PCHE
   // redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer,  
   // ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficientTwoGrids(gamma = thermo_LTR_hot.gamma_he),
   redeclare model HeatExchangerTopology = ThermoPower.Thermal.HeatExchangerTopologies.CounterCurrentFlow,  
-  N_F = geo_LTR_cold.N_seg, 
-  N_G = geo_LTR_hot.N_seg,   
-  Nt = geo_LTR_hot.N_ch,  
-  Tstartbar_G = bc_LTR.st_hot_in.T, 
-  Tstartbar_F = bc_LTR.st_cold_in.T, 
-  exchSurface_F = geo_LTR_cold.A_ex, 
-  exchSurface_G = geo_LTR_hot.A_ex, 
-  extSurfaceTub = geo_LTR_tube.A_ex, 
-  fluidNomFlowRate = bc_LTR.st_cold_in.mdot, 
-  fluidNomPressure = bc_LTR.st_cold_in.p, 
-  fluidVol = geo_LTR_cold.V, 
-  gasNomFlowRate = bc_LTR.st_hot_in.mdot, 
-  gasNomPressure = bc_LTR.st_hot_in.p, 
-  gasVol = geo_LTR_hot.V, 
-  lambda = thermo_LTR_tube.lambda, 
-  metalVol = geo_LTR_tube.V, 
-  pstart_F = bc_LTR.st_cold_in.p, 
-  pstart_G = bc_LTR.st_hot_in.p,
-  rhomcm = thermo_LTR_tube.rho_mcm,
+  bc = bc_LTR, 
+  geo_hot = cfg.cfg_LTR_hot.geo,
+  geo_cold = cfg.cfg_LTR_cold.geo,
+  geo_tube = cfg.cfg_LTR_tube.geo,  
+  thermo_hot = cfg.cfg_LTR_hot.thermo,
+  thermo_cold = cfg.cfg_LTR_cold.thermo,
+  thermo_tube = cfg.cfg_LTR_tube.thermo,   
   SSInit=SSInit,
   gasQuasiStatic = true,
   fluidQuasiStatic = true,  

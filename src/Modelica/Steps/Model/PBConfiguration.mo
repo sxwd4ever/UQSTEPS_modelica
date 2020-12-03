@@ -1,7 +1,7 @@
 within Steps.Model;
 
 model PBConfiguration
-  "Preset param set for Off-design power block test - DON'T Alter it directly"
+  "full set of params set for Off-design power block test - DON'T Alter it directly, use override instead, see Model PBConfigs"
   
   import Modelica.SIunits.Conversions.{from_degC, from_deg};
   import Modelica.SIunits.{Temperature, Pressure, SpecificEnthalpy};
@@ -64,35 +64,7 @@ model PBConfiguration
  
   /*
   // following values are calculated by IPESpro for 5 MW power block
-  parameter Modelica.SIunits.Pressure p_pump_in = 8e6;
-  parameter Modelica.SIunits.Pressure p_pump_out = 20e6;
-  parameter Modelica.SIunits.Pressure p_ATM = 1.01e6;
-  parameter Modelica.SIunits.Pressure p_heater = 20e6;
-  
-  parameter Modelica.SIunits.MassFlowRate mdot_main = 51.91;
-  parameter Modelica.SIunits.MassFlowRate mdot_pump = 31.31;
-  parameter Modelica.SIunits.MassFlowRate mdot_heater = 42.73;
-  parameter Modelica.SIunits.MassFlowRate mdot_cooler = 335.2;
-  
-  parameter Modelica.SIunits.Temperature T_amb = from_degC(15);
-  parameter Modelica.SIunits.Temperature T_HTR_hot_in = from_degC(578.22);
-  parameter Modelica.SIunits.Temperature T_HTR_cold_out = from_degC(533.5);
-  
-  parameter Modelica.SIunits.Temperature T_HTR_hot_out = from_degC(156.45);
-  parameter Modelica.SIunits.Temperature T_HTR_cold_in = from_degC(151.45); 
-  
-  parameter Modelica.SIunits.Temperature T_LTR_cold_in = from_degC(62.229);
-  parameter Modelica.SIunits.Temperature T_LTR_hot_out = from_degC(67.229);  
-  
-  parameter Modelica.SIunits.Temperature T_heater_hot_out = from_degC(600);
-  parameter Modelica.SIunits.Temperature T_heater_hot_in = from_degC(800);
-  // fixed pre-defined condition
-  parameter Modelica.SIunits.Temperature T_heater_cold_out = from_degC(700);
-  
-  parameter Modelica.SIunits.Temperature T_cooler_cold_out = from_degC(30);
-  parameter Modelica.SIunits.Temperature T_cooler_cold_in = T_amb; 
-  // fixed pre-defined condition
-  parameter Modelica.SIunits.Temperature T_cooler_hot_out = from_degC(33);
+
   */
   // parameters based on input parameters.   
   parameter Real splitter_split_ratio = mdot_bypass/mdot_main "mass split ratio of splitter"; 
@@ -131,112 +103,7 @@ model PBConfiguration
   parameter ThermoState st_bypass(p = p_pump_out, T = T_bypass_out, h = specificEnthalpy_CO2(st_bypass), mdot = mdot_bypass);
   // **** Boundary Conditions as Start/Nominal values for recuperators - end ****      
   
-  parameter PCHEGeoParam geo_HTR(
-    // pitch length, m
-    pitch = 12e-3,
-    // pitch angle
-    phi = from_deg((180 - 108) /2),
-    // length of pche, m
-    L = 1000e-3, // 2860e-3,
-    // Diameter of semi_circular, m
-    d = 2e-3,
-    // number of channels
-    N_ch = integer(94e3),
-    // number of segments
-    N_seg = 50);
   
-  // test configuration for hot/cold/tube side of heatexchanger
-  
-  // In following calculation, V, A_ex are account for single tube/channel, not for total
-  // check the Calculation in ThemoPower.PowerPlants.HRSG.Components.HE to understand the meaning of 
-  // exsurface_G/F and extSurfaceTub, *Vol     
-  parameter Real r_PCHE_HTR = 1e-3;
-  parameter Real L_PCHE_HTR = 1000e-3;
-  parameter Real p_PCHE_HTR = (pi + 2) * r_PCHE_HTR;
-  //parameter Real p_PCHE_HTR = pi * r_PCHE_HTR;
-  parameter EntityConfig cfg_PCHE_HTR_cold(
-    geo(
-    V = r_PCHE_HTR^2 * pi * L_PCHE_HTR / 2, // * N_ch_LTR, 
-    A_ex = p_PCHE_HTR * L_PCHE_HTR, // * N_ch_LTR, exchange surface between fluid-tube
-    L = L_PCHE_HTR, 
-    d = r_PCHE_HTR * 2, 
-    N_seg = 7, 
-    N_ch = 332449), // calculate by steps the python code
-    thermo(gamma_he = 3.96538615e6/cfg_HTR_cold.geo.A_ex "200")
-  );
-  
-  parameter EntityConfig cfg_PCHE_HTR_tube(
-    geo(
-    V = cfg_PCHE_HTR_cold.geo.V * 2, //r_t_HTR^2 * pi * L_HTR * N_ch_HTR - cfg_HTR_cold.geo.V,
-    A_ex = cfg_PCHE_HTR_cold.geo.A_ex, //  * N_ch_HTR, // assume thickness of tube approximately 0
-    L = cfg_PCHE_HTR_cold.geo.L, 
-    d = cfg_PCHE_HTR_cold.geo.d, 
-    N_seg = 6, 
-    N_ch = cfg_PCHE_HTR_cold.geo.N_ch),
-    thermo(rho_mcm = 100, lambda = 20)
-  ); 
-  
-  parameter EntityConfig cfg_PCHE_HTR_hot(
-    geo(
-    V = cfg_PCHE_HTR_cold.geo.V, // r_o_HTR^2 * pi * L_HTR * N_ch_HTR - cfg_HTR_tube.geo.V , 
-    A_ex = cfg_PCHE_HTR_cold.geo.A_ex, // * N_ch_HTR, 
-    L = cfg_PCHE_HTR_cold.geo.L, 
-    d = cfg_PCHE_HTR_cold.geo.d, 
-    N_seg = 7, 
-    N_ch = cfg_PCHE_HTR_cold.geo.N_ch),
-    thermo(gamma_he = 3.96538615e6/cfg_HTR_hot.geo.A_ex "200")
-  );    
-  
-  parameter PCHEGeoParam geo_LTR(
-    // pitch length, m
-    pitch = 12e-3,
-    // pitch angle
-    phi = from_deg((180 - 108) /2),
-    // length of pche, m
-    L = 3270e-3,
-    // Diameter of semi_circular, m
-    d = 2e-3,
-    // number of channels
-    N_ch = integer(125e3),
-    // number of segments
-    N_seg = 50);
-      
-  parameter Real r_PCHE_LTR = 1e-3;
-  parameter Real L_PCHE_LTR = 1000e-3;
-  parameter Real p_PCHE_LTR = (pi + 2) * r_PCHE_LTR;
-  parameter EntityConfig cfg_PCHE_LTR_cold(
-    geo(
-    V = r_PCHE_LTR^2 * pi * L_PCHE_LTR / 2, // * N_ch_LTR, 
-    A_ex = p_PCHE_LTR * L_PCHE_LTR, // * N_ch_LTR, exchange surface between fluid-tube
-    L = L_PCHE_LTR, 
-    d = r_PCHE_LTR * 2, 
-    N_seg = 7, 
-    N_ch = 422585), // calculate by steps the python code
-    thermo(gamma_he = 1.938761018e6/cfg_LTR_cold.geo.A_ex "200")
-  );
-  
-  parameter EntityConfig cfg_PCHE_LTR_tube(
-    geo(
-    V = cfg_PCHE_LTR_cold.geo.V * 2, //r_t_LTR^2 * pi * L_LTR * N_ch_LTR - cfg_LTR_cold.geo.V,
-    A_ex = cfg_PCHE_LTR_cold.geo.A_ex, //  * N_ch_LTR, // assume thickness of tube approximately 0
-    L = cfg_PCHE_LTR_cold.geo.L, 
-    d = cfg_PCHE_LTR_cold.geo.d, 
-    N_seg = 6, 
-    N_ch = cfg_PCHE_LTR_cold.geo.N_ch),
-    thermo(rho_mcm = 100, lambda = 20)
-  ); 
-  
-  parameter EntityConfig cfg_PCHE_LTR_hot(
-    geo(
-    V = cfg_PCHE_LTR_cold.geo.V, // r_o_LTR^2 * pi * L_LTR * N_ch_LTR - cfg_LTR_tube.geo.V , 
-    A_ex = cfg_PCHE_LTR_cold.geo.A_ex, // * N_ch_LTR, 
-    L = cfg_PCHE_LTR_cold.geo.L, 
-    d = cfg_PCHE_LTR_cold.geo.d, 
-    N_seg = 7, 
-    N_ch = cfg_PCHE_LTR_cold.geo.N_ch),
-    thermo(gamma_he = 1.938761018e6/cfg_LTR_cold.geo.A_ex "200")
-  );  
-        
   // HTR's's size of heat exchanger gas - gas
   // N_ch_HTR groups of fluid(cold, inner)-tube-gas(hot, outter) tubes 
   parameter Modelica.SIunits.Radius r_i_HTR = 5e-3 "mm tube's internal radius";
@@ -256,7 +123,7 @@ model PBConfiguration
     d = 2 * r_i_HTR, 
     N_seg = 7, 
     N_ch = N_ch_HTR),
-    thermo(gamma_he = 3.96538615e6/cfg_HTR_cold.geo.A_ex "200")
+    thermo(UAnom = 3.96538615e6, gamma_he = cfg_HTR_cold.thermo.UAnom/(cfg_HTR_cold.geo.A_ex * N_ch_HTR)  "200")
   );
   
   parameter EntityConfig cfg_HTR_tube(
@@ -278,7 +145,7 @@ model PBConfiguration
     d = 2 * r_o_HTR, 
     N_seg = 7, 
     N_ch = N_ch_HTR),
-    thermo(gamma_he = 3.96538615e6/cfg_HTR_hot.geo.A_ex "200")
+    thermo(UAnom = 3.96538615e6, gamma_he = cfg_HTR_hot.thermo.UAnom/(cfg_HTR_hot.geo.A_ex * N_ch_HTR) "200")
   );  
   
   // LTR's's size of heat exchanger gas - gas
@@ -299,7 +166,7 @@ model PBConfiguration
     d = 2 * r_i_LTR, 
     N_seg = 7, 
     N_ch = N_ch_LTR),
-    thermo(gamma_he = 1.938761018e6/cfg_LTR_cold.geo.A_ex "200")
+    thermo(UAnom = 1.938761018e6, gamma_he = cfg_LTR_cold.thermo.UAnom/(cfg_LTR_cold.geo.A_ex * N_ch_LTR)  "200")
   );
   
   parameter EntityConfig cfg_LTR_tube(
@@ -321,7 +188,7 @@ model PBConfiguration
     d = 2 * r_o_LTR, 
     N_seg = 7, 
     N_ch = N_ch_LTR),
-    thermo(gamma_he = 1.938761018e6/cfg_LTR_hot.geo.A_ex "200")
+    thermo(UAnom = 1.938761018e6, gamma_he = cfg_LTR_hot.thermo.UAnom/(cfg_LTR_hot.geo.A_ex * N_ch_LTR) "200")
   );
   
   parameter EntityConfig cfg_mixer(
@@ -449,20 +316,7 @@ model PBConfiguration
   function specificEnthalpy_Water
     extends specificEnthalpy(redeclare package Medium = ThermoPower.Water.StandardWater);          
   end specificEnthalpy_Water;  
-  
-/*
-  function completeThermoState_pT_CO2    
-    extends completeThermoState_pT(redeclare package Medium = Steps.Media.CO2);
-  end completeThermoState_pT_CO2;
-  
-  function completeThermoState_pT_Sodium  
-    extends completeThermoState_pT(redeclare package Medium = SolarTherm.Media.Sodium.Sodium_pT);   
-  end completeThermoState_pT_Sodium;
-  
-  function completeThermoState_pT_Water
-    extends completeThermoState_pT(redeclare package Medium = ThermoPower.Water.StandardWater);          
-  end completeThermoState_pT_Water;  
-*/  
+
 /*
   equation
   

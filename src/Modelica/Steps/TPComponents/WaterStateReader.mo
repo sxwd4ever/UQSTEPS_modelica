@@ -1,4 +1,4 @@
-within Steps.Components;
+within Steps.TPComponents;
 
 model WaterStateReader 
   "Water state reader which extends ThermoPower's StateReader_water"

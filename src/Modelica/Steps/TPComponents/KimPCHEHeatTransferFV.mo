@@ -1,4 +1,4 @@
-within Steps.Components;
+within Steps.TPComponents;
 
 
 model KimPCHEHeatTransferFV "Kim [2012] heat transfer Correlation"

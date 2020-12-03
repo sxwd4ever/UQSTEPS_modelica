@@ -8,7 +8,7 @@ model TestTP_PCHE
   import Util = Utilities.Util;
   import Steps.Utilities.CoolProp.PropsSI;  
   import Steps.Components.{PCHEGeoParam};
-  import Steps.Model.{PBConfiguration, SimParam, EntityConfig, EntityGeoParam, EntityThermoParam, ThermoState, HEBoundaryCondition} ;
+  import Steps.Model.{PBConfiguration, PBConfigs, SimParam, EntityConfig, EntityGeoParam, EntityThermoParam, ThermoState, HEBoundaryCondition} ;
   import Model.PBConfiguration;
   import ThermoPower.Choices.Init.Options;
   import ThermoPower.System;
@@ -23,23 +23,19 @@ model TestTP_PCHE
   package medium_hot = Steps.Media.SCO2;
   package medium_cold = Steps.Media.SCO2; 
   // package medium_hot = Modelica.Media.IdealGases.SingleGases.CO2;
-  // package medium_cold = Modelica.Media.IdealGases.SingleGases.CO2;  
- 
-  // parameter for C++ implementation of PCHE - based on Modelica impl's result
-  parameter Model.PBConfiguration cfg_default;  
-  
-  // select the configuration of parameters
-  parameter Model.PBConfiguration cfg = cfg_default;  
+  // package medium_cold = Modelica.Media.IdealGases.SingleGases.CO2;    
 
+  parameter Model.PBConfig_PCHE cfg;
+/*  
   // set the values of parameters accordingly - For HTR test
   parameter Boolean test_LTR = false;
   parameter HEBoundaryCondition bc_HE = cfg.bc_HTR; // use if-then-else clause leads simulation error???
+*/
 
-/*
   // set the values of parameters accordingly - for LTR test
   parameter Boolean test_LTR = true;
   parameter HEBoundaryCondition bc_HE = cfg.bc_LTR; // use if-then-else clause leads simulation error???
-*/
+
   //Components
   inner ThermoPower.System system(allowFlowReversal = false, initOpt=ThermoPower.Choices.Init.Options.noInit) annotation(
     Placement(transformation(extent = {{80, 80}, {100, 100}})));  
@@ -92,25 +88,25 @@ model TestTP_PCHE
   parameter SI.Length pitch = 12.3e-3 "pitch length";
   parameter Real phi = 35 "pitch angle °";
     
-  Components.TP_PCHE HE(
+  TPComponents.PCHE HE(
     redeclare package FluidMedium = medium_cold, 
     redeclare package FlueGasMedium = medium_hot,     
-    redeclare replaceable model HeatTransfer_F = Steps.Components.KimPCHEHeatTransferFV(
+    redeclare replaceable model HeatTransfer_F = Steps.TPComponents.KimPCHEHeatTransferFV(
     pitch = pitch,
     phi = phi),
     // ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficient(gamma = thermo_LTR_cold.gamma_he),
     // redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer, 
-    redeclare replaceable model HeatTransfer_G = Steps.Components.KimPCHEHeatTransferFV(
+    redeclare replaceable model HeatTransfer_G = Steps.TPComponents.KimPCHEHeatTransferFV(
     pitch = pitch,
     phi = phi),
     redeclare model HeatExchangerTopology = ThermoPower.Thermal.HeatExchangerTopologies.CounterCurrentFlow, 
     bc = bc_HE, 
-    geo_hot = if test_LTR then cfg.cfg_PCHE_LTR_hot.geo else cfg.cfg_PCHE_HTR_hot.geo,
-    geo_cold = if test_LTR then cfg.cfg_PCHE_LTR_cold.geo else cfg.cfg_PCHE_HTR_cold.geo,
-    geo_tube = if test_LTR then cfg.cfg_PCHE_LTR_tube.geo else cfg.cfg_PCHE_HTR_tube.geo,  
-    thermo_hot = if test_LTR then cfg.cfg_PCHE_LTR_hot.thermo else cfg.cfg_PCHE_HTR_hot.thermo,
-    thermo_cold = if test_LTR then cfg.cfg_PCHE_LTR_cold.thermo else cfg.cfg_PCHE_HTR_cold.thermo,
-    thermo_tube = if test_LTR then cfg.cfg_PCHE_LTR_tube.thermo else cfg.cfg_PCHE_HTR_tube.thermo,  
+    geo_hot = if test_LTR then cfg.cfg_LTR_hot.geo else cfg.cfg_HTR_hot.geo,
+    geo_cold = if test_LTR then cfg.cfg_LTR_cold.geo else cfg.cfg_HTR_cold.geo,
+    geo_tube = if test_LTR then cfg.cfg_LTR_tube.geo else cfg.cfg_HTR_tube.geo,  
+    thermo_hot = if test_LTR then cfg.cfg_LTR_hot.thermo else cfg.cfg_HTR_hot.thermo,
+    thermo_cold = if test_LTR then cfg.cfg_LTR_cold.thermo else cfg.cfg_HTR_cold.thermo,
+    thermo_tube = if test_LTR then cfg.cfg_LTR_tube.thermo else cfg.cfg_HTR_tube.thermo, 
     SSInit = true,
     gasQuasiStatic = true,
     fluidQuasiStatic = true

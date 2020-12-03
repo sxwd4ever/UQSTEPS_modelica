@@ -1,4 +1,4 @@
-within Steps.Components;
+within Steps.TPComponents;
 
 model ThroughSink 
   "Sink for component test with fixed inlet temperature and pressure"  
