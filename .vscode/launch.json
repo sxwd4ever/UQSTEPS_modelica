@@ -66,8 +66,16 @@
             "type": "python",
             "request": "launch",
             "cwd": "${workspaceFolder}/src/python",
-            "program": "main_rcbc.py",
+            "program": "rcbc_sim.py",
             "console": "integratedTerminal"            
-        }
+        },
+        {
+            "name": "Python: TP_PCHE Test(Meshram)",
+            "type": "python",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/src/python",
+            "program": "test_meshram.py",
+            "console": "integratedTerminal"            
+        }        
     ]
 }

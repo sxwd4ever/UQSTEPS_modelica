@@ -34,7 +34,7 @@ model PCHE "PCHE model based on Thermo Power"
   parameter Boolean fluidQuasiStatic = false "Quasi-static model of the fluid (mass, energy and momentum static balances";
   parameter Boolean metalQuasiStatic = true "Quasi-static model of the metalWall (energy static balances)";
   constant Real pi = Modelica.Constants.pi;
-  final parameter SI.Distance L = 1 "Tube length";
+  parameter SI.Distance L = 1 "Tube length";
   parameter Choices.FluidPhase.FluidPhases FluidPhaseStart = Choices.FluidPhase.FluidPhases.Liquid "Fluid phase (only for initialization!)" annotation(
     Dialog(tab = "Initialization"));
   parameter Boolean SSInit = false "Steady State initialization";  

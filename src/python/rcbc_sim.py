@@ -25,157 +25,10 @@ from model import TestDataSet, TestConfig, TestDataView, TestResult,Variable, Te
 from plotlib import PlotManager, DataSeries, AxisType
 from physics import Temperature, Pressure, MDot
 from experiments import Experiments
-from utils import ExcelHelper
+from utils import ExcelHelper, from_degC
 
 class RCBC_simulation(Experiments):
-   pass    
-
-   def save_results(self, ds_test : TestDataSet):
-        '''
-        save the simulation result into files   
-        override save_results() to save all result in one excel file         
-        '''
-        # create directory for current test batch
-        filename = path.join(self.path_out, ds_test.name + '.xlsx')
-
-        xw_app: xw.App = xw.App(visible=False)       
-
-        try:
-            cfg_set = OrderedDict()
-            # head of table config
-            cfg_set['Key'] = ['Name', '', 'Description']
-
-            result_set = OrderedDict()
-            result_set['Key'] = ['Name', 'Unit', 'Description']
-
-            view_set = OrderedDict()            
-            for group in ds_test:       
-                for test in group:
-                    cfg = test.cfg.to_dict()
-                    for (k, v) in cfg.items():
-                        if k in cfg_set.keys():
-                            cfg_set[k].append(v)
-                        else:
-                            # for first column, add key and two '-' to align with results
-                            cfg_set[k] = [k, '-', '-', v]
-
-                    result = test.result.to_dict()
-
-                    for (k, v) in result.items():
-                        if k in result_set.keys():
-                            result_set[k].append(v.val)
-                        else:
-                            # for first column, add text, unit
-                            result_set[k] = [v.text, v.unit, '_', v.val]
-                    # wbk.close()       
-
-                    if test.has_view():
-                        for view in test.views.values():                          
-                            map_result = view.maps(test.result)
-                            if view.name in view_set.keys():
-                                data_table = view_set[view.name]
-                                for (k, v) in map_result.items():
-                                    data_table[k].append(v.val)
-                            else:                  
-                                data_table = {}
-                                data_table['Key'] = ['Name', 'Unit', 'Description']
-                                for (k, v) in map_result.items():
-                                    data_table[k] = [v.text, v.unit, '_', v.val]
-                                view_set[view.name] = data_table
-
-
-            from pathlib import Path
-
-            ex_file=Path(filename)       
-            if ex_file.exists():
-                shutil.move(filename, filename+".bak")
-
-            wbk = xw_app.books.add()      
-            sht = wbk.sheets.add() # 30 - max lenth for a sheet name
-            ex: ExcelHelper = ExcelHelper(sht)
-            u, l = 1, TestConstants.DATA_FILE_COL_START
-            title = {"Table 1": "Test Config"}
-
-            # config
-            (b, r) = ex.write_table(cfg_set, title=title, up=u, left=l, linespacing=True)
-
-            title = {"Table 2": "Results"}
-            (b, r) = ex.write_table(result_set, title=title, up=b, left=l, linespacing=True)
-            
-            if view_set: # not empty
-                idx = 3
-                for (view_name, data_table) in view_set.items():                    
-                    title = {f"Table {idx}": view_name}
-                    (b, r) = ex.write_table(data_table, title=title, up=b, left=l, linespacing=True)
-                    idx += 1
-
-            wbk.save(filename)                    
-
-        finally:
-            xw_app.quit() # close the xlwings app finally  
-
-
-def from_degC(T_c) -> float :
-    return T_c + 273.15
-
-def gen_cfg(cfg_ref:dict, cfg_offset:dict, keys:list, idx:int, trace:list, result:dict, gname_template:str):
-    '''
-    use iteration method to walk through all the combinations of configuations
-    '''
-    key = keys[idx]
-
-    for val in cfg_offset[key]:
-        trace_cp = deepcopy(trace) # local copy
-        trace_cp.append((key, val))
-
-        if idx == len(keys) - 1:
-            # reach the deepest level, create cfg instance
-            cfg = deepcopy(cfg_ref)   
-
-            (k0, v0) = trace_cp[0] # use first level's key as group name
-            gname = gname_template % v0
-            if not gname in result.keys():
-                result[gname]= {}
-
-            root = result[gname]
-
-            cfg_name = ""
-            count = 0
-            for (k,v) in trace_cp: # use variables above level 1 to create item name
-                cfg[k] = v
-                if k in keys and count > 0:
-                    cfg_name += f'{k}={v},'
-                count+=1
-            item = {}
-            item["cfg"] = cfg
-            item['result'] = { }
-            root[cfg_name[0:-1]] = item            
-            # result.append(cfg)
-        else:
-            # iterate for deeper level
-            gen_cfg(cfg_ref, cfg_offset, keys, idx + 1, trace_cp, result, gname_template)
-
-def gen_batch_cfg(cfg_ref:dict, cfg_offset:dict, gname_template:str, ds_name = "demoTest") -> TestDataSet:
-    '''
-    generate batch cfgs for parameter sweep based on a referenced base config    
-    '''
-
-    keys = []
-    for k in cfg_offset.keys():
-        v = cfg_offset[k]
-        if isinstance(v, list):
-            keys.append(k)
-
-    # keys = ["mdot_main", "T_heater_hot", "T_cooler_cold"]
-    trace=[]
-    batch_cfg={}    
-    gen_cfg(cfg_ref, cfg_offset, keys, 0, trace, batch_cfg, gname_template)
-
-    json_cfg_batch = json.dumps(batch_cfg,indent=2)
-
-    ds_test = TestDataSet.from_json(ds_name, json_cfg_batch)
-    # print(json_cfg_batch)
-    return ds_test
+    pass
 
 def json_IO_test():
     mdot_main_des = 125 
@@ -250,8 +103,6 @@ def json_IO_test():
         }              
     }
     ds_test = TestDataSet.from_json("demoTest", json.dumps(test_data_set_demo1))
-
-
 
 def main(work_root = []):
     # root path of modelica root
@@ -349,15 +200,9 @@ def main(work_root = []):
         }]
     
     ds_name = f'10MW off-Design{"_PCHE" if use_PCHE else ""}' + ' sim {:%Y-%m-%d-%H-%M-%S}'.format(datetime.datetime.now())
-    ds_test = gen_batch_cfg(cfg_ref, cfg_offset, gname_template='10MW off-Design(mdot=%s)',ds_name=ds_name)
+    ds_test = TestDataSet.gen_batch_cfg(cfg_ref, cfg_offset, gname_template='10MW off-Design(mdot=%s)', ds_name=ds_name)
     
-    
-    for g in ds_test:
-        for t in g:
-            idx = 1
-            for m in mapping:                
-                t.add_view(TestDataView(f"performance map {idx}", m))
-                idx += 1
+    ds_test.add_view(mapping, view_name_tmpl="performance map")
 
     json_str = ds_test.to_json()    
     print(json_str)

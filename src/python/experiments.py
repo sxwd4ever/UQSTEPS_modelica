@@ -1,3 +1,4 @@
+from collections import OrderedDict
 from logging import exception
 from math import trunc
 from copy import deepcopy
@@ -109,13 +110,13 @@ class Experiments(object):
 
         # options for simulation - steady state simulation, no iteration required, so set numberOfIntervals = 2 
 
-        for group in ds_test:
-            for test in group:
+        for group in ds_test.values():
+            for (test_name, test) in group.items():
                 sol_keys = list(solution_dict.keys())
                 solutions = np.ones((len(sol_keys),1)) * -1 # default value
                 
                 try:
-                    print(f' ready to run test={test.name} in group={group.name}\n')
+                    print(f' ready to run test={test_name} in group={group.name}\n')
                     self.model.setParameters(test.cfg.gen_params())
                     self.model.setSimulationOptions(sim_ops)
                     self.model.simulate()
@@ -132,49 +133,87 @@ class Experiments(object):
 
     def save_results(self, ds_test : TestDataSet):
         '''
-        save the simulation result into files    
+        save the simulation result into files   
+        override save_results() to save all result in one excel file         
         '''
         # create directory for current test batch
-        name_batch = path.join(self.path_out, ds_test.name)
+        filename = path.join(self.path_out, ds_test.name + '.xlsx')
 
-        xw_app: xw.App = xw.App(visible=False)
-        wbs = {} # set of names of workbook
+        xw_app: xw.App = xw.App(visible=False)       
 
         try:
+            cfg_set = OrderedDict()
+            # head of table config
+            cfg_set['Key'] = ['Name', '', 'Description']
 
-            if not os.path.exists(name_batch):
-                os.mkdir(name_batch)        
+            result_set = OrderedDict()
+            result_set['Key'] = ['Name', 'Unit', 'Description']
 
-            for group in ds_test:                
-                gname = group.name
-                filename = os.path.join(name_batch, gname + '.xlsx')
-                
-                if gname not in wbs:   
+            view_set = OrderedDict()            
+            for group in ds_test.values():       
+                for test in group.values():
+                    cfg = test.cfg.to_dict()
+                    for (k, v) in cfg.items():
+                        if k in cfg_set.keys():
+                            cfg_set[k].append(v)
+                        else:
+                            # for first column, add key and two '-' to align with results
+                            cfg_set[k] = [k, '-', '-', v]
 
-                    wbk = xw_app.books.add()
-                    wbs[gname] = wbk.name
-                else:
-                    wbk = xw.Book(filename)
+                    result = test.result.to_dict()
 
-                for test in group:
-                    cfg = test.cfg
-                    sht = wbk.sheets.add(name = cfg.name[0:30]) # 30 - max lenth for a sheet name
+                    for (k, v) in result.items():
+                        if k in result_set.keys():
+                            result_set[k].append(v.val)
+                        else:
+                            # for first column, add text, unit
+                            result_set[k] = [v.text, v.unit, '_', v.val]
+                    # wbk.close()       
 
-                    ex: ExcelHelper = ExcelHelper(sht)
-                    u, l = 1, TestConstants.DATA_FILE_COL_START
-                    title = {"Table 1": "Test Config"}
+                    if test.has_view():
+                        for view in test.views.values():                          
+                            map_result = view.maps(test.result)
+                            if view.name in view_set.keys():
+                                data_table = view_set[view.name]
+                                for (k, v) in map_result.items():
+                                    data_table[k].append(v.val)
+                            else:                  
+                                data_table = {}
+                                data_table['Key'] = ['Name', 'Unit', 'Description']
+                                for (k, v) in map_result.items():
+                                    data_table[k] = [v.text, v.unit, '_', v.val]
+                                view_set[view.name] = data_table
 
-                    # config
-                    (b, r) = ex.write_table(cfg.to_dict(), title=title, up=u, left=l, linespacing=True)
 
-                    title = {"Table 2": "Results"}
-                    (b, r) = ex.write_table(test.result.to_dict(), title=title, up=b, left=l, linespacing=True)
+            from pathlib import Path
 
-                    wbk.save(filename)
-                    # wbk.close()
+            ex_file=Path(filename)       
+            if ex_file.exists():
+                shutil.move(filename, filename+".bak")
+
+            wbk = xw_app.books.add()      
+            sht = wbk.sheets.add() # 30 - max lenth for a sheet name
+            ex: ExcelHelper = ExcelHelper(sht)
+            u, l = 1, TestConstants.DATA_FILE_COL_START
+            title = {"Table 1": "Test Config"}
+
+            # config
+            (b, r) = ex.write_table(cfg_set, title=title, up=u, left=l, linespacing=True)
+
+            title = {"Table 2": "Results"}
+            (b, r) = ex.write_table(result_set, title=title, up=b, left=l, linespacing=True)
+            
+            if view_set: # not empty
+                idx = 3
+                for (view_name, data_table) in view_set.items():                    
+                    title = {f"Table {idx}": view_name}
+                    (b, r) = ex.write_table(data_table, title=title, up=b, left=l, linespacing=True)
+                    idx += 1
+
+            wbk.save(filename)                    
 
         finally:
-            xw_app.quit() # close the xlwings app finally                                     
+            xw_app.quit() # close the xlwings app finally                                   
 
     def load_result(self, test_name) -> TestDataSet:
         '''

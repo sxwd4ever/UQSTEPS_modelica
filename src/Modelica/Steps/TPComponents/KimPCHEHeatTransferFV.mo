@@ -33,7 +33,7 @@ model KimPCHEHeatTransferFV "Kim [2012] heat transfer Correlation"
   SI.PerUnit Re_l[Nf] "Reynolds number limited to validity range";
   Real G[Nf] "mass flow flux";
   Real f[Nf] "Fanning Friction Factor - used to calculate pressure drop";
-  SI.PressureDifference dp[Nf];
+  Real dp[Nf];
   SI.ThermalConductivity k_wall[Nw] "wall thermal conductivity - determined by material of wall and local temperature";
   Modelica.SIunits.Length t_wall = (2 - Modelica.Constants.pi / 4) * (d_c / 2) "thickness of wall between two neighboring hot and cold";
   parameter SI.Length pitch = 12.3e-3 "pitch length";
@@ -92,8 +92,10 @@ equation
     hc[j] = noEvent(Nu[j] * k[j] / Dhyd);
     f[j] = noEvent((15.78 + kim_cor_a.y * Re_l[j] ^ kim_cor_b.y) / Re_l[j]);
     //f[j] = noEvent((15.78 + 0.35159 * Re_l[j] ^ 0.78015) / Re_l[j]);
-//pressure drop, unit Pa
-    dp[j] = noEvent(2 * f[j] * l * rho[j] * u[j] ^ 2 / Dhyd);
+    //pressure drop, unit Pa
+    // dp[j] = noEvent(2 * f[j] * l * rho[j] * u[j] ^ 2 / Dhyd);
+    // In Hal's step, no factor of '2' in dp's calculation
+    dp[j] = noEvent(f[j] * l * rho[j] * u[j] ^ 2 / Dhyd);
   end for;
   th_conductivity.u[1] = 0.0;
   for j in 1:Nw loop

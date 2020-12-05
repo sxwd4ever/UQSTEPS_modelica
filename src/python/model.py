@@ -3,7 +3,7 @@
 '''
 
 import math
-from copy import deepcopy
+from copy import copy, deepcopy
 from datetime import datetime as dt
 from enum import IntEnum
 from typing import Dict, Tuple
@@ -12,7 +12,7 @@ from collections.abc import MutableMapping
 
 # 3rd or python modules
 import numpy as np
-from CoolProp.CoolProp import PropsSI
+from numpy.lib.utils import deprecate
 import pandas as pd
 from xlwings.main import Book
 import json
@@ -155,7 +155,20 @@ class TestConstants(object):
     # Format constants
     # column start index in the data storage file
     DATA_FILE_COL_START = 2 
-       
+
+class MyDict(dict):
+    
+    @classmethod
+    def from_json(cls, name, json_str):
+        json_dict = json.loads(json_str)
+        return cls(name, **json_dict)
+
+    def to_json(self):
+        return json.dumps(self)
+    
+    def to_dict(self) -> dict:
+        return self   
+
 class Variable(object):
     '''
     definition of a variable in simulation
@@ -176,7 +189,7 @@ class Variable(object):
     def __repr__(self):
         return f'{self.text}={self.val} [{self.unit}]'
 
-class TestResult(dict):
+class TestResult(MyDict):
     """
     docstring for TestResult.
 
@@ -186,9 +199,8 @@ class TestResult(dict):
     Test config that generates each individual result will be saved as well
     """
     def __init__(self, name, results:Dict[str, Variable]):
-        self._idx = 0        
-        self.name = name
-        self.results = results 
+        super().__init__(results)        
+        self.name = name        
     
     @classmethod
     def from_keyvalues(cls, sol_dict:Dict[str, Variable], values:list):
@@ -213,25 +225,25 @@ class TestResult(dict):
 
         return cls("", d)
    
-    def __iter__(self):        
-        self._idx = 0
-        return self
+    # def __iter__(self):        
+    #     self._idx = 0
+    #     return self
 
-    def __next__(self) -> Variable:
-        result = None    
+    # def __next__(self) -> Variable:
+    #     result = None    
 
-        if self._idx < len(self.results):
-            result = list(self.results.values())[self._idx]
-            self._idx += 1
-            return result
-        else:
-            raise StopIteration   
+    #     if self._idx < len(self.results):
+    #         result = list(self.results.values())[self._idx]
+    #         self._idx += 1
+    #         return result
+    #     else:
+    #         raise StopIteration   
 
-    def to_dict(self) -> dict:
-        d = OrderedDict()
-        for var_ in self.results.values():
-            d[var_.key] = var_
-        return d
+    # def to_dict(self) -> dict:
+    #     d = OrderedDict()
+    #     for var_ in self.values():
+    #         d[var_.key] = var_
+    #     return d
 class TestDataView(dict):
     '''
         Data view mapping Test result to other data views
@@ -243,7 +255,7 @@ class TestDataView(dict):
 
     def maps(self, data:TestResult) -> Dict[str, Variable]:
         view = OrderedDict()
-        results = data.results
+        results = data
         for (src, dst) in self.mapping.items():
             v_new = Variable(dst)
             view[dst] = v_new
@@ -259,45 +271,41 @@ class TestDataView(dict):
     def to_dict(self) -> Dict[str, str]:
         return deepcopy(self.mapping)
 
-class TestConfig(dict):
+class TestConfig(MyDict):
     def __init__(self, name, params:dict):
-        self.name = name
-        self.params = params
-        self._idx = 0
+        super().__init__(params)
+        self.name = name        
     
     @classmethod
     def from_json(cls, name, json_str):
         json_dict = json.loads(json_str)
-        return TestConfig(name, **json_dict)
+        return cls(name, **json_dict)
 
     def to_json(self):
-        return json.dumps(self.params)
+        return json.dumps(self)
 
-    def __iter__(self):
-        self._idx = 0
-        return self
+    # def __iter__(self):
+    #     self._idx = 0
+    #     return self
 
-    def __next__(self) -> object:
-        param = None
+    # def __next__(self) -> object:
+    #     param = None
 
-        if self._idx < len(self.params):
-            param = list(self.params.values())[self._idx]
-            self._idx += 1
-        else:
-            raise StopIteration
+    #     if self._idx < len(self.__dict__):
+    #         param = list(self.params.values())[self._idx]
+    #         self._idx += 1
+    #     else:
+    #         raise StopIteration
 
-        return param        
+    #     return param    
+ 
 
     def gen_params(self) -> list:
         params = []
-        for (k, v) in self.params.items():
+        for (k, v) in self.items():
             params.append("{0}={1}".format(k, str(v)))
         
         return params
-    
-    def to_dict(self) -> dict:
-        return deepcopy(self.params)    
-
 class TestItem:
     def __init__(self, name, cfg:dict, result:dict):
         self.name = name
@@ -326,41 +334,31 @@ class TestItem:
         d['views'] = views
         return d
 
-class TestGroup(dict):
+class TestGroup(MyDict):
     def __init__(self, name:str, tests:dict):
+        super().__init__(tests)
         self.name = name
-        self.tests = OrderedDict()
-        self._idx = 0
-        for (k,v) in tests.items():
-            self.tests[k] = TestItem(k, **v)
 
     @classmethod
     def from_json(cls, name, json_str):
         json_dict = json.loads(json_str)
-        return cls(name, json_dict)
-    
+        return cls.from_dict(name, **json_dict)
+
+    @classmethod
+    def from_dict(cls, name, **json_dict):
+        tests = OrderedDict()
+        for (k,v) in json_dict.items():
+            tests[k] = TestItem(k, **v)
+
+        return cls(name, tests)    
+
     def to_dict(self) -> dict:
         d = {}
-        for (k, v) in self.tests.items():
+        for (k, v) in self.items():
             d[k] = v.to_dict()
         return d
-
-    def __iter__(self):
-        self._idx = 0
-        return self
-
-    def __next__(self) -> TestItem:
-
-        item = None
-
-        if self._idx < len(self.tests):
-            item = list(self.tests.values())[self._idx]
-            self._idx += 1
-        else:
-            raise StopIteration
-
-        return item
-class TestDataSet(dict):
+   
+class TestDataSet(MyDict):
     """
     TestDataSet
         |
@@ -391,37 +389,20 @@ class TestDataSet(dict):
     each TestDataItem i contains one TestConfig and one TestResult for Test i.      
     """
     def __init__(self, name, groups:dict):
+        super().__init__(groups)
         self.name = name
-        self.groups = OrderedDict()
-        self._idx = 0
 
-        for (k,v) in groups.items():
-            self.groups[k] = TestGroup(k, v)
-        # map(lambda (k,v): TestItem.from_json(k, v), tests)
-
-    def __iter__(self):
-        self._idx = 0
-        return self
-
-    def __next__(self) -> TestGroup:
-
-        item = None
-        if self._idx < len(self.groups):
-            item = list(self.groups.values())[self._idx]
-            self._idx += 1
-        else:
-            raise StopIteration
-
-        return item
-
-    @classmethod
-    def from_json(cls, name, json_str):
-        json_dict = json.loads(json_str)
-        return cls(name, json_dict)
+    def add_view(self, mapping:list, idx_start = 1, view_name_tmpl="default_view"):
+        for g in self.values():
+            for t in g.values():
+                idx = idx_start
+                for m in mapping:                
+                    t.add_view(TestDataView(f"{view_name_tmpl} {idx}", m))
+                    idx += 1
 
     def to_dict(self):
         d = {}
-        for (k, v) in self.groups.items():
+        for (k, v) in self.items():
             d[k] = v.to_dict()
         return d
 
@@ -429,6 +410,107 @@ class TestDataSet(dict):
         d = self.to_dict()
         return json.dumps(d, indent=2)
 
+    @classmethod
+    def from_json(cls, name, json_str):
+        json_dict = json.loads(json_str)
+
+        groups = OrderedDict()        
+        for (k,v) in json_dict.items():
+            groups[k] = TestGroup.from_dict(k, **v)
+
+        return cls(name, groups)
+
+    @classmethod
+    def gen_cfg(cls, cfg_ref:dict, cfg_offset:dict, keys:list, idx:int, trace:list, result:dict, gname_template:str, cfg_name:str):
+        '''
+        use iteration method to walk through all the combinations of configuations
+        '''
+        key = keys[idx]
+
+        node = cfg_offset[key]
+
+        if isinstance(node, dict): # for a dict node, run recurrsion from this point 
+            param_keys = node['keys']
+            # for each row in the dict (except for key row)
+            # use recursion to create a variation
+            for (k, v) in node.items(): 
+                if k == 'keys':
+                    continue
+                else:
+                    trace_cp = deepcopy(trace) # local copy
+                    cfg_name_cp = copy(cfg_name)
+                    cfg_name_cp += f'{k},'
+
+                    for i in range(0, len(param_keys)):
+                        trace_cp.append((param_keys[i],v[i]))
+
+                    if idx == len(keys) - 1:
+                        cls.create_cfg(cfg_ref, keys, trace_cp, result, gname_template, cfg_name_cp)
+                    else:
+                        cls.gen_cfg(cfg_ref, cfg_offset, keys, idx + 1, trace_cp, result, gname_template, cfg_name_cp)            
+
+        else: # for list, each value in the node's list will create a variation   
+            for val in node:
+                trace_cp = deepcopy(trace) # local copy
+                trace_cp.append((key, val))
+
+                cfg_name_cp = copy(cfg_name)                
+                cfg_name_cp += f'{key}={val},'
+
+                if idx == len(keys) - 1:
+                    cls.create_cfg(cfg_ref, keys, trace_cp, result, gname_template, cfg_name_cp)
+                else:
+                    # iterate for deeper level
+                    cls.gen_cfg(cfg_ref, cfg_offset, keys, idx + 1, trace_cp, result, gname_template, cfg_name_cp)
+
+    @classmethod    
+    def create_cfg(cls, cfg_ref, keys:list, trace:list, result:dict, gname_template:str, cfg_name:str):
+        # reach the deepest level, create cfg instance by cloning
+        cfg = deepcopy(cfg_ref)  
+
+        (k0, v0) = trace[0] 
+
+        gname = gname_template
+        try:
+            gname = gname_template % v0 # use first level's key as group name
+        except:
+            pass
+
+        if not gname in result.keys():
+            result[gname]= {}
+
+        root = result[gname]
+
+        for (k,v) in trace: # use variables above level 1 to create item name
+            cfg[k] = v
+
+        item = {}
+        item["cfg"] = cfg
+        item['result'] = { }
+        root[cfg_name[0:-1]] = item   
+
+    @classmethod
+    def gen_batch_cfg(cls, cfg_ref:dict, cfg_offset:dict, gname_template:str, ds_name = "demoTest"):
+        '''
+        generate batch cfgs for parameter sweep based on a referenced base config    
+        '''
+
+        keys = []
+        for k in cfg_offset.keys():
+            v = cfg_offset[k]
+            if isinstance(v, list) or isinstance(v, dict):
+                keys.append(k)
+
+        # keys = ["mdot_main", "T_heater_hot", "T_cooler_cold"]
+        trace=[]
+        batch_cfg={}    
+        cls.gen_cfg(cfg_ref, cfg_offset, keys, 0, trace, batch_cfg, gname_template, "")
+
+        json_cfg_batch = json.dumps(batch_cfg,indent=2)
+
+        ds_test = TestDataSet.from_json(ds_name, json_cfg_batch)
+        # print(json_cfg_batch)
+        return ds_test   
 
 col_start = TestConstants.DATA_FILE_COL_START
 

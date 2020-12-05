@@ -119,9 +119,8 @@ class ExcelHelper(object):
 
         return self._sht.range(ul, br)
 
-class TestDataIO(object):
-    """
+def from_degC(T_c) -> float :
+    return T_c + 273.15
 
-    """
-
-    pass
+def from_bar(p) -> float:
+    return p * 1e5

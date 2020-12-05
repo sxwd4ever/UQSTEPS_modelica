@@ -56,12 +56,8 @@ model PBConfiguration
   // fixed pre-defined condition
   parameter Modelica.SIunits.Temperature T_cooler_hot_out = from_degC(45);  
   
-  // default size of heat exchanger
-  parameter Modelica.SIunits.Radius r_i = 10e-3 "10mm tube's internal radius";
-  parameter Modelica.SIunits.Radius r_t = r_i + 2e-3 "tube's external radius";   
-  parameter Modelica.SIunits.Radius r_o = r_t + 100e-3 "radius of external side of heat exchanger"; 
-  parameter Modelica.SIunits.Length L = 10 "10m";
- 
+  parameter Integer N_seg = 10 "default number of discretized segments in one tube";
+  
   /*
   // following values are calculated by IPESpro for 5 MW power block
 
@@ -109,8 +105,9 @@ model PBConfiguration
   parameter Modelica.SIunits.Radius r_i_HTR = 5e-3 "mm tube's internal radius";
   parameter Modelica.SIunits.Radius r_t_HTR = 10e-3 "tube's external radius";   
   parameter Modelica.SIunits.Radius r_o_HTR = 40e-3 "radius of external side of heat exchanger"; 
-  parameter Integer N_ch_HTR = 400;
   parameter Modelica.SIunits.Length L_HTR = 1 "m";  
+  parameter Integer N_ch_HTR = 400;  
+  parameter Integer N_seg_HTR = N_seg;
   
   // In following calculation, V, A_ex are account for single tube/channel, not for total
   // check the Calculation in ThemoPower.PowerPlants.HRSG.Components.HE to understand the meaning of 
@@ -121,7 +118,7 @@ model PBConfiguration
     A_ex = 2 * pi * r_i_HTR * L_HTR, // * N_ch_LTR, exchange surface between fluid-tube
     L = L_HTR, 
     d = 2 * r_i_HTR, 
-    N_seg = 7, 
+    N_seg = N_seg_HTR, 
     N_ch = N_ch_HTR),
     thermo(UAnom = 3.96538615e6, gamma_he = cfg_HTR_cold.thermo.UAnom/(cfg_HTR_cold.geo.A_ex * N_ch_HTR)  "200")
   );
@@ -132,7 +129,7 @@ model PBConfiguration
     A_ex = 2 * pi * r_t_HTR * L_HTR, //  * N_ch_HTR, // assume thickness of tube approximately 0
     L = L_HTR, 
     d = 2 * r_t_HTR, 
-    N_seg = 6, 
+    N_seg = N_seg_HTR - 1, 
     N_ch = N_ch_HTR),
     thermo(rho_mcm = 7900 * 578.05, lambda = 20)
   ); 
@@ -143,7 +140,7 @@ model PBConfiguration
     A_ex = 2 * pi * r_o_HTR * L_HTR, // * N_ch_HTR, 
     L = L_HTR, 
     d = 2 * r_o_HTR, 
-    N_seg = 7, 
+    N_seg = N_seg_HTR, 
     N_ch = N_ch_HTR),
     thermo(UAnom = 3.96538615e6, gamma_he = cfg_HTR_hot.thermo.UAnom/(cfg_HTR_hot.geo.A_ex * N_ch_HTR) "200")
   );  
@@ -152,9 +149,10 @@ model PBConfiguration
   // N_ch_LTR groups of fluid(cold, inner)-tube-gas(hot, outter) tubes 
   parameter Modelica.SIunits.Radius r_i_LTR = 100e-3 "mm tube's internal radius";
   parameter Modelica.SIunits.Radius r_t_LTR = 110e-3 "tube's external radius";   
-  parameter Modelica.SIunits.Radius r_o_LTR = 170e-3 "radius of external side of one group"; 
-  parameter Integer N_ch_LTR = 400;
+  parameter Modelica.SIunits.Radius r_o_LTR = 170e-3 "radius of external side of one group";   
   parameter Modelica.SIunits.Length L_LTR = 1 "m";  
+  parameter Integer N_seg_LTR = N_seg;
+  parameter Integer N_ch_LTR = 400;
   // In following calculation, V, A_ex are account for single tube/channel, not for total
   // check the Calculation in ThemoPower.PowerPlants.HRSG.Components.HE to understand the meaning of 
   // exsurface_G/F and extSurfaceTub, *Vol 
@@ -164,7 +162,7 @@ model PBConfiguration
     A_ex = 2 * pi * r_i_LTR * L_LTR, // * N_ch_LTR, exchange surface between fluid-tube
     L = L_LTR, 
     d = 2 * r_i_LTR, 
-    N_seg = 7, 
+    N_seg = N_seg_LTR, 
     N_ch = N_ch_LTR),
     thermo(UAnom = 1.938761018e6, gamma_he = cfg_LTR_cold.thermo.UAnom/(cfg_LTR_cold.geo.A_ex * N_ch_LTR)  "200")
   );
@@ -175,7 +173,7 @@ model PBConfiguration
     A_ex = 2 * pi * r_t_LTR * L_LTR, // * N_ch_LTR, // assume thickness of tube approximately 0
     L = L_LTR, 
     d = 2 * r_t_LTR, 
-    N_seg = 6, 
+    N_seg = N_seg_LTR - 1, 
     N_ch = N_ch_LTR),
     thermo(rho_mcm = 7900 * 578.05, lambda = 20)
   );   
@@ -186,7 +184,7 @@ model PBConfiguration
     A_ex = 2 * pi * r_o_LTR * L_LTR, // * N_ch_LTR, 
     L = L_LTR, 
     d = 2 * r_o_LTR, 
-    N_seg = 7, 
+    N_seg = N_seg_LTR, 
     N_ch = N_ch_LTR),
     thermo(UAnom = 1.938761018e6, gamma_he = cfg_LTR_hot.thermo.UAnom/(cfg_LTR_hot.geo.A_ex * N_ch_LTR) "200")
   );
@@ -201,8 +199,9 @@ model PBConfiguration
   parameter Modelica.SIunits.Radius r_i_h = 20e-3 "mm tube's internal radius";
   parameter Modelica.SIunits.Radius r_t_h = 30e-3 "tube's external radius";   
   parameter Modelica.SIunits.Radius r_o_h = 500e-3 "radius of external side of heat exchanger"; 
-  parameter Integer N_ch_h = 100;
   parameter Modelica.SIunits.Length L_h = 1 "m"; 
+  parameter Integer N_ch_h = 100;  
+  parameter Integer N_seg_heater = N_seg;
   
   // cfg for heater's hot/fluid side
   parameter EntityConfig cfg_heater_hot(
@@ -211,7 +210,7 @@ model PBConfiguration
     A_ex = 2 * pi * r_i_h * L_h, 
     L = L_h, 
     d = 2 * r_i_h, 
-    N_seg = 7, 
+    N_seg = N_seg_heater, 
     N_ch = 1),
     thermo(gamma_he = 200 "4000")
   );
@@ -223,7 +222,7 @@ model PBConfiguration
     A_ex = 2 * pi * r_o_h * L_h, 
     L = L_h, 
     d = 2 * r_o_h, 
-    N_seg = 7, 
+    N_seg = N_seg_heater, 
     N_ch = N_ch_h),
     thermo(gamma_he = 200 "4000")
   );
@@ -235,7 +234,7 @@ model PBConfiguration
     A_ex = 2 * pi * r_t_h * L_h, 
     L = L_h, 
     d = 2 * r_t_h, 
-    N_seg = 6, 
+    N_seg = N_seg_heater - 1, 
     N_ch = N_ch_h),
     thermo(rho_mcm = 7900 * 578.05, lambda = 20)
   );   
@@ -245,8 +244,9 @@ model PBConfiguration
   parameter Modelica.SIunits.Radius r_i_c = 10e-3 "mm, tube's internal radius(single tube)";
   parameter Modelica.SIunits.Radius r_t_c = 15e-3 "tube's external radius(single tube)";   
   parameter Modelica.SIunits.Radius r_o_c = 500e-3 "radius of external side of heat exchanger"; 
-  parameter Integer N_ch_c = 100;
   parameter Modelica.SIunits.Length L_c = 1 "m length of the tube/cooler";  
+  parameter Integer N_ch_c = 100;
+  parameter Integer N_seg_cooler = N_seg;  
     
   // cfg for heater's cold/fluid side
   parameter EntityConfig cfg_cooler_cold(
@@ -256,7 +256,7 @@ model PBConfiguration
     L = L_c, 
     d = 2 * r_o_c, 
     N_ch = N_ch_c, 
-    N_seg = 7),
+    N_seg = N_seg_cooler),
     thermo(gamma_he = 200)
   );
   
@@ -268,7 +268,7 @@ model PBConfiguration
     L = L_c, 
     d = 2 * r_t_c, 
     N_ch = N_ch_c, 
-    N_seg = 6),
+    N_seg = N_seg_cooler - 1),
     thermo(rho_mcm = 7900 * 578.05, lambda = 20)
   );   
   
@@ -280,7 +280,7 @@ model PBConfiguration
     L = L_c, 
     d = 2 * r_i_c,
     N_ch = N_ch_c, 
-    N_seg = 7),
+    N_seg = N_seg_cooler),
     thermo(gamma_he = 200 "4000")
   );  
   

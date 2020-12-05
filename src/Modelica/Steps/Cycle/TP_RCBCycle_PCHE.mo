@@ -123,7 +123,7 @@ import Modelica.SIunits.Conversions.{from_degC,from_deg};
     thermo_tube = cfg.cfg_HTR_tube.thermo, 
     gasQuasiStatic = true,
     fluidQuasiStatic = true,
-    metalQuasiStatic = true,
+    metalQuasiStatic = false,
     SSInit=SSInit,
     metalWall(WallRes=false)) annotation(
     Placement(visible = true, transformation(origin = {-21, 33}, extent = {{-7, -7}, {7, 7}}, rotation = 0)));
@@ -153,7 +153,7 @@ import Modelica.SIunits.Conversions.{from_degC,from_deg};
     thermo_tube = cfg.cfg_LTR_tube.thermo,  
     gasQuasiStatic = true,
     fluidQuasiStatic = true,
-    metalQuasiStatic = true,
+    metalQuasiStatic = false,
     SSInit=SSInit,
     metalWall(WallRes=false)) annotation(
     Placement(visible = true, transformation(origin = {21, 33}, extent = {{-7, -7}, {7, 7}}, rotation = 0)));
@@ -314,11 +314,8 @@ import Modelica.SIunits.Conversions.{from_degC,from_deg};
     Placement(visible = true, transformation(origin = {-4, 34}, extent = {{-6, -6}, {6, 6}}, rotation = 0)));
   TPComponents.GasStateReader r08(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {32, 18}, extent = {{-6, -6}, {6, 6}}, rotation = -90)));
-
   TPComponents.GasStateReader r08_source(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {32, 18}, extent = {{-6, -6}, {6, 6}}, rotation = -90)));
-
-  
   TPComponents.GasStateReader r08a(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {20, -24}, extent = {{-6, -6}, {6, 6}}, rotation = -90)));
   TPComponents.GasStateReader r08b(redeclare package Medium = medium_main) annotation(
@@ -430,6 +427,7 @@ equation
   connect(r08.outlet, sink.flange) annotation(
     Line(points = {{32, 14}, {14, 14}, {14, 2}, {14, 2}}, color = {159, 159, 223}));
   
+  // use sensor's value to close the loop
   connect(r08_source.T, sink.in_T);
   connect(r08_source.p, sink.in_p0);
 //  connect(r05.outlet, sink.flange) annotation(

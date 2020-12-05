@@ -24,3 +24,4 @@ TestEM_Simple
 TestTP_ClosedSysInit
 TestTP_PCHE
 TestTP_Components_PCHE
+TestTP_PCHE_Meshram
