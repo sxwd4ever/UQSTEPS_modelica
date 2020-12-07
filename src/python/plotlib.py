@@ -16,14 +16,14 @@ class DataSeries(object):
     ''' 
     2D data Series used to contain a series of (x,y) data
     '''
-    def __init__(self, name, x, y, range_x, range_y,cs = 'r-s', label = []):
+    def __init__(self, name, x, y, range_x, range_y, cs = 'r-s', label = [], ax_type=AxisType.Primary):
         self.x = x
         self.y = y
         self.name = name
         self.range_x = range_x
         self.range_y = range_y
         self.cs = cs
-        self.ax_type = AxisType.Primary
+        self.ax_type = ax_type
         self.ticks = [None] * 2
         self.ticks_label = [None] * 2 
         self.label = label
@@ -43,13 +43,12 @@ class PlotManager(object):
         self.series_set = dict()
         self.title = title
 
-    def add(self, series: DataSeries, ax_type: AxisType = AxisType.Primary):
+    def add(self, series: DataSeries):
         name = series.name
 
         if name in self.series_set:
             raise ValueError(' existing data series with key=' + name)
-
-        series.ax_type = ax_type
+        
         self.series_set[name] = series               
 
     def draw(self, img_file: str = "", dest_file: str = ""):
@@ -65,6 +64,7 @@ class PlotManager(object):
 
         fig.suptitle(self.title)
         # save the figure 
+
         fig.savefig(dest_file)
 
     def draw_ticks(self, ax: mp.pyplot.axes, series: DataSeries):

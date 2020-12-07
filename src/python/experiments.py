@@ -130,60 +130,53 @@ class Experiments(object):
                     self.save_results(deepcopy(ds_test))
         
         print('all simulation(s) done, results saved in Test Data Set')        
+    
+
+
+    
 
     def save_results(self, ds_test : TestDataSet):
         '''
         save the simulation result into files   
         override save_results() to save all result in one excel file         
         '''
-        # create directory for current test batch
-        filename = path.join(self.path_out, ds_test.name + '.xlsx')
+        # create directory for current test batch   
+        from pathlib import Path
+        dir_name = path.join(self.path_out, ds_test.name)
+        dir = Path(dir_name)
+
+        if not dir.exists():
+            os.mkdir(dir)
+
+        filename = path.join(dir_name, ds_test.name + '.xlsx')
 
         xw_app: xw.App = xw.App(visible=False)       
 
         try:
-            cfg_set = OrderedDict()
-            # head of table config
-            cfg_set['Key'] = ['Name', '', 'Description']
+            wbk = xw_app.books.add() 
+                    
+            for (gname, group) in ds_test.items():     
+                cfg_set =  ds_test.get_cfgs(gname)  
+                result_set = ds_test.get_results(gname)
+                # a sheet for each group
 
-            result_set = OrderedDict()
-            result_set['Key'] = ['Name', 'Unit', 'Description']
+                sht = wbk.sheets.add(name = group.name[0:30]) # 30 - max lenth for a sheet name
+                ex: ExcelHelper = ExcelHelper(sht)
+                u, l = 1, TestConstants.DATA_FILE_COL_START
+                title = {"Table 1": "Test Config"}
 
-            view_set = OrderedDict()            
-            for group in ds_test.values():       
-                for test in group.values():
-                    cfg = test.cfg.to_dict()
-                    for (k, v) in cfg.items():
-                        if k in cfg_set.keys():
-                            cfg_set[k].append(v)
-                        else:
-                            # for first column, add key and two '-' to align with results
-                            cfg_set[k] = [k, '-', '-', v]
+                # config
+                (b, r) = ex.write_table(cfg_set, title=title, up=u, left=l, linespacing=True)
 
-                    result = test.result.to_dict()
-
-                    for (k, v) in result.items():
-                        if k in result_set.keys():
-                            result_set[k].append(v.val)
-                        else:
-                            # for first column, add text, unit
-                            result_set[k] = [v.text, v.unit, '_', v.val]
-                    # wbk.close()       
-
-                    if test.has_view():
-                        for view in test.views.values():                          
-                            map_result = view.maps(test.result)
-                            if view.name in view_set.keys():
-                                data_table = view_set[view.name]
-                                for (k, v) in map_result.items():
-                                    data_table[k].append(v.val)
-                            else:                  
-                                data_table = {}
-                                data_table['Key'] = ['Name', 'Unit', 'Description']
-                                for (k, v) in map_result.items():
-                                    data_table[k] = [v.text, v.unit, '_', v.val]
-                                view_set[view.name] = data_table
-
+                title = {"Table 2": "Results"}
+                (b, r) = ex.write_table(result_set, title=title, up=b, left=l, linespacing=True)
+                
+                # if view_set: # not empty
+                #     idx = 3
+                #     for (view_name, data_table) in view_set.items():                    
+                #         title = {f"Table {idx}": view_name}
+                #         (b, r) = ex.write_table(data_table, title=title, up=b, left=l, linespacing=True)
+                #         idx += 1
 
             from pathlib import Path
 
@@ -191,37 +184,19 @@ class Experiments(object):
             if ex_file.exists():
                 shutil.move(filename, filename+".bak")
 
-            wbk = xw_app.books.add()      
-            sht = wbk.sheets.add() # 30 - max lenth for a sheet name
-            ex: ExcelHelper = ExcelHelper(sht)
-            u, l = 1, TestConstants.DATA_FILE_COL_START
-            title = {"Table 1": "Test Config"}
-
-            # config
-            (b, r) = ex.write_table(cfg_set, title=title, up=u, left=l, linespacing=True)
-
-            title = {"Table 2": "Results"}
-            (b, r) = ex.write_table(result_set, title=title, up=b, left=l, linespacing=True)
-            
-            if view_set: # not empty
-                idx = 3
-                for (view_name, data_table) in view_set.items():                    
-                    title = {f"Table {idx}": view_name}
-                    (b, r) = ex.write_table(data_table, title=title, up=b, left=l, linespacing=True)
-                    idx += 1
-
             wbk.save(filename)                    
 
         finally:
             xw_app.quit() # close the xlwings app finally                                   
 
-    def load_result(self, test_name) -> TestDataSet:
+    
+    def load_result(self, exp_name) -> TestDataSet:
         '''
         Load simulation result from the latest, saved file
         '''
         pass
 
-    def gen_plot_manager(self, test: TestItem) -> PlotManager:
+    def gen_plot_manager(self, test: TestItem, plot_cfg:dict) -> PlotManager:
         #update_cal_fields() 
         pass
 

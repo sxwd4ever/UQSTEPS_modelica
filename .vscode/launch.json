@@ -75,7 +75,8 @@
             "request": "launch",
             "cwd": "${workspaceFolder}/src/python",
             "program": "test_meshram.py",
-            "console": "integratedTerminal"            
+            "console": "integratedTerminal",
+            "justMyCode": false
         }        
     ]
 }

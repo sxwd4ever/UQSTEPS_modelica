@@ -26,16 +26,15 @@ model TestTP_PCHE_Meshram
   parameter SI.Length D_ch = 2e-3 "channel diameter, semi circular tube";
   parameter SI.Length r_ch = D_ch / 2 "channel radiaus";
   parameter SI.Length L_fp = 200e-3 "channel flow path length";  
-  parameter SI.Length pitch = 12.3e-3 "pitch length";
-  parameter Real phi = 36 "pitch angle °";
+  parameter SI.Length L_pitch = 12.3e-3 "pitch length";
+  parameter Real a_phi = 36 "pitch angle degree";
   parameter SI.Length H_ch = 3.2e-3 "Height of the solid domain, containing one cold tube and one hot tube";
   parameter SI.Length W_ch = 2.5e-3 "Width of the solid domain";
   parameter SI.Area A = pi * r_ch ^2 / 2 "Area of cross section of semi circular tube";
 
-  Real phi_rad = pi * phi  / 180;
-  SI.Length L_mod = L_fp * Modelica.Math.cos(phi_rad) "Module length";  
-
   // boundary conditon
+  
+  // zigzag higher T
   parameter SI.Velocity u_hot_in = 7.564 "hot inlet velocity m/s";
   parameter SI.Velocity u_cold_in = 1.876 "cold inlet velocity m/s";
   parameter SI.Pressure p_hot_in =  from_bar(90) "hot inlet pressure";
@@ -45,6 +44,20 @@ model TestTP_PCHE_Meshram
   parameter SI.Temperature T_cold_in = 500 "cold inlet temperature, K";
   parameter SI.Temperature T_cold_out = 639.15 "cold outlet temperature, K";
   
+  // pressure drop correction coefficient 
+  parameter Real kc_dp = 1.0;
+
+/*  
+  // zigzag lower T
+  parameter SI.Velocity u_hot_in = 1.345 "hot inlet velocity m/s";
+  parameter SI.Velocity u_cold_in = 0.806 "cold inlet velocity m/s";
+  parameter SI.Pressure p_hot_in =  from_bar(90) "hot inlet pressure";
+  parameter SI.Pressure p_cold_in = from_bar(225) "cold inlet pressure";
+  parameter SI.Temperature T_hot_in = 630 "hot inlet temperature, K";
+  parameter SI.Temperature T_hot_out = 466.69 "cold outlet temperature, K";
+  parameter SI.Temperature T_cold_in = 400 "cold inlet temperature, K";
+  parameter SI.Temperature T_cold_out = 522.23 "cold outlet temperature, K";  
+*/  
   parameter SI.Density rho_hot_in = medium_hot.density_pT(p_hot_in, T_hot_in);
   parameter SI.Density rho_cold_in = medium_cold.density_pT(p_cold_in, T_cold_in);
   parameter SI.MassFlowRate mdot_hot_in = rho_hot_in * A * u_hot_in * N_ch;
@@ -63,7 +76,9 @@ model TestTP_PCHE_Meshram
     r_LTR = r_ch,
     L_LTR = L_fp,
     N_ch_LTR = N_ch,
-    N_seg = N_seg
+    N_seg = N_seg,
+    pitch = L_pitch,
+    phi = a_phi
   );
   
   // set the values of parameters accordingly
@@ -120,14 +135,10 @@ model TestTP_PCHE_Meshram
   TPComponents.PCHE HE(
     redeclare package FluidMedium = medium_cold, 
     redeclare package FlueGasMedium = medium_hot,     
-    redeclare replaceable model HeatTransfer_F = Steps.TPComponents.KimPCHEHeatTransferFV(
-    pitch = pitch,
-    phi = phi),
+    redeclare replaceable model HeatTransfer_F = Steps.TPComponents.KimPCHEHeatTransferFV(),
     // ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficient(gamma = thermo_LTR_cold.gamma_he),
     // redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer, 
-    redeclare replaceable model HeatTransfer_G = Steps.TPComponents.KimPCHEHeatTransferFV(
-    pitch = pitch,
-    phi = phi),
+    redeclare replaceable model HeatTransfer_G = Steps.TPComponents.KimPCHEHeatTransferFV(),
     redeclare model HeatExchangerTopology = ThermoPower.Thermal.HeatExchangerTopologies.CounterCurrentFlow, 
     bc = bc_HE, 
     geo_hot = cfg.cfg_LTR_hot.geo,
@@ -139,7 +150,9 @@ model TestTP_PCHE_Meshram
     L = L_fp,
     SSInit = true,
     gasQuasiStatic = true,
-    fluidQuasiStatic = true
+    fluidQuasiStatic = true,
+    gasFlow(heatTransfer(pitch = cfg.pitch, phi = cfg.phi, kc_dp = kc_dp)),
+    fluidFlow(heatTransfer(pitch = cfg.pitch, phi = cfg.phi, kc_dp = kc_dp))
     // override the values of Am and L of metaltubeFV
     // to make them agree with semi-circular tube of PCHE
     // ('final' modifier of Am in metalTubeFv was removed as well)

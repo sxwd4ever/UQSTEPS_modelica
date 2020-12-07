@@ -61,34 +61,7 @@ model PBConfig_PCHE
   import Util = Utilities.Util;
   import Steps.Utilities.CoolProp.PropsSI; 
   import Steps.Components.PCHEGeoParam;  
-
-  parameter PCHEGeoParam geo_HTR(
-    // pitch length, m
-    pitch = 12e-3,
-    // pitch angle
-    phi = from_deg((180 - 108) /2),
-    // length of pche, m
-    L = 1000e-3, // 2860e-3,
-    // Diameter of semi_circular, m
-    d = 2e-3,
-    // number of channels
-    N_ch = integer(94e3),
-    // number of segments
-    N_seg = 50);
-    
-   parameter PCHEGeoParam geo_LTR(
-    // pitch length, m
-    pitch = 12e-3,
-    // pitch angle
-    phi = from_deg((180 - 108) /2),
-    // length of pche, m
-    L = 3270e-3,
-    // Diameter of semi_circular, m
-    d = 2e-3,
-    // number of channels
-    N_ch = integer(125e3),
-    // number of segments
-    N_seg = 50);
+  
  
   // test configuration for hot/cold/tube side of heatexchanger
   
@@ -104,5 +77,8 @@ model PBConfig_PCHE
   parameter Real p_LTR = (pi + 2) * r_LTR;
   parameter Real V_LTR = r_LTR^2 * pi * L_LTR / 2;
   parameter Real A_LTR = p_LTR * L_LTR;
+  
+  parameter Modelica.SIunits.Length pitch = 12.3e-3 "pitch length";
+  parameter Real phi = 36 "pitch angle, degree";  
 
 end PBConfig_PCHE;

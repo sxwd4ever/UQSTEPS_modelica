@@ -6,7 +6,7 @@ import math
 from copy import copy, deepcopy
 from datetime import datetime as dt
 from enum import IntEnum
-from typing import Dict, Tuple
+from typing import Dict, Tuple, overload
 from collections import OrderedDict
 from collections.abc import MutableMapping
 
@@ -284,22 +284,6 @@ class TestConfig(MyDict):
     def to_json(self):
         return json.dumps(self)
 
-    # def __iter__(self):
-    #     self._idx = 0
-    #     return self
-
-    # def __next__(self) -> object:
-    #     param = None
-
-    #     if self._idx < len(self.__dict__):
-    #         param = list(self.params.values())[self._idx]
-    #         self._idx += 1
-    #     else:
-    #         raise StopIteration
-
-    #     return param    
- 
-
     def gen_params(self) -> list:
         params = []
         for (k, v) in self.items():
@@ -419,6 +403,137 @@ class TestDataSet(MyDict):
             groups[k] = TestGroup.from_dict(k, **v)
 
         return cls(name, groups)
+
+    KEY_NAME = 'KEY'
+    KEY_NA = '_' # N/A, for space occupation
+
+    def dicts2table(self, dicts:list, titles:list, titles_src:list, key_name:str = KEY_NAME, value_name:str = None) -> dict:
+        ''' 
+        use lists of dicts to form a 2D table
+        '''
+
+        table = {}
+        table['Key'] = []
+        for i in range(0, len(titles)):
+            table['Key'].append(titles[i])
+
+        for dict_ in dicts:
+            name_dict = dict_[key_name]
+            table['Key'].append(name_dict)
+
+            for (k, v) in dict_.items():
+                if k == key_name:
+                    continue
+                
+                if not k in table.keys():
+                    # add a new row
+                    table[k] = [] 
+                    # and headings for each row
+                    for i in range(0, len(titles)):
+                        src_name = titles_src[i]
+                        val = k # use k of this item as default value
+                        if src_name == self.KEY_NA:
+                            val = src_name
+                        elif src_name == None:
+                            val = v
+                        elif src_name != 'KEY':
+                            val = getattr(v, src_name)
+                            
+                        table[k].append(val)
+
+                # append the value
+                if(value_name != None):
+                    table[k].append(getattr(v, value_name))
+                else:
+                    table[k].append(v)
+
+        return table
+
+    def get_cfgs(self, gname:str) -> dict:
+        '''
+        get all cfgs as a 2D table
+        '''
+        if not gname in self.keys():
+            raise KeyError(f'no test config with group name={gname}')
+
+        cfgs = []
+        for (tname, test) in self[gname].items():
+            cfg = test.cfg.to_dict()
+            cfg[self.KEY_NAME] = tname
+            cfgs.append(cfg)
+
+        return self.dicts2table(cfgs, ['Name', 'Unit', 'Description'], ['KEY', self.KEY_NA, self.KEY_NA]) 
+
+    def set_cfgs(self, gname:str, cfgs:dict):
+        ''' 
+        use a 2D table to set all the configurations
+        '''
+
+        start = 3
+
+        for i in range(start, len(cfgs['Key'])):
+            tname = cfgs['Key'][i]
+            dict_ = {}
+            for (k, v) in cfgs.items():
+                if( k == 'Key'):
+                    continue
+                dict_[k] = v[i]
+
+            cfg:TestConfig = TestConfig(tname,dict_)
+
+            if not gname in self.keys():
+                self[gname] = TestGroup(gname, {})
+
+            g:TestGroup = self[gname]
+
+            if not tname in g.keys():
+                g[tname] = TestItem(tname, {}, {})
+
+            test:TestItem = g[tname]
+            test.cfg = cfg    
+
+    def get_results(self, gname:str) -> dict:
+        '''
+        get all results as a 2D table
+        '''
+        if not gname in self.keys():
+            raise KeyError(f'no test result with group name={gname}')
+
+        results = []
+        for (tname, test) in self[gname].items():
+            result = test.result.to_dict()
+            result[self.KEY_NAME] = tname
+            results.append(result)     
+
+        return self.dicts2table(results, ['Name', 'Unit', 'Description'], ['text', 'unit', self.KEY_NA], value_name='val')   
+
+    def set_results(self, gname:str, results:dict):
+        ''' 
+        use a 2D table to set all the test values 
+        '''
+
+        start = 3
+
+        for i in range(start, len(results['Key'])):
+            tname = results['Key'][i]
+            dict_ = {}
+            for (k, v) in results.items():
+                if( k == 'Key'):
+                    continue
+                dict_[k] = Variable(k, v[1], v[i], v[0])
+
+            result:TestResult = TestResult(tname,dict_)
+
+            if not gname in self.keys():
+                self[gname] = TestGroup(gname, {})
+
+            g:TestGroup = self[gname]
+
+            if not tname in g.keys():
+                g[tname] = TestItem(tname, {}, {})
+
+            test:TestItem = g[tname]
+            test.result = result
 
     @classmethod
     def gen_cfg(cls, cfg_ref:dict, cfg_offset:dict, keys:list, idx:int, trace:list, result:dict, gname_template:str, cfg_name:str):

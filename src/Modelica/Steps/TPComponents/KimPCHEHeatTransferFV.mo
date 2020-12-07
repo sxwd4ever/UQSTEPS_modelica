@@ -36,9 +36,10 @@ model KimPCHEHeatTransferFV "Kim [2012] heat transfer Correlation"
   Real dp[Nf];
   SI.ThermalConductivity k_wall[Nw] "wall thermal conductivity - determined by material of wall and local temperature";
   Modelica.SIunits.Length t_wall = (2 - Modelica.Constants.pi / 4) * (d_c / 2) "thickness of wall between two neighboring hot and cold";
-  parameter SI.Length pitch = 12.3e-3 "pitch length";
-  parameter Real phi = 35 "pitch angle °";
+  parameter SI.Length pitch "pitch length";
+  parameter Real phi"pitch angle, degree";
   parameter String name_material = "inconel 750";
+  parameter Real kc_dp = 1 "Pressure drop correction coeffecient";
 
   // default value for d_c = 2mm(Dhyd=0.922mm) in Kim [2012]
   parameter Real table_kim_cor_a[:, :] = [0, 12.3e-3, 24.6e-3; 5, 0.00366, 0.0019; 10, 0.02536, 0.01775; 15, 0.0696 , 0.06455; 20, 0.12817, 0.08918; 25, 0.19392, 0.1442; 30, 0.27701 , 0.21115; 35, 0.37934, 0.29342 ; 40, 0.49995 , 0.39158; 45, 0.65898, 0.51539]  "Table for kim_correlation_a";
@@ -94,8 +95,9 @@ equation
     //f[j] = noEvent((15.78 + 0.35159 * Re_l[j] ^ 0.78015) / Re_l[j]);
     //pressure drop, unit Pa
     // dp[j] = noEvent(2 * f[j] * l * rho[j] * u[j] ^ 2 / Dhyd);
-    // In Hal's step, no factor of '2' in dp's calculation
-    dp[j] = noEvent(f[j] * l * rho[j] * u[j] ^ 2 / Dhyd);
+    // In Hal's step, no factor of '2' in dp's calculation, I set variable kc_dp to control its calculation
+    // for lower T range, kc_dp = 2 and for higher T range, kc_dp = 1. Refer Meshram [2016] for lower/higher T range. 
+    dp[j] = noEvent(kc_dp * f[j] * l * rho[j] * u[j] ^ 2 / Dhyd);
   end for;
   th_conductivity.u[1] = 0.0;
   for j in 1:Nw loop
