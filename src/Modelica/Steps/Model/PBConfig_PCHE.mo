@@ -18,7 +18,7 @@ model PBConfig_PCHE
         A_ex = A_LTR, //  * N_ch_LTR, // assume thickness of tube approximately 0
         L = L_LTR, 
         d = r_LTR * 2),
-      thermo(rho_mcm = 8.28e6 * 0.431, lambda = 12) // refer http://www.matweb.com/search/datasheet_print.aspx?matguid=9612aa3272134531b8b33eb80e61a1af&n=1 for INCONEL® Alloy X-750
+      thermo(rho_mcm = rho_mcm, lambda = 12) // refer http://www.matweb.com/search/datasheet_print.aspx?matguid=9612aa3272134531b8b33eb80e61a1af&n=1 for INCONEL® Alloy X-750
     ),
     cfg_LTR_hot(
       geo(
@@ -43,7 +43,7 @@ model PBConfig_PCHE
         A_ex = A_HTR, //  * N_ch_HTR, // assume thickness of tube approximately 0
         L = L_HTR, 
         d = r_HTR * 2),        
-      thermo(rho_mcm = 8.28e6 * 0.431, lambda = 12) // refer http://www.matweb.com/search/datasheet_print.aspx?matguid=9612aa3272134531b8b33eb80e61a1af&n=1 for INCONEL® Alloy X-750
+      thermo(rho_mcm = rho_mcm, lambda = 12) // refer http://www.matweb.com/search/datasheet_print.aspx?matguid=9612aa3272134531b8b33eb80e61a1af&n=1 for INCONEL® Alloy X-750
     ),
     cfg_HTR_hot(
       geo(
@@ -80,5 +80,11 @@ model PBConfig_PCHE
   
   parameter Modelica.SIunits.Length pitch = 12.3e-3 "pitch length";
   parameter Real phi = 36 "pitch angle, degree";  
+  
+  // default cp and rho for alloy X-750
+  parameter Modelica.SIunits.Density rho_wall = 8280 "density of wall, kg/m3";
+  parameter Modelica.SIunits.SpecificHeatCapacity cp_wall = 431 "cp of wall, J/kg-K";
+  
+  parameter Real rho_mcm = rho_wall * cp_wall "Metal heat capacity per unit volume [J/m^3.K]";
 
 end PBConfig_PCHE;

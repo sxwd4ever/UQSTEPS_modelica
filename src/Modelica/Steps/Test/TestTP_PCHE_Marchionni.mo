@@ -1,6 +1,6 @@
 within Steps.Test;
 
-model TestTP_PCHE_Meshram
+model TestTP_PCHE_Marchionni
   "Test for ThermoPower based PCHE model against Meshram [2016]"  
     
   import Modelica.SIunits.Conversions.{from_degC, from_deg};
@@ -22,34 +22,34 @@ model TestTP_PCHE_Meshram
   // geometry parameters
   constant Real pi = Modelica.Constants.pi;
   parameter Integer N_ch = integer(1e4) "channel number";
-  parameter Integer N_seg = 10 "number of segments in one tube";
+  parameter Integer N_seg = 20 "number of segments in one tube";
   parameter SI.Length D_ch = 2e-3 "channel diameter, semi circular tube";
   parameter SI.Length r_ch = D_ch / 2 "channel radiaus";
-  parameter SI.Length L_fp = 200e-3 "channel flow path length";  
-  parameter SI.Length L_pitch = 12.3e-3 "pitch length";
+  parameter SI.Length L_fp = 272e-3 "channel flow path length";  
+  parameter SI.Length L_pitch = 12.3e-3 "pitch length"; 
   parameter Real a_phi = 36 "pitch angle degree";
-  parameter SI.Length H_ch = 3.2e-3 "Height of the solid domain, containing one cold tube and one hot tube";
-  parameter SI.Length W_ch = 2.5e-3 "Width of the solid domain";
+  parameter SI.Length H_ch = 3.26e-3 "Height of the solid domain, containing one cold tube and one hot tube";
+  parameter SI.Length W_ch = 1.27e-3 * 2"Width of the solid domain";
   parameter SI.Area A = pi * r_ch ^2 / 2 "Area of cross section of semi circular tube";
 
   // boundary conditon
   
   // zigzag higher T
-  parameter SI.Velocity u_hot_in = 7.564 "hot inlet velocity m/s";
-  parameter SI.Velocity u_cold_in = 1.876 "cold inlet velocity m/s";
-  parameter SI.Pressure p_hot_in =  from_bar(90) "hot inlet pressure";
-  parameter SI.Pressure p_cold_in = from_bar(225) "cold inlet pressure";
-  parameter SI.Temperature T_hot_in = 730 "hot inlet temperature, K";
-  parameter SI.Temperature T_hot_out = 576.69 "cold outlet temperature, K";
-  parameter SI.Temperature T_cold_in = 500 "cold inlet temperature, K";
-  parameter SI.Temperature T_cold_out = 639.15 "cold outlet temperature, K";
+  parameter Real G_hot_in = 509.3 "hot inlet mass flux kg/m2";
+  parameter Real G_cold_in = 509.3 "cold inlet mass flux kg/m2";
+  parameter SI.Pressure p_hot_in =  from_bar(75) "hot inlet pressure";
+  parameter SI.Pressure p_cold_in = from_bar(150) "cold inlet pressure";
+  parameter SI.Temperature T_hot_in = from_degC(400) "hot inlet temperature, K";
+  parameter SI.Temperature T_hot_out = from_degC(140) "cold outlet temperature, K";
+  parameter SI.Temperature T_cold_in = from_degC(100) "cold inlet temperature, K";
+  parameter SI.Temperature T_cold_out = from_degC(300) "cold outlet temperature, K";
   
   // pressure drop correction coefficient 
   parameter Real kc_dp = 1.0;
   
   // meshram's cp and rho for alloy Inconel 617
-  parameter Modelica.SIunits.Density rho_wall = 8360 "density of wall, kg/m3";
-  parameter Modelica.SIunits.SpecificHeatCapacity cp_wall = 417 "cp of wall, J/kg-K";  
+  parameter Modelica.SIunits.Density rho_wall = 7990 "density of wall, kg/m3";
+  parameter Modelica.SIunits.SpecificHeatCapacity cp_wall = 500 "cp of wall, J/kg-K";  
 
 /*  
   // zigzag lower T
@@ -62,10 +62,8 @@ model TestTP_PCHE_Meshram
   parameter SI.Temperature T_cold_in = 400 "cold inlet temperature, K";
   parameter SI.Temperature T_cold_out = 522.23 "cold outlet temperature, K";  
 */  
-  parameter SI.Density rho_hot_in = medium_hot.density_pT(p_hot_in, T_hot_in);
-  parameter SI.Density rho_cold_in = medium_cold.density_pT(p_cold_in, T_cold_in);
-  parameter SI.MassFlowRate mdot_hot_in = rho_hot_in * A * u_hot_in * N_ch;
-  parameter SI.MassFlowRate mdot_cold_in = rho_cold_in * A * u_cold_in * N_ch;
+  parameter SI.MassFlowRate mdot_hot_in = G_hot_in * A * N_ch;
+  parameter SI.MassFlowRate mdot_cold_in = G_cold_in * A * N_ch;
 
   // use configuration of LTR for this test since the mdot are different for hot and cold side
   parameter Model.PBConfig_PCHE cfg(
@@ -207,4 +205,4 @@ annotation(
     experiment(StartTime = 0, StopTime = 10, Tolerance = 1e-3, Interval = 2),
     __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts,bltdump",    
     __OpenModelica_simulationFlags(lv = "LOG_DEBUG,LOG_NLS,LOG_NLS_V,LOG_STATS,LOG_INIT,LOG_STDOUT, -w", outputFormat = "mat", s = "dassl", nls = "homotopy"));
-end TestTP_PCHE_Meshram;
+end TestTP_PCHE_Marchionni;

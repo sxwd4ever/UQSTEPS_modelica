@@ -77,6 +77,15 @@
             "program": "test_meshram.py",
             "console": "integratedTerminal",
             "justMyCode": false
-        }        
+        },
+        {
+            "name": "Python: TP_PCHE Test(Marchionni)",
+            "type": "python",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/src/python",
+            "program": "test_marchionni.py",
+            "console": "integratedTerminal",
+            "justMyCode": false
+        }                
     ]
 }
