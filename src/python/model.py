@@ -296,12 +296,22 @@ class TestItem:
         self.cfg = TestConfig(name, cfg)
         self.result = TestResult(name, result)
         self.views : Dict[str, TestDataView] = {}
+        self.post_data = {}
 
     def add_view(self, view:TestDataView):
         self.views[view.name] = view
 
     def has_view(self) -> bool:
         return len(self.views) != 0
+    
+    def set_post_data(self, key, val):
+        self.post_data[key] = val
+
+    def get_post_data(self, key):
+        if(key in self.post_data.keys()):
+            return self.post_data[key]
+
+        return None
 
     @classmethod
     def from_json(cls, name, json_str):
@@ -535,97 +545,186 @@ class TestDataSet(MyDict):
             test:TestItem = g[tname]
             test.result = result
 
+    # @classmethod
+    # def gen_cfg(cls, cfg_ref:dict, cfg_offset:dict, keys:list, idx:int, trace:list, result:dict, gname_template:str, cfg_name:str):
+    #     '''
+    #     use iteration method to walk through all the combinations of configuations
+    #     '''
+    #     key = keys[idx]
+
+    #     node = cfg_offset[key]
+
+    #     if isinstance(node, dict): # for a dict node, run recurrsion from this point 
+    #         param_keys = node['keys']
+    #         # for each row in the dict (except for key row)
+    #         # use recursion to create a variation
+    #         for (k, v) in node.items(): 
+    #             if k == 'keys':
+    #                 continue
+    #             else:
+    #                 trace_cp = deepcopy(trace) # local copy
+    #                 cfg_name_cp = copy(cfg_name)
+    #                 cfg_name_cp += f'{k},'
+
+    #                 for i in range(0, len(param_keys)):
+    #                     trace_cp.append((param_keys[i],v[i]))
+
+    #                 if idx == len(keys) - 1:
+    #                     cls.create_cfg(cfg_ref, keys, trace_cp, result, gname_template, cfg_name_cp)
+    #                 else:
+    #                     cls.gen_cfg(cfg_ref, cfg_offset, keys, idx + 1, trace_cp, result, gname_template, cfg_name_cp)            
+
+    #     else: # for list, each value in the node's list will create a variation   
+    #         for val in node:
+    #             trace_cp = deepcopy(trace) # local copy
+    #             trace_cp.append((key, val))
+
+    #             cfg_name_cp = copy(cfg_name)                
+    #             cfg_name_cp += f'{key}={val},'
+
+    #             if idx == len(keys) - 1:
+    #                 cls.create_cfg(cfg_ref, keys, trace_cp, result, gname_template, cfg_name_cp)
+    #             else:
+    #                 # iterate for deeper level
+    #                 cls.gen_cfg(cfg_ref, cfg_offset, keys, idx + 1, trace_cp, result, gname_template, cfg_name_cp)
+
+    # @classmethod    
+    # def create_cfg(cls, cfg_ref, keys:list, trace:list, result:dict, gname_template:str, cfg_name:str):
+    #     # reach the deepest level, create cfg instance by cloning
+    #     cfg = deepcopy(cfg_ref)  
+
+    #     (k0, v0) = trace[0] 
+
+    #     gname = gname_template
+    #     try:
+    #         gname = gname_template % v0 # use first level's key as group name
+    #     except:
+    #         pass
+
+    #     if not gname in result.keys():
+    #         result[gname]= {}
+
+    #     root = result[gname]
+
+    #     for (k,v) in trace: # use variables above level 1 to create item name
+    #         cfg[k] = v
+
+    #     item = {}
+    #     item["cfg"] = cfg
+    #     item['result'] = { }
+    #     root[cfg_name[0:-1]] = item   
+
+    # @classmethod
+    # def gen_batch_cfg(cls, cfg_ref:dict, cfg_offset:dict, gname_template:str, ds_name = "demoTest"):
+    #     '''
+    #     generate batch cfgs for parameter sweep based on a referenced base config    
+    #     '''
+
+    #     keys = []
+    #     for (k, v) in cfg_offset.items():
+    #         if isinstance(v, list) or isinstance(v, dict):
+    #             keys.append(k)
+
+    #     # keys = ["mdot_main", "T_heater_hot", "T_cooler_cold"]
+    #     trace=[]
+    #     batch_cfg={}    
+    #     cls.gen_cfg(cfg_ref, cfg_offset, keys, 0, trace, batch_cfg, gname_template, "")
+
+    #     json_cfg_batch = json.dumps(batch_cfg,indent=2)
+
+    #     ds_test = TestDataSet.from_json(ds_name, json_cfg_batch)
+    #     # print(json_cfg_batch)
+    #     return ds_test   
+
     @classmethod
-    def gen_cfg(cls, cfg_ref:dict, cfg_offset:dict, keys:list, idx:int, trace:list, result:dict, gname_template:str, cfg_name:str):
-        '''
-        use iteration method to walk through all the combinations of configuations
-        '''
+    def gen_test_item(cls, cfg_offset_dict:dict, keys:list, idx:int, trace:list, result:dict, gname_templ:str, cfg_name:str):
+        
         key = keys[idx]
 
-        node = cfg_offset[key]
+        node = cfg_offset_dict[key]
 
-        if isinstance(node, dict): # for a dict node, run recurrsion from this point 
-            param_keys = node['keys']
-            # for each row in the dict (except for key row)
-            # use recursion to create a variation
-            for (k, v) in node.items(): 
-                if k == 'keys':
-                    continue
-                else:
-                    trace_cp = deepcopy(trace) # local copy
-                    cfg_name_cp = copy(cfg_name)
-                    cfg_name_cp += f'{k},'
+        for val in node:
+            trace_cp = deepcopy(trace) # local copy
+            trace_cp.append((key, val))
 
-                    for i in range(0, len(param_keys)):
-                        trace_cp.append((param_keys[i],v[i]))
-
-                    if idx == len(keys) - 1:
-                        cls.create_cfg(cfg_ref, keys, trace_cp, result, gname_template, cfg_name_cp)
-                    else:
-                        cls.gen_cfg(cfg_ref, cfg_offset, keys, idx + 1, trace_cp, result, gname_template, cfg_name_cp)            
-
-        else: # for list, each value in the node's list will create a variation   
-            for val in node:
-                trace_cp = deepcopy(trace) # local copy
-                trace_cp.append((key, val))
-
-                cfg_name_cp = copy(cfg_name)                
+            cfg_name_cp = copy(cfg_name) 
+            if idx > 0: # combine key other than 1st level into cfg_name
                 cfg_name_cp += f'{key}={val},'
 
-                if idx == len(keys) - 1:
-                    cls.create_cfg(cfg_ref, keys, trace_cp, result, gname_template, cfg_name_cp)
-                else:
-                    # iterate for deeper level
-                    cls.gen_cfg(cfg_ref, cfg_offset, keys, idx + 1, trace_cp, result, gname_template, cfg_name_cp)
+            if idx == len(keys) - 1: # reach the deepest level, create a cfg_offset instance
 
-    @classmethod    
-    def create_cfg(cls, cfg_ref, keys:list, trace:list, result:dict, gname_template:str, cfg_name:str):
-        # reach the deepest level, create cfg instance by cloning
-        cfg = deepcopy(cfg_ref)  
+                (k0, v0) = trace[0] 
 
-        (k0, v0) = trace[0] 
+                gname = gname_templ
+                try:
+                    gname = gname_templ % v0 # use first level's key as group name
+                except:
+                    pass 
 
-        gname = gname_template
-        try:
-            gname = gname_template % v0 # use first level's key as group name
-        except:
-            pass
+                vals = []
 
-        if not gname in result.keys():
-            result[gname]= {}
+                for (k,v) in trace_cp: 
+                    vals.append(v)
 
-        root = result[gname]
+                if not gname in result.keys():
+                    result[gname] = {}
+                    result[gname]['keys'] = keys
 
-        for (k,v) in trace: # use variables above level 1 to create item name
-            cfg[k] = v
+                result[gname][cfg_name_cp[0:-1]] = vals               
 
-        item = {}
-        item["cfg"] = cfg
-        item['result'] = { }
-        root[cfg_name[0:-1]] = item   
+            else:
+                # iterate for deeper level
+                cls.gen_test_item(cfg_offset_dict, keys, idx + 1, trace_cp, result, gname_templ, cfg_name_cp)
 
     @classmethod
-    def gen_batch_cfg(cls, cfg_ref:dict, cfg_offset:dict, gname_template:str, ds_name = "demoTest"):
+    def gen_cfg_offset_table(cls, cfg_offset_dict:OrderedDict, gname_templ:str) -> dict:
         '''
-        generate batch cfgs for parameter sweep based on a referenced base config    
+        use a cfg offset dict to create a cfg offset 2D table, which will be used to create all
+        configs in a data set 
         '''
-
-        keys = []
-        for k in cfg_offset.keys():
-            v = cfg_offset[k]
-            if isinstance(v, list) or isinstance(v, dict):
-                keys.append(k)
-
-        # keys = ["mdot_main", "T_heater_hot", "T_cooler_cold"]
         trace=[]
-        batch_cfg={}    
-        cls.gen_cfg(cfg_ref, cfg_offset, keys, 0, trace, batch_cfg, gname_template, "")
+        cfg_offset_table={}    
+        cls.gen_test_item(cfg_offset_dict, list(cfg_offset_dict.keys()), 0, trace, cfg_offset_table, gname_templ, "")
 
-        json_cfg_batch = json.dumps(batch_cfg,indent=2)
+        return cfg_offset_table
 
-        ds_test = TestDataSet.from_json(ds_name, json_cfg_batch)
-        # print(json_cfg_batch)
-        return ds_test   
+    @classmethod
+    def gen_test_dataset(cls, cfg_ref:dict, cfg_offset_table:dict, ds_name):
+        '''
+        use cfg_offset_table create all the combinations of configuations
+        '''
+        result = OrderedDict()
+
+        for gname, gnode in cfg_offset_table.items():
+
+            param_keys = gnode['keys']
+            # for each row in the dict (except for key row)
+            # use recursion to create a variation
+            for (test_name, test_cfg) in gnode.items(): 
+                if test_name == 'keys':
+                    continue
+                else:
+                    cfg = deepcopy(cfg_ref)
+
+                    for i in range(0, len(param_keys)):
+                        k = param_keys[i]
+                        if k in cfg.keys():
+                            cfg[k] = test_cfg[i]
+
+                    item = {}
+                    item["cfg"] = cfg
+                    item['result'] = { }
+
+                    if not gname in result.keys():
+                        result[gname]= {}
+
+                    root = result[gname]  
+                    root[test_name] = item  
+
+        json_cfg_batch = json.dumps(result,indent=2)
+        ds_test = TestDataSet.from_json(ds_name, json_cfg_batch)  
+
+        return ds_test    
 
 col_start = TestConstants.DATA_FILE_COL_START
 

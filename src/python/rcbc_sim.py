@@ -1,5 +1,5 @@
 from collections import OrderedDict
-from copy import deepcopy
+from copy import copy,deepcopy
 import datetime
 import shutil
 from logging import exception
@@ -24,10 +24,10 @@ import numpy as np
 from model import TestDataSet, TestConfig, TestDataView, TestResult,Variable, TestConstants
 from plotlib import PlotManager, DataSeries, AxisType
 from physics import Temperature, Pressure, MDot
-from experiments import Experiments
+from experiments import Experiment
 from utils import ExcelHelper, from_degC
 
-class RCBC_simulation(Experiments):
+class RCBC_simulation(Experiment):
     pass
 
 def json_IO_test():
@@ -104,6 +104,7 @@ def json_IO_test():
     }
     ds_test = TestDataSet.from_json("demoTest", json.dumps(test_data_set_demo1))
 
+
 def main(work_root = []):
     # root path of modelica root
     if work_root == []:
@@ -126,11 +127,11 @@ def main(work_root = []):
     }
 
     # cfg with varied parameters from the base cfg
-    cfg_offset = {} 
+    cfg_offset_dict = OrderedDict()
     mapping = []
     if test_mode:   
-        cfg_offset["mdot_main"] = list(map(lambda x: x * mdot_main_des/100, [75, 100, 120]))
-        cfg_offset["T_heater_hot"] = list(map(lambda x: from_degC(x), [550, 700]))
+        cfg_offset_dict["mdot_main"] = list(map(lambda x: x * mdot_main_des/100, [75, 100, 120]))
+        cfg_offset_dict["T_heater_hot"] = list(map(lambda x: from_degC(x), [550, 700]))
         mapping = [
         {
             "eta_pb":"eta_cycle",
@@ -165,12 +166,14 @@ def main(work_root = []):
         # full size batch
         # load ratio < 0.75 leads error, use following values instead 
         # cfg_offset["mdot_main"] = list(map(lambda x: x * mdot_main_des/100, [50, 75, 100, 120]))  
-        cfg_offset["mdot_main"] = list(map(lambda x: x * mdot_main_des/100, [75, 90, 100, 120]))       
-        cfg_offset["T_heater_hot"] = list(map(lambda x: from_degC(x), [550, 600, 650, 700]))
-        cfg_offset["T_cooler_cold"] = list(map(lambda x: from_degC(x), [30, 35, 40, 45]))
+        
+        cfg_offset_dict["mdot_main"] = list(map(lambda x: x * mdot_main_des/100, [75, 90, 100, 120]))       
+        cfg_offset_dict["T_heater_hot"] = list(map(lambda x: from_degC(x), [550, 600, 650, 700]))
+        cfg_offset_dict["T_cooler_cold"] = list(map(lambda x: from_degC(x), [30, 35, 40, 45]))
         # cfg_offset["mdot_heater_hot"] = 55
         # cfg_offset["gamma"] =[0.3, 0.325, 0.35, 0.375, 0.4, 0.45]	
-        cfg_offset["gamma"] =[0.3, 0.35, 0.4, 0.45]	
+        cfg_offset_dict["gamma"] =[0.3, 0.35, 0.4, 0.45]	       
+
         # src -> dst
         mapping = [
         {
@@ -200,7 +203,10 @@ def main(work_root = []):
         }]
     
     ds_name = f'10MW off-Design{"_PCHE" if use_PCHE else ""}' + ' sim {:%Y-%m-%d-%H-%M-%S}'.format(datetime.datetime.now())
-    ds_test = TestDataSet.gen_batch_cfg(cfg_ref, cfg_offset, gname_template='10MW off-Design(mdot=%s)', ds_name=ds_name)
+    # ds_test = TestDataSet.gen_batch_cfg(cfg_ref, cfg_offset, gname_template='10MW off-Design(mdot=%s)', ds_name=ds_name)
+    cfg_table = TestDataSet.gen_cfg_offset_table(cfg_offset_dict, gname_templ='10MW off-Design(mdot=%s)')  
+    
+    ds_test = TestDataSet.gen_test_dataset(cfg_ref, cfg_table, ds_name)
     
     ds_test.add_view(mapping, view_name_tmpl="performance map")
 
@@ -264,7 +270,7 @@ def main(work_root = []):
     for var in var_sp:
         sol_dict[var.key] = var
 
-    exp:Experiments = RCBC_simulation(
+    exp:Experiment = RCBC_simulation(
         work_root, 
         model_name=model_name, 
         ex_dlls=[

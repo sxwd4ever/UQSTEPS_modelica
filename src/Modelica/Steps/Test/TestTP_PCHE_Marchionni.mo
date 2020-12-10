@@ -35,8 +35,9 @@ model TestTP_PCHE_Marchionni
   // boundary conditon
   
   // zigzag higher T
-  parameter Real G_hot_in = 509.3 "hot inlet mass flux kg/m2";
-  parameter Real G_cold_in = 509.3 "cold inlet mass flux kg/m2";
+  parameter Real G_in = 509.3 "mass flux kg/(m^2 s";  
+  parameter Real G_hot_in = G_in "hot inlet mass flux kg/(m^2 s";
+  parameter Real G_cold_in = G_in "cold inlet mass flux kg/(m^2 s";
   parameter SI.Pressure p_hot_in =  from_bar(75) "hot inlet pressure";
   parameter SI.Pressure p_cold_in = from_bar(150) "cold inlet pressure";
   parameter SI.Temperature T_hot_in = from_degC(400) "hot inlet temperature, K";
@@ -62,7 +63,7 @@ model TestTP_PCHE_Marchionni
   parameter SI.Temperature T_cold_in = 400 "cold inlet temperature, K";
   parameter SI.Temperature T_cold_out = 522.23 "cold outlet temperature, K";  
 */  
-  parameter SI.MassFlowRate mdot_hot_in = G_hot_in * A * N_ch;
+  parameter SI.MassFlowRate mdot_hot_in = G_in * A * N_ch;
   parameter SI.MassFlowRate mdot_cold_in = G_cold_in * A * N_ch;
 
   // use configuration of LTR for this test since the mdot are different for hot and cold side
@@ -128,13 +129,13 @@ model TestTP_PCHE_Marchionni
   annotation(
     Placement(transformation(extent = {{-70, -10}, {-50, 10}}, rotation = 0))); 
   
-  ThermoPower.Gas.SensT T_waterIn(redeclare package Medium = medium_cold) annotation(
+  TPComponents.GasStateReader sr_water_in(redeclare package Medium = medium_cold) annotation(
     Placement(transformation(origin = {4, -50}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
-  ThermoPower.Gas.SensT T_waterOut(redeclare package Medium = medium_cold) annotation(
+  TPComponents.GasStateReader sr_water_out(redeclare package Medium = medium_cold) annotation(
     Placement(transformation(origin = {4, -50}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
   
-  ThermoPower.Gas.SensT T_gasIn(redeclare package Medium = medium_hot);
-  ThermoPower.Gas.SensT T_gasOut(redeclare package Medium = medium_hot);
+  TPComponents.GasStateReader sr_gas_in(redeclare package Medium = medium_hot);
+  TPComponents.GasStateReader sr_gas_out(redeclare package Medium = medium_hot);
     
   TPComponents.PCHE HE(
     redeclare package FluidMedium = medium_cold, 
@@ -169,6 +170,11 @@ model TestTP_PCHE_Marchionni
   Modelica.SIunits.Power Q_out = (HE.gasIn.h_outflow - HE.gasOut.h_outflow) * HE.gasIn.m_flow; 
   Modelica.SIunits.Power Q_in = (HE.waterOut.h_outflow - HE.waterIn.h_outflow) * HE.waterIn.m_flow;
   Boolean isQMatch = abs(Q_out -Q_in) < 1e-3;  
+  
+  Real T_hot_out_act = sr_gas_out.T;
+  Real T_cold_out_act = sr_water_out.T;
+  Real dp_hot_act = sum(HE.gasFlow.heatTransfer.dp);
+  Real dp_cold_act = sum(HE.fluidFlow.heatTransfer.dp);
 equation
 
 /*
@@ -184,20 +190,20 @@ equation
     Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));    
 */   
   
-  connect(source_cold.flange, T_waterIn.inlet);
-  connect(T_waterIn.outlet, HE.waterIn) annotation(
+  connect(source_cold.flange, sr_water_in.inlet);
+  connect(sr_water_in.outlet, HE.waterIn) annotation(
     Line(points = {{-1.83697e-015, 50}, {-1.83697e-015, 20}, {0, 20}}, color = {0, 0, 255}, thickness = 0.5, smooth = Smooth.None));
-  connect(HE.waterOut, T_waterOut.inlet) annotation(
+  connect(HE.waterOut, sr_water_out.inlet) annotation(
     Line(points = {{8.88178e-016, -44}, {8.88178e-016, -20}, {0, -20}}, thickness = 0.5, color = {0, 0, 255}));      
-  connect(T_waterOut.outlet, sink_cold.flange) annotation(
+  connect(sr_water_out.outlet, sink_cold.flange) annotation(
     Line(points = {{1.83697e-015, -70}, {1.83697e-015, -56}, {-8.88178e-016, -56}}, thickness = 0.5, color = {0, 0, 255}));
   
-  connect(source_hot.flange, T_gasIn.inlet);
-  connect(T_gasIn.outlet, HE.gasIn) annotation(
+  connect(source_hot.flange, sr_gas_in.inlet);
+  connect(sr_gas_in.outlet, HE.gasIn) annotation(
         Line(points = {{-50, 0}, {-20, 0}}, color = {159, 159, 223}, thickness = 0.5, smooth = Smooth.None)); 
-  connect(HE.gasOut, T_gasOut.inlet) annotation(
+  connect(HE.gasOut, sr_gas_out.inlet) annotation(
     Line(points = {{34, 0}, {34, 0}, {20, 0}}, color = {159, 159, 223}, thickness = 0.5));
-  connect(T_gasOut.outlet, sink_hot.flange) annotation(
+  connect(sr_gas_out.outlet, sink_hot.flange) annotation(
     Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));    
   
 annotation(

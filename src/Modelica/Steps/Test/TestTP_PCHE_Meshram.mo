@@ -26,7 +26,7 @@ model TestTP_PCHE_Meshram
   parameter SI.Length D_ch = 2e-3 "channel diameter, semi circular tube";
   parameter SI.Length r_ch = D_ch / 2 "channel radiaus";
   parameter SI.Length L_fp = 200e-3 "channel flow path length";  
-  parameter SI.Length L_pitch = 12.3e-3 "pitch length";
+  parameter SI.Length L_pitch = 12e-3 "pitch length";
   parameter Real a_phi = 36 "pitch angle degree";
   parameter SI.Length H_ch = 3.2e-3 "Height of the solid domain, containing one cold tube and one hot tube";
   parameter SI.Length W_ch = 2.5e-3 "Width of the solid domain";
