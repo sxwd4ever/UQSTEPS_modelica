@@ -18,11 +18,11 @@ import os
 from os import path, sep
 
 import numpy as np
-from model import TestDataSet,TestConfig, TestItem,Variable, TestConstants
+from model import TestDataSet,TestConfig, TestItem, TestResult,Variable
 from plotlib import PlotManager, DataSeries, AxisType
 from physics import Temperature, Pressure, MDot
 from experiments import Experiment, PCHEExperiment
-from utils import from_degC, from_bar
+from utils import from_degC, from_bar, from_kPa
 
 class MarchionniTest(PCHEExperiment):
     '''
@@ -31,12 +31,14 @@ class MarchionniTest(PCHEExperiment):
     def gen_sol_dict(self, cfg:dict) -> dict:
         sol_dict = super().gen_sol_dict(cfg)
 
-                # specilized solutions
+        # specilized solutions
         var_sp = [               
             Variable('T_hot_out_act', 'K'),
             Variable('T_cold_out_act', 'K'),
             Variable('dp_hot_act', 'pa'),
-            Variable('dp_cold_act', 'pa')
+            Variable('dp_cold_act', 'pa'),
+            # Variable('dp_hot_act_m', 'pa'),
+            # Variable('dp_cold_act_m', 'pa')
         ]
 
         for v in var_sp:
@@ -44,8 +46,30 @@ class MarchionniTest(PCHEExperiment):
 
         return sol_dict
         
-    def post_process(self, test: TestItem):
-        return super().post_process(test)
+    def post_process(self, test: TestItem, ds_exp:TestDataSet):
+        super().post_process(test, ds_exp)
+
+        if ds_exp.ref_data == None:
+            return
+
+        ref_data = ds_exp.ref_data[test.name]
+
+        keys = ref_data['keys']
+        row_names = ['1D', 'OEM']
+
+        err_dict = {}
+
+        for rname in row_names:
+            row = ref_data[rname]
+
+            for i in range(0, len(keys)):
+                k = keys[i] + "_act"
+                val = test.result[k].val
+                err_dict[f'{k}_{rname}_err'] = (val - row[i]) / row[i] * 100
+
+
+        for (k, v) in err_dict.items():
+            test.result[k] = Variable(k, '%', val=v)
 
     def gen_plot_cfgs(self, values, meta_cfg):
         '''
@@ -170,9 +194,9 @@ def main(work_root = []):
         work_root = os.path.abspath(os.curdir)  
 
     # parameters initialization for this simulation
-    exp_type:ExpType = ExpType.VS_CFD
+    exp_type:ExpType = ExpType.FULL_SCALE
     model_name = "Steps.Test.TestTP_PCHE_Marchionni"  
-    exp_name = 'Test-Marchionni {:%Y-%m-%d-%H-%M-%S}'.format(datetime.datetime.now())            
+    exp_name = 'Test-Marchionni_{} {:%Y-%m-%d-%H-%M-%S}'.format(exp_type.name, datetime.datetime.now())            
     # end of parameter initialization
 
     exp:Experiment = MarchionniTest(
@@ -186,6 +210,18 @@ def main(work_root = []):
             'D:/Workspace/ThermoPower/ThermoPower/package.mo',
             'D:/Workspace/SolarTherm/SolarTherm/package.mo',
             "Modelica 3.2.1"])
+
+    # src->dst 
+    mapping = {
+        "Comparison of T and dp": {
+            "T_hot_out_act": "T_hot_out_act",
+            "T_cold_out_act": "T_cold_out_act",
+            "dp_hot_act": "dp_hot_act",
+            "dp_cold_act": "dp_cold_act",
+            "dp_hot_act_OEM_err": "dp_hot_err",
+            "dp_cold_act_OEM_err": "dp_cold_err"
+        }
+    }
 
     plot_metacfg_base = {
         "axis_x": [0, 272],
@@ -202,7 +238,35 @@ def main(work_root = []):
     }
 
     plot_metacfg_offest = {} 
-    
+
+    ref_data= {
+            "Design point" :{
+                "keys" : ['dp_hot','T_hot_out', 'dp_cold', 'T_cold_out'],
+                '1D': [from_kPa(131), from_degC(81.4), from_kPa(119), from_degC(283.0)],
+                'OEM': [from_kPa(130), from_degC(80.5), from_kPa(120), from_degC(284.9)]
+            },
+            "off-design #1" :{
+                "keys" : ['dp_hot','T_hot_out', 'dp_cold', 'T_cold_out'],
+                '1D': [from_kPa(80), from_degC(79.5), from_kPa(73), from_degC(285.4)],
+                'OEM': [from_kPa(79), from_degC(78.6), from_kPa(74), from_degC(287.2)]
+            },            
+            "off-design #2" :{
+                "keys" : ['dp_hot','T_hot_out', 'dp_cold', 'T_cold_out'],
+                '1D': [from_kPa(146), from_degC(99.4), from_kPa(138), from_degC(293.2)],
+                'OEM': [from_kPa(145), from_degC(99.7), from_kPa(139), from_degC(294.5)]
+            }, 
+            "off-design #3" :{
+                "keys" : ['dp_hot','T_hot_out', 'dp_cold', 'T_cold_out'],
+                '1D': [from_kPa(123), from_degC(67.7), from_kPa(104), from_degC(267.7)],
+                'OEM': [from_kPa(122), from_degC(66.6), from_kPa(106), from_degC(269.3)]
+            },  
+            "off-design #4" :{
+                "keys" : ['dp_hot','T_hot_out', 'dp_cold', 'T_cold_out'],
+                '1D': [from_kPa(205), from_degC(83.6), from_kPa(183), from_degC(280.1)],
+                'OEM': [from_kPa(202), from_degC(82.7), from_kPa(184), from_degC(282.3)]
+            }                       
+        }
+
     if exp_type == ExpType.VS_CFD:
 
         # referred base cfg
@@ -225,7 +289,7 @@ def main(work_root = []):
             "T_hot_out": from_degC(140), # "cold outlet temperature, K";
             "T_cold_in": from_degC(100), # "cold inlet temperature, K";
             "T_cold_out": from_degC(300), # "cold outlet temperature, K";
-            "kc_dp": 1 # "pressure drop correction coefficient"
+            # "kc_dp": 1 # "pressure drop correction coefficient"
         } 
 
         # cfg with varied parameters from the base cfg
@@ -235,45 +299,15 @@ def main(work_root = []):
                 # Only with kc_dp = 1 at High T and kc_dp = 2 at Low T can I get good agreement with 
                 # Meshram's DP result. 
                 "keys" : ["a_phi", "kc_dp"],   
+                "a_phi=0" : [0, 1],
                 "a_phi=5" : [5.0, 1],
                 "a_phi=10" : [10.0, 1],
-                "a_phi=20" : [20.0, 1],                     
-                "a_phi=30" : [30.0, 1],
-                "a_phi=35" : [35.0, 1],
-                "a_phi=40" : [40.0, 1],
-                "a_phi=45" : [45.0, 1]
             }          
 
-        mapping = [
-        {
-            "eta_pb":"eta_cycle",
-            "UA_HTR" : "UA_HTR",
-            "UA_LTR" : "UA_LTR",
-            "UA_cooler" : "UA_cooler",
-            "UA_heater" : "UA_heater",
-            "W_MC": "W_comp",
-            "W_RC": "W_recomp",
-            "W_turb": "W_turb",
-            "Q_HTR": "Q_HTR",
-            "Q_LTR": "Q_LTR",
-            "Q_cooler": "Q_cooler",
-            "Q_heater": "Q_heater",
-            "ex_HTR":"ex_HTR",
-            "ex_LTR":"ex_LTR",
-            "ex_comp":"ex_comp",
-            "ex_recomp":"ex_recomp",
-            "ex_turbine":"ex_turbine",
-            "ex_cooler":"ex_cooler",
-            "ex_heater":"ex_heater",
-        },
-        {
-            "rc1.T":"T_amb",
-            "r05.T": "TIT"
-        }]
-
         ds_exp = TestDataSet.gen_test_dataset(cfg_ref, cfg_offset, exp_name)
-
-        ds_exp.add_view(mapping, view_name_tmpl="performance map")
+        # add referred data for comparison
+        ds_exp.set_ref_data(ref_data)        
+        ds_exp.add_view(mapping)
 
         json_str = ds_exp.to_json()    
         print(json_str)    
@@ -294,10 +328,13 @@ def main(work_root = []):
         exp.plot_results(ds_exp, plot_metacfg_base, plot_metacfg_offest)        
 
     elif exp_type == ExpType.FULL_SCALE:
+        N_ch = 54 * 42
+        A_c = 1.57e-6 # mm^2 -> m^2
+        A_stack = N_ch * A_c # area of cross section for a stack containg all channels
         # referred base cfg
         cfg_ref = {
             # geometry parameters
-            "N_ch": 54 * 42, # "channel number"
+            "N_ch": N_ch, # "channel number"
             "N_seg": 20, # "segments number"
             "D_ch": 2e-3, # "channel diameter, semi circular tube"
             "L_fp": 1012e-3, # "channel flow path length"
@@ -306,55 +343,74 @@ def main(work_root = []):
             "H_ch": 3.26e-3, # "Height of the solid domain, containing one cold tube and one hot tube"
             "W_ch": 1.27e-3 * 2, # "Width of the solid domain"
             # boundary conditon
-            "mdot_hot_in": 2.06,  # "hot inlet mass flow rate kg/s";
-            "mdot_cold_in": 2.06,  # "cold inlet mass flow rate kg/s";
+            "G_in": 2.06 / A_stack,  # "inlet mass flux rate kg/(m^2 s)";            
             "p_hot_in": from_bar(75), # "hot inlet pressure";
             "p_cold_in":from_bar(125), # "cold inlet pressure";
             "T_hot_in": from_degC(344.3), # "hot inlet temperature, K";
             "T_hot_out": from_degC(81), # "cold outlet temperature, K";
             "T_cold_in": from_degC(72.9), # "cold inlet temperature, K";
             "T_cold_out": from_degC(283), # "cold outlet temperature, K";
-            "kc_dp": 1 # "pressure drop correction coefficient"
+            # "kc_dp": 1 # "pressure drop correction coefficient"
         } 
 
         # cfg with varied parameters from the base cfg
-        cfg_offset = {} 
-        cfg_offset['phi=5'] = {
-                # values in Table 3 in Meshram [2016]
-                # Only with kc_dp = 1 at High T and kc_dp = 2 at Low T can I get good agreement with 
-                # Meshram's DP result. 
-                "keys" : ["mdot_hot_in", "mdot_cold_in", "T_cold_in", "a_phi"],   
-                "Design point" : [2.06, 2.06, from_degC(72.9), 5],
-                "off-design #1" : [1.57, 1.57, from_degC(72.9), 5],
-                "off-design #2" : [2.09, 2.09, from_degC(87.5), 5],                  
-                "off-design #3" : [2.09, 2.09,  from_degC(62), 5],
-                "off-design #4" : [2.62, 2.62, from_degC(72.9), 5]
-            }  
-        cfg_offset['phi=10'] = {
-                # values in Table 3 in Meshram [2016]
-                # Only with kc_dp = 1 at High T and kc_dp = 2 at Low T can I get good agreement with 
-                # Meshram's DP result. 
-                "keys" : ["mdot_hot_in", "mdot_cold_in", "T_cold_in"],   
-                "Design point" : [2.06, 2.06, from_degC(72.9), 10],
-                "off-design #1" : [1.57, 1.57, from_degC(72.9), 10],
-                "off-design #2" : [2.09, 2.09, from_degC(87.5), 10],                  
-                "off-design #3" : [2.09, 2.09,  from_degC(62), 10],
-                "off-design #4" : [2.62, 2.62, from_degC(72.9), 10]
-            }  
+        # phis = [5, 10, 15, 20, 25, 30, 35, 40, 45]
+        # # phis = [5, 10, 15]
 
-        cfg_offset['phi=15'] = {
-                # values in Table 3 in Meshram [2016]
-                # Only with kc_dp = 1 at High T and kc_dp = 2 at Low T can I get good agreement with 
-                # Meshram's DP result. 
-                "keys" : ["mdot_hot_in", "mdot_cold_in", "T_cold_in", "a_phi"],   
-                "Design point" : [2.06, 2.06, from_degC(72.9), 15],
-                "off-design #1" : [1.57, 1.57, from_degC(72.9), 15],
-                "off-design #2" : [2.09, 2.09, from_degC(87.5), 15],                  
-                "off-design #3" : [2.09, 2.09,  from_degC(62), 15],
-                "off-design #4" : [2.62, 2.62, from_degC(72.9), 15]
-            }                       
+        # cfg_offset_base = {
+        #         "keys" : ["G_in", "T_cold_in"],   
+        #         "Design point" : [2.06 / A_stack, from_degC(72.9)],
+        #         "off-design #1" : [1.57 / A_stack, from_degC(72.9)],
+        #         "off-design #2" : [2.09 / A_stack, from_degC(87.5)],                  
+        #         "off-design #3" : [2.09 / A_stack,  from_degC(62)],
+        #         "off-design #4" : [2.62 / A_stack, from_degC(72.9)]        
+        # }
+
+        # cfg_offset = {} 
+
+        # for phi in phis:
+        #     cfg_offset_cp = deepcopy(cfg_offset_base)
+        #     cfg_offset_cp['keys'].append('a_phi')
+        #     for k, v in cfg_offset_cp.items():
+        #         if k == 'keys':
+        #             continue
+        #         v.append(phi)
+
+        #     cfg_offset[f'phi={phi}'] = cfg_offset_cp
+
+        # phis = [5, 10, 15, 20, 25, 30, 35, 40, 45]
+        kc_cfs = [8, 8.5, 9, 9.5, 10]
+        # kc_cfs = [8, 9]
+
+        cfg_offset_base = {
+                "keys" : ["G_in", "T_cold_in"],   
+                "Design point" : [2.06 / A_stack, from_degC(72.9)],
+                "off-design #1" : [1.57 / A_stack, from_degC(72.9)],
+                "off-design #2" : [2.09 / A_stack, from_degC(87.5)],                  
+                "off-design #3" : [2.09 / A_stack,  from_degC(62)],
+                "off-design #4" : [2.62 / A_stack, from_degC(72.9)]        
+        }
+
+        cfg_offset = {} 
+
+        for kc_cf in kc_cfs:
+            cfg_offset_cp = deepcopy(cfg_offset_base)
+            cfg_offset_cp['keys'].append('kc_cf')
+            for k, v in cfg_offset_cp.items():
+                if k == 'keys':
+                    continue
+                v.append(kc_cf)
+
+            cfg_offset[f'kc_Cf={kc_cf}'] = cfg_offset_cp
 
         ds_exp = TestDataSet.gen_test_dataset(cfg_ref, cfg_offset, ds_name=exp_name)        
+
+        # add referred data for comparison
+        ds_exp.set_ref_data(ref_data)
+
+
+
+        ds_exp.add_view(mapping)
 
         json_str = ds_exp.to_json()    
         print(json_str)    
@@ -375,9 +431,11 @@ def main(work_root = []):
 
     elif exp_type == ExpType.LOAD_PRE_EXP:
         # should search the exp_name 
-        exp_name = "Test-Marchionni 2020-12-09-15-04-22"
-        ds_exp = exp.load_results(exp_name, dir_name=exp_name)
+        exp_name = "Test-Marchionni 2020-12-10-09-43-30"
+        ds_exp:TestDataSet = TestDataSet(name=exp_name, groups={})
 
+        ds_exp.set_ref_data(ref_data)    
+        exp.load_results(exp_name, dir_name=exp_name, ds_exp=ds_exp)
         exp.plot_results(ds_exp, plot_metacfg_base, plot_metacfg_offest)   
 
     print('All done!')

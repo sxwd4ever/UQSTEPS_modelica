@@ -34,13 +34,23 @@ model KimPCHEHeatTransferFV "Kim [2012] heat transfer Correlation"
   Real G[Nf] "mass flow flux";
   Real f[Nf] "Fanning Friction Factor - used to calculate pressure drop";
   Real dp[Nf];
+  Real Pr[Nf];
   SI.ThermalConductivity k_wall[Nw] "wall thermal conductivity - determined by material of wall and local temperature";
   Modelica.SIunits.Length t_wall = (2 - Modelica.Constants.pi / 4) * (d_c / 2) "thickness of wall between two neighboring hot and cold";
   parameter SI.Length pitch "pitch length";
   parameter Real phi"pitch angle, degree";
   parameter String name_material = "inconel 750";
   parameter Real kc_dp = 1 "Pressure drop correction coeffecient";
-
+  
+  // following parameters are used for dp calculation based on [Marchionni 2019]  
+  Real f_m[Nf] "fanning friction factor calcaluted accorrding to [Marchionni 2019]";
+  Real co_A[Nf] "coefficients in Eq. 2 of [Marchionni 2019]";
+  Real co_B[Nf] "coefficients in Eq. 3 of [Marchionni 2019]";
+  Real dp_m[Nf] "pressure drop calculated according to [Marchionni 2019]";
+  Real Nu_m[Nf];
+  Real C1 = if abs(phi - 0) < Modelica.Constants.eps then 1.0 else 1.1 "calibration coefficient in Eq. 1 in [Marchionni 2019], = 1.0 for straight Channel and = 1.1 for zigzag Channel";
+  Real C2 = if abs(phi - 0) < Modelica.Constants.eps then 1.0 else 1.2 "calibration coefficient in Eq. 4 in [Marchionni 2019], = 1.0 for straight Channel and = 1.2 for zigzag Channel";
+  
   // default value for d_c = 2mm(Dhyd=0.922mm) in Kim [2012]
   parameter Real table_kim_cor_a[:, :] = [0, 12.3e-3, 24.6e-3; 5, 0.00366, 0.0019; 10, 0.02536, 0.01775; 15, 0.0696 , 0.06455; 20, 0.12817, 0.08918; 25, 0.19392, 0.1442; 30, 0.27701 , 0.21115; 35, 0.37934, 0.29342 ; 40, 0.49995 , 0.39158; 45, 0.65898, 0.51539]  "Table for kim_correlation_a";
 
@@ -91,6 +101,9 @@ equation
     //Nu[j] = noEvent(4.089 + 0.04247 * Re_l[j] ^ 0.70055);
     u[j] = noEvent(abs(w[j]) / A / rho[j]);
     hc[j] = noEvent(Nu[j] * k[j] / Dhyd);
+    
+    Pr[j] = noEvent(Medium.specificHeatCapacityCp(fluidState[j]) * mu[j] / k[j]);    
+    
     f[j] = noEvent((15.78 + kim_cor_a.y * Re_l[j] ^ kim_cor_b.y) / Re_l[j]);
     //f[j] = noEvent((15.78 + 0.35159 * Re_l[j] ^ 0.78015) / Re_l[j]);
     //pressure drop, unit Pa
@@ -98,6 +111,13 @@ equation
     // In Hal's step, no factor of '2' in dp's calculation, I set variable kc_dp to control its calculation
     // for lower T range, kc_dp = 2 and for higher T range, kc_dp = 1. Refer Meshram [2016] for lower/higher T range. 
     dp[j] = noEvent(kc_dp * f[j] * l * rho[j] * u[j] ^ 2 / Dhyd);
+    
+    // pressure drop calculation in Marchionni 2019
+    co_A[j] = -2.0 * Modelica.Math.log10( 12 / Re_l[j]) "neglect roughness";
+    co_B[j] = -2.0 * Modelica.Math.log10( 2.51 * co_A[j] / Re_l[j]);    
+    f_m[j] = (0.25 * (( 4.781 - (co_A[j] - 4.781) ^ 2 / (co_B[j] - 2 * co_A[j] + 4.781)) ^(-2)));
+    dp_m[j] = noEvent(f_m[j] * l * rho[j] * u[j] ^ 2 / Dhyd);
+    Nu_m[j] = noEvent(C2 * ((f_m[j]/2 * (Re_l[j] - 1000) * Pr[j]) / (1 + 12.7 * ( Pr[j] ^(2/3) - 1) * (f_m[j]/2)^0.5)));
   end for;
   th_conductivity.u[1] = 0.0;
   for j in 1:Nw loop

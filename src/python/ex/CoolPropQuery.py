@@ -12,7 +12,7 @@ from CoolProp.CoolProp import PhaseSI, PropsSI, get_global_param_string
 import CoolProp.CoolProp as CoolProp
 from CoolProp.HumidAirProp import HAPropsSI
 import CoolProp.State 
-from math import sin
+from math import log10, sin
 
 # P, h -> T ([Pa], [J/kg] -> [degC])
 # result = CP.CoolProp.PropsSI("T", "P", 20e6, 'H', 995164, 'CO2') - 273.15
@@ -54,19 +54,175 @@ from math import sin
 # result = CP.CoolProp.PropsSI("T", "P", 9e6, 'H', 1.23596e6, 'CO2') - 273.15
 # print("result=" + str(result))
 
-result = PropsSI("H", "P",20e6, "T" , 273.15 + 162.144, 'CO2')
-print("result=" + str(result))
+# print('high pressure, low T')
+# # density
+# p, T = 20e6, 273.15 + 162.144
 
-result2 = PropsSI("H", "P",20e6, "T" , 273.15 + 85.8433, 'CO2')
-print("result=" + str(result2))
+# result = PropsSI("DMASS", "P", p, "T" , T, 'CO2')
+# print("result=" + str(result))
 
-P = (result - result2) * 83.75
-print(f'Power={P}')
+# result = PropsSI("DMASS", "P", p, "T" , T, 'Helium')
+# print("result=" + str(result))
+
+# # conductivity
+# result = PropsSI("CONDUCTIVITY", "P", p, "T" , T, 'CO2')
+# print("result=" + str(result))
+
+# result = PropsSI("CONDUCTIVITY", "P", p, "T" , T, 'Helium')
+# print("result=" + str(result))
+
+# # 
+# result = PropsSI("VISCOSITY", "P", p, "T" , T, 'CO2')
+# print("result=" + str(result))
+
+# result = PropsSI("VISCOSITY", "P", p, "T" , T, 'Helium')
+# print("result=" + str(result))
+
+# print('\nlow pressure, high T')
+# # density
+# p, T = 8e6, 273.15 + 600
+
+# result = PropsSI("DMASS", "P", p, "T" , T, 'CO2')
+# print("result=" + str(result))
+
+# result = PropsSI("DMASS", "P", p, "T" , T, 'Helium')
+# print("result=" + str(result))
+
+# # conductivity
+# result = PropsSI("CONDUCTIVITY", "P", p, "T" , T, 'CO2')
+# print("result=" + str(result))
+
+# result = PropsSI("CONDUCTIVITY", "P", p, "T" , T, 'Helium')
+# print("result=" + str(result))
+
+# # 
+# result = PropsSI("VISCOSITY", "P", p, "T" , T, 'CO2')
+# print("result=" + str(result))
+
+# result = PropsSI("VISCOSITY", "P", p, "T" , T, 'Helium')
+# print("result=" + str(result))
 
 
+# print('high pressure, High T')
+# # density
+# p, T = 20e6, 273.15 + 710
+
+# result = PropsSI("DMASS", "P", p, "T" , T, 'CO2')
+# print("result=" + str(result))
+
+# result = PropsSI("DMASS", "P", p, "T" , T, 'Helium')
+# print("result=" + str(result))
+
+# # conductivity
+# result = PropsSI("CONDUCTIVITY", "P", p, "T" , T, 'CO2')
+# print("result=" + str(result))
+
+# result = PropsSI("CONDUCTIVITY", "P", p, "T" , T, 'Helium')
+# print("result=" + str(result))
+
+# # 
+# result = PropsSI("VISCOSITY", "P", p, "T" , T, 'CO2')
+# print("result=" + str(result))
+
+# result = PropsSI("VISCOSITY", "P", p, "T" , T, 'Helium')
+# print("result=" + str(result))
+
+# print('\nlow pressure, high T')
+# # density
+# p, T = 8e6, 273.15 + 600
+
+# result = PropsSI("DMASS", "P", p, "T" , T, 'CO2')
+# print("result=" + str(result))
+
+# result = PropsSI("DMASS", "P", p, "T" , T, 'Helium')
+# print("result=" + str(result))
+
+# # conductivity
+# result = PropsSI("CONDUCTIVITY", "P", p, "T" , T, 'CO2')
+# print("result=" + str(result))
+
+# result = PropsSI("CONDUCTIVITY", "P", p, "T" , T, 'Helium')
+# print("result=" + str(result))
+
+# # 
+# result = PropsSI("VISCOSITY", "P", p, "T" , T, 'CO2')
+# print("result=" + str(result))
+
+# result = PropsSI("VISCOSITY", "P", p, "T" , T, 'Helium')
+# print("result=" + str(result))
+
+# Ra = 50e-6
+# D = 2e-3
+# Re = 22000
+# A = -2.0 * log10(Ra / D / 3.7 + 12 / Re  )
+# B = -2.0 * log10(Ra / D / 3.7 + 2.51 * A / Re)
+# C = 4.781
+# f = 0.25 * ((C - (A - C)** 2 / (B - 2 * A + C))**(-2))
+# print(f"result: A={A}, B={B}, f={f}")
 # calculate the eta of Compressor of 'D:\sxwd\Projects\UQ\2019.10.01 Thermal Cycle Simulation\doc\UQMECH05_99_CL02_B 1 MW Power Block (RCBC)_2.pdf' 
 # h_in = 309.42e3
 # h_out = 329.94e3
+
+print('high pressure, low T')
+# density
+p, T = 20e6, 273.15 + 162.144
+
+result = PropsSI("DMASS", "P", p, "T" , T, 'CO2')
+print("result=" + str(result))
+
+# conductivity
+result = PropsSI("CONDUCTIVITY", "P", p, "T" , T, 'CO2')
+print("result=" + str(result))
+
+# 
+result = PropsSI("VISCOSITY", "P", p, "T" , T, 'CO2')
+print("result=" + str(result))
+
+print('high pressure, High T')
+# density
+p, T = 20e6, 273.15 + 710
+
+result = PropsSI("DMASS", "P", p, "T" , T, 'CO2')
+print("result=" + str(result))
+
+# conductivity
+result = PropsSI("CONDUCTIVITY", "P", p, "T" , T, 'CO2')
+print("result=" + str(result))
+
+# 
+result = PropsSI("VISCOSITY", "P", p, "T" , T, 'CO2')
+print("result=" + str(result))
+
+print('\nlow pressure, high T')
+# density
+p, T = 8e6, 273.15 + 600
+
+result = PropsSI("DMASS", "P", p, "T" , T, 'CO2')
+print("result=" + str(result))
+
+# conductivity
+result = PropsSI("CONDUCTIVITY", "P", p, "T" , T, 'CO2')
+print("result=" + str(result))
+
+# 
+result = PropsSI("VISCOSITY", "P", p, "T" , T, 'CO2')
+print("result=" + str(result))
+
+print('\nlow pressure, low T')
+# density
+p, T = 8e6, 273.15 + 162.144
+
+result = PropsSI("DMASS", "P", p, "T" , T, 'CO2')
+print("result=" + str(result))
+
+# conductivity
+result = PropsSI("CONDUCTIVITY", "P", p, "T" , T, 'CO2')
+print("result=" + str(result))
+
+# 
+result = PropsSI("VISCOSITY", "P", p, "T" , T, 'CO2')
+print("result=" + str(result))
+
 
 # s = CP.CoolProp.PropsSI("S", "H", h_in, "P", 7.91e6, 'CO2')
 

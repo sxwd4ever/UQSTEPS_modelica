@@ -28,6 +28,34 @@ class MeshramTest(PCHEExperiment):
     script for test against Meshram [2016]
     '''
 
+    def gen_sol_dict(self, cfg: dict) -> dict:
+        sol_dict = super().gen_sol_dict(cfg)
+
+        # specilized solutions
+        # for KimPCHEHeatTransferFV
+        # var_sp = [               
+        #     Variable('HE.fluidFlow.heatTransfer.kim_cor_a.y'),
+        #     Variable('HE.fluidFlow.heatTransfer.kim_cor_b.y'),
+        #     Variable('HE.fluidFlow.heatTransfer.kim_cor_c.y'),
+        #     Variable('HE.fluidFlow.heatTransfer.kim_cor_d.y'),
+        #     Variable('HE.gasFlow.heatTransfer.kim_cor_a.y'),
+        #     Variable('HE.gasFlow.heatTransfer.kim_cor_b.y'),
+        #     Variable('HE.gasFlow.heatTransfer.kim_cor_c.y'),
+        #     Variable('HE.gasFlow.heatTransfer.kim_cor_d.y')
+        # ]   
+        # for MarchionniPCHEHeatTransferFV
+        var_sp = [
+            Variable('HE.fluidFlow.heatTransfer.C1'),
+            Variable('HE.fluidFlow.heatTransfer.C2'),
+            Variable('HE.gasFlow.heatTransfer.C1'),
+            Variable('HE.gasFlow.heatTransfer.C2')    
+        ]
+
+        for v in var_sp:
+            sol_dict[v.key] = v 
+
+        return sol_dict
+
     def gen_plot_cfgs(self, values, meta_cfg):
         '''
             use template to generate all plot configs 
@@ -107,7 +135,7 @@ def main(work_root = []):
     if work_root == []:
         work_root = os.path.abspath(os.curdir)  
 
-    run_sim = False # True: run the simulation, False: load pre-saved exp results
+    run_sim = True # True: run the simulation, False: load pre-saved exp results
     model_name = "Steps.Test.TestTP_PCHE_Meshram"  
     # referred base cfg
     cfg_ref = {
@@ -129,27 +157,63 @@ def main(work_root = []):
         "T_hot_out": 576.69, # "cold outlet temperature, K";
         "T_cold_in": 500, # "cold inlet temperature, K";
         "T_cold_out": 639.15, # "cold outlet temperature, K";
-        "kc_dp": 1 # "pressure d"
+        "kc_dp": 1, # "pressure d"
+        "C1": 1,
+        "C2": 1,
     }
 
     # cfg with varied parameters from the base cfg
+    # for 'zigzag Low T', I can not retrieve values match Meshram's Fig. 5 (a) with
+    # u_hot_in = 1.345, which makes mdot_hot_in = 1.614 << mdot_cold_in = 5.488. 
+    # Based on the facts that for other cases, mdot_hot_in ~ mdot_cold_in, 
+    # I choose mdot_hot_in = 4.501 according to u_cold_in/u_hot_in = 5.584 
+    # in 'Straight Low T' the senario and get good match
     cfg_offset = {} 
-    cfg_offset['Group 1'] = {
+    cfg_offset['ZH(1,10,0.1) S(1,1,1)'] = {
             # values in Table 3 in Meshram [2016]
             # Only with kc_dp = 1 at High T and kc_dp = 2 at Low T can I get good agreement with 
             # Meshram's DP result. 
-            "keys" : ["T_cold_in", "T_cold_out", "T_hot_in", "T_hot_out", "u_cold_in", "u_hot_in", "a_phi", "kc_dp"],
-            "zigzag High T" : [500, 639.15, 730, 576.69, 1.876, 7.564, 36.0, 1],
-            # for 'zigzag Low T', I can not retrieve values match Meshram's Fig. 5 (a) with
-            # u_hot_in = 1.345, which makes mdot_hot_in = 1.614 << mdot_cold_in = 5.488. 
-            # Based on the facts that for other cases, mdot_hot_in ~ mdot_cold_in, 
-            # I choose mdot_hot_in = 4.501 according to u_cold_in/u_hot_in = 5.584 
-            # in 'Straight Low T' the senario and get good match
-            "zigzag Low T": [400, 522.23, 630, 466.69, 0.806, 4.501, 36.0, 2], 
-            "Straight High T": [500, 615.48, 730, 601.83, 1.518, 6.118, 5, 1],
-            "Straigth Low T": [400, 498.45, 630, 494.37, 0.842, 4.702, 5, 2]
+            "keys" : ["T_cold_in", "T_cold_out", "T_hot_in", "T_hot_out", "u_cold_in", "u_hot_in", "a_phi", "kc_dp", "C1", "C2"],
+            "zigzag High T" : [500, 639.15, 730, 576.69, 1.876, 7.564, 36.0, 1, 10, 0.1],
+            "zigzag Low T": [400, 522.23, 630, 466.69, 0.806, 4.501, 36.0, 1, 10, 0.1], 
+            "Straight High T": [500, 615.48, 730, 601.83, 1.518, 6.118, 0, 1, 1, 1],
+            "Straigth Low T": [400, 498.45, 630, 494.37, 0.842, 4.702, 0, 1, 1, 1]
         }
-    mapping = [] 
+
+    cfg_offset['Z(1,12,0.0833), S(1,1,1)'] = {
+            # values in Table 3 in Meshram [2016]
+            # Only with kc_dp = 1 at High T and kc_dp = 2 at Low T can I get good agreement with 
+            # Meshram's DP result. 
+            "keys" : ["T_cold_in", "T_cold_out", "T_hot_in", "T_hot_out", "u_cold_in", "u_hot_in", "a_phi", "kc_dp", "C1", "C2"],
+            "zigzag High T" : [500, 639.15, 730, 576.69, 1.876, 7.564, 36.0, 1, 12, 0.0833],
+            "zigzag Low T": [400, 522.23, 630, 466.69, 0.806, 4.501, 36.0, 1, 12, 0.0833], 
+            "Straight High T": [500, 615.48, 730, 601.83, 1.518, 6.118, 0, 1, 1, 1],
+            "Straigth Low T": [400, 498.45, 630, 494.37, 0.842, 4.702, 0, 1, 1, 1]
+        }           
+
+    cfg_offset['Z(2,6,0.167) S(2,1,1)'] = {
+            # values in Table 3 in Meshram [2016]
+            # Only with kc_dp = 1 at High T and kc_dp = 2 at Low T can I get good agreement with 
+            # Meshram's DP result. 
+            "keys" : ["T_cold_in", "T_cold_out", "T_hot_in", "T_hot_out", "u_cold_in", "u_hot_in", "a_phi", "kc_dp", "C1", "C2"],
+            "zigzag High T" : [500, 639.15, 730, 576.69, 1.876, 7.564, 36.0, 2, 6, 0.167],
+            "zigzag Low T": [400, 522.23, 630, 466.69, 0.806, 4.501, 36.0, 2, 6, 0.167], 
+            "Straight High T": [500, 615.48, 730, 601.83, 1.518, 6.118, 0, 2, 1, 1],
+            "Straigth Low T": [400, 498.45, 630, 494.37, 0.842, 4.702, 0, 2, 1, 1]
+        }
+
+    cfg_offset['Z(2,6,0.167) S(2,0.5,2)'] = {
+            # values in Table 3 in Meshram [2016]
+            # Only with kc_dp = 1 at High T and kc_dp = 2 at Low T can I get good agreement with 
+            # Meshram's DP result. 
+            "keys" : ["T_cold_in", "T_cold_out", "T_hot_in", "T_hot_out", "u_cold_in", "u_hot_in", "a_phi", "kc_dp", "C1", "C2"],
+            "zigzag High T" : [500, 639.15, 730, 576.69, 1.876, 7.564, 36.0, 2, 6, 0.167],
+            "zigzag Low T": [400, 522.23, 630, 466.69, 0.806, 4.501, 36.0, 2, 6, 0.167], 
+            "Straight High T": [500, 615.48, 730, 601.83, 1.518, 6.118, 0, 2, 0.5, 2],
+            "Straigth Low T": [400, 498.45, 630, 494.37, 0.842, 4.702, 0, 2, 0.5, 2]
+        }                 
+                            
+    mapping = {} 
 
     exp:Experiment = MeshramTest(
         work_root, 
@@ -165,9 +229,9 @@ def main(work_root = []):
 
     if run_sim:
         exp_name = 'Test-Meshram {:%Y-%m-%d-%H-%M-%S}'.format(datetime.datetime.now())            
-        ds_exp = TestDataSet.gen_batch_cfg(cfg_ref, cfg_offset, gname_template="Meshram_Test", ds_name=exp_name)
+        ds_exp = TestDataSet.gen_test_dataset(cfg_ref, cfg_offset, ds_name=exp_name)
     
-        ds_exp.add_view(mapping, view_name_tmpl="performance map")
+        ds_exp.add_view(mapping)
 
         json_str = ds_exp.to_json()    
         print(json_str)
@@ -187,7 +251,7 @@ def main(work_root = []):
         exp.save_results(ds_exp)
     else:
         # should search the exp_name 
-        exp_name = "Test-Meshram 2020-12-09-11-49-05"
+        exp_name = "Test-Meshram 2020-12-11-07-30-44"
         ds_exp = exp.load_results(exp_name, dir_name=exp_name)
 
     plot_metacfg_base = {
@@ -212,12 +276,14 @@ def main(work_root = []):
         },
         "Straight High T" :
         {
-            "axis_T" : [400.0, 750.0], 
+            "axis_T" : [400.0, 750.0],
+            "axis_dp" : [0, 5], 
             "imgfile" : "Meshram_Fig_04_HT.png"
         },
         "Straigth Low T" :
         {
             "axis_T" : [300.0, 650.0], 
+            "axis_dp" : [0, 5], 
             "imgfile" : "Meshram_Fig_04_LT.png"
         }
     }    

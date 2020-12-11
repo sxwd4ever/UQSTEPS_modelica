@@ -131,15 +131,15 @@ class Experiment(object):
 
                 test.result = TestResult.from_keyvalues(solution_dict, solutions) 
                 
-                self.post_process(test)
+                self.post_process(test, ds_test)
 
                 if(append_save): # append the result each time we finish the simulation
-                    # use the copy for saving. avoid concurrent iteration on same object
+                    # use a copy for saving. avoid concurrent iteration on same object
                     self.save_results(deepcopy(ds_test))
         
         print('all simulation(s) done, results saved in Test Data Set')        
 
-    def post_process(self, test:TestItem):
+    def post_process(self, test:TestItem, ds_exp:TestDataSet):
         pass
 
     def save_results(self, ds_test : TestDataSet):
@@ -165,25 +165,25 @@ class Experiment(object):
             for (gname, group) in ds_test.items():     
                 cfg_set =  ds_test.get_cfgs(gname)  
                 result_set = ds_test.get_results(gname)
+                view_set = ds_test.get_views(gname)
                 # a sheet for each group
 
                 sht = wbk.sheets.add(name = group.name[0:30]) # 30 - max lenth for a sheet name
                 ex: ExcelHelper = ExcelHelper(sht)
                 u, l = 1, TestConstants.DATA_FILE_COL_START
                 title = {"Table 1": "Test Config"}
-
                 # config
                 (b, r) = ex.write_table(cfg_set, title=title, up=u, left=l, linespacing=True)
 
-                title = {"Table 2": "Results"}
+                idx = 2
+                if view_set: # not empty
+                    for (view_name, data_table) in view_set.items():                    
+                        title = {f"Table {idx}": view_name}
+                        (b, r) = ex.write_table(data_table, title=title, up=b, left=l, linespacing=True)
+                        idx += 1
+
+                title = {f"Table {idx}": "Detailed Results"}
                 (b, r) = ex.write_table(result_set, title=title, up=b, left=l, linespacing=True)
-                
-                # if view_set: # not empty
-                #     idx = 3
-                #     for (view_name, data_table) in view_set.items():                    
-                #         title = {f"Table {idx}": view_name}
-                #         (b, r) = ex.write_table(data_table, title=title, up=b, left=l, linespacing=True)
-                #         idx += 1
 
             from pathlib import Path
 
@@ -196,7 +196,7 @@ class Experiment(object):
         finally:
             xw_app.quit() # close the xlwings app finally 
 
-    def load_results(self, exp_name, dir_name=None) -> TestDataSet:
+    def load_results(self, exp_name, dir_name=None, ds_exp:TestDataSet = None) -> TestDataSet:
         '''
         Load simulation result from the latest, saved file
         '''
@@ -217,7 +217,9 @@ class Experiment(object):
             raise FileNotFoundError(f"data file {file_name} not found")
 
         app = xw.App(visible=False)
-        ds_exp:TestDataSet = TestDataSet(exp_name, {})
+        
+        if(ds_exp == None):
+            ds_exp = TestDataSet(exp_name, {})
 
         try:
             wbk:xw.Book = xw.Book(file_name,read_only=True)
@@ -243,7 +245,7 @@ class Experiment(object):
 
             for g in ds_exp.values():
                 for t in g.values():
-                    self.post_process(t)
+                    self.post_process(t,ds_exp)
 
         finally:
             app.quit()
@@ -273,7 +275,7 @@ class Experiment(object):
                         plot.add(DataSeries(**series))
 
                     src_file = sep.join([self.path_pics, plot_cfg["imgfile"]])
-                    dest_file = sep.join([self.path_out, ds_exp.name, "{0}_w_g={2}_t={1}.png".format(plot_cfg["imgfile"], test.name, g.name)])
+                    dest_file = sep.join([self.path_out, ds_exp.name, g.name, "{0}_w_t={1}.png".format(plot_cfg["imgfile"], test.name)])
 
                     plot.draw(src_file, dest_file)   
 
@@ -290,7 +292,7 @@ class Experiment(object):
         return ""        
 class PCHEExperiment(Experiment):
 
-    def post_process(self, test:TestItem):
+    def post_process(self, test:TestItem, ds_exp:TestDataSet):
         '''
             post process the test result after simulation
             data mapping and re-collection can be applied in this function
@@ -383,19 +385,10 @@ class PCHEExperiment(Experiment):
         var_sp = [               
             Variable('HE.waterIn.m_flow', 'kg/s'),
             Variable('HE.gasIn.m_flow', 'kg/s'),
-            Variable('HE.gasIn.m_flow', 'kg/s'),
             Variable('HE.fluidFlow.heatTransfer.phi'),
             Variable('HE.fluidFlow.heatTransfer.pitch'),   
-            Variable('HE.fluidFlow.heatTransfer.kim_cor_a.y'),
-            Variable('HE.fluidFlow.heatTransfer.kim_cor_b.y'),
-            Variable('HE.fluidFlow.heatTransfer.kim_cor_c.y'),
-            Variable('HE.fluidFlow.heatTransfer.kim_cor_d.y'),
             Variable('HE.gasFlow.heatTransfer.phi'),
-            Variable('HE.gasFlow.heatTransfer.pitch'),        
-            Variable('HE.gasFlow.heatTransfer.kim_cor_a.y'),
-            Variable('HE.gasFlow.heatTransfer.kim_cor_b.y'),
-            Variable('HE.gasFlow.heatTransfer.kim_cor_c.y'),
-            Variable('HE.gasFlow.heatTransfer.kim_cor_d.y')
+            Variable('HE.gasFlow.heatTransfer.pitch') 
         ]
 
         for v in var_sp:

@@ -46,11 +46,15 @@ model TestTP_PCHE_Marchionni
   parameter SI.Temperature T_cold_out = from_degC(300) "cold outlet temperature, K";
   
   // pressure drop correction coefficient 
-  parameter Real kc_dp = 1.0;
+  parameter Real kc_dp = 2.0;
+  
+  parameter Real kc_cf = 1;
   
   // meshram's cp and rho for alloy Inconel 617
   parameter Modelica.SIunits.Density rho_wall = 7990 "density of wall, kg/m3";
   parameter Modelica.SIunits.SpecificHeatCapacity cp_wall = 500 "cp of wall, J/kg-K";  
+  
+  parameter Boolean use_kim_cor = true;
 
 /*  
   // zigzag lower T
@@ -63,7 +67,7 @@ model TestTP_PCHE_Marchionni
   parameter SI.Temperature T_cold_in = 400 "cold inlet temperature, K";
   parameter SI.Temperature T_cold_out = 522.23 "cold outlet temperature, K";  
 */  
-  parameter SI.MassFlowRate mdot_hot_in = G_in * A * N_ch;
+  parameter SI.MassFlowRate mdot_hot_in = G_hot_in * A * N_ch;
   parameter SI.MassFlowRate mdot_cold_in = G_cold_in * A * N_ch;
 
   // use configuration of LTR for this test since the mdot are different for hot and cold side
@@ -140,10 +144,12 @@ model TestTP_PCHE_Marchionni
   TPComponents.PCHE HE(
     redeclare package FluidMedium = medium_cold, 
     redeclare package FlueGasMedium = medium_hot,     
-    redeclare replaceable model HeatTransfer_F = Steps.TPComponents.KimPCHEHeatTransferFV(),
+    redeclare replaceable model HeatTransfer_F = TPComponents.MarchionniPCHEHeatTransferFV(),
+    //redeclare replaceable model HeatTransfer_F = TPComponents.KimPCHEHeatTransferFV(), 
     // ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficient(gamma = thermo_LTR_cold.gamma_he),
     // redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer, 
-    redeclare replaceable model HeatTransfer_G = Steps.TPComponents.KimPCHEHeatTransferFV(),
+    redeclare replaceable model HeatTransfer_G = TPComponents.MarchionniPCHEHeatTransferFV(),
+    //redeclare replaceable model HeatTransfer_G = TPComponents.KimPCHEHeatTransferFV(),
     redeclare model HeatExchangerTopology = ThermoPower.Thermal.HeatExchangerTopologies.CounterCurrentFlow, 
     bc = bc_HE, 
     geo_hot = cfg.cfg_LTR_hot.geo,
@@ -156,8 +162,8 @@ model TestTP_PCHE_Marchionni
     SSInit = true,
     gasQuasiStatic = true,
     fluidQuasiStatic = true,
-    gasFlow(heatTransfer(pitch = cfg.pitch, phi = cfg.phi, kc_dp = kc_dp)),
-    fluidFlow(heatTransfer(pitch = cfg.pitch, phi = cfg.phi, kc_dp = kc_dp))
+    gasFlow(heatTransfer(pitch = cfg.pitch, phi = cfg.phi, kc_dp = kc_dp, kc_cf = kc_cf)),
+    fluidFlow(heatTransfer(pitch = cfg.pitch, phi = cfg.phi, kc_dp = kc_dp, kc_cf = kc_cf))
     // override the values of Am and L of metaltubeFV
     // to make them agree with semi-circular tube of PCHE
     // ('final' modifier of Am in metalTubeFv was removed as well)
@@ -175,6 +181,8 @@ model TestTP_PCHE_Marchionni
   Real T_cold_out_act = sr_water_out.T;
   Real dp_hot_act = sum(HE.gasFlow.heatTransfer.dp);
   Real dp_cold_act = sum(HE.fluidFlow.heatTransfer.dp);
+  // Real dp_hot_act_m = sum(HE.gasFlow.heatTransfer.dp_m) * 10 "actual dp calculated by Eq. 1 [Marchionni 2019]"; 
+  // Real dp_cold_act_m = sum(HE.fluidFlow.heatTransfer.dp_m) * 10 "actual dp calculated by Eq. 1 [Marchionni 2019]"; 
 equation
 
 /*

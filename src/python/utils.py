@@ -125,6 +125,9 @@ def from_degC(T_c) -> float :
 def from_bar(p) -> float:
     return p * 1e5
 
+def from_kPa(kPa) -> float:
+    return kPa * 1e3
+
 def mkdir_filepath(file_name:str):
     '''
     make containing dir for file named file_name
@@ -133,9 +136,9 @@ def mkdir_filepath(file_name:str):
     from pathlib import Path
     import os.path    
 
-    dirs = file_name.split(os.path.pathsep)
-    cur_dir = ""
-    for dir_name in dirs[0:-1]:
+    dirs = file_name.split(os.path.sep)
+    cur_dir = dirs[0] + os.path.sep # insert driver path first
+    for dir_name in dirs[1:-1]:
         cur_dir = os.path.join(cur_dir, dir_name)
         dir = Path(cur_dir)
 

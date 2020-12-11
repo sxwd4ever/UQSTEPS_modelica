@@ -27,131 +27,10 @@ from utils import ExcelHelper
 class StreamType(IntEnum):
     Hot = 0,
     Cold = 1
-
-class DesignParam(object):
-    '''
-    Structure containing On Design parameters
-    '''
-
-    def __init__(self, d_c = 12e-3, p=[9e6, 20e6], T=[500, 300], mdot = [8.3, 8.3], Re = 2000, N_seg = 10, len_seg=12e-3, pitch = 12e-3, phi= math.pi / 4):
-        # On design params initialization 
-        self.d_c = d_c
-        self.p = np.array(p)
-        self.T = np.array(T)
-        self.mdot = np.array(mdot)
-        self.Re = np.array(Re)
-        self.N_seg = N_seg
-        self.len_seg = len_seg  
-        self.pitch = pitch
-        self.phi = phi
-
-        # parameters determined in cal_on_design_params
-        self.d_h = 0.0
-        self.A_c = 0.0
-        self.A_f = 0.0
-        self.N_ch = 0.0
-        self.mu = np.zeros(len(self.mdot))  
-        self.G = np.zeros(len(self.mdot)) # mass flux kg/(m^2 * s) should be constant if Re, P, T, d_c are constant
-
-        self.cal_design_params()
-
-    def cal_geo_params(self):
-        d_c = self.d_c
-        A_c = math.pi * d_c * d_c / 8 
-        peri_c = d_c * math.pi / 2 + d_c          
-        d_h = 4 * A_c / peri_c
-
-        return (A_c, d_h, peri_c)
-
-    def area_flow(self):
-        return self.A_c * self.N_ch
-
-    def cal_design_params(self):
-        
-        #  0 = hot, 1 = cold, following Enum PipeType
-        A_fx = np.zeros(len(StreamType))
-
-        (self.A_c, self.d_h, peri_c) = self.cal_geo_params()
-
-        for i in StreamType:
-            self.mu[i] = PropsSI('V', 'P', self.p[i], 'T', self.T[i], "CO2")
-
-        A_fx =  np.divide(self.mdot, self.mu) * (self.d_h / self.Re)   
-
-        self.A_f = max(A_fx)
-        self.N_ch = math.ceil(self.A_f / self.A_c)
-        self.G = self.mdot / self.A_f
-
-class OffDesignParam(object):
-
-    def __init__(self, param_des: DesignParam, mdot = [], G = []):
-
-        if mdot == []:
-            if G == []:
-                raise ValueError('no mdot or G assigned for off design')
-            else:
-                mdot = np.array(G) * param_des.area_flow()     
-
-        num_stream = len(StreamType)
-
-        self.mdot = np.array(mdot)
-        self.Re = np.zeros(num_stream)
-        self.G = np.zeros(num_stream)
-        self.param_des = param_des
-        self.__update()
-
-    def __update(self):
-        p_des = self.param_des
-        A_f = self.param_des.area_flow() 
-        self.G = self.mdot / A_f
-        self.Re = np.divide(self.mdot, p_des.mu) * p_des.d_h / A_f
 class TestConstants(object):
     """
     Constants and key definition for test
     """
-
-    d_c = "d_c"
-
-    pitch = "pitch"
-
-    phi = "phi"
-
-    # on design propery
-    Re_des = "Re_des"
-    N_seg = "N_seg"
-    l_cell = "l_cell"
-
-    # fluid property
-    # hot stream state 
-    p_hot_in = "p_hot_in"
-    T_hot_in = "T_hot_in"
-    p_hot_out = "p_hot_out"
-    T_hot_out = "T_hot_out"
-
-    # cold stream state
-    p_cold_in = "p_cold_in"
-    T_cold_in = "T_cold_in"
-    p_cold_out = "p_cold_out"
-    T_cold_out = "T_cold_out"
-
-    media_hot = "media_hot"
-    media_cold = "media_cold"
-
-    # mass flow rate
-    mdot_hot = "mdot_hot"
-    mdot_cold = "mdot_cold"
-
-    # off design configuration
-    mdot_hot_odes = "mdot_hot_odes"
-    mdot_cold_odes = "mdot_cold_odes"
-
-    u_hot_odes = "u_hot_odes"
-    u_cold_odes = "u_cold_odes"
-
-    rho_hot_odes = "rho_hot_odes"
-
-    rho_cold_odes = "rho_cold_odes"
-
     # Format constants
     # column start index in the data storage file
     DATA_FILE_COL_START = 2 
@@ -225,25 +104,6 @@ class TestResult(MyDict):
 
         return cls("", d)
    
-    # def __iter__(self):        
-    #     self._idx = 0
-    #     return self
-
-    # def __next__(self) -> Variable:
-    #     result = None    
-
-    #     if self._idx < len(self.results):
-    #         result = list(self.results.values())[self._idx]
-    #         self._idx += 1
-    #         return result
-    #     else:
-    #         raise StopIteration   
-
-    # def to_dict(self) -> dict:
-    #     d = OrderedDict()
-    #     for var_ in self.values():
-    #         d[var_.key] = var_
-    #     return d
 class TestDataView(dict):
     '''
         Data view mapping Test result to other data views
@@ -385,14 +245,16 @@ class TestDataSet(MyDict):
     def __init__(self, name, groups:dict):
         super().__init__(groups)
         self.name = name
+        self.ref_data = None
 
-    def add_view(self, mapping:list, idx_start = 1, view_name_tmpl="default_view"):
+    def add_view(self, mapping_dict:dict):
         for g in self.values():
             for t in g.values():
-                idx = idx_start
-                for m in mapping:                
-                    t.add_view(TestDataView(f"{view_name_tmpl} {idx}", m))
-                    idx += 1
+                for mname, m in mapping_dict.items():                
+                    t.add_view(TestDataView(f"{mname}", m))
+                    
+    def set_ref_data(self, ref_data):
+        self.ref_data = ref_data
 
     def to_dict(self):
         d = {}
@@ -417,7 +279,7 @@ class TestDataSet(MyDict):
     KEY_NAME = 'KEY'
     KEY_NA = '_' # N/A, for space occupation
 
-    def dicts2table(self, dicts:list, titles:list, titles_src:list, key_name:str = KEY_NAME, value_name:str = None) -> dict:
+    def dicts2table(self, dicts:Dict[str, dict], titles:list, titles_src:list, key_name:str = KEY_NAME, value_name:str = None) -> dict:
         ''' 
         use lists of dicts to form a 2D table
         '''
@@ -427,8 +289,7 @@ class TestDataSet(MyDict):
         for i in range(0, len(titles)):
             table['Key'].append(titles[i])
 
-        for dict_ in dicts:
-            name_dict = dict_[key_name]
+        for name_dict, dict_ in dicts.items():
             table['Key'].append(name_dict)
 
             for (k, v) in dict_.items():
@@ -466,11 +327,10 @@ class TestDataSet(MyDict):
         if not gname in self.keys():
             raise KeyError(f'no test config with group name={gname}')
 
-        cfgs = []
+        cfgs = {}
         for (tname, test) in self[gname].items():
             cfg = test.cfg.to_dict()
-            cfg[self.KEY_NAME] = tname
-            cfgs.append(cfg)
+            cfgs[tname] = cfg
 
         return self.dicts2table(cfgs, ['Name', 'Unit', 'Description'], ['KEY', self.KEY_NA, self.KEY_NA]) 
 
@@ -509,13 +369,36 @@ class TestDataSet(MyDict):
         if not gname in self.keys():
             raise KeyError(f'no test result with group name={gname}')
 
-        results = []
+        results = {}
         for (tname, test) in self[gname].items():
-            result = test.result.to_dict()
-            result[self.KEY_NAME] = tname
-            results.append(result)     
+            results[tname] = test.result.to_dict()
 
         return self.dicts2table(results, ['Name', 'Unit', 'Description'], ['text', 'unit', self.KEY_NA], value_name='val')   
+
+    def get_views(self, gname:str) -> dict:
+        '''
+            get all views within a group as dicts of a 2D Table
+        '''
+        views = OrderedDict()
+        if not gname in self.keys():
+            raise KeyError(f'no test result with group name={gname}')   
+        
+        views_dict:dict[str, dict] = OrderedDict() # dict to collect all view result
+
+        for tname, test in self[gname].items():
+            for v_name, view in test.views.items():
+
+                view_result = view.maps(test.result)              
+                
+                if not v_name in views_dict.keys():
+                    views_dict[v_name] = {}
+                
+                views_dict[v_name][tname] = view_result
+
+        for v_name, v_dict in views_dict.items():        
+            views[v_name] = self.dicts2table(v_dict, ['Name', 'Unit', 'Description'], ['text', 'unit', self.KEY_NA], value_name='val')   
+
+        return views
 
     def set_results(self, gname:str, results:dict):
         ''' 
@@ -543,98 +426,7 @@ class TestDataSet(MyDict):
                 g[tname] = TestItem(tname, {}, {})
 
             test:TestItem = g[tname]
-            test.result = result
-
-    # @classmethod
-    # def gen_cfg(cls, cfg_ref:dict, cfg_offset:dict, keys:list, idx:int, trace:list, result:dict, gname_template:str, cfg_name:str):
-    #     '''
-    #     use iteration method to walk through all the combinations of configuations
-    #     '''
-    #     key = keys[idx]
-
-    #     node = cfg_offset[key]
-
-    #     if isinstance(node, dict): # for a dict node, run recurrsion from this point 
-    #         param_keys = node['keys']
-    #         # for each row in the dict (except for key row)
-    #         # use recursion to create a variation
-    #         for (k, v) in node.items(): 
-    #             if k == 'keys':
-    #                 continue
-    #             else:
-    #                 trace_cp = deepcopy(trace) # local copy
-    #                 cfg_name_cp = copy(cfg_name)
-    #                 cfg_name_cp += f'{k},'
-
-    #                 for i in range(0, len(param_keys)):
-    #                     trace_cp.append((param_keys[i],v[i]))
-
-    #                 if idx == len(keys) - 1:
-    #                     cls.create_cfg(cfg_ref, keys, trace_cp, result, gname_template, cfg_name_cp)
-    #                 else:
-    #                     cls.gen_cfg(cfg_ref, cfg_offset, keys, idx + 1, trace_cp, result, gname_template, cfg_name_cp)            
-
-    #     else: # for list, each value in the node's list will create a variation   
-    #         for val in node:
-    #             trace_cp = deepcopy(trace) # local copy
-    #             trace_cp.append((key, val))
-
-    #             cfg_name_cp = copy(cfg_name)                
-    #             cfg_name_cp += f'{key}={val},'
-
-    #             if idx == len(keys) - 1:
-    #                 cls.create_cfg(cfg_ref, keys, trace_cp, result, gname_template, cfg_name_cp)
-    #             else:
-    #                 # iterate for deeper level
-    #                 cls.gen_cfg(cfg_ref, cfg_offset, keys, idx + 1, trace_cp, result, gname_template, cfg_name_cp)
-
-    # @classmethod    
-    # def create_cfg(cls, cfg_ref, keys:list, trace:list, result:dict, gname_template:str, cfg_name:str):
-    #     # reach the deepest level, create cfg instance by cloning
-    #     cfg = deepcopy(cfg_ref)  
-
-    #     (k0, v0) = trace[0] 
-
-    #     gname = gname_template
-    #     try:
-    #         gname = gname_template % v0 # use first level's key as group name
-    #     except:
-    #         pass
-
-    #     if not gname in result.keys():
-    #         result[gname]= {}
-
-    #     root = result[gname]
-
-    #     for (k,v) in trace: # use variables above level 1 to create item name
-    #         cfg[k] = v
-
-    #     item = {}
-    #     item["cfg"] = cfg
-    #     item['result'] = { }
-    #     root[cfg_name[0:-1]] = item   
-
-    # @classmethod
-    # def gen_batch_cfg(cls, cfg_ref:dict, cfg_offset:dict, gname_template:str, ds_name = "demoTest"):
-    #     '''
-    #     generate batch cfgs for parameter sweep based on a referenced base config    
-    #     '''
-
-    #     keys = []
-    #     for (k, v) in cfg_offset.items():
-    #         if isinstance(v, list) or isinstance(v, dict):
-    #             keys.append(k)
-
-    #     # keys = ["mdot_main", "T_heater_hot", "T_cooler_cold"]
-    #     trace=[]
-    #     batch_cfg={}    
-    #     cls.gen_cfg(cfg_ref, cfg_offset, keys, 0, trace, batch_cfg, gname_template, "")
-
-    #     json_cfg_batch = json.dumps(batch_cfg,indent=2)
-
-    #     ds_test = TestDataSet.from_json(ds_name, json_cfg_batch)
-    #     # print(json_cfg_batch)
-    #     return ds_test   
+            test.result = result   
 
     @classmethod
     def gen_test_item(cls, cfg_offset_dict:dict, keys:list, idx:int, trace:list, result:dict, gname_templ:str, cfg_name:str):
@@ -708,8 +500,8 @@ class TestDataSet(MyDict):
 
                     for i in range(0, len(param_keys)):
                         k = param_keys[i]
-                        if k in cfg.keys():
-                            cfg[k] = test_cfg[i]
+                        # if k in cfg.keys():
+                        cfg[k] = test_cfg[i]
 
                     item = {}
                     item["cfg"] = cfg
@@ -726,152 +518,5 @@ class TestDataSet(MyDict):
 
         return ds_test    
 
-col_start = TestConstants.DATA_FILE_COL_START
-
-def save_test(ds_test: TestDataSet):
-    import xlwings as xw
-
-    # set visible=True for debug purpose
-    app = xw.App(visible=True)
-    result_len = 10
-    wbs = {}
-
-    try:
-        for group in ds_test:
-            # prepare workbook and sheet
-            gname = group.name
-            if gname in wbs:
-                wbk = wbs[gname]
-                wbk.activate()                
-            else:
-                wbk = app.books.add()
-                wbs[gname] = wbk
-
-            for test in group:
-                result = test.result
-                cfg = test.cfg                
-                test_name = test.name
-
-                # generate mock results
-                # for para in result:
-                    # result.set_result(para, np.random.rand(1, result_len))
-
-                sht =  wbk.sheets.add(name = test.name[0:30]) # max lenth for a sheet name
-                # sht =  wbk.sheets.add()
-                (u, l) = (1, col_start)
-
-                ex_helper = ExcelHelper(sht)
-                
-                (b, r) = ex_helper.write_table(cfg.params, title={"table 1": "Config"}, up=u, left=l, linespacing=True)
-
-                (b, r) = ex_helper.write_table(result.to_dict(), title={"table 2": "Result"}, up=b, left = l, linespacing=True)
-
-                # sht:xw.Sheet = wbk.sheets['Sheet1']
-                # sht.delete()
-                wbk.save( dt.now().strftime("Test_{0}_%Y_%m_%d_%H_%M_%S.xlsx".format(gname)))
-                # wbk.close()
-
-    finally:
-        app.quit()
-
-def load_test(root_path:str) -> TestDataSet:
-
-    import glob
-    import os
-
-    list_of_files: list[str] = glob.glob(os.sep.join([root_path, '*.xlsx'])) # get all files ends with csv
-    
-    ds_test:TestDataSet = TestDataSet(TestConfig("Default Config"))
-
-    list_of_files = list(filter( lambda x: not x.startswith('.\\~$'), list_of_files))
-
-    if list_of_files == []:
-        raise FileNotFoundError("No result file saved in {0}/out".format(root_path))
-
-    latest_file = max(list_of_files, key = os.path.getctime)
-
-    if latest_file is None:
-        raise FileNotFoundError("No results file saved in " + root_path)
-
-    import xlwings as xw
-
-    app = xw.App(visible=False)
-
-    try:
-        wbk:xw.Book = Book(latest_file)
-
-        for sht in wbk.sheets:
-            if sht.name.startswith('Sheet1'):
-                continue
-
-            helper = ExcelHelper(sht)
-            u = 1
-            offset = 2 # + 1 for linespacing, + 1 is start of next table 
-
-            dict_ = helper.read_dict((u, col_start))
-
-            cfg = TestConfig(name=sht.name, group_name=sht.book.name)
-            cfg.from_dict(dict_)
-
-            u = u + len(dict_) + offset
-
-            dict_ = helper.read_dict((u, col_start))
-            (p_des, p_odes) = cfg.gen_design_param()
-
-            result = TestResult(sht.name, p_des)
-            result.from_dict(dict_)
-
-            test_item = TestDataItem(cfg)
-            test_item.result = result
-
-            ds_test.addTestDataItem(test_item)
-
-    finally:
-        app.quit()
-
-    return ds_test
-
-def main():
-
-    # wbk.name='my book' 
-    cfg_ref = TestConfig()
-
-    ds_test = TestDataSet(cfg = cfg_ref)
-
-    g = ParamGroup("zigzag_HT_High_RE")
-    g.add_test_param("Re_des = 20000", Re_des=20000)
-    ds_test.add_para_group(g)
-
-    g = ParamGroup("zigzag_HT_diff_Re")
-    g.add_test_param("Re_des = 5000", Re_des=5000)
-    g.add_test_param("Re_des = 20000", Re_des=20000)
-    ds_test.add_para_group(g)
-
-    # g = ds_test.new_para_group("zigzag_HT_diff_mdot", [r"$\dot{m}_{off}$ = 10"])
-    g = ParamGroup("zigzag_HT_mdot_10")
-    g.add_test_param("MDot_10", mdot_hot_odes=MDot(10), mdot_cold_odes=MDot(10))
-    ds_test.add_para_group(g)    
 
 
-    g = ParamGroup("zigzag_HT_diff_mdot")
-    g.add_test_param("MDot_10", title=r"$\dot{m}_{off}$ = 10", mdot_hot_odes=MDot(10), mdot_cold_odes=MDot(10))
-    g.add_test_param("MDot_100", title=r"${\dot{m}_{off}$ = 100", mdot_hot_odes=MDot(100), mdot_cold_odes=MDot(100))
-    ds_test.add_para_group(g)
-
-    # g.submit()
-    # g.withdraw()
-
-    g = ParamGroup("zigzag_HT_diff_pT_in")
-    g.add_test_param("pT=10_450", title=r"$(p,T)_{hi}$ = 10 MPa, 450°", p_hot_in=Pressure.MPa(10), T_hot_in=Temperature.degC(730))
-    g.add_test_param("pT=12_300", title=r"$(p,T)_{hi}$ = 12 MPa, 300°", p_hot_in=Pressure.MPa(12), T_hot_in=Temperature.degC(300))
-    ds_test.add_para_group(g)
-
-    save_test(ds_test)
-
-    load_test(".")
-   
-    print('done')
-
-
-if __name__ == "__main__":
-    main()

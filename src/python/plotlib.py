@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from enum import IntEnum
+from matplotlib.figure import Figure
 from utils import mkdir_filepath
 
 class AxisType(IntEnum):
@@ -54,7 +55,7 @@ class PlotManager(object):
 
     def draw(self, img_file: str = "", dest_file: str = ""):
 
-        fig, ax = None, None        
+        fig, ax = None, None
         
         for key, series in self.series_set.items():
 

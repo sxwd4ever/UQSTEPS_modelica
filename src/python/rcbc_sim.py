@@ -132,32 +132,39 @@ def main(work_root = []):
     if test_mode:   
         cfg_offset_dict["mdot_main"] = list(map(lambda x: x * mdot_main_des/100, [75, 100, 120]))
         cfg_offset_dict["T_heater_hot"] = list(map(lambda x: from_degC(x), [550, 700]))
-        mapping = [
-        {
-            "eta_pb":"eta_cycle",
-            "UA_HTR" : "UA_HTR",
-            "UA_LTR" : "UA_LTR",
-            "UA_cooler" : "UA_cooler",
-            "UA_heater" : "UA_heater",
-            "W_MC": "W_comp",
-            "W_RC": "W_recomp",
-            "W_turb": "W_turb",
-            "Q_HTR": "Q_HTR",
-            "Q_LTR": "Q_LTR",
-            "Q_cooler": "Q_cooler",
-            "Q_heater": "Q_heater",
-            "ex_HTR":"ex_HTR",
-            "ex_LTR":"ex_LTR",
-            "ex_comp":"ex_comp",
-            "ex_recomp":"ex_recomp",
-            "ex_turbine":"ex_turbine",
-            "ex_cooler":"ex_cooler",
-            "ex_heater":"ex_heater",
-        },
-        {
-            "rc1.T":"T_amb",
-            "r05.T": "TIT"
-        }]
+        
+        # src -> dst
+        mapping = {
+            "performance map":{
+                "eta_pb":"eta_cycle",
+                "eta_turb":"eta_turb",
+                "eta_MC":"eta_MC",
+                "eta_RC":"eta_RC",            
+                "UA_HTR" : "UA_HTR",
+                "UA_LTR" : "UA_LTR",
+                "UA_cooler" : "UA_cooler",
+                "UA_heater" : "UA_heater",
+                "W_MC": "W_comp",
+                "W_RC": "W_recomp",
+                "W_turb": "W_turb",
+                "W_net": "W_net",
+                "Q_HTR": "Q_HTR",
+                "Q_LTR": "Q_LTR",
+                "Q_cooler": "Q_cooler",
+                "Q_heater": "Q_heater",
+                "ex_HTR":"ex_HTR",
+                "ex_LTR":"ex_LTR",
+                "ex_comp":"ex_comp",
+                "ex_recomp":"ex_recomp",
+                "ex_turbine":"ex_turbine",
+                "ex_cooler":"ex_cooler",
+                "ex_heater":"ex_heater",
+            },
+            "demo view":{
+                "rc1.T":"T_amb",
+                "r05.T": "TIT"
+            }
+        }        
     else:
         # reduced size batch
         # cfg_offset["mdot_main"] = list(map(lambda x: x * mdot_main_des/100, [75, 100]))        
@@ -175,32 +182,33 @@ def main(work_root = []):
         cfg_offset_dict["gamma"] =[0.3, 0.35, 0.4, 0.45]	       
 
         # src -> dst
-        mapping = [
-        {
-            "eta_pb":"eta_cycle",
-            "eta_turb":"eta_turb",
-            "eta_MC":"eta_MC",
-            "eta_RC":"eta_RC",            
-            "UA_HTR" : "UA_HTR",
-            "UA_LTR" : "UA_LTR",
-            "UA_cooler" : "UA_cooler",
-            "UA_heater" : "UA_heater",
-            "W_MC": "W_comp",
-            "W_RC": "W_recomp",
-            "W_turb": "W_turb",
-            "W_net": "W_net",
-            "Q_HTR": "Q_HTR",
-            "Q_LTR": "Q_LTR",
-            "Q_cooler": "Q_cooler",
-            "Q_heater": "Q_heater",
-            "ex_HTR":"ex_HTR",
-            "ex_LTR":"ex_LTR",
-            "ex_comp":"ex_comp",
-            "ex_recomp":"ex_recomp",
-            "ex_turbine":"ex_turbine",
-            "ex_cooler":"ex_cooler",
-            "ex_heater":"ex_heater",
-        }]
+        mapping = {
+            "performance map":{
+                "eta_pb":"eta_cycle",
+                "eta_turb":"eta_turb",
+                "eta_MC":"eta_MC",
+                "eta_RC":"eta_RC",            
+                "UA_HTR" : "UA_HTR",
+                "UA_LTR" : "UA_LTR",
+                "UA_cooler" : "UA_cooler",
+                "UA_heater" : "UA_heater",
+                "W_MC": "W_comp",
+                "W_RC": "W_recomp",
+                "W_turb": "W_turb",
+                "W_net": "W_net",
+                "Q_HTR": "Q_HTR",
+                "Q_LTR": "Q_LTR",
+                "Q_cooler": "Q_cooler",
+                "Q_heater": "Q_heater",
+                "ex_HTR":"ex_HTR",
+                "ex_LTR":"ex_LTR",
+                "ex_comp":"ex_comp",
+                "ex_recomp":"ex_recomp",
+                "ex_turbine":"ex_turbine",
+                "ex_cooler":"ex_cooler",
+                "ex_heater":"ex_heater",
+            }
+        }
     
     ds_name = f'10MW off-Design{"_PCHE" if use_PCHE else ""}' + ' sim {:%Y-%m-%d-%H-%M-%S}'.format(datetime.datetime.now())
     # ds_test = TestDataSet.gen_batch_cfg(cfg_ref, cfg_offset, gname_template='10MW off-Design(mdot=%s)', ds_name=ds_name)
@@ -208,7 +216,7 @@ def main(work_root = []):
     
     ds_test = TestDataSet.gen_test_dataset(cfg_ref, cfg_table, ds_name)
     
-    ds_test.add_view(mapping, view_name_tmpl="performance map")
+    ds_test.add_view(mapping)
 
     json_str = ds_test.to_json()    
     print(json_str)
