@@ -46,9 +46,13 @@ model TestTP_PCHE_Marchionni
   parameter SI.Temperature T_cold_out = from_degC(300) "cold outlet temperature, K";
   
   // pressure drop correction coefficient 
-  parameter Real kc_dp = 2.0;
+  parameter Real kc_dp = 1.0;
   
-  parameter Real kc_cf = 1;
+  parameter Real kc_cf_hot = 1;
+  parameter Real kc_cf_cold = 1;  
+  parameter Real use_rho_bar;
+  parameter Real rho_bar_hot;
+  parameter Real rho_bar_cold;
   
   // meshram's cp and rho for alloy Inconel 617
   parameter Modelica.SIunits.Density rho_wall = 7990 "density of wall, kg/m3";
@@ -144,12 +148,31 @@ model TestTP_PCHE_Marchionni
   TPComponents.PCHE HE(
     redeclare package FluidMedium = medium_cold, 
     redeclare package FlueGasMedium = medium_hot,     
+
+    // use Marchionni PCHE HeatTransfer
     redeclare replaceable model HeatTransfer_F = TPComponents.MarchionniPCHEHeatTransferFV(),
-    //redeclare replaceable model HeatTransfer_F = TPComponents.KimPCHEHeatTransferFV(), 
-    // ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficient(gamma = thermo_LTR_cold.gamma_he),
-    // redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer, 
     redeclare replaceable model HeatTransfer_G = TPComponents.MarchionniPCHEHeatTransferFV(),
-    //redeclare replaceable model HeatTransfer_G = TPComponents.KimPCHEHeatTransferFV(),
+    gasFlow(heatTransfer(
+      pitch = cfg.pitch, 
+      phi = cfg.phi, 
+      kc_dp = kc_dp, 
+      kc_cf = kc_cf_hot, 
+      use_rho_bar = use_rho_bar,
+      rho_bar = rho_bar_hot)),
+    fluidFlow(heatTransfer(
+      pitch = cfg.pitch, 
+      phi = cfg.phi, 
+      kc_dp = kc_dp, 
+      kc_cf = kc_cf_cold,
+      use_rho_bar = use_rho_bar, 
+      rho_bar = rho_bar_cold)),    
+    /*    
+    // use Kim PCHE HeatTransfer
+    redeclare replaceable model HeatTransfer_F = TPComponents.KimPCHEHeatTransferFV(), 
+    redeclare replaceable model HeatTransfer_G = Steps.TPComponents.KimPCHEHeatTransferFV(),    
+    gasFlow(heatTransfer(pitch = cfg.pitch, phi = cfg.phi, kc_dp = kc_dp)),
+    fluidFlow(heatTransfer(pitch = cfg.pitch, phi = cfg.phi, kc_dp = kc_dp)), 
+    */
     redeclare model HeatExchangerTopology = ThermoPower.Thermal.HeatExchangerTopologies.CounterCurrentFlow, 
     bc = bc_HE, 
     geo_hot = cfg.cfg_LTR_hot.geo,
@@ -161,9 +184,7 @@ model TestTP_PCHE_Marchionni
     L = L_fp,
     SSInit = true,
     gasQuasiStatic = true,
-    fluidQuasiStatic = true,
-    gasFlow(heatTransfer(pitch = cfg.pitch, phi = cfg.phi, kc_dp = kc_dp, kc_cf = kc_cf)),
-    fluidFlow(heatTransfer(pitch = cfg.pitch, phi = cfg.phi, kc_dp = kc_dp, kc_cf = kc_cf))
+    fluidQuasiStatic = true
     // override the values of Am and L of metaltubeFV
     // to make them agree with semi-circular tube of PCHE
     // ('final' modifier of Am in metalTubeFv was removed as well)

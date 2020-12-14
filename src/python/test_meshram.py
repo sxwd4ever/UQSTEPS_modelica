@@ -108,7 +108,8 @@ class MeshramTest(PCHEExperiment):
                         'value': values['dp_hot'],
                         'axis_range': meta_cfg['axis_dp'],
                         'label': meta_cfg['label_dp']
-                    }
+                    },
+                    "ax_type" : AxisType.Secondary
                 },
                 {
                     'name' : 'dp_cold',
@@ -124,7 +125,8 @@ class MeshramTest(PCHEExperiment):
                         'value': values['dp_cold'],
                         'axis_range': meta_cfg['axis_dp'],
                         'label': meta_cfg['label_dp']
-                    }
+                    },
+                    "ax_type" : AxisType.Secondary
                 }],
                 "imgfile" : meta_cfg["imgfile"]
             }                            
@@ -136,6 +138,7 @@ def main(work_root = []):
         work_root = os.path.abspath(os.curdir)  
 
     run_sim = True # True: run the simulation, False: load pre-saved exp results
+    same_kc_cf = True # if kc_cf for hs and cs are identical or kc_cf_cold = 2 * kc_cf_hot
     model_name = "Steps.Test.TestTP_PCHE_Meshram"  
     # referred base cfg
     cfg_ref = {
@@ -157,9 +160,7 @@ def main(work_root = []):
         "T_hot_out": 576.69, # "cold outlet temperature, K";
         "T_cold_in": 500, # "cold inlet temperature, K";
         "T_cold_out": 639.15, # "cold outlet temperature, K";
-        "kc_dp": 1, # "pressure d"
-        "C1": 1,
-        "C2": 1,
+        "kc_dp": 2
     }
 
     # cfg with varied parameters from the base cfg
@@ -168,50 +169,36 @@ def main(work_root = []):
     # Based on the facts that for other cases, mdot_hot_in ~ mdot_cold_in, 
     # I choose mdot_hot_in = 4.501 according to u_cold_in/u_hot_in = 5.584 
     # in 'Straight Low T' the senario and get good match
+    
+
+    kc_cf_z_set = [10, 12, 15]    
+    kc_cf_s_set = [1.0, 1.2, 1.5]
+    cfg_offset_base = {
+            # values in Table 3 in Meshram [2016]
+            # Only with kc_dp = 1 at High T and kc_dp = 2 at Low T can I get good agreement with 
+            # Meshram's DP result. 
+            "keys" : ["T_cold_in", "T_cold_out", "T_hot_in", "T_hot_out", "u_cold_in", "u_hot_in", "a_phi"],
+            "zigzag High T" : [500, 639.15, 730, 576.69, 1.876, 7.564, 36.0],
+            "zigzag Low T": [400, 522.23, 630, 466.69, 0.806, 4.501, 36.0], 
+            "Straight High T": [500, 615.48, 730, 601.83, 1.518, 6.118, 0],
+            "Straigth Low T": [400, 498.45, 630, 494.37, 0.842, 4.702, 0]
+    }
+    tests = ["zigzag High T", "zigzag Low T", "Straight High T", "Straigth Low T"]
     cfg_offset = {} 
-    cfg_offset['ZH(1,10,0.1) S(1,1,1)'] = {
-            # values in Table 3 in Meshram [2016]
-            # Only with kc_dp = 1 at High T and kc_dp = 2 at Low T can I get good agreement with 
-            # Meshram's DP result. 
-            "keys" : ["T_cold_in", "T_cold_out", "T_hot_in", "T_hot_out", "u_cold_in", "u_hot_in", "a_phi", "kc_dp", "C1", "C2"],
-            "zigzag High T" : [500, 639.15, 730, 576.69, 1.876, 7.564, 36.0, 1, 10, 0.1],
-            "zigzag Low T": [400, 522.23, 630, 466.69, 0.806, 4.501, 36.0, 1, 10, 0.1], 
-            "Straight High T": [500, 615.48, 730, 601.83, 1.518, 6.118, 0, 1, 1, 1],
-            "Straigth Low T": [400, 498.45, 630, 494.37, 0.842, 4.702, 0, 1, 1, 1]
-        }
+    for kc_cf_z in kc_cf_z_set:
+        for kc_cf_s in kc_cf_s_set:
+            cfg_offset_cp = deepcopy(cfg_offset_base)
 
-    cfg_offset['Z(1,12,0.0833), S(1,1,1)'] = {
-            # values in Table 3 in Meshram [2016]
-            # Only with kc_dp = 1 at High T and kc_dp = 2 at Low T can I get good agreement with 
-            # Meshram's DP result. 
-            "keys" : ["T_cold_in", "T_cold_out", "T_hot_in", "T_hot_out", "u_cold_in", "u_hot_in", "a_phi", "kc_dp", "C1", "C2"],
-            "zigzag High T" : [500, 639.15, 730, 576.69, 1.876, 7.564, 36.0, 1, 12, 0.0833],
-            "zigzag Low T": [400, 522.23, 630, 466.69, 0.806, 4.501, 36.0, 1, 12, 0.0833], 
-            "Straight High T": [500, 615.48, 730, 601.83, 1.518, 6.118, 0, 1, 1, 1],
-            "Straigth Low T": [400, 498.45, 630, 494.37, 0.842, 4.702, 0, 1, 1, 1]
-        }           
+            cfg_offset_cp['keys'].extend(['kc_cf_hot','kc_cf_cold'])
+          
+            for i in range(0, len(tests)):
+                kc_cf = kc_cf_z
+                if i >= 2:
+                    kc_cf = kc_cf_s
+                # add kc_cf_hot, kc_cf_cold
+                cfg_offset_cp[tests[i]].extend([kc_cf, kc_cf * (1 if same_kc_cf else 2)])
 
-    cfg_offset['Z(2,6,0.167) S(2,1,1)'] = {
-            # values in Table 3 in Meshram [2016]
-            # Only with kc_dp = 1 at High T and kc_dp = 2 at Low T can I get good agreement with 
-            # Meshram's DP result. 
-            "keys" : ["T_cold_in", "T_cold_out", "T_hot_in", "T_hot_out", "u_cold_in", "u_hot_in", "a_phi", "kc_dp", "C1", "C2"],
-            "zigzag High T" : [500, 639.15, 730, 576.69, 1.876, 7.564, 36.0, 2, 6, 0.167],
-            "zigzag Low T": [400, 522.23, 630, 466.69, 0.806, 4.501, 36.0, 2, 6, 0.167], 
-            "Straight High T": [500, 615.48, 730, 601.83, 1.518, 6.118, 0, 2, 1, 1],
-            "Straigth Low T": [400, 498.45, 630, 494.37, 0.842, 4.702, 0, 2, 1, 1]
-        }
-
-    cfg_offset['Z(2,6,0.167) S(2,0.5,2)'] = {
-            # values in Table 3 in Meshram [2016]
-            # Only with kc_dp = 1 at High T and kc_dp = 2 at Low T can I get good agreement with 
-            # Meshram's DP result. 
-            "keys" : ["T_cold_in", "T_cold_out", "T_hot_in", "T_hot_out", "u_cold_in", "u_hot_in", "a_phi", "kc_dp", "C1", "C2"],
-            "zigzag High T" : [500, 639.15, 730, 576.69, 1.876, 7.564, 36.0, 2, 6, 0.167],
-            "zigzag Low T": [400, 522.23, 630, 466.69, 0.806, 4.501, 36.0, 2, 6, 0.167], 
-            "Straight High T": [500, 615.48, 730, 601.83, 1.518, 6.118, 0, 2, 0.5, 2],
-            "Straigth Low T": [400, 498.45, 630, 494.37, 0.842, 4.702, 0, 2, 0.5, 2]
-        }                 
+            cfg_offset[f'Z(kc_cf={kc_cf_z}) S(kc_cf={kc_cf_s})'] = cfg_offset_cp
                             
     mapping = {} 
 
@@ -228,7 +215,7 @@ def main(work_root = []):
             "Modelica 3.2.1"])
 
     if run_sim:
-        exp_name = 'Test-Meshram {:%Y-%m-%d-%H-%M-%S}'.format(datetime.datetime.now())            
+        exp_name = 'Test-Meshram{} {:%Y-%m-%d-%H-%M-%S}'.format('_same_kc_cf' if same_kc_cf else '_diff_kc_cf', datetime.datetime.now())            
         ds_exp = TestDataSet.gen_test_dataset(cfg_ref, cfg_offset, ds_name=exp_name)
     
         ds_exp.add_view(mapping)

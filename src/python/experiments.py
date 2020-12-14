@@ -111,7 +111,7 @@ class Experiment(object):
         
         print(f'loading model{self.model_name}...\n')        
         self.model = ModelicaSystem(sep.join([self.path_model,"package.mo"]), self.model_name,self.modelica_libs) 
-        print(f'model{self.model_name}loaded, prepare to simulate\n')
+        print(f'model{self.model_name} loaded, prepare to simulate\n')
 
         # options for simulation - steady state simulation, no iteration required, so set numberOfIntervals = 2 
 

@@ -45,9 +45,9 @@ model TestTP_PCHE_Meshram
   parameter SI.Temperature T_cold_out = 639.15 "cold outlet temperature, K";
   
   // pressure drop correction coefficient 
-  parameter Real kc_dp = 1.0;
-  parameter Real C1 = 1.0;
-  parameter Real C2 = 1.0;
+  parameter Real kc_dp = 1.0;  
+  parameter Real kc_cf_hot = 1;
+  parameter Real kc_cf_cold = 1;
   
   // meshram's cp and rho for alloy Inconel 617
   parameter Modelica.SIunits.Density rho_wall = 8360 "density of wall, kg/m3";
@@ -143,13 +143,20 @@ model TestTP_PCHE_Meshram
   TPComponents.PCHE HE(
     redeclare package FluidMedium = medium_cold, 
     redeclare package FlueGasMedium = medium_hot,     
+    // use Marchionni PCHE HeatTransfer
     redeclare replaceable model HeatTransfer_F = TPComponents.MarchionniPCHEHeatTransferFV(),
-    //redeclare replaceable model HeatTransfer_F = TPComponents.KimPCHEHeatTransferFV(), 
-    // ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficient(gamma = thermo_LTR_cold.gamma_he),
-    // redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer, 
     redeclare replaceable model HeatTransfer_G = TPComponents.MarchionniPCHEHeatTransferFV(),
+    gasFlow(heatTransfer(pitch = cfg.pitch, phi = cfg.phi, kc_dp = kc_dp, kc_cf = kc_cf_hot)),
+    fluidFlow(heatTransfer(pitch = cfg.pitch, phi = cfg.phi, kc_dp = kc_dp, kc_cf = kc_cf_cold)),    
+    /*    
+    // use Kim PCHE HeatTransfer
+    redeclare replaceable model HeatTransfer_F = TPComponents.KimPCHEHeatTransferFV(), 
+    redeclare replaceable model HeatTransfer_G = Steps.TPComponents.KimPCHEHeatTransferFV(),    
+    gasFlow(heatTransfer(pitch = cfg.pitch, phi = cfg.phi, kc_dp = kc_dp)),
+    fluidFlow(heatTransfer(pitch = cfg.pitch, phi = cfg.phi, kc_dp = kc_dp)), 
+    */    
     // redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer, 
-    //redeclare replaceable model HeatTransfer_G = Steps.TPComponents.KimPCHEHeatTransferFV(),
+    // redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer, 
     redeclare model HeatExchangerTopology = ThermoPower.Thermal.HeatExchangerTopologies.CounterCurrentFlow, 
     bc = bc_HE, 
     geo_hot = cfg.cfg_LTR_hot.geo,
@@ -161,9 +168,7 @@ model TestTP_PCHE_Meshram
     L = L_fp,
     SSInit = true,
     gasQuasiStatic = true,
-    fluidQuasiStatic = true,
-    gasFlow(heatTransfer(pitch = cfg.pitch, phi = cfg.phi, kc_dp = kc_dp, C1 = C1, C2 = C2)),
-    fluidFlow(heatTransfer(pitch = cfg.pitch, phi = cfg.phi, kc_dp = kc_dp, C1 = C1, C2 = C2))
+    fluidQuasiStatic = true
     // override the values of Am and L of metaltubeFV
     // to make them agree with semi-circular tube of PCHE
     // ('final' modifier of Am in metalTubeFv was removed as well)

@@ -15,12 +15,11 @@ model KimPCHEHeatTransferFV "Kim [2012] heat transfer Correlation"
   
   SI.Length d_c = (8 * A / Modelica.Constants.pi) ^ 0.5 "Diameter of semi_circular";
   /*
-                                                      inner Modelica.SIunits.Diameter d_h = 4 * A_c / peri_c "Hydraulic Diameter";  
-                                                      inner Modelica.SIunits.Area A_c = Modelica.Constants.pi * d_c * d_c / 8 "Area of semi-circular tube"; 
-                                                      inner Modelica.SIunits.Length peri_c = d_c * Modelica.Constants.pi / 2 + d_c "perimeter of semi-circular";   
-                                                      */
-
-  
+    inner Modelica.SIunits.Diameter d_h = 4 * A_c / peri_c "Hydraulic Diameter";  
+    inner Modelica.SIunits.Area A_c = Modelica.Constants.pi * d_c * d_c / 8 "Area of semi-circular tube"; 
+    inner Modelica.SIunits.Length peri_c = d_c * Modelica.Constants.pi / 2 + d_c "perimeter of semi-circular";   
+  */
+    
   SI.CoefficientOfHeatTransfer gamma[Nw] "Heat transfer coefficients at the volumes";
   Medium.Temperature Tvol[Nw] "Fluid temperature in the volumes";
   Medium.DynamicViscosity mu[Nf] "Dynamic viscosity";
@@ -48,8 +47,8 @@ model KimPCHEHeatTransferFV "Kim [2012] heat transfer Correlation"
   Real co_B[Nf] "coefficients in Eq. 3 of [Marchionni 2019]";
   Real dp_m[Nf] "pressure drop calculated according to [Marchionni 2019]";
   Real Nu_m[Nf];
-  Real C1 = if abs(phi - 0) < Modelica.Constants.eps then 1.0 else 1.1 "calibration coefficient in Eq. 1 in [Marchionni 2019], = 1.0 for straight Channel and = 1.1 for zigzag Channel";
-  Real C2 = if abs(phi - 0) < Modelica.Constants.eps then 1.0 else 1.2 "calibration coefficient in Eq. 4 in [Marchionni 2019], = 1.0 for straight Channel and = 1.2 for zigzag Channel";
+  parameter Real C1 = if abs(phi - 0) < Modelica.Constants.eps then 1.0 else 1.1 "calibration coefficient in Eq. 1 in [Marchionni 2019], = 1.0 for straight Channel and = 1.1 for zigzag Channel";
+  parameter Real C2 = if abs(phi - 0) < Modelica.Constants.eps then 1.0 else 1.2 "calibration coefficient in Eq. 4 in [Marchionni 2019], = 1.0 for straight Channel and = 1.2 for zigzag Channel";
   
   // default value for d_c = 2mm(Dhyd=0.922mm) in Kim [2012]
   parameter Real table_kim_cor_a[:, :] = [0, 12.3e-3, 24.6e-3; 5, 0.00366, 0.0019; 10, 0.02536, 0.01775; 15, 0.0696 , 0.06455; 20, 0.12817, 0.08918; 25, 0.19392, 0.1442; 30, 0.27701 , 0.21115; 35, 0.37934, 0.29342 ; 40, 0.49995 , 0.39158; 45, 0.65898, 0.51539]  "Table for kim_correlation_a";

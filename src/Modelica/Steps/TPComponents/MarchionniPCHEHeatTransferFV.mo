@@ -41,12 +41,16 @@ model MarchionniPCHEHeatTransferFV "Kim [2012] heat transfer Correlation"
   parameter Real phi"pitch angle, degree";
   parameter String name_material = "inconel 750";
   parameter Real kc_dp = 2 "Pressure drop correction coeffecient";
-  parameter Real kc_cf =if abs(phi - 0) < Modelica.Constants.eps then 1 else 12 ; 
-  parameter Real C1 = kc_cf / kc_dp "calibration coefficient in Eq. 1 in [Marchionni 2019], = 1 / kc_dp for straight Channel and = 12 / kc_dp for zigzag Channel, which is conducted by numerical simulation against CFD result in [Meshram 2012]";
+  parameter Real kc_cf =if abs(phi - 0) < Modelica.Constants.eps then 1 else 12; 
+  // DO NOT set values for these two parameters since use_rho_bar will be used as flags in if-statement. 
+  parameter Real use_rho_bar "> 0, use rho_bar for dp calculation. error in passing a boolean from OMPython so Real type variable is used here";
+  parameter Real rho_bar "Averaged rho, >0: valid rho and will be used for dp calculation";   
+  
+  Real C1 = kc_cf / kc_dp "calibration coefficient in Eq. 1 in [Marchionni 2019], = 1 / kc_dp for straight Channel and = 12 / kc_dp for zigzag Channel, which is conducted by numerical simulation against CFD result in [Meshram 2012]";
   Real C2 = 1/C1 "calibration coefficient in Eq. 4 in [Marchionni 2019], = 1.0 / C1 ,which is conducted by numerical simulation against CFD result in [Meshram 2012]";
-     
   parameter Real table_th_conductivity[:, :] = [149, 16.9; 316, 20.5; 538, 26.5; 649, 28.7; 760, 31.4; 871, 35.3];
   
+  Real kc_T[Nf];
   Modelica.Blocks.Tables.CombiTable1D th_conductivity(tableOnFile = false, table = table_th_conductivity, tableName = "conductivity", fileName = "conductivity", smoothness = Modelica.Blocks.Types.Smoothness.ContinuousDerivative) annotation(
     Placement(transformation(extent = {{60, -80}, {80, -60}}, rotation = 0)));    
    
@@ -58,6 +62,9 @@ equation
     mu[j] = noEvent(Medium.dynamicViscosity(fluidState[j]));
     k[j] = noEvent(Medium.thermalConductivity(fluidState[j]));
     rho[j] = noEvent(Medium.density(fluidState[j]));
+    
+    kc_T[j] = if Medium.temperature(fluidState[j]) < 600 then 2.0 else 1.0;
+    
     G[j] = noEvent(abs(w[j] / A));
     Re[j] =  noEvent(G[j] * Dhyd / mu[j]);
     Re_l[j] = noEvent(Functions.smoothSat(Re[j], Re_min, 1e9, Re_min / 2));
@@ -67,7 +74,16 @@ equation
     co_B[j] = -2.0 * Modelica.Math.log10( 2.51 * co_A[j] / Re_l[j]);  
 
     f[j] = C1 * (0.25 * (( 4.781 - (co_A[j] - 4.781) ^ 2 / (co_B[j] - 2 * co_A[j] + 4.781)) ^(-2)));
-    dp[j] = noEvent(kc_dp * f[j] * l * rho[j] * u[j] ^ 2 / Dhyd);
+    // dp[j] = noEvent(kc_T[j] * kc_dp * f[j] * l * rho[j] * u[j] ^ 2 / Dhyd);
+    // error in passing a boolean parameter by OMPython, so I use negetive value to indicate a invalid rho, which will not be used for dp
+    //dp[j] = noEvent(kc_dp * f[j] * l * rho_bar * u[j] ^ 2 / Dhyd);
+    
+    if use_rho_bar > 0 then    
+      dp[j] = noEvent(kc_dp * f[j] * l * rho_bar * u[j] ^ 2 / Dhyd);
+    else
+      dp[j] = noEvent(kc_dp * f[j] * l * rho[j] * u[j] ^ 2 / Dhyd);
+    end if;
+    
     Pr[j] = noEvent(Medium.specificHeatCapacityCp(fluidState[j]) * mu[j] / k[j]);    
     Nu[j] = noEvent(C2 * ((f[j]/2 * (Re_l[j] - 1000) * Pr[j]) / (1 + 12.7 * ( Pr[j] ^(2/3) - 1) * (f[j]/2)^0.5)));
 

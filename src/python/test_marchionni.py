@@ -14,6 +14,10 @@ from numpy.core.fromnumeric import size
 from numpy.lib.function_base import append
 from enum import Enum
 
+import CoolProp as CP
+from CoolProp.CoolProp import PhaseSI, PropsSI, get_global_param_string
+import CoolProp.CoolProp as CoolProp
+
 import os
 from os import path, sep
 
@@ -37,6 +41,10 @@ class MarchionniTest(PCHEExperiment):
             Variable('T_cold_out_act', 'K'),
             Variable('dp_hot_act', 'pa'),
             Variable('dp_cold_act', 'pa'),
+            Variable('kc_cf_hot'),
+            Variable('kc_cf_cold'),            
+            Variable('rho_bar_hot'),
+            Variable('rho_bar_cold')
             # Variable('dp_hot_act_m', 'pa'),
             # Variable('dp_cold_act_m', 'pa')
         ]
@@ -50,6 +58,16 @@ class MarchionniTest(PCHEExperiment):
         super().post_process(test, ds_exp)
 
         if ds_exp.ref_data == None:
+            return
+
+        # revese hc
+        hc_hot = test.get_post_data('hc_hot').tolist()
+        hc_cold = test.get_post_data('hc_cold').tolist()
+
+        test.set_post_data('hc_hot', np.array(hc_hot[::-1]))
+        test.set_post_data('hc_cold', np.array(hc_cold[::-1]))
+
+        if not test.name in ds_exp.ref_data.keys():
             return
 
         ref_data = ds_exp.ref_data[test.name]
@@ -66,7 +84,6 @@ class MarchionniTest(PCHEExperiment):
                 k = keys[i] + "_act"
                 val = test.result[k].val
                 err_dict[f'{k}_{rname}_err'] = (val - row[i]) / row[i] * 100
-
 
         for (k, v) in err_dict.items():
             test.result[k] = Variable(k, '%', val=v)
@@ -196,7 +213,12 @@ def main(work_root = []):
     # parameters initialization for this simulation
     exp_type:ExpType = ExpType.FULL_SCALE
     model_name = "Steps.Test.TestTP_PCHE_Marchionni"  
-    exp_name = 'Test-Marchionni_{} {:%Y-%m-%d-%H-%M-%S}'.format(exp_type.name, datetime.datetime.now())            
+    # exp flags 
+    use_rho_bar = -1.0 # > 1.0 use rho_bar for dp calculation 
+    same_kc_cf = False # if kc_cf for hs and cs are identical or kc_cf_cold = 2 * kc_cf_hot
+    sweep_on_phi = False # parameter sweep on phi or kc_cfs, alter Modelica codes accordingly
+
+    exp_name = 'Test-Marchionni_{}{}{} {:%Y-%m-%d-%H-%M-%S}'.format(exp_type.name, '_avg_rho_dp' if use_rho_bar > 0 else '', '_same_kc_cf' if same_kc_cf else '_diff_kc_cf', datetime.datetime.now())            
     # end of parameter initialization
 
     exp:Experiment = MarchionniTest(
@@ -216,6 +238,8 @@ def main(work_root = []):
         "Comparison of T and dp": {
             "T_hot_out_act": "T_hot_out_act",
             "T_cold_out_act": "T_cold_out_act",
+            "T_hot_out_act_OEM_err": "T_hot_out_err",
+            "T_cold_out_act_OEM_err": "T_cold_out_err",            
             "dp_hot_act": "dp_hot_act",
             "dp_cold_act": "dp_cold_act",
             "dp_hot_act_OEM_err": "dp_hot_err",
@@ -291,18 +315,36 @@ def main(work_root = []):
             "T_cold_out": from_degC(300), # "cold outlet temperature, K";
             # "kc_dp": 1 # "pressure drop correction coefficient"
         } 
+        
+        cfg_offset_base = {
+                "keys" : ["a_phi", "kc_dp"],   
+                "a_phi=0" : [0, 2],
+                "a_phi=5" : [5.0, 2]      
+        }
+
+        rho_bar = [1.0, 1.0]
+
+        if use_rho_bar:
+            T_flow = [(cfg_ref['T_hot_in'], cfg_ref['T_hot_out']), (cfg_ref['T_cold_in'], cfg_ref['T_cold_out'])]
+            p = [cfg_ref['p_hot_in'], cfg_ref['p_cold_in']]
+            for i in range(0, len(rho_bar)):
+                (T_in, T_out) = T_flow[i]
+                rho_bar[i] = PropsSI("DMASS", "P", p[i], "T" , (T_in + T_out) / 2, 'CO2')
+
+        kc_cfs = [1, 1.2, 1.5, 1.8]
+        cfg_offset = {} 
 
         # cfg with varied parameters from the base cfg
-        cfg_offset = OrderedDict() 
-        cfg_offset['Group 1'] = {
-                # values in Table 3 in Meshram [2016]
-                # Only with kc_dp = 1 at High T and kc_dp = 2 at Low T can I get good agreement with 
-                # Meshram's DP result. 
-                "keys" : ["a_phi", "kc_dp"],   
-                "a_phi=0" : [0, 1],
-                "a_phi=5" : [5.0, 1],
-                "a_phi=10" : [10.0, 1],
-            }          
+        for kc_cf in kc_cfs:
+            cfg_offset_cp = deepcopy(cfg_offset_base)
+            cfg_offset_cp['keys'].extend(['kc_cf_hot','kc_cf_cold','use_rho_bar', 'rho_bar_hot', 'rho_bar_cold'])
+            for k, v in cfg_offset_cp.items():
+                if k == 'keys':
+                    continue
+                v.extend([kc_cf, kc_cf * (1 if same_kc_cf else 2), use_rho_bar])
+                v.extend(rho_bar)
+
+            cfg_offset[f'kc_cf={kc_cf}'] = cfg_offset_cp
 
         ds_exp = TestDataSet.gen_test_dataset(cfg_ref, cfg_offset, exp_name)
         # add referred data for comparison
@@ -353,35 +395,6 @@ def main(work_root = []):
             # "kc_dp": 1 # "pressure drop correction coefficient"
         } 
 
-        # cfg with varied parameters from the base cfg
-        # phis = [5, 10, 15, 20, 25, 30, 35, 40, 45]
-        # # phis = [5, 10, 15]
-
-        # cfg_offset_base = {
-        #         "keys" : ["G_in", "T_cold_in"],   
-        #         "Design point" : [2.06 / A_stack, from_degC(72.9)],
-        #         "off-design #1" : [1.57 / A_stack, from_degC(72.9)],
-        #         "off-design #2" : [2.09 / A_stack, from_degC(87.5)],                  
-        #         "off-design #3" : [2.09 / A_stack,  from_degC(62)],
-        #         "off-design #4" : [2.62 / A_stack, from_degC(72.9)]        
-        # }
-
-        # cfg_offset = {} 
-
-        # for phi in phis:
-        #     cfg_offset_cp = deepcopy(cfg_offset_base)
-        #     cfg_offset_cp['keys'].append('a_phi')
-        #     for k, v in cfg_offset_cp.items():
-        #         if k == 'keys':
-        #             continue
-        #         v.append(phi)
-
-        #     cfg_offset[f'phi={phi}'] = cfg_offset_cp
-
-        # phis = [5, 10, 15, 20, 25, 30, 35, 40, 45]
-        kc_cfs = [8, 8.5, 9, 9.5, 10]
-        # kc_cfs = [8, 9]
-
         cfg_offset_base = {
                 "keys" : ["G_in", "T_cold_in"],   
                 "Design point" : [2.06 / A_stack, from_degC(72.9)],
@@ -391,25 +404,45 @@ def main(work_root = []):
                 "off-design #4" : [2.62 / A_stack, from_degC(72.9)]        
         }
 
-        cfg_offset = {} 
+        if sweep_on_phi:
+            # cfg with varied parameters from the base cfg
+            phis = [5, 10, 15, 20, 25, 30, 35, 40, 45]
+            # phis = [5, 10, 15]
 
-        for kc_cf in kc_cfs:
-            cfg_offset_cp = deepcopy(cfg_offset_base)
-            cfg_offset_cp['keys'].append('kc_cf')
-            for k, v in cfg_offset_cp.items():
-                if k == 'keys':
-                    continue
-                v.append(kc_cf)
+            cfg_offset = {} 
 
-            cfg_offset[f'kc_Cf={kc_cf}'] = cfg_offset_cp
+            for phi in phis:
+                cfg_offset_cp = deepcopy(cfg_offset_base)
+                cfg_offset_cp['keys'].append('a_phi')
+                for k, v in cfg_offset_cp.items():
+                    if k == 'keys':
+                        continue
+                    v.append(phi)
+
+                cfg_offset[f'phi={phi}'] = cfg_offset_cp
+        else:
+            # kc_cfs = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+            kc_cfs_1 = [7, 7.3, 7.5, 7.8, 8] 
+            kc_cfs = []
+            kc_cfs.extend(kc_cfs_1)
+            kc_cfs.extend(kc_cfs_1 * 2)
+
+            cfg_offset = {} 
+            l = []            
+            for kc_cf in kc_cfs:
+                cfg_offset_cp = deepcopy(cfg_offset_base)
+                cfg_offset_cp['keys'].extend(['kc_cf_hot','kc_cf_cold'])
+                for k, v in cfg_offset_cp.items():
+                    if k == 'keys':
+                        continue
+                    v.extend([kc_cf, kc_cf * (1 if same_kc_cf else 2)])
+
+                cfg_offset[f'kc_cf={kc_cf}_{"same" if same_kc_cf else "diff"}'] = cfg_offset_cp
 
         ds_exp = TestDataSet.gen_test_dataset(cfg_ref, cfg_offset, ds_name=exp_name)        
 
         # add referred data for comparison
         ds_exp.set_ref_data(ref_data)
-
-
-
         ds_exp.add_view(mapping)
 
         json_str = ds_exp.to_json()    
