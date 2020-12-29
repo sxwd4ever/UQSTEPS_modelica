@@ -252,7 +252,7 @@ class TestPCHEMeshram(object):
             T_cold.append(result.get_values('pchx.cell_cold[{0}].T'.format(i+1))[0])
             # pa -> kPa
             dp_hot.append((p_hot_start - result.get_values('pchx.cell_hot[{0}].p'.format(i+1))[0]) / 1e3)
-            dp_cold.append((p_cold_start - result.get_values('pchx.cell_cold[{0}].p'.format(i+1))[0]) / 1e3)
+         FileNotFoundError   dp_cold.append((p_cold_start - result.get_values('pchx.cell_cold[{0}].p'.format(i+1))[0]) / 1e3)
         
         x_values = np.arange(0, len_seg * (N_seg) , len_seg) 
 

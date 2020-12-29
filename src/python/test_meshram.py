@@ -1,6 +1,7 @@
 from collections import OrderedDict
 from copy import deepcopy
 import datetime
+import itertools
 import shutil
 from logging import exception
 from math import trunc
@@ -164,41 +165,40 @@ def main(work_root = []):
     }
 
     # cfg with varied parameters from the base cfg
-    # for 'zigzag Low T', I can not retrieve values match Meshram's Fig. 5 (a) with
+    # for 'Zigzag Low T', I can not retrieve values match Meshram's Fig. 5 (a) with
     # u_hot_in = 1.345, which makes mdot_hot_in = 1.614 << mdot_cold_in = 5.488. 
     # Based on the facts that for other cases, mdot_hot_in ~ mdot_cold_in, 
     # I choose mdot_hot_in = 4.501 according to u_cold_in/u_hot_in = 5.584 
-    # in 'Straight Low T' the senario and get good match
-    
+    # in 'Straight Low T' the senario and get good match    
 
     kc_cf_z_set = [10, 12, 15]    
     kc_cf_s_set = [1.0, 1.2, 1.5]
+  
     cfg_offset_base = {
             # values in Table 3 in Meshram [2016]
             # Only with kc_dp = 1 at High T and kc_dp = 2 at Low T can I get good agreement with 
             # Meshram's DP result. 
             "keys" : ["T_cold_in", "T_cold_out", "T_hot_in", "T_hot_out", "u_cold_in", "u_hot_in", "a_phi"],
-            "zigzag High T" : [500, 639.15, 730, 576.69, 1.876, 7.564, 36.0],
-            "zigzag Low T": [400, 522.23, 630, 466.69, 0.806, 4.501, 36.0], 
+            "Zigzag High T" : [500, 639.15, 730, 576.69, 1.876, 7.564, 36.0],
+            "Zigzag Low T": [400, 522.23, 630, 466.69, 0.806, 4.501, 36.0], 
             "Straight High T": [500, 615.48, 730, 601.83, 1.518, 6.118, 0],
             "Straigth Low T": [400, 498.45, 630, 494.37, 0.842, 4.702, 0]
     }
-    tests = ["zigzag High T", "zigzag Low T", "Straight High T", "Straigth Low T"]
+    tests = ["Zigzag High T", "Zigzag Low T", "Straight High T", "Straigth Low T"]
     cfg_offset = {} 
-    for kc_cf_z in kc_cf_z_set:
-        for kc_cf_s in kc_cf_s_set:
-            cfg_offset_cp = deepcopy(cfg_offset_base)
+    for (kc_cf_z, kc_cf_s) in itertools.product(kc_cf_z_set, kc_cf_s_set):
+        cfg_offset_cp = deepcopy(cfg_offset_base)
 
-            cfg_offset_cp['keys'].extend(['kc_cf_hot','kc_cf_cold'])
-          
-            for i in range(0, len(tests)):
-                kc_cf = kc_cf_z
-                if i >= 2:
-                    kc_cf = kc_cf_s
-                # add kc_cf_hot, kc_cf_cold
-                cfg_offset_cp[tests[i]].extend([kc_cf, kc_cf * (1 if same_kc_cf else 2)])
+        cfg_offset_cp['keys'].extend(['kc_cf_hot','kc_cf_cold'])
+        
+        for i in range(0, len(tests)):
+            kc_cf = kc_cf_z
+            if i >= 2:
+                kc_cf = kc_cf_s
+            # add kc_cf_hot, kc_cf_cold
+            cfg_offset_cp[tests[i]].extend([kc_cf, kc_cf * (1 if same_kc_cf else 2)])
 
-            cfg_offset[f'Z(kc_cf={kc_cf_z}) S(kc_cf={kc_cf_s})'] = cfg_offset_cp
+        cfg_offset[f'Z(kc_cf={kc_cf_z}) S(kc_cf={kc_cf_s})'] = cfg_offset_cp
                             
     mapping = {} 
 
@@ -245,19 +245,21 @@ def main(work_root = []):
             "axis_x" : [0, 200e-3],
             "axis_T" : [400.0, 750.0],   
             "axis_dp" : [0, 80],
-            "label_x" : 'Z (m)',
+            "label_x" : 'X (m)',
             "label_T" : 'T (K)',
-            "label_dp" : '$\\Delta~p~(kPa)$ (K)'
+            "label_dp" : '$\\Delta~p~(kPa)$'
         }
 
     plot_metacfg_offest = {
-        "zigzag High T" :
+        "Zigzag High T" :
         {
-           "axis_T" : [400.0, 750.0], 
-           "imgfile" : "Meshram_Fig_05_HT.png"
+            "axis_x" : [0, 160e-3],
+            "axis_T" : [400.0, 750.0], 
+            "imgfile" : "Meshram_Fig_05_HT.png"
         },        
-        "zigzag Low T" :
+        "Zigzag Low T" :
         {
+            "axis_x" : [0, 160e-3],            
             "axis_T" : [300.0, 650.0], 
             "imgfile" : "Meshram_Fig_05_LT.png" 
         },

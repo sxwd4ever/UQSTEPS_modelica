@@ -52,13 +52,13 @@ partial model HeatExchangerG2G "Base class for heat exchanger gas - gas (derived
   parameter Boolean SSInit = false "Steady-state initialization" annotation(
     Dialog(tab = "Initialization"));
   Gas.FlangeA gasIn(redeclare package Medium = FlueGasMedium) annotation(
-    Placement(transformation(extent = {{-120, -20}, {-80, 20}}, rotation = 0)));
+    Placement(transformation(extent = {{-110, -10}, {-90, 10}}, rotation = 0)));
   Gas.FlangeB gasOut(redeclare package Medium = FlueGasMedium) annotation(
-    Placement(transformation(extent = {{80, -20}, {120, 20}}, rotation = 0)));
+    Placement(transformation(extent = {{90, -10}, {110, 10}}, rotation = 0)));
   Gas.FlangeA waterIn(redeclare package Medium = FluidMedium) annotation(
-    Placement(transformation(extent = {{-20, 80}, {20, 120}}, rotation = 0)));
+    Placement(transformation(extent = {{-10, 90}, {10, 110}}, rotation = 0)));
   Gas.FlangeB waterOut(redeclare package Medium = FluidMedium) annotation(
-    Placement(transformation(extent = {{-20, -120}, {20, -80}}, rotation = 0)));
+    Placement(transformation(extent = {{-10, -110}, {10, -90}}, rotation = 0)));
   annotation(
     Diagram(graphics),
     Icon(graphics = {Rectangle(extent = {{-100, 100}, {100, -100}}, lineColor = {0, 0, 255}, fillColor = {230, 230, 230}, fillPattern = FillPattern.Solid), Line(points = {{0, -80}, {0, -40}, {40, -20}, {-40, 20}, {0, 40}, {0, 80}}, color = {0, 0, 255}, thickness = 0.5), Text(extent = {{-100, -115}, {100, -145}}, lineColor = {85, 170, 255}, textString = "%name")}));

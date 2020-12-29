@@ -70,6 +70,8 @@ class PlotManager(object):
         mkdir_filepath(dest_file)
         fig.savefig(dest_file)
 
+        plt.close() # close the window once it is done. 
+
     def draw_ticks(self, ax: mp.pyplot.axes, series: DataSeries):
         '''
         xy = draw x ticks or y ticks, 0 x_axis; 1 y_axis

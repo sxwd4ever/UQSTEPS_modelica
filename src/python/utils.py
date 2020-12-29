@@ -111,7 +111,7 @@ class ExcelHelper(object):
         border_set = {9, 7, 10, 8, 12, 11}
         
         for bid in border_set: 
-            rng.api.Borders(bid).weight = 2
+            rng.api.Borders(bid).Weight = 2
 
     def _to_range(self, ul, br=None):
         if br == None:

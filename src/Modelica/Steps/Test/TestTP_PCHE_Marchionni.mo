@@ -1,7 +1,7 @@
 within Steps.Test;
 
 model TestTP_PCHE_Marchionni
-  "Test for ThermoPower based PCHE model against Meshram [2016]"  
+  "Test for ThermoPower based PCHE model against Marchionni [2019]"  
     
   import Modelica.SIunits.Conversions.{from_degC, from_deg};
   import Modelica.SIunits.{Temperature, Pressure, SpecificEnthalpy};
@@ -57,8 +57,6 @@ model TestTP_PCHE_Marchionni
   // meshram's cp and rho for alloy Inconel 617
   parameter Modelica.SIunits.Density rho_wall = 7990 "density of wall, kg/m3";
   parameter Modelica.SIunits.SpecificHeatCapacity cp_wall = 500 "cp of wall, J/kg-K";  
-  
-  parameter Boolean use_kim_cor = true;
 
 /*  
   // zigzag lower T
@@ -110,21 +108,21 @@ model TestTP_PCHE_Marchionni
     gas(p(nominal = bc_HE.st_cold_in.p), 
     T(nominal=bc_HE.st_cold_in.T))) 
   annotation(
-    Placement(transformation(origin = {0, 60}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
-  
+    Placement(visible = true, transformation(origin = {0, 80}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
+   
   ThermoPower.Gas.SinkPressure sink_cold(
     redeclare package Medium = medium_cold, 
     p0 = bc_HE.st_cold_out.p, 
     T = bc_HE.st_cold_out.T) 
   annotation(
     Placement(transformation(origin = {0, -80}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
- 
+
   ThermoPower.Gas.SinkPressure sink_hot(
     redeclare package Medium = medium_hot,
     T = bc_HE.st_hot_out.T, 
     p0 = bc_HE.st_hot_out.p) 
   annotation(
-    Placement(transformation(extent = {{60, -10}, {80, 10}}, rotation = 0)));
+    Placement(visible = true, transformation(extent = {{70, -10}, {90, 10}}, rotation = 0)));
   
   ThermoPower.Gas.SourceMassFlow source_hot(
     redeclare package Medium = medium_hot, 
@@ -135,20 +133,23 @@ model TestTP_PCHE_Marchionni
     gas(p(nominal = bc_HE.st_hot_in.p), 
     T(nominal=bc_HE.st_hot_in.T))) 
   annotation(
-    Placement(transformation(extent = {{-70, -10}, {-50, 10}}, rotation = 0))); 
+    Placement(visible = true, transformation(extent = {{-92, -10}, {-72, 10}}, rotation = 0)));
   
   TPComponents.GasStateReader sr_water_in(redeclare package Medium = medium_cold) annotation(
-    Placement(transformation(origin = {4, -50}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
+    Placement(visible = true, transformation(origin = {0, 48}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
+ 
   TPComponents.GasStateReader sr_water_out(redeclare package Medium = medium_cold) annotation(
-    Placement(transformation(origin = {4, -50}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
-  
-  TPComponents.GasStateReader sr_gas_in(redeclare package Medium = medium_hot);
-  TPComponents.GasStateReader sr_gas_out(redeclare package Medium = medium_hot);
-    
+    Placement(visible = true, transformation(origin = {0, -48}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
+ 
+  TPComponents.GasStateReader sr_gas_in(redeclare package Medium = medium_hot) annotation(
+    Placement(visible = true, transformation(origin = {-50, 0}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
+ 
+  TPComponents.GasStateReader sr_gas_out(redeclare package Medium = medium_hot) annotation(
+    Placement(visible = true, transformation(origin = {44, 0}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
+     
   TPComponents.PCHE HE(
     redeclare package FluidMedium = medium_cold, 
     redeclare package FlueGasMedium = medium_hot,     
-
     // use Marchionni PCHE HeatTransfer
     redeclare replaceable model HeatTransfer_F = TPComponents.MarchionniPCHEHeatTransferFV(),
     redeclare replaceable model HeatTransfer_G = TPComponents.MarchionniPCHEHeatTransferFV(),
@@ -219,22 +220,24 @@ equation
     Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));    
 */   
   
-  connect(source_cold.flange, sr_water_in.inlet);
+  connect(source_cold.flange, sr_water_in.inlet) annotation(
+    Line(points = {{0, 54}, {0, 54}, {0, 70}, {0, 70}}, color = {0, 0, 255}, thickness = 0.5));
   connect(sr_water_in.outlet, HE.waterIn) annotation(
-    Line(points = {{-1.83697e-015, 50}, {-1.83697e-015, 20}, {0, 20}}, color = {0, 0, 255}, thickness = 0.5, smooth = Smooth.None));
+    Line(points = {{0, 42}, {0, 42}, {0, 20}, {0, 20}}, color = {0, 0, 255}, thickness = 0.5));
   connect(HE.waterOut, sr_water_out.inlet) annotation(
-    Line(points = {{8.88178e-016, -44}, {8.88178e-016, -20}, {0, -20}}, thickness = 0.5, color = {0, 0, 255}));      
+    Line(points = {{0, -42}, {0, -42}, {0, -20}, {0, -20}}, color = {0, 0, 255}, thickness = 0.5));
   connect(sr_water_out.outlet, sink_cold.flange) annotation(
-    Line(points = {{1.83697e-015, -70}, {1.83697e-015, -56}, {-8.88178e-016, -56}}, thickness = 0.5, color = {0, 0, 255}));
-  
-  connect(source_hot.flange, sr_gas_in.inlet);
+    Line(points = {{0, -54}, {0, -54}, {0, -70}, {0, -70}}, color = {0, 0, 255}, thickness = 0.5));
+
+  connect(source_hot.flange, sr_gas_in.inlet) annotation(
+    Line(points = {{-72, 0}, {-56, 0}, {-56, 0}, {-56, 0}}, color = {159, 159, 223}));
   connect(sr_gas_in.outlet, HE.gasIn) annotation(
-        Line(points = {{-50, 0}, {-20, 0}}, color = {159, 159, 223}, thickness = 0.5, smooth = Smooth.None)); 
+    Line(points = {{-44, 0}, {-22, 0}, {-22, 0}, {-20, 0}}, color = {159, 159, 223}));
   connect(HE.gasOut, sr_gas_out.inlet) annotation(
-    Line(points = {{34, 0}, {34, 0}, {20, 0}}, color = {159, 159, 223}, thickness = 0.5));
+    Line(points = {{20, 0}, {38, 0}, {38, 0}, {38, 0}}, color = {159, 159, 223}));
   connect(sr_gas_out.outlet, sink_hot.flange) annotation(
-    Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));    
-  
+    Line(points = {{50, 0}, {70, 0}, {70, 0}, {70, 0}}, color = {159, 159, 223}));
+ 
 annotation(
     Diagram(graphics),
     experiment(StartTime = 0, StopTime = 10, Tolerance = 1e-3, Interval = 2),

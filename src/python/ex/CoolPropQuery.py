@@ -163,65 +163,73 @@ from math import log10, sin
 # h_in = 309.42e3
 # h_out = 329.94e3
 
-print('high pressure, low T')
-# density
-p, T = 20e6, 273.15 + 162.144
+kc_cf_z_set = [10, 12, 15]    
+kc_cf_s_set = [1.0, 1.2, 1.5]
 
-result = PropsSI("DMASS", "P", p, "T" , T, 'CO2')
-print("result=" + str(result))
+import itertools
 
-# conductivity
-result = PropsSI("CONDUCTIVITY", "P", p, "T" , T, 'CO2')
-print("result=" + str(result))
+for x in itertools.product(kc_cf_s_set, kc_cf_z_set):
+        print(x)
 
-# 
-result = PropsSI("VISCOSITY", "P", p, "T" , T, 'CO2')
-print("result=" + str(result))
+# print('high pressure, low T')
+# # density
+# p, T = 20e6, 273.15 + 162.144
 
-print('high pressure, High T')
-# density
-p, T = 20e6, 273.15 + 710
+# result = PropsSI("DMASS", "P", p, "T" , T, 'CO2')
+# print("result=" + str(result))
 
-result = PropsSI("DMASS", "P", p, "T" , T, 'CO2')
-print("result=" + str(result))
+# # conductivity
+# result = PropsSI("CONDUCTIVITY", "P", p, "T" , T, 'CO2')
+# print("result=" + str(result))
 
-# conductivity
-result = PropsSI("CONDUCTIVITY", "P", p, "T" , T, 'CO2')
-print("result=" + str(result))
+# # 
+# result = PropsSI("VISCOSITY", "P", p, "T" , T, 'CO2')
+# print("result=" + str(result))
 
-# 
-result = PropsSI("VISCOSITY", "P", p, "T" , T, 'CO2')
-print("result=" + str(result))
+# print('high pressure, High T')
+# # density
+# p, T = 20e6, 273.15 + 710
 
-print('\nlow pressure, high T')
-# density
-p, T = 8e6, 273.15 + 600
+# result = PropsSI("DMASS", "P", p, "T" , T, 'CO2')
+# print("result=" + str(result))
 
-result = PropsSI("DMASS", "P", p, "T" , T, 'CO2')
-print("result=" + str(result))
+# # conductivity
+# result = PropsSI("CONDUCTIVITY", "P", p, "T" , T, 'CO2')
+# print("result=" + str(result))
 
-# conductivity
-result = PropsSI("CONDUCTIVITY", "P", p, "T" , T, 'CO2')
-print("result=" + str(result))
+# # 
+# result = PropsSI("VISCOSITY", "P", p, "T" , T, 'CO2')
+# print("result=" + str(result))
 
-# 
-result = PropsSI("VISCOSITY", "P", p, "T" , T, 'CO2')
-print("result=" + str(result))
+# print('\nlow pressure, high T')
+# # density
+# p, T = 8e6, 273.15 + 600
 
-print('\nlow pressure, low T')
-# density
-p, T = 8e6, 273.15 + 162.144
+# result = PropsSI("DMASS", "P", p, "T" , T, 'CO2')
+# print("result=" + str(result))
 
-result = PropsSI("DMASS", "P", p, "T" , T, 'CO2')
-print("result=" + str(result))
+# # conductivity
+# result = PropsSI("CONDUCTIVITY", "P", p, "T" , T, 'CO2')
+# print("result=" + str(result))
 
-# conductivity
-result = PropsSI("CONDUCTIVITY", "P", p, "T" , T, 'CO2')
-print("result=" + str(result))
+# # 
+# result = PropsSI("VISCOSITY", "P", p, "T" , T, 'CO2')
+# print("result=" + str(result))
 
-# 
-result = PropsSI("VISCOSITY", "P", p, "T" , T, 'CO2')
-print("result=" + str(result))
+# print('\nlow pressure, low T')
+# # density
+# p, T = 8e6, 273.15 + 162.144
+
+# result = PropsSI("DMASS", "P", p, "T" , T, 'CO2')
+# print("result=" + str(result))
+
+# # conductivity
+# result = PropsSI("CONDUCTIVITY", "P", p, "T" , T, 'CO2')
+# print("result=" + str(result))
+
+# # 
+# result = PropsSI("VISCOSITY", "P", p, "T" , T, 'CO2')
+# print("result=" + str(result))
 
 
 # s = CP.CoolProp.PropsSI("S", "H", h_in, "P", 7.91e6, 'CO2')

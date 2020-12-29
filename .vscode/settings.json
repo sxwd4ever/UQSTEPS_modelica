@@ -1,8 +1,6 @@
 {
-    "python.condaPath": "C:\\Users\\uqxsui\\AppData\\Local\\Continuum\\anaconda3\\condabin\\conda",
-    "python.pythonPath": "C:\\Users\\uqxsui\\AppData\\Local\\Continuum\\anaconda3\\envs\\steps\\python.exe",
-    "python.terminal.activateEnvironment": true,
-    "python.terminal.activateEnvInCurrentTerminal": true,    
+    "python.condaPath": "C:\\ProgramData\\Anaconda3",
+    "python.pythonPath": "C:\\Users\\uqxsui\\.conda\\envs\\steps\\python.exe",
     "python.analysis.extraPaths": [        
         "src\\python"
     ],
@@ -102,5 +100,13 @@
         "mprealsupport": "cpp"
     },
     "workbench.tree.indent": 4,
-    "python.venvPath": "C:\\Users\\uqxsui\\AppData\\Local\\Continuum\\anaconda3\\envs"
+    "python.terminal.activateEnvInCurrentTerminal": true,
+    "command-runner.terminal.name": "runCommand",
+    "command-runner.terminal.autoClear": true,
+    "command-runner.terminal.autoFocus": true,
+    "command-runner.commands": {
+        "echo workspaceFolder": "echo ${workspaceFolder}",
+        "echo_file": "echo ${fileBasename}",
+        "make html": "${workspaceFolder}/rst/make html"
+    }
 }
