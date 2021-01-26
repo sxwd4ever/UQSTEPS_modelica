@@ -1,7 +1,7 @@
 within Steps.TPComponents;
 
 
-model MarchionniPCHEHeatTransferFV "Kim [2012] heat transfer Correlation"
+model MarchionniPCHEHeatTransferFV "Marchionni [2019] heat transfer Correlation"
   extends BaseClasses.DistributedHeatTransferFV;
   import SI = Modelica.SIunits;
   import MyUtil = Steps.Utilities.Util;

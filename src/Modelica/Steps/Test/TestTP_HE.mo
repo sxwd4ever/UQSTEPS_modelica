@@ -14,7 +14,8 @@ model TestTP_HE
   import ThermoPower.Gas;
   
   // package medium_hot = Steps.Media.CO2;
-  package medium_heater = SolarTherm.Media.Sodium.Sodium_pT; // ThermoPower.Water.StandardWater; //Modelica.Media.IdealGases.SingleGases.CO2;
+  package medium_heater_v1 = SolarTherm.Media.Sodium.Sodium_pT; // ThermoPower.Water.StandardWater; //Modelica.Media.IdealGases.SingleGases.CO2;
+  package medium_heater = Steps.Media.ThermiaOilD;//
   //package medium_cold = Steps.Media.CO2; // Modelica.Media.IdealGases.SingleGases.CO2;
   package medium_hot = Steps.Media.SCO2;//ExternalMedia.Examples.CO2CoolProp;
   package medium_cold = Steps.Media.SCO2;//ExternalMedia.Examples.CO2CoolProp;    
