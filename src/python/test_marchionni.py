@@ -99,7 +99,7 @@ class MarchionniTest(PCHEExperiment):
                     'cs': 'r-o',
                     'x':
                     {
-                        'value': values['x_hot'] * 1e3,
+                        'value': values['x'] * 1e3,
                         'axis_range': meta_cfg['axis_x'],
                         'label': meta_cfg['label_x']
                     },
@@ -115,7 +115,7 @@ class MarchionniTest(PCHEExperiment):
                     'cs': 'b-v',
                     'x':
                     {
-                        'value': values['x_cold'] * 1e3,
+                        'value': values['x'] * 1e3,
                         'axis_range': meta_cfg['axis_x'],
                         'label': meta_cfg['label_x']
                     },
@@ -134,7 +134,7 @@ class MarchionniTest(PCHEExperiment):
                     'cs': 'r-o',
                     'x':
                     {
-                        'value': values['x_hot'] * 1e3,
+                        'value': values['x'] * 1e3,
                         'axis_range': meta_cfg['axis_x'],
                         'label': meta_cfg['label_x']
                     },
@@ -150,7 +150,7 @@ class MarchionniTest(PCHEExperiment):
                     'cs': 'b-v',
                     'x':
                     {
-                        'value': values['x_cold'] * 1e3,
+                        'value': values['x'] * 1e3,
                         'axis_range': meta_cfg['axis_x'],
                         'label': meta_cfg['label_x']
                     },
@@ -211,7 +211,7 @@ def main(work_root = []):
         work_root = os.path.abspath(os.curdir)  
 
     # parameters initialization for this simulation
-    exp_type:ExpType = ExpType.FULL_SCALE
+    exp_type:ExpType = ExpType.LOAD_PRE_EXP
     model_name = "Steps.Test.TestTP_PCHE_Marchionni"  
     # exp flags 
     use_rho_bar = -1.0 # > 1.0 use rho_bar for dp calculation 
@@ -464,11 +464,11 @@ def main(work_root = []):
 
     elif exp_type == ExpType.LOAD_PRE_EXP:
         # should search the exp_name 
-        exp_name = "Test-Marchionni 2020-12-10-09-43-30"
+        exp_name = "Test-Marchionni_VS_CFD_diff_kc_cf 2021-01-26-16-00-50"
         ds_exp:TestDataSet = TestDataSet(name=exp_name, groups={})
 
         ds_exp.set_ref_data(ref_data)    
-        exp.load_results(exp_name, dir_name=exp_name, ds_exp=ds_exp)
+        exp.load_results(exp_name, dir_name=exp_name, ds_exp=ds_exp,has_summury=True)
         exp.plot_results(ds_exp, plot_metacfg_base, plot_metacfg_offest)   
 
     print('All done!')

@@ -43,6 +43,8 @@ class Experiment(object):
         self.modelica_libs = modelica_libs
         self.ex_dlls = ex_dlls
 
+        self.model_loaded = False
+
         self.prepare_workspace()       
 
     def gen_sol_dict(self, cfg:dict) -> dict:
@@ -107,13 +109,21 @@ class Experiment(object):
             else:              
                 print(f'Dll {lib_dll} not Exists')
 
-    def simulate(self, sim_ops, solution_dict, ds_test:TestDataSet, append_save=True):        
-        
-        print(f'loading model{self.model_name}...\n')        
-        self.model = ModelicaSystem(sep.join([self.path_model,"package.mo"]), self.model_name,self.modelica_libs) 
-        print(f'model{self.model_name} loaded, prepare to simulate\n')
+    def load_model(self):
+
+        if not self.model_loaded:
+
+            print(f'loading model{self.model_name}...\n')        
+            self.model = ModelicaSystem(sep.join([self.path_model,"package.mo"]), self.model_name,self.modelica_libs) 
+            print(f'model{self.model_name} loaded, prepare to simulate\n')
+
+            self.model_loaded = True
+
+    def simulate(self, sim_ops, solution_dict, ds_test:TestDataSet, append_save=True):         
 
         # options for simulation - steady state simulation, no iteration required, so set numberOfIntervals = 2 
+        if not self.model_loaded:
+            self.load_model() # load model once and once only to save time for batch execution
 
         for group in ds_test.values():
             for (test_name, test) in group.items():
@@ -196,7 +206,7 @@ class Experiment(object):
         finally:
             xw_app.quit() # close the xlwings app finally 
 
-    def load_results(self, exp_name, dir_name=None, ds_exp:TestDataSet = None) -> TestDataSet:
+    def load_results(self, exp_name, dir_name=None, ds_exp:TestDataSet = None, has_summury=False) -> TestDataSet:
         '''
         Load simulation result from the latest, saved file
         '''
@@ -235,10 +245,17 @@ class Experiment(object):
                 u = 1
                 offset = 2 # + 1 for linespacing, + 1 is start of next table 
 
+                # read config dict
                 cfg_dict = helper.read_dict((u, col_start))
                 u = u + len(cfg_dict) + offset
                 ds_exp.set_cfgs(gname, cfg_dict)
 
+                if has_summury:
+                    # read & neglect summary result, set detailed result instead
+                    cfg_dict = helper.read_dict((u, col_start))
+                    u = u + len(cfg_dict) + offset          
+
+                # read deatailed result
                 result_dict = helper.read_dict((u, col_start))
                 u = u + len(result_dict) + offset
                 ds_exp.set_results(gname, result_dict)   
@@ -302,11 +319,14 @@ class PCHEExperiment(Experiment):
         result = test.result
 
         N_seg = int(cfg['N_seg'])
+        N_nodes = N_seg + 1
         L_fp = cfg['L_fp']
         len_seg = L_fp / N_seg
 
         T_hot = []
         T_cold = []
+        T_vol_hot = []
+        T_vol_cold = []
         gamma_hot = []
         gamma_cold = []
         hc_hot = []
@@ -321,33 +341,47 @@ class PCHEExperiment(Experiment):
             idx = i + 1            
             T_hot.append(result['HE.gasFlow.heatTransfer.T[%s]' % idx].val)
             T_cold.append(result['HE.fluidFlow.heatTransfer.T[%s]' % idx].val)
+
+            T_vol_hot.append(result['HE.gasFlow.heatTransfer.T_vol[%s]' % idx].val)
+            T_vol_cold.append(result['HE.fluidFlow.heatTransfer.T_vol[%s]' % idx].val) 
+
             # pa -> kPa
             dp_hot_cur += result['HE.gasFlow.heatTransfer.dp[%s]' % idx].val / 1e3
             dp_cold_cur += result['HE.fluidFlow.heatTransfer.dp[%s]' % idx].val / 1e3
+            # accumulated pressure drop, starts from 0
             dp_hot.append(dp_hot_cur)
             dp_cold.append(dp_cold_cur)
 
             hc_hot.append(result['HE.gasFlow.heatTransfer.hc[%s]' % idx].val)
             hc_cold.append(result['HE.fluidFlow.heatTransfer.hc[%s]' % idx].val)
 
-            if i <= N_seg - 2: # len(gamma) = len(T) - 1
-                gamma_hot.append(result['HE.gasFlow.heatTransfer.gamma[%s]' % idx].val)
-                gamma_cold.append(result['HE.fluidFlow.heatTransfer.gamma[%s]' % idx].val)
+            # if i <= N_seg - 2: # len(gamma) = len(T) - 1
+            gamma_hot.append(result['HE.gasFlow.heatTransfer.gamma[%s]' % idx].val)
+            gamma_cold.append(result['HE.fluidFlow.heatTransfer.gamma[%s]' % idx].val)
         
-        T_cold.reverse()
-        dp_cold.reverse()  
-        hc_cold.reverse()          
-        
-        x_values = np.arange(0, len_seg * (N_seg) , len_seg) 
-        x_values_gamma = np.arange(0, len_seg * (N_seg - 1) , len_seg) 
+        # last node
+        T_hot.append(result['HE.gasFlow.heatTransfer.T[%s]' % N_nodes].val)
+        T_cold.append(result['HE.fluidFlow.heatTransfer.T[%s]' % N_nodes].val)    
+        # dp_hot.append(dp_hot_cur)
+        # dp_cold.append(dp_cold_cur)    
 
-        test.set_post_data('x_hot', x_values)
+        T_cold.reverse()
+        T_vol_cold.reverse()
+        dp_cold.reverse()  
+        hc_cold.reverse()  
+        gamma_cold.reverse()        
+        
+        x_values = np.arange(0, len_seg * (N_nodes) , len_seg) 
+        # x_values_gamma = np.arange(0, len_seg * (N_seg - 1) , len_seg) 
+
+        test.set_post_data('x',x_values)
+        test.set_post_data('x_hot', x_values[:N_seg]) # N_seg = N_nodes - 1
         test.set_post_data('T_hot',np.array(T_hot))
         test.set_post_data('dp_hot',np.array(dp_hot))
-        test.set_post_data('x_cold', x_values + len_seg)
+        test.set_post_data('x_cold', x_values[1:]) # 1:N_nodes
         test.set_post_data('T_cold', np.array(T_cold))
         test.set_post_data('dp_cold',np.array(dp_cold))
-        test.set_post_data('x_values_gamma',np.array(x_values_gamma))  
+        # test.set_post_data('x_values_gamma',np.array(x_values_gamma))  
         test.set_post_data('hc_hot',np.array(hc_hot))
         test.set_post_data('hc_cold',np.array(hc_cold))      
         test.set_post_data('gamma_hot',np.array(gamma_hot))
@@ -361,22 +395,24 @@ class PCHEExperiment(Experiment):
             ('HE.gasFlow.heatTransfer', 'hot')]
 
         # (propName, unit)
-        N_seg =  cfg['N_seg']
+        N_seg =  cfg['N_seg'] # volumes number
+        N_nodes = N_seg + 1 # nodes number
         props = [
             # ('fluid', '1'), # error in parsing this props, since returned name(string) are not digitial values
-            ('T[%s]', 'K', N_seg), 
+            ('T[%s]', 'K', N_nodes), 
+            ('T_vol[%s]', 'K', N_seg), 
             ('dp[%s]', 'Pa', N_seg),
             ('Re[%s]', '[1]', N_seg),
             ('rho[%s]', 'kg/m3', N_seg),
             ('hc[%s]', 'W/m2-K', N_seg),
-            ('gamma[%s]', 'W/m2-K', N_seg - 1)]
+            ('gamma[%s]', 'W/m2-K', N_seg)]
 
         sol_dict = OrderedDict()
 
         for (p, p_short) in ports:
             for (prop, unit, n) in props:
-                for idx_seg in range(1, n + 1):
-                    prop_name = f'{prop}' % idx_seg
+                for idx in range(1, n + 1):
+                    prop_name = f'{prop}' % idx
                     key = f'{p}.{prop_name}'
                     text = f'{prop_name}_{p_short}'            
                     sol_dict[key] = Variable(key, unit, text=text)   

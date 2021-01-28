@@ -98,7 +98,7 @@ class TestResult(MyDict):
             if not sol is None and len(sol) > 0:
                 # copy the sol_dict
                 # for now, save the last val, which is the value when system
-                # achive equilibrium
+                # achive equilibrium state
                 v.val = sol[-1]
             d[key] = v
 

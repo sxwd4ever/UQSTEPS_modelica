@@ -21,9 +21,9 @@ partial model HeatExchanger "Base class for heat exchanger fluid-gas (derived fr
 
   replaceable package FlueGasMedium = ThermoPower.Media.FlueGas constrainedby Modelica.Media.Interfaces.PartialMedium "Flue gas model";
   replaceable package FluidMedium = ThermoPower.Water.StandardWater constrainedby Modelica.Media.Interfaces.PartialPureSubstance "Fluid model";
-  parameter Integer N_G = geo_hot.N_seg "Number of node of the gas side"; 
+  parameter Integer N_G = geo_hot.N_seg + 1 "Number of node of the gas side"; 
   parameter Integer Nw_G = N_G - 1 "Number of volumes of the gas side wall";
-  parameter Integer N_F = geo_cold.N_seg "Number of node of the fluid side";
+  parameter Integer N_F = geo_cold.N_seg + 1 "Number of node of the fluid side";
   parameter Integer Nw_F = N_F - 1 "Number of volumes of the fluid side wall";
   parameter Integer Nt = geo_hot.N_ch "Number of tubes in parallel";
   //Nominal parameter

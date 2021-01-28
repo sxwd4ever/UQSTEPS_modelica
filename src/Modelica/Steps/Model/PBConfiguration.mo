@@ -129,7 +129,7 @@ model PBConfiguration
     A_ex = 2 * pi * r_t_HTR * L_HTR, //  * N_ch_HTR, // assume thickness of tube approximately 0
     L = L_HTR, 
     d = 2 * r_t_HTR, 
-    N_seg = N_seg_HTR - 1, 
+    N_seg = N_seg_HTR, 
     N_ch = N_ch_HTR),
     thermo(rho_mcm = 7900 * 578.05, lambda = 20)
   ); 
@@ -173,7 +173,7 @@ model PBConfiguration
     A_ex = 2 * pi * r_t_LTR * L_LTR, // * N_ch_LTR, // assume thickness of tube approximately 0
     L = L_LTR, 
     d = 2 * r_t_LTR, 
-    N_seg = N_seg_LTR - 1, 
+    N_seg = N_seg_LTR, 
     N_ch = N_ch_LTR),
     thermo(rho_mcm = 7900 * 578.05, lambda = 20)
   );   
@@ -234,7 +234,7 @@ model PBConfiguration
     A_ex = 2 * pi * r_t_h * L_h, 
     L = L_h, 
     d = 2 * r_t_h, 
-    N_seg = N_seg_heater - 1, 
+    N_seg = N_seg_heater, 
     N_ch = N_ch_h),
     thermo(rho_mcm = 7900 * 578.05, lambda = 20)
   );   
@@ -268,7 +268,7 @@ model PBConfiguration
     L = L_c, 
     d = 2 * r_t_c, 
     N_ch = N_ch_c, 
-    N_seg = N_seg_cooler - 1),
+    N_seg = N_seg_cooler),
     thermo(rho_mcm = 7900 * 578.05, lambda = 20)
   );   
   
