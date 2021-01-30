@@ -42,7 +42,7 @@ model MarchionniPCHEHeatTransferFV "Marchionni [2019] heat transfer Correlation"
   SI.PerUnit Re_l[Nw] "Reynolds number limited to validity range";
   SI.CoefficientOfHeatTransfer gamma[Nw] "Heat transfer coefficients at the volumes";  
   SI.ThermalConductivity k_wall[Nw] "wall thermal conductivity - determined by material of wall and local temperature";      
-  Real kc_T[Nw];  
+  // Real kc_T[Nw];  
   
   // node properties  
   SI.Velocity u[Nf] "Local velocity of fluid";
@@ -56,13 +56,13 @@ model MarchionniPCHEHeatTransferFV "Marchionni [2019] heat transfer Correlation"
   parameter SI.Length pitch "pitch length";
   parameter Real phi"pitch angle, degree";
   parameter String name_material = "inconel 750";
-  parameter Real kc_dp = 2 "Pressure drop correction coeffecient";
-  parameter Real kc_cf =if abs(phi - 0) < Modelica.Constants.eps then 1 else 12; 
+  // parameter Real kc_dp = 2 "Pressure drop correction coeffecient";
+  // parameter Real kc_cf =if abs(phi - 0) < Modelica.Constants.eps then 1 else 12; 
   // DO NOT set values for these two parameters since use_rho_bar will be used as flags in if-statement. 
   parameter Real use_rho_bar "> 0, use rho_bar for dp calculation. error in passing a boolean from OMPython so Real type variable is used here";
   parameter Real rho_bar "Averaged rho, >0: valid rho and will be used for dp calculation";   
   
-  Real C1 = kc_cf / kc_dp "calibration coefficient in Eq. 1 in [Marchionni 2019], = 1 / kc_dp for straight Channel and = 12 / kc_dp for zigzag Channel, which is conducted by numerical simulation against CFD result in [Meshram 2012]";
+  parameter Real C1 = 1 "calibration coefficient in Eq. 1 in [Marchionni 2019], = 1 / kc_dp for straight Channel and = 12 / kc_dp for zigzag Channel, which is conducted by numerical simulation against CFD result in [Meshram 2012]";
   Real C2 = 1/C1 "calibration coefficient in Eq. 4 in [Marchionni 2019], = 1.0 / C1 ,which is conducted by numerical simulation against CFD result in [Meshram 2012]";
   parameter Real table_th_conductivity[:, :] = [149, 16.9; 316, 20.5; 538, 26.5; 649, 28.7; 760, 31.4; 871, 35.3];  
 
@@ -104,8 +104,7 @@ equation
       cp_vol[j] = cp[j+1];
     end if;    
 
-    kc_T[j] = if T_vol[j] < 600 then 2.0 else 1.0;    
-    
+    // kc_T[j] = if T_vol[j] < 600 then 2.0 else 1.0;        
     
     Re[j] =  noEvent(G_vol[j] * Dhyd / mu_vol[j]);
     Re_l[j] = noEvent(Functions.smoothSat(Re[j], Re_min, 1e9, Re_min / 2));
@@ -120,9 +119,11 @@ equation
     //dp[j] = noEvent(kc_dp * f[j] * l * rho_bar * u[j] ^ 2 / Dhyd);
     
     if use_rho_bar > 0 then    
-      dp[j] = noEvent(kc_dp * f[j] * l * rho_bar * u_vol[j] ^ 2 / Dhyd);
+      // dp[j] = noEvent(kc_dp * f[j] * l * rho_bar * u_vol[j] ^ 2 / Dhyd);
+      dp[j] = noEvent(f[j] * l * rho_bar * u_vol[j] ^ 2 / Dhyd);
     else
-      dp[j] = noEvent(kc_dp * f[j] * l * rho[j] * u_vol[j] ^ 2 / Dhyd);
+      // dp[j] = noEvent(kc_dp * f[j] * l * rho[j] * u_vol[j] ^ 2 / Dhyd);
+      dp[j] = noEvent(f[j] * l * rho[j] * u_vol[j] ^ 2 / Dhyd);
     end if;
     
     Pr[j] = noEvent(cp_vol[j] * mu_vol[j] / k_vol[j]);    

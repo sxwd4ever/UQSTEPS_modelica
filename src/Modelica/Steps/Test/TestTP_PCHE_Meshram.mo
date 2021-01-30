@@ -45,7 +45,7 @@ model TestTP_PCHE_Meshram
   parameter SI.Temperature T_cold_out = 639.15 "cold outlet temperature, K";
   
   // pressure drop correction coefficient 
-  parameter Real kc_dp = 1.0;  
+  // parameter Real kc_dp = 1.0;  
   parameter Real kc_cf_hot = 1;
   parameter Real kc_cf_cold = 1;
   
@@ -146,8 +146,8 @@ model TestTP_PCHE_Meshram
     // use Marchionni PCHE HeatTransfer
     redeclare replaceable model HeatTransfer_F = TPComponents.MarchionniPCHEHeatTransferFV(),
     redeclare replaceable model HeatTransfer_G = TPComponents.MarchionniPCHEHeatTransferFV(),
-    gasFlow(heatTransfer(pitch = cfg.pitch, phi = cfg.phi, kc_dp = kc_dp, kc_cf = kc_cf_hot)),
-    fluidFlow(heatTransfer(pitch = cfg.pitch, phi = cfg.phi, kc_dp = kc_dp, kc_cf = kc_cf_cold)),    
+    gasFlow(heatTransfer(pitch = cfg.pitch, phi = cfg.phi, C1 = kc_cf_hot)),
+    fluidFlow(heatTransfer(pitch = cfg.pitch, phi = cfg.phi, C1 = kc_cf_cold)),    
     /*    
     // use Kim PCHE HeatTransfer
     redeclare replaceable model HeatTransfer_F = TPComponents.KimPCHEHeatTransferFV(), 

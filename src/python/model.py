@@ -193,11 +193,15 @@ class TestGroup(MyDict):
         super().__init__(tests)
         self.name = name
 
+    def append_test(self, test:TestItem):
+        
+        self[test.name] = test
+
     @classmethod
     def from_json(cls, name, json_str):
         json_dict = json.loads(json_str)
         return cls.from_dict(name, **json_dict)
-
+    
     @classmethod
     def from_dict(cls, name, **json_dict):
         tests = OrderedDict()

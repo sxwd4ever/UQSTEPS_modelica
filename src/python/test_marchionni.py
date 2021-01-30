@@ -468,7 +468,7 @@ def main(work_root = []):
         ds_exp:TestDataSet = TestDataSet(name=exp_name, groups={})
 
         ds_exp.set_ref_data(ref_data)    
-        exp.load_results(exp_name, dir_name=exp_name, ds_exp=ds_exp,has_summury=True)
+        exp.load_results(exp_name, dir_name=exp_name, ds_exp=ds_exp,has_view=True)
         exp.plot_results(ds_exp, plot_metacfg_base, plot_metacfg_offest)   
 
     print('All done!')

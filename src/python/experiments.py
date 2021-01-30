@@ -206,7 +206,7 @@ class Experiment(object):
         finally:
             xw_app.quit() # close the xlwings app finally 
 
-    def load_results(self, exp_name, dir_name=None, ds_exp:TestDataSet = None, has_summury=False) -> TestDataSet:
+    def load_results(self, exp_name, dir_name=None, ds_exp:TestDataSet = None, has_view=False) -> TestDataSet:
         '''
         Load simulation result from the latest, saved file
         '''
@@ -250,12 +250,12 @@ class Experiment(object):
                 u = u + len(cfg_dict) + offset
                 ds_exp.set_cfgs(gname, cfg_dict)
 
-                if has_summury:
+                if has_view:
                     # read & neglect summary result, set detailed result instead
                     cfg_dict = helper.read_dict((u, col_start))
                     u = u + len(cfg_dict) + offset          
 
-                # read deatailed result
+                # read detailed result
                 result_dict = helper.read_dict((u, col_start))
                 u = u + len(result_dict) + offset
                 ds_exp.set_results(gname, result_dict)   
@@ -335,7 +335,12 @@ class PCHEExperiment(Experiment):
         dp_cold = [0]
         # started, fix pressure of each stream
         dp_hot_cur = 0
-        dp_cold_cur = 0        
+        dp_cold_cur = 0   
+
+        Re_hot = []
+        Re_cold = []
+        Pr_hot = []
+        Pr_cold = []
 
         for i in range(0, N_seg):
             idx = i + 1            
@@ -358,6 +363,11 @@ class PCHEExperiment(Experiment):
             # if i <= N_seg - 2: # len(gamma) = len(T) - 1
             gamma_hot.append(result['HE.gasFlow.heatTransfer.gamma[%s]' % idx].val)
             gamma_cold.append(result['HE.fluidFlow.heatTransfer.gamma[%s]' % idx].val)
+
+            Re_hot.append(result['HE.gasFlow.heatTransfer.Re[%s]' % idx].val)
+            Re_cold.append(result['HE.fluidFlow.heatTransfer.Re[%s]' % idx].val)
+            Pr_hot.append(result['HE.gasFlow.heatTransfer.Pr[%s]' % idx].val)
+            Pr_cold.append(result['HE.fluidFlow.heatTransfer.Pr[%s]' % idx].val)           
         
         # last node
         T_hot.append(result['HE.gasFlow.heatTransfer.T[%s]' % N_nodes].val)
@@ -387,6 +397,56 @@ class PCHEExperiment(Experiment):
         test.set_post_data('gamma_hot',np.array(gamma_hot))
         test.set_post_data('gamma_cold',np.array(gamma_cold))
 
+        results_cal = []
+
+        # actual averaged Re and Pr numbers
+        results_cal.append(('Re_bar_hot', '[1]', sum(Re_hot) / len(Re_hot)))
+        results_cal.append(('Re_bar_cold', '[1]', sum(Re_cold) / len(Re_cold)))
+
+        results_cal.append(('Pr_bar_hot', '[1]', sum(Pr_hot) / len(Pr_hot)))
+        results_cal.append(('Pr_bar_cold', '[1]', sum(Pr_cold) / len(Pr_cold)))
+
+        # calculate averaged values given boundury conditions
+        T_hot_bar = (cfg['T_hot_in'] + cfg['T_hot_out']) / 2
+        T_cold_bar = (cfg['T_cold_in'] + cfg['T_cold_out']) / 2
+        p_hot_bar = cfg['p_hot_in']
+        p_cold_bar = cfg['p_cold_in']
+
+        from CoolProp.CoolProp import PhaseSI, PropsSI
+        import math
+        
+        medium = "CO2"
+        mu_bar_hot = PropsSI("VISCOSITY", "P", p_hot_bar, "T", T_hot_bar, medium)
+        mu_bar_cold = PropsSI("VISCOSITY", "P", p_cold_bar, "T", T_cold_bar, medium)
+        cp_bar_hot = PropsSI("CPMASS", "P", p_hot_bar, "T", T_hot_bar, medium)
+        cp_bar_cold = PropsSI("CPMASS", "P", p_cold_bar, "T", T_cold_bar, medium)
+        k_bar_hot = PropsSI("CONDUCTIVITY", "P", p_hot_bar, "T", T_hot_bar, medium)
+        k_bar_cold = PropsSI("CONDUCTIVITY", "P", p_cold_bar, "T", T_cold_bar, medium)
+
+        results_cal.append(('mu_bar_hot', '[Pa S]', mu_bar_hot))
+        results_cal.append(('mu_bar_cold', '[Pa S]', mu_bar_cold))
+
+        results_cal.append(('cp_bar_hot', '[J/m^3-K]', cp_bar_hot))
+        results_cal.append(('cp_bar_cold', '[J/m^3-K]', cp_bar_cold))
+
+        results_cal.append(('k_bar_hot', '[J/m^3-K]', k_bar_hot))
+        results_cal.append(('k_bar_cold', '[J/m^3-K]', k_bar_cold))
+
+        # hydraulic diameter
+        d_h = cfg['D_ch'] * math.pi / ( math.pi + 2)
+
+        # calculated channel-wise properties
+
+        results_cal.append(('Re_tilde_hot', '[1]', result['HE.gasFlow.heatTransfer.G[1]'].val * d_h / mu_bar_hot))
+        results_cal.append(('Re_tilde_cold', '[1]', result['HE.fluidFlow.heatTransfer.G[1]'].val * d_h / mu_bar_cold))
+
+        results_cal.append(('Pr_tilde_hot', '[1]', cp_bar_hot * mu_bar_hot / k_bar_hot))
+        results_cal.append(('Pr_tilde_cold', '[1]', cp_bar_cold * mu_bar_cold / k_bar_cold))
+
+        for (k, u, v) in results_cal:
+            test.result[k] = Variable(k,u,v)
+
+
     def gen_sol_dict(self, cfg:dict) -> dict:
         ports = [
             ('HE.fluidFlow.heatTransfer', 'cold'),
@@ -403,9 +463,11 @@ class PCHEExperiment(Experiment):
             ('T_vol[%s]', 'K', N_seg), 
             ('dp[%s]', 'Pa', N_seg),
             ('Re[%s]', '[1]', N_seg),
+            ('Pr[%s]', '[1]', N_seg),
             ('rho[%s]', 'kg/m3', N_seg),
             ('hc[%s]', 'W/m2-K', N_seg),
-            ('gamma[%s]', 'W/m2-K', N_seg)]
+            ('gamma[%s]', 'W/m2-K', N_seg),
+            ('G[%s]', 'kg/m^2-s', N_seg)]
 
         sol_dict = OrderedDict()
 

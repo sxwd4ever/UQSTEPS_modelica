@@ -46,7 +46,7 @@ model TestTP_PCHE_Marchionni
   parameter SI.Temperature T_cold_out = from_degC(300) "cold outlet temperature, K";
   
   // pressure drop correction coefficient 
-  parameter Real kc_dp = 1.0;
+  // parameter Real kc_dp = 1.0;
   
   parameter Real kc_cf_hot = 1;
   parameter Real kc_cf_cold = 1;  
@@ -156,15 +156,15 @@ model TestTP_PCHE_Marchionni
     gasFlow(heatTransfer(
       pitch = cfg.pitch, 
       phi = cfg.phi, 
-      kc_dp = kc_dp, 
-      kc_cf = kc_cf_hot, 
+      // kc_dp = kc_dp, 
+      C1 = kc_cf_hot, 
       use_rho_bar = use_rho_bar,
       rho_bar = rho_bar_hot)),
     fluidFlow(heatTransfer(
       pitch = cfg.pitch, 
       phi = cfg.phi, 
-      kc_dp = kc_dp, 
-      kc_cf = kc_cf_cold,
+      //kc_dp = kc_dp, 
+      C1 = kc_cf_cold,
       use_rho_bar = use_rho_bar, 
       rho_bar = rho_bar_cold)),    
     /*    
