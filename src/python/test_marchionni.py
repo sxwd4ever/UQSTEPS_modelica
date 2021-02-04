@@ -40,9 +40,7 @@ class MarchionniTest(PCHEExperiment):
             Variable('T_hot_out_act', 'K'),
             Variable('T_cold_out_act', 'K'),
             Variable('dp_hot_act', 'pa'),
-            Variable('dp_cold_act', 'pa'),
-            Variable('kc_cf_hot'),
-            Variable('kc_cf_cold'),            
+            Variable('dp_cold_act', 'pa'),          
             Variable('rho_bar_hot'),
             Variable('rho_bar_cold')
             # Variable('dp_hot_act_m', 'pa'),
@@ -211,7 +209,7 @@ def main(work_root = []):
         work_root = os.path.abspath(os.curdir)  
 
     # parameters initialization for this simulation
-    exp_type:ExpType = ExpType.LOAD_PRE_EXP
+    exp_type:ExpType = ExpType.VS_CFD
     model_name = "Steps.Test.TestTP_PCHE_Marchionni"  
     # exp flags 
     use_rho_bar = -1.0 # > 1.0 use rho_bar for dp calculation 
@@ -317,9 +315,9 @@ def main(work_root = []):
         } 
         
         cfg_offset_base = {
-                "keys" : ["a_phi", "kc_dp"],   
-                "a_phi=0" : [0, 2],
-                "a_phi=5" : [5.0, 2]      
+                "keys" : ["a_phi"],   
+                "a_phi=0" : [-1],
+                "a_phi=5" : [5.0]      
         }
 
         rho_bar = [1.0, 1.0]
@@ -337,7 +335,7 @@ def main(work_root = []):
         # cfg with varied parameters from the base cfg
         for kc_cf in kc_cfs:
             cfg_offset_cp = deepcopy(cfg_offset_base)
-            cfg_offset_cp['keys'].extend(['kc_cf_hot','kc_cf_cold','use_rho_bar', 'rho_bar_hot', 'rho_bar_cold'])
+            cfg_offset_cp['keys'].extend(['Cf_C1','Cf_C2','use_rho_bar', 'rho_bar_hot', 'rho_bar_cold'])
             for k, v in cfg_offset_cp.items():
                 if k == 'keys':
                     continue

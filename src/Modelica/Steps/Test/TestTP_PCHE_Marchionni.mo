@@ -21,13 +21,13 @@ model TestTP_PCHE_Marchionni
   
   // geometry parameters
   constant Real pi = Modelica.Constants.pi;
-  parameter Integer N_ch = integer(1e4) "channel number";
+  parameter Integer N_ch = 10000 "channel number";
   parameter Integer N_seg = 20 "number of segments in one tube";
   parameter SI.Length D_ch = 2e-3 "channel diameter, semi circular tube";
   parameter SI.Length r_ch = D_ch / 2 "channel radiaus";
   parameter SI.Length L_fp = 272e-3 "channel flow path length";  
   parameter SI.Length L_pitch = 12.3e-3 "pitch length"; 
-  parameter Real a_phi = 36 "pitch angle degree";
+  parameter Real a_phi "pitch angle degree";
   parameter SI.Length H_ch = 3.26e-3 "Height of the solid domain, containing one cold tube and one hot tube";
   parameter SI.Length W_ch = 1.27e-3 * 2"Width of the solid domain";
   parameter SI.Area A = pi * r_ch ^2 / 2 "Area of cross section of semi circular tube";
@@ -35,9 +35,8 @@ model TestTP_PCHE_Marchionni
   // boundary conditon
   
   // zigzag higher T
-  parameter Real G_in = 509.3 "mass flux kg/(m^2 s";  
-  parameter Real G_hot_in = G_in "hot inlet mass flux kg/(m^2 s";
-  parameter Real G_cold_in = G_in "cold inlet mass flux kg/(m^2 s";
+  parameter Real G_hot_in = 509.3 "hot inlet mass flux kg/(m^2 s";
+  parameter Real G_cold_in = 509.3 "cold inlet mass flux kg/(m^2 s";
   parameter SI.Pressure p_hot_in =  from_bar(75) "hot inlet pressure";
   parameter SI.Pressure p_cold_in = from_bar(150) "cold inlet pressure";
   parameter SI.Temperature T_hot_in = from_degC(400) "hot inlet temperature, K";
@@ -48,9 +47,8 @@ model TestTP_PCHE_Marchionni
   // pressure drop correction coefficient 
   // parameter Real kc_dp = 1.0;
   
-  parameter Real kc_cf_hot = 1;
-  parameter Real kc_cf_cold = 1;  
-  parameter Real use_rho_bar;
+  parameter Real Cf_C1 = 1, Cf_C2 = 1, Cf_C3 = 1;
+  parameter Real use_rho_bar;  
   parameter Real rho_bar_hot;
   parameter Real rho_bar_cold;
   
@@ -157,14 +155,18 @@ model TestTP_PCHE_Marchionni
       pitch = cfg.pitch, 
       phi = cfg.phi, 
       // kc_dp = kc_dp, 
-      C1 = kc_cf_hot, 
+      Cf_C1 = Cf_C1, 
+      Cf_C2 = Cf_C2, 
+      Cf_C3 = Cf_C3, 
       use_rho_bar = use_rho_bar,
       rho_bar = rho_bar_hot)),
     fluidFlow(heatTransfer(
       pitch = cfg.pitch, 
       phi = cfg.phi, 
       //kc_dp = kc_dp, 
-      C1 = kc_cf_cold,
+      Cf_C1 = Cf_C1, 
+      Cf_C2 = Cf_C2, 
+      Cf_C3 = Cf_C3, 
       use_rho_bar = use_rho_bar, 
       rho_bar = rho_bar_cold)),    
     /*    

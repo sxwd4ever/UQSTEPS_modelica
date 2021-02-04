@@ -22,12 +22,12 @@ model TestTP_PCHE_Meshram
   // geometry parameters
   constant Real pi = Modelica.Constants.pi;
   parameter Integer N_ch = integer(1e4) "channel number";
-  parameter Integer N_seg = 10 "number of segments in one tube";
+  parameter Integer N_seg "number of segments in one tube";
   parameter SI.Length D_ch = 2e-3 "channel diameter, semi circular tube";
   parameter SI.Length r_ch = D_ch / 2 "channel radiaus";
   parameter SI.Length L_fp = 200e-3 "channel flow path length";  
   parameter SI.Length L_pitch = 12e-3 "pitch length";
-  parameter Real a_phi = 36 "pitch angle degree";
+  parameter Real a_phi "pitch angle degree";
   parameter SI.Length H_ch = 3.2e-3 "Height of the solid domain, containing one cold tube and one hot tube";
   parameter SI.Length W_ch = 2.5e-3 "Width of the solid domain";
   parameter SI.Area A = pi * r_ch ^2 / 2 "Area of cross section of semi circular tube";
@@ -46,8 +46,15 @@ model TestTP_PCHE_Meshram
   
   // pressure drop correction coefficient 
   // parameter Real kc_dp = 1.0;  
-  parameter Real kc_cf_hot = 1;
+  /*
+  parameter Real kc_cf_hot = 1;  
   parameter Real kc_cf_cold = 1;
+  parameter Real Cf_a_hot = 1, Cf_b_hot = 1, Cf_c_hot = 1;
+  parameter Real Cf_a_cold = 1, Cf_b_cold = 1, Cf_c_cold = 1;
+  */
+  
+  parameter Real Cf_C1 = 1, Cf_C2 = 1, Cf_C3 = 1;
+  //parameter Real Cf_a_cold = 1, Cf_b_cold = 1, Cf_c_cold = 1;  
   
   // meshram's cp and rho for alloy Inconel 617
   parameter Modelica.SIunits.Density rho_wall = 8360 "density of wall, kg/m3";
@@ -146,8 +153,8 @@ model TestTP_PCHE_Meshram
     // use Marchionni PCHE HeatTransfer
     redeclare replaceable model HeatTransfer_F = TPComponents.MarchionniPCHEHeatTransferFV(),
     redeclare replaceable model HeatTransfer_G = TPComponents.MarchionniPCHEHeatTransferFV(),
-    gasFlow(heatTransfer(pitch = cfg.pitch, phi = cfg.phi, C1 = kc_cf_hot)),
-    fluidFlow(heatTransfer(pitch = cfg.pitch, phi = cfg.phi, C1 = kc_cf_cold)),    
+    gasFlow(heatTransfer(pitch = cfg.pitch, phi = cfg.phi, Cf_C1 = Cf_C1, Cf_C2 = Cf_C2, Cf_C3 = Cf_C3)),
+    fluidFlow(heatTransfer(pitch = cfg.pitch, phi = cfg.phi, Cf_C1 = Cf_C1, Cf_C2 = Cf_C2, Cf_C3 = Cf_C3)),    
     /*    
     // use Kim PCHE HeatTransfer
     redeclare replaceable model HeatTransfer_F = TPComponents.KimPCHEHeatTransferFV(), 

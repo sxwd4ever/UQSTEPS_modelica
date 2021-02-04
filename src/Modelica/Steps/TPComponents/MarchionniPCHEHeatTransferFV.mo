@@ -8,6 +8,7 @@ model MarchionniPCHEHeatTransferFV "Marchionni [2019] heat transfer Correlation"
   import ThermoPower.Thermal.BaseClasses;
   import ThermoPower.Thermal;
   import ThermoPower.Functions;
+  import Modelica.Math.log;
 
   //parameter Modelica.SIunits.Length pitch = 24.6 * 1e-3;
   //parameter Modelica.SIunits.Angle phi = 0.0 "unit rad";
@@ -62,8 +63,12 @@ model MarchionniPCHEHeatTransferFV "Marchionni [2019] heat transfer Correlation"
   parameter Real use_rho_bar "> 0, use rho_bar for dp calculation. error in passing a boolean from OMPython so Real type variable is used here";
   parameter Real rho_bar "Averaged rho, >0: valid rho and will be used for dp calculation";   
   
-  parameter Real C1 = 1 "calibration coefficient in Eq. 1 in [Marchionni 2019], = 1 / kc_dp for straight Channel and = 12 / kc_dp for zigzag Channel, which is conducted by numerical simulation against CFD result in [Meshram 2012]";
-  Real C2 = 1/C1 "calibration coefficient in Eq. 4 in [Marchionni 2019], = 1.0 / C1 ,which is conducted by numerical simulation against CFD result in [Meshram 2012]";
+  parameter Real Cf_C1 = 1.0;
+  parameter Real Cf_C2 = 1.0;
+  parameter Real Cf_C3 = 1.0;
+  
+  // Real C1[Nw] "calibration coefficient in Eq. 1 in [Marchionni 2019], = 1 / kc_dp for straight Channel and = 12 / kc_dp for zigzag Channel, which is conducted by numerical simulation against CFD result in [Meshram 2012]";
+  //Real C2[Nw] "calibration coefficient in Eq. 4 in [Marchionni 2019], = 1.0 / C1 ,which is conducted by numerical simulation against CFD result in [Meshram 2012]";
   parameter Real table_th_conductivity[:, :] = [149, 16.9; 316, 20.5; 538, 26.5; 649, 28.7; 760, 31.4; 871, 35.3];  
 
   Modelica.Blocks.Tables.CombiTable1D th_conductivity(tableOnFile = false, table = table_th_conductivity, tableName = "conductivity", fileName = "conductivity", smoothness = Modelica.Blocks.Types.Smoothness.ContinuousDerivative) annotation(
@@ -108,15 +113,31 @@ equation
     
     Re[j] =  noEvent(G_vol[j] * Dhyd / mu_vol[j]);
     Re_l[j] = noEvent(Functions.smoothSat(Re[j], Re_min, 1e9, Re_min / 2));
+    Pr[j] = noEvent(cp_vol[j] * mu_vol[j] / k_vol[j]);      
     
-    // pressure drop calculation in Marchionni 2019
-    co_A[j] = -2.0 * Modelica.Math.log10( 12 / Re_l[j]) "neglect roughness";
-    co_B[j] = -2.0 * Modelica.Math.log10( 2.51 * co_A[j] / Re_l[j]);  
 
-    f[j] = C1 * (0.25 * (( 4.781 - (co_A[j] - 4.781) ^ 2 / (co_B[j] - 2 * co_A[j] + 4.781)) ^(-2)));
-    // dp[j] = noEvent(kc_T[j] * kc_dp * f[j] * l * rho[j] * u[j] ^ 2 / Dhyd);
-    // error in passing a boolean parameter by OMPython, so I use negetive value to indicate a invalid rho, which will not be used for dp
-    //dp[j] = noEvent(kc_dp * f[j] * l * rho_bar * u[j] ^ 2 / Dhyd);
+    //C1[j] = exp(Cf_C1 +  Cf_C2  * log(Re_l[j] / 1e4)  + Cf_C3 * log(Pr[j]));
+    if phi <= 0 then 
+      // for straight channel, use Gnieliski Correlation 
+      // pressure drop calculation in Marchionni 2019
+      co_A[j] = -2.0 * Modelica.Math.log10( 12 / Re_l[j]) "neglect roughness";
+      co_B[j] = -2.0 * Modelica.Math.log10( 2.51 * co_A[j] / Re_l[j]);   
+   
+      f[j] = Cf_C1 * (0.25 * (( 4.781 - (co_A[j] - 4.781) ^ 2 / (co_B[j] - 2 * co_A[j] + 4.781)) ^(-2)));
+      Nu[j] = noEvent((1 / Cf_C1) * ((f[j]/2 * (Re_l[j] - 1000) * Pr[j]) / (1 + 12.7 * ( Pr[j] ^(2/3) - 1) * (f[j]/2)^0.5)));
+    else    
+      // for zigzag channel, use Ngo correlation
+      // Nu[j] = (0.1696 + Cf_C1) * (Re_l[j] ^ (0.629 + Cf_C2)) * (Pr[j] ^ (0.317 + Cf_C3));
+      // Nu[j] = 0.1696 * (Re_l[j] ^ 0.629) * (Pr[j] ^ 0.317);
+      Nu[j] = Cf_C1 * 0.1696 * (Re_l[j] ^ 0.629) * (Pr[j] ^ 0.317);
+      // Nu[j] = Cf_C1 * (Re_l[j] ^ Cf_C2) * (Pr[j] ^ Cf_C3);
+      // f[j] = (0.1924 + Cf_C1) * (Re_l[j] ^ (-0.091 + Cf_C2));
+      // f[j] = 0.1924 * (Re_l[j] ^ (-0.091));
+      f[j] = Cf_C2 * 0.1924 * (Re_l[j] ^ (-0.091));
+      
+      co_A[j] = 1.0;
+      co_B[j] = 1.0;
+    end if;      
     
     if use_rho_bar > 0 then    
       // dp[j] = noEvent(kc_dp * f[j] * l * rho_bar * u_vol[j] ^ 2 / Dhyd);
@@ -124,10 +145,8 @@ equation
     else
       // dp[j] = noEvent(kc_dp * f[j] * l * rho[j] * u_vol[j] ^ 2 / Dhyd);
       dp[j] = noEvent(f[j] * l * rho[j] * u_vol[j] ^ 2 / Dhyd);
-    end if;
-    
-    Pr[j] = noEvent(cp_vol[j] * mu_vol[j] / k_vol[j]);    
-    Nu[j] = noEvent(C2 * ((f[j]/2 * (Re_l[j] - 1000) * Pr[j]) / (1 + 12.7 * ( Pr[j] ^(2/3) - 1) * (f[j]/2)^0.5)));
+    end if;  
+    //   
 
     hc[j] = noEvent(Nu[j] * k_vol[j] / Dhyd);   
 
