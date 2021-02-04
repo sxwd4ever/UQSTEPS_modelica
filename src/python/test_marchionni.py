@@ -203,6 +203,20 @@ class ExpType(Enum):
     VS_CFD = 2,  # "aginst marchionni's 1D_vs_3D"
     FULL_SCALE = 3, # full scale off design in Sec. 4 of [Marchionni 2019]
 
+def cal_rho_bar(cfg_ref) -> Tuple[float, float]:
+    '''
+        rho bar calculation according to the boundary conditions set in cfg
+    '''
+    rho_bar = [1.0, 1.0]    
+
+    T_flow = [(cfg_ref['T_hot_in'], cfg_ref['T_hot_out']), (cfg_ref['T_cold_in'], cfg_ref['T_cold_out'])]
+    p = [cfg_ref['p_hot_in'], cfg_ref['p_cold_in']]
+    for i in range(0, len(rho_bar)):
+        (T_in, T_out) = T_flow[i]
+        rho_bar[i] = PropsSI("DMASS", "P", p[i], "T" , (T_in + T_out) / 2, 'CO2')
+
+    return tuple(rho_bar)
+
 def main(work_root = []):
     # root path of modelica root
     if work_root == []:
@@ -213,10 +227,8 @@ def main(work_root = []):
     model_name = "Steps.Test.TestTP_PCHE_Marchionni"  
     # exp flags 
     use_rho_bar = -1.0 # > 1.0 use rho_bar for dp calculation 
-    same_kc_cf = False # if kc_cf for hs and cs are identical or kc_cf_cold = 2 * kc_cf_hot
-    sweep_on_phi = False # parameter sweep on phi or kc_cfs, alter Modelica codes accordingly
 
-    exp_name = 'Test-Marchionni_{}{}{} {:%Y-%m-%d-%H-%M-%S}'.format(exp_type.name, '_avg_rho_dp' if use_rho_bar > 0 else '', '_same_kc_cf' if same_kc_cf else '_diff_kc_cf', datetime.datetime.now())            
+    exp_name = 'Test-Marchionni_{}{} {:%Y-%m-%d-%H-%M-%S}'.format(exp_type.name, '_avg_rho_dp' if use_rho_bar > 0 else '', datetime.datetime.now())            
     # end of parameter initialization
 
     exp:Experiment = MarchionniTest(
@@ -288,9 +300,16 @@ def main(work_root = []):
                 'OEM': [from_kPa(202), from_degC(82.7), from_kPa(184), from_degC(282.3)]
             }                       
         }
+    sim_ops=[
+        'startTime=0', 
+        'stopTime=10',
+        'stepSize=2',
+        'solver=dassl',
+        '-nls=homotopy',
+        '-lv=LOG_DEBUG,LOG_INIT,LOG_NLS,LOG_NLS_V,LOG_STATS']
 
     if exp_type == ExpType.VS_CFD:
-
+        single_run = True
         # referred base cfg
         cfg_ref = {
             # geometry parameters
@@ -311,38 +330,49 @@ def main(work_root = []):
             "T_hot_out": from_degC(140), # "cold outlet temperature, K";
             "T_cold_in": from_degC(100), # "cold inlet temperature, K";
             "T_cold_out": from_degC(300), # "cold outlet temperature, K";
-            # "kc_dp": 1 # "pressure drop correction coefficient"
-        } 
+        }         
+
+        rho_bar = cal_rho_bar(cfg_ref)
+        cfg_offset = {}
         
-        cfg_offset_base = {
-                "keys" : ["a_phi"],   
-                "a_phi=0" : [-1],
-                "a_phi=5" : [5.0]      
-        }
+        if not single_run: # in the parameter sweep way
+            
+            cfg_offset_base = {
+                    "keys" : ["a_phi"],   
+                    "a_phi=0" : [-1],
+                    "a_phi=5" : [5.0]      
+            }
 
-        rho_bar = [1.0, 1.0]
+            kc_cfs = [1, 1.2, 1.5, 1.8]
 
-        if use_rho_bar:
-            T_flow = [(cfg_ref['T_hot_in'], cfg_ref['T_hot_out']), (cfg_ref['T_cold_in'], cfg_ref['T_cold_out'])]
-            p = [cfg_ref['p_hot_in'], cfg_ref['p_cold_in']]
-            for i in range(0, len(rho_bar)):
-                (T_in, T_out) = T_flow[i]
-                rho_bar[i] = PropsSI("DMASS", "P", p[i], "T" , (T_in + T_out) / 2, 'CO2')
+            # cfg with varied parameters from the base cfg
+            for kc_cf in kc_cfs:
+                cfg_offset_cp = deepcopy(cfg_offset_base)
+                cfg_offset_cp['keys'].extend(['Cf_C1','Cf_C2','use_rho_bar', 'rho_bar_hot', 'rho_bar_cold'])
+                for k, v in cfg_offset_cp.items():
+                    if k == 'keys':
+                        continue
+                    v.extend([kc_cf, kc_cf * 2, use_rho_bar])
+                    v.extend(rho_bar)
 
-        kc_cfs = [1, 1.2, 1.5, 1.8]
-        cfg_offset = {} 
+                cfg_offset[f'kc_cf={kc_cf}'] = cfg_offset_cp
+        
+        else: # sigle run to see result
+            cfg_offset_base = {
+                    "keys" : ['a_phi', 'Cf_C1','Cf_C2', 'use_rho_bar'],   
+                    "High T" : [-1, 1.504692615, -1, use_rho_bar],
+                    "Low T" : [-1, 1.660627977, -1, use_rho_bar]      
+            }
 
-        # cfg with varied parameters from the base cfg
-        for kc_cf in kc_cfs:
             cfg_offset_cp = deepcopy(cfg_offset_base)
-            cfg_offset_cp['keys'].extend(['Cf_C1','Cf_C2','use_rho_bar', 'rho_bar_hot', 'rho_bar_cold'])
+            cfg_offset_cp['keys'].extend(['rho_bar_hot', 'rho_bar_cold'])
+
             for k, v in cfg_offset_cp.items():
                 if k == 'keys':
                     continue
-                v.extend([kc_cf, kc_cf * (1 if same_kc_cf else 2), use_rho_bar])
                 v.extend(rho_bar)
 
-            cfg_offset[f'kc_cf={kc_cf}'] = cfg_offset_cp
+            cfg_offset[f'single_run'] = cfg_offset_cp
 
         ds_exp = TestDataSet.gen_test_dataset(cfg_ref, cfg_offset, exp_name)
         # add referred data for comparison
@@ -353,13 +383,7 @@ def main(work_root = []):
         print(json_str)    
 
         exp.simulate(
-            sim_ops=[
-                'startTime=0', 
-                'stopTime=10',
-                'stepSize=2',
-                'solver=dassl',
-                '-nls=homotopy',
-                '-lv=LOG_DEBUG,LOG_INIT,LOG_NLS,LOG_NLS_V,LOG_STATS'],
+            sim_ops = sim_ops,
             solution_dict=exp.gen_sol_dict(cfg_ref), 
             ds_test=ds_exp,
             append_save=False)   
@@ -401,6 +425,7 @@ def main(work_root = []):
                 "off-design #3" : [2.09 / A_stack,  from_degC(62)],
                 "off-design #4" : [2.62 / A_stack, from_degC(72.9)]        
         }
+        sweep_on_phi = False # parameter sweep on phi or kc_cfs, alter Modelica codes accordingly
 
         if sweep_on_phi:
             # cfg with varied parameters from the base cfg
@@ -433,9 +458,9 @@ def main(work_root = []):
                 for k, v in cfg_offset_cp.items():
                     if k == 'keys':
                         continue
-                    v.extend([kc_cf, kc_cf * (1 if same_kc_cf else 2)])
+                    v.extend([kc_cf, kc_cf * 2])
 
-                cfg_offset[f'kc_cf={kc_cf}_{"same" if same_kc_cf else "diff"}'] = cfg_offset_cp
+                cfg_offset[f'kc_cf={kc_cf}'] = cfg_offset_cp
 
         ds_exp = TestDataSet.gen_test_dataset(cfg_ref, cfg_offset, ds_name=exp_name)        
 

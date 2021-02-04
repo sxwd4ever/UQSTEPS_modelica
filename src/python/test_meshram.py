@@ -177,7 +177,7 @@ class ParamFitting(object):
                             func_para=self.evaluate, 
                             # Cf_a,b,c_hot, Cf_a,b,c_cold
                             pt=(1, 1, 1), 
-                            max_steps=200,
+                            max_steps=100,
                             num_samples=4, 
                             steplength=0.1)
 
@@ -399,7 +399,7 @@ class ParamFitting(object):
 
         return (err_h_T + err_h_dp + err_c_T + err_c_dp,)
 
-    def cal_err(self, x, y):
+    def cal_err(self, x, y) -> float:
         if abs(y) < 1e-10:
             return 0
         
@@ -416,7 +416,6 @@ def main(work_root = []):
 
     exp_type = ExpType.VS_CFD
 
-    same_kc_cf = True # if kc_cf for hs and cs are identical or kc_cf_cold = 2 * kc_cf_hot
     model_name = "Steps.Test.TestTP_PCHE_Meshram"  
     # referred base cfg
     cfg_base = {
@@ -526,24 +525,36 @@ def main(work_root = []):
                         if "Straight" in test:
                             kc_cf = kc_cf_s
                         # add kc_cf_hot, kc_cf_cold
-                        cfg_offset_cp[test].extend([kc_cf, kc_cf * (1 if same_kc_cf else 2)])
+                        cfg_offset_cp[test].extend([kc_cf, kc_cf * 2])
 
                     cfg_offset[f'Z(kc_cf={kc_cf_z}) S(kc_cf={kc_cf_s})'] = cfg_offset_cp
 
-                exp_name = 'Test-Meshram{} {:%Y-%m-%d-%H-%M-%S}'.format('_same_kc_cf' if same_kc_cf else '_diff_kc_cf', datetime.datetime.now())            
+                exp_name = 'Test-Meshram {:%Y-%m-%d-%H-%M-%S}'.format(datetime.datetime.now())            
                 
             else: # single run 
                 # Gnielinski cor for straight channel and Ngo's cor for zigzag channels
                 # different C1, C2 applied for HT and LT respectively. 
                 # For Straight Channel, C2 is a dummy variable since C2 = 1 / C1
+                # cfg_offset[f"vs Meshram's CFD"] = {
+                #         # values in Table 3 in Meshram [2016]
+                #         "keys" : ["T_cold_in", "T_cold_out", "T_hot_in", "T_hot_out", "u_cold_in", "u_hot_in", "a_phi","L_fp", "Cf_C1", "Cf_C2"],
+                #         "Zigzag High T" : [500, 639.15, 730, 576.69, 1.876, 7.564, 36.0, 0.16, 1.464907987, 1.382382861],
+                #         "Zigzag Low T": [400, 522.23, 630, 466.69, 0.806, 4.501, 36.0, 0.16, 1.28633131, 2.647075995], 
+                #         "Straight High T": [500, 615.48, 730, 601.83, 1.518, 6.118, -1, 0.2, 1.504692615,1],
+                #         "Straigth Low T": [400, 498.45, 630, 494.37, 0.842, 4.702, -1, 0.2, 1.660627977, 1]
+                # }
+
+                # Gnielinski cor for straight channel and Liao's Nusselt number cor + Ngo's friction factor cor for zigzag channels
+                # different C1, C2 applied for HT and LT respectively. 
+                # For Straight Channel, C2 is a dummy variable since C2 = 1 / C1
                 cfg_offset[f"vs Meshram's CFD"] = {
                         # values in Table 3 in Meshram [2016]
                         "keys" : ["T_cold_in", "T_cold_out", "T_hot_in", "T_hot_out", "u_cold_in", "u_hot_in", "a_phi","L_fp", "Cf_C1", "Cf_C2"],
-                        "Zigzag High T" : [500, 639.15, 730, 576.69, 1.876, 7.564, 36.0, 0.16, 1.464907987, 1.382382861],
-                        "Zigzag Low T": [400, 522.23, 630, 466.69, 0.806, 4.501, 36.0, 0.16, 1.28633131, 2.647075995], 
-                        "Straight High T": [500, 615.48, 730, 601.83, 1.518, 6.118, -1, 0.2, 1.504692615,1],
+                        "Zigzag High T" : [500, 639.15, 730, 576.69, 1.876, 7.564, 36.0, 0.16, 2.146423845, 1.382382861],
+                        "Zigzag Low T": [400, 522.23, 630, 466.69, 0.806, 4.501, 36.0, 0.16, 1.345870392, 2.647075995], 
+                        "Straight High T": [500, 615.48, 730, 601.83, 1.518, 6.118, -1, 0.2, 1.504692615, 1],
                         "Straigth Low T": [400, 498.45, 630, 494.37, 0.842, 4.702, -1, 0.2, 1.660627977, 1]
-                }
+                }                
                                         
                 exp_name = 'Test-Meshram_single {:%Y-%m-%d-%H-%M-%S}'.format(datetime.datetime.now())            
             
@@ -653,9 +664,9 @@ def main(work_root = []):
         suffix_train_full = deepcopy(suffix_straight)
         suffix_train_full.extend(deepcopy(suffix_zigzag))
 
-        # suffix_train = suffix_zigzag 
+        suffix_train = suffix_zigzag 
         # suffix_train = suffix_train_full
-        suffix_train = suffix_straight # suffix_straight, suffix_train_full
+        # suffix_train = suffix_straight 
 
         case_dict = {
             name: {
@@ -684,7 +695,7 @@ def main(work_root = []):
 
         for name, case in case_dict.items():
             fitting = ParamFitting(
-                exp, cfg_base, case["cfg_offset"], mapping, sim_ops, case["data_ref"], errfunc=ErrorFunc.Dp)
+                exp, cfg_base, case["cfg_offset"], mapping, sim_ops, case["data_ref"], errfunc=ErrorFunc.T)
 
             fitting.execute()
 

@@ -20,8 +20,10 @@ model MarchionniPCHEHeatTransferFV "Marchionni [2019] heat transfer Correlation"
   inner Modelica.SIunits.Area A_c = Modelica.Constants.pi * d_c * d_c / 8 "Area of semi-circular tube"; 
   inner Modelica.SIunits.Length peri_c = d_c * Modelica.Constants.pi / 2 + d_c "perimeter of semi-circular";   
   */
+  
+  Real g = Modelica.Constants.g_n;
+  
   // volume properties
-
   // averaged with upstream/downstream node property
   Medium.Temperature T_vol[Nw] "Fluid temperature in the volumes";  
   Real G_vol[Nw] "mass flow flux";  
@@ -43,15 +45,28 @@ model MarchionniPCHEHeatTransferFV "Marchionni [2019] heat transfer Correlation"
   SI.PerUnit Re_l[Nw] "Reynolds number limited to validity range";
   SI.CoefficientOfHeatTransfer gamma[Nw] "Heat transfer coefficients at the volumes";  
   SI.ThermalConductivity k_wall[Nw] "wall thermal conductivity - determined by material of wall and local temperature";      
-  // Real kc_T[Nw];  
+  // Real kc_T[Nw];    
+  Medium.AbsolutePressure p_vol[Nw] "volume averaged pressure";
+  SI.SpecificEnthalpy h_vol[Nw];
   
-  // node properties  
+  SI.PerUnit Nu_l[Nw] "Nusselt number by Liao-Zhao correlation";
+  // SI.PerUnit f_l[Nw] "friction factor by Liao-Zhao correlation";
+  
+  // quantities evaluated at corresponding wall volume temperature
+  Medium.ThermodynamicState state_w[Nw] "ThermoDynamicState";
+  SI.Density rho_w[Nw] "density";
+  SI.SpecificEnthalpy h_w[Nw];
+  SI.Density cp_bar[Nw] "mean specific heat in Eq. 12 in Liao's paper";
+  Real Gr[Nw] "Grasholf number";
+  
+  // node properties    
   SI.Velocity u[Nf] "Local velocity of fluid";
   Real G[Nf] "mass flow flux";
   Medium.DynamicViscosity mu[Nf] "Dynamic viscosity";
   Medium.ThermalConductivity k[Nf] "Thermal conductivity";
   Medium.Density rho[Nf] "Density of fluid";  
   SI.SpecificHeatCapacityAtConstantPressure cp[Nf] "HeatCapacityAtConstantPressure";  
+  SI.SpecificEnthalpy h[Nf] ;
 
   Modelica.SIunits.Length t_wall = (2 - Modelica.Constants.pi / 4) * (d_c / 2) "thickness of wall between two neighboring hot and cold";
   parameter SI.Length pitch "pitch length";
@@ -84,7 +99,8 @@ equation
     mu[j] = noEvent(Medium.dynamicViscosity(fluidState[j]));
     k[j] = noEvent(Medium.thermalConductivity(fluidState[j]));
     rho[j] = noEvent(Medium.density(fluidState[j]));
-    cp[j] = noEvent(Medium.specificHeatCapacityCp(fluidState[j]));
+    cp[j] = noEvent(Medium.specificHeatCapacityCp(fluidState[j]));   
+    h[j] = noEvent(Medium.specificEnthalpy(fluidState[j])); 
   end for;   
   
   th_conductivity.u[1] = 0.0;
@@ -99,6 +115,8 @@ equation
       k_vol[j] = (k[j] + k[j+1]) / 2;
       rho_vol[j] = (rho[j] + rho[j+1]) / 2;
       cp_vol[j] = (cp[j] + cp[j+1]) / 2; 
+      p_vol[j] = (fluidState[j].p + fluidState[j+1].p) / 2;
+      h_vol[j] = (h[j] + h[j+1]) / 2;
     else
       T_vol[j] = T[j+1];
       G_vol[j] = G[j+1];
@@ -107,10 +125,21 @@ equation
       k_vol[j] = k[j+1];
       rho_vol[j] = rho[j];
       cp_vol[j] = cp[j+1];
+      p_vol[j] = fluidState[j].p;
+      h_vol[j] = h[j+1];
     end if;    
-
-    // kc_T[j] = if T_vol[j] < 600 then 2.0 else 1.0;        
     
+    // kc_T[j] = if T_vol[j] < 600 then 2.0 else 1.0;        
+    state_w[j] = Medium.setState_pT(p_vol[j], Tw[j]);
+    rho_w[j] = Medium.density(state_w[j]);
+    h_w[j] = Medium.specificEnthalpy(state_w[j]);
+    
+    // use abs() to prevent negetive Gr
+    Gr[j] = abs((rho_w[j] - rho_vol[j]) * rho_vol[j] * g * (d_c ^ 3) / (mu_vol[j]^2));    
+    cp_bar[j] = (h_w[j] - h_vol[j]) / (Tw[j] - T_vol[j]);
+    Nu_l[j] = 0.124 * (Re_l[j] ^ 0.8) * (Pr[j] ^ 0.4) * (Gr[j] / (Re_l[j] ^ 2))^ 0.203 * (rho_w[j] / rho_vol[j]) ^ 0.842 * (cp_bar[j] / cp_vol[j]) ^ 0.384;    
+    
+      
     Re[j] =  noEvent(G_vol[j] * Dhyd / mu_vol[j]);
     Re_l[j] = noEvent(Functions.smoothSat(Re[j], Re_min, 1e9, Re_min / 2));
     Pr[j] = noEvent(cp_vol[j] * mu_vol[j] / k_vol[j]);      
@@ -129,7 +158,8 @@ equation
       // for zigzag channel, use Ngo correlation
       // Nu[j] = (0.1696 + Cf_C1) * (Re_l[j] ^ (0.629 + Cf_C2)) * (Pr[j] ^ (0.317 + Cf_C3));
       // Nu[j] = 0.1696 * (Re_l[j] ^ 0.629) * (Pr[j] ^ 0.317);
-      Nu[j] = Cf_C1 * 0.1696 * (Re_l[j] ^ 0.629) * (Pr[j] ^ 0.317);
+      //Nu[j] = Cf_C1 * 0.1696 * (Re_l[j] ^ 0.629) * (Pr[j] ^ 0.317);
+      Nu[j] = Cf_C1 * Nu_l[j];
       // Nu[j] = Cf_C1 * (Re_l[j] ^ Cf_C2) * (Pr[j] ^ Cf_C3);
       // f[j] = (0.1924 + Cf_C1) * (Re_l[j] ^ (-0.091 + Cf_C2));
       // f[j] = 0.1924 * (Re_l[j] ^ (-0.091));
