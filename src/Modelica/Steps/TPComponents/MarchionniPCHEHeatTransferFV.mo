@@ -49,15 +49,14 @@ model MarchionniPCHEHeatTransferFV "Marchionni [2019] heat transfer Correlation"
   Medium.AbsolutePressure p_vol[Nw] "volume averaged pressure";
   SI.SpecificEnthalpy h_vol[Nw];
   
-  SI.PerUnit Nu_l[Nw] "Nusselt number by Liao-Zhao correlation";
-  // SI.PerUnit f_l[Nw] "friction factor by Liao-Zhao correlation";
-  
   // quantities evaluated at corresponding wall volume temperature
   Medium.ThermodynamicState state_w[Nw] "ThermoDynamicState";
   SI.Density rho_w[Nw] "density";
   SI.SpecificEnthalpy h_w[Nw];
-  SI.Density cp_bar[Nw] "mean specific heat in Eq. 12 in Liao's paper";
+  SI.SpecificHeatCapacityAtConstantPressure cp_bar[Nw] "mean specific heat in Eq. 12 in Liao's paper";
   Real Gr[Nw] "Grasholf number";
+  
+  Real q1[Nw], q2[Nw], q3[Nw] "intermediate values for debug/correlation modelling purpose";
   
   // node properties    
   SI.Velocity u[Nf] "Local velocity of fluid";
@@ -129,21 +128,19 @@ equation
       h_vol[j] = h[j+1];
     end if;    
     
-    // kc_T[j] = if T_vol[j] < 600 then 2.0 else 1.0;        
+    // kc_T[j] = if T_vol[j] < 600 then 2.0 else 1.0;  
+    // calculate thermaldynamic state and relative quantities on wall temperature       
     state_w[j] = Medium.setState_pT(p_vol[j], Tw[j]);
     rho_w[j] = Medium.density(state_w[j]);
-    h_w[j] = Medium.specificEnthalpy(state_w[j]);
-    
+    h_w[j] = Medium.specificEnthalpy(state_w[j]);    
     // use abs() to prevent negetive Gr
     Gr[j] = abs((rho_w[j] - rho_vol[j]) * rho_vol[j] * g * (d_c ^ 3) / (mu_vol[j]^2));    
-    cp_bar[j] = (h_w[j] - h_vol[j]) / (Tw[j] - T_vol[j]);
-    Nu_l[j] = 0.124 * (Re_l[j] ^ 0.8) * (Pr[j] ^ 0.4) * (Gr[j] / (Re_l[j] ^ 2))^ 0.203 * (rho_w[j] / rho_vol[j]) ^ 0.842 * (cp_bar[j] / cp_vol[j]) ^ 0.384;    
+    cp_bar[j] = (h_w[j] - h_vol[j]) / (Tw[j] - T_vol[j]);   
     
-      
+    // calculate Re and Pr  
     Re[j] =  noEvent(G_vol[j] * Dhyd / mu_vol[j]);
     Re_l[j] = noEvent(Functions.smoothSat(Re[j], Re_min, 1e9, Re_min / 2));
-    Pr[j] = noEvent(cp_vol[j] * mu_vol[j] / k_vol[j]);      
-    
+    Pr[j] = noEvent(cp_vol[j] * mu_vol[j] / k_vol[j]);          
 
     //C1[j] = exp(Cf_C1 +  Cf_C2  * log(Re_l[j] / 1e4)  + Cf_C3 * log(Pr[j]));
     if phi <= 0 then 
@@ -154,16 +151,34 @@ equation
    
       f[j] = Cf_C1 * (0.25 * (( 4.781 - (co_A[j] - 4.781) ^ 2 / (co_B[j] - 2 * co_A[j] + 4.781)) ^(-2)));
       Nu[j] = noEvent((1 / Cf_C1) * ((f[j]/2 * (Re_l[j] - 1000) * Pr[j]) / (1 + 12.7 * ( Pr[j] ^(2/3) - 1) * (f[j]/2)^0.5)));
+      
+      // dummy variables      
+      q1[j] = 0;
+      q2[j] = 0;
+      q3[j] = 0;      
+      
     else    
       // for zigzag channel, use Ngo correlation
       // Nu[j] = (0.1696 + Cf_C1) * (Re_l[j] ^ (0.629 + Cf_C2)) * (Pr[j] ^ (0.317 + Cf_C3));
       // Nu[j] = 0.1696 * (Re_l[j] ^ 0.629) * (Pr[j] ^ 0.317);
       //Nu[j] = Cf_C1 * 0.1696 * (Re_l[j] ^ 0.629) * (Pr[j] ^ 0.317);
-      Nu[j] = Cf_C1 * Nu_l[j];
+      
+      // Nusselt number by Liao-Zhao correlation
+      // Nu_l[j] = 0.124 * (Re_l[j] ^ 0.8) * (Pr[j] ^ 0.4) * (Gr[j] / (Re_l[j] ^ 2))^ 0.203 * (rho_w[j] / rho_vol[j]) ^ 0.842 * (cp_bar[j] / cp_vol[j]) ^ 0.384;    
+      // Nu[j] = Cf_C1 * Nu_l[j];
+      
+      // My update of Liao-zhao Nusselt number correlation, modify the temperature related item
+      // Nu_l[j] = 0.124 * (Re_l[j] ^ 0.8) * (Pr[j] ^ 0.4) * (Gr[j] / (Re_l[j] ^ 2))^ 0.203 * (rho_w[j] / rho_vol[j]) ^ (0.842 + Cf_C1) * (cp_bar[j] / cp_vol[j]) ^ (0.384 + Cf_C3);    
+      q1[j] = Gr[j] / (Re_l[j] ^ 2);      
+      q2[j] = rho_w[j] / rho_vol[j];      
+      q3[j] = cp_bar[j] / cp_vol[j];      
+      
+      Nu[j] = Cf_C1 * (Re_l[j] ^ 0.8) * (Pr[j] ^ 0.4) * q1[j]^ 0.203 * q2[j] ^ 0.842 * q3[j] ^ 0.384;       
+      
       // Nu[j] = Cf_C1 * (Re_l[j] ^ Cf_C2) * (Pr[j] ^ Cf_C3);
       // f[j] = (0.1924 + Cf_C1) * (Re_l[j] ^ (-0.091 + Cf_C2));
-      // f[j] = 0.1924 * (Re_l[j] ^ (-0.091));
-      f[j] = Cf_C2 * 0.1924 * (Re_l[j] ^ (-0.091));
+      //f[j] = 0.1924 * (Re_l[j] ^ (-0.091));
+      f[j] = Cf_C2 * (Re_l[j] ^ (-0.091));
       
       co_A[j] = 1.0;
       co_B[j] = 1.0;

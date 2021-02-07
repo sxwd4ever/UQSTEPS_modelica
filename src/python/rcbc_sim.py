@@ -290,7 +290,7 @@ def main(work_root = []):
             'D:/Workspace/SolarTherm/SolarTherm/package.mo',
             "Modelica 3.2.1"])
 
-    exp.simulate(
+    exp.simulate_batch(
         sim_ops=[
             'startTime=0', 
             'stopTime=100',

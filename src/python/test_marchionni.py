@@ -25,7 +25,7 @@ import numpy as np
 from model import TestDataSet,TestConfig, TestItem, TestResult,Variable
 from plotlib import PlotManager, DataSeries, AxisType
 from physics import Temperature, Pressure, MDot
-from experiments import Experiment, PCHEExperiment
+from experiments import Experiment, PCHEExperiment, ErrorFunc, ParamFitting
 from utils import from_degC, from_bar, from_kPa
 
 class MarchionniTest(PCHEExperiment):
@@ -52,10 +52,10 @@ class MarchionniTest(PCHEExperiment):
 
         return sol_dict
         
-    def post_process(self, test: TestItem, ds_exp:TestDataSet):
-        super().post_process(test, ds_exp)
+    def post_process(self, test: TestItem, data_ref=None):
+        super().post_process(test, data_ref)
 
-        if ds_exp.ref_data == None:
+        if data_ref == None:
             return
 
         # revese hc
@@ -65,18 +65,13 @@ class MarchionniTest(PCHEExperiment):
         test.set_post_data('hc_hot', np.array(hc_hot[::-1]))
         test.set_post_data('hc_cold', np.array(hc_cold[::-1]))
 
-        if not test.name in ds_exp.ref_data.keys():
-            return
-
-        ref_data = ds_exp.ref_data[test.name]
-
-        keys = ref_data['keys']
+        keys = data_ref['keys']
         row_names = ['1D', 'OEM']
 
         err_dict = {}
 
         for rname in row_names:
-            row = ref_data[rname]
+            row = data_ref[rname]
 
             for i in range(0, len(keys)):
                 k = keys[i] + "_act"
@@ -198,10 +193,23 @@ class MarchionniTest(PCHEExperiment):
             }                  
         } 
 
+class MarchionniExpFitting(ParamFitting):
+
+    def prepare_data(self, values):
+        values_new = deepcopy(values)
+        keys = ['T_hot', 'dp_hot', 'T_cold', 'dp_cold']
+
+
+        # extract 11 points out of 21 results to align with data referenced
+        for k in keys:
+            values_new[k] = values[k][0::2]
+
+        return values_new
 class ExpType(Enum):
     LOAD_PRE_EXP = 1,
     VS_CFD = 2,  # "aginst marchionni's 1D_vs_3D"
     FULL_SCALE = 3, # full scale off design in Sec. 4 of [Marchionni 2019]
+    Fitting = 4 # paramters fitting
 
 def cal_rho_bar(cfg_ref) -> Tuple[float, float]:
     '''
@@ -223,7 +231,7 @@ def main(work_root = []):
         work_root = os.path.abspath(os.curdir)  
 
     # parameters initialization for this simulation
-    exp_type:ExpType = ExpType.VS_CFD
+    exp_type:ExpType = ExpType.Fitting
     model_name = "Steps.Test.TestTP_PCHE_Marchionni"  
     # exp flags 
     use_rho_bar = -1.0 # > 1.0 use rho_bar for dp calculation 
@@ -311,7 +319,7 @@ def main(work_root = []):
     if exp_type == ExpType.VS_CFD:
         single_run = True
         # referred base cfg
-        cfg_ref = {
+        cfg_base = {
             # geometry parameters
             "N_ch": 1e4, # "channel number"
             "N_seg": 20, # "segments number"
@@ -332,7 +340,7 @@ def main(work_root = []):
             "T_cold_out": from_degC(300), # "cold outlet temperature, K";
         }         
 
-        rho_bar = cal_rho_bar(cfg_ref)
+        rho_bar = cal_rho_bar(cfg_base)
         cfg_offset = {}
         
         if not single_run: # in the parameter sweep way
@@ -374,7 +382,7 @@ def main(work_root = []):
 
             cfg_offset[f'single_run'] = cfg_offset_cp
 
-        ds_exp = TestDataSet.gen_test_dataset(cfg_ref, cfg_offset, exp_name)
+        ds_exp = TestDataSet.gen_test_dataset(cfg_base, cfg_offset, exp_name)
         # add referred data for comparison
         ds_exp.set_ref_data(ref_data)        
         ds_exp.add_view(mapping)
@@ -382,9 +390,9 @@ def main(work_root = []):
         json_str = ds_exp.to_json()    
         print(json_str)    
 
-        exp.simulate(
+        exp.simulate_batch(
             sim_ops = sim_ops,
-            solution_dict=exp.gen_sol_dict(cfg_ref), 
+            solution_dict=exp.gen_sol_dict(cfg_base), 
             ds_test=ds_exp,
             append_save=False)   
 
@@ -396,7 +404,7 @@ def main(work_root = []):
         A_c = 1.57e-6 # mm^2 -> m^2
         A_stack = N_ch * A_c # area of cross section for a stack containg all channels
         # referred base cfg
-        cfg_ref = {
+        cfg_base = {
             # geometry parameters
             "N_ch": N_ch, # "channel number"
             "N_seg": 20, # "segments number"
@@ -462,7 +470,7 @@ def main(work_root = []):
 
                 cfg_offset[f'kc_cf={kc_cf}'] = cfg_offset_cp
 
-        ds_exp = TestDataSet.gen_test_dataset(cfg_ref, cfg_offset, ds_name=exp_name)        
+        ds_exp = TestDataSet.gen_test_dataset(cfg_base, cfg_offset, ds_name=exp_name)        
 
         # add referred data for comparison
         ds_exp.set_ref_data(ref_data)
@@ -471,7 +479,7 @@ def main(work_root = []):
         json_str = ds_exp.to_json()    
         print(json_str)    
 
-        exp.simulate(
+        exp.simulate_batch(
             sim_ops=[
                 'startTime=0', 
                 'stopTime=10',
@@ -479,7 +487,7 @@ def main(work_root = []):
                 'solver=dassl',
                 '-nls=homotopy',
                 '-lv=LOG_DEBUG,LOG_INIT,LOG_NLS,LOG_NLS_V,LOG_STATS'],
-            solution_dict=exp.gen_sol_dict(cfg_ref), 
+            solution_dict=exp.gen_sol_dict(cfg_base), 
             ds_test=ds_exp,
             append_save=False)   
 
@@ -493,6 +501,83 @@ def main(work_root = []):
         ds_exp.set_ref_data(ref_data)    
         exp.load_results(exp_name, dir_name=exp_name, ds_exp=ds_exp,has_view=True)
         exp.plot_results(ds_exp, plot_metacfg_base, plot_metacfg_offest)   
+
+    elif exp_type == ExpType.Fitting:
+
+        data_ref_full = {
+            # 	0	0.016	0.032	0.048	0.064	0.08	0.096	0.112	0.128	0.144	0.16
+            # Temperature [K]
+            "T_hs_3D" : [673.9419, 650.9382, 630.6764, 610.4142, 588.7818, 569.0686, 549.6293, 531.0123, 512.6700, 495.4240, 479.2734],
+            "T_hs_1D" : [670.3775, 650.3897, 630.6760, 610.4139, 592.0714, 573.1803, 554.5635, 536.4951, 518.9749, 502.0031, 487.7732],
+            "T_cs_3D" : [528.0776, 507.2670, 487.8280, 469.2110, 452.2394, 435.8161, 420.7637, 407.3566, 394.4977, 383.2836, 374.2622],
+            "T_cs_1D" : [519.8520, 501.5092, 483.4409, 465.9206, 449.7713, 433.8962, 419.3922, 406.2588, 393.9483, 383.0084, 374.8103],
+            # (accumulated) pressdure drop, [kPa]
+            "dp_hs_3D" : [0.0000, 0.6471, 1.3399, 2.0785, 2.8552, 3.6776, 4.5381, 5.4520, 6.4040, 7.4093, 8.3384],
+            "dp_hs_1D" : [0.0000, 1.0968, 2.1402, 3.1380, 4.0976, 5.0038, 5.8720, 6.6944, 7.4787, 8.2248, 8.9253],
+            "dp_cs_3D" : [3.7729, 3.4520, 3.1463, 2.8178, 2.4665, 2.0998, 1.7027, 1.2904, 0.8399, 0.3437, 0.0000],
+            "dp_cs_1D" : [4.0549, 3.5358, 3.0473, 2.5968, 2.1463, 1.7340, 1.3445, 0.9779, 0.6189, 0.3056, 0.0152],
+            "h_hs_3D" : [1.9840, 1.9608, 1.9719, 1.9926, 2.0202, 2.0382, 2.0589, 2.0988, 2.0976, 2.1307, 2.8428],
+            "h_hs_1D" : [1.8852, 1.9032, 1.9212, 1.9419, 1.9640, 1.9847, 2.0081, 2.0302, 2.0537, 2.0771, 2.0896],
+            "h_cs_3D" : [3.1872, 2.1268, 2.0529, 1.9748, 1.9352, 1.9024, 1.8929, 1.9013, 1.8973, 1.9249, 1.9593],
+            "h_cs_1D" : [2.7152, 2.6248, 2.4727, 2.3480, 2.2521, 2.1768, 2.1248, 2.0879, 2.0702, 2.0579, 2.0581]}
+
+        cfg_offset_full = {
+                "keys" : ['a_phi', 'use_rho_bar'],   
+                "Fitting_CFD" : [-1, use_rho_bar]
+        }
+        # referred base cfg
+        cfg_base = {
+            # geometry parameters
+            "N_ch": 1e4, # "channel number"
+            "N_seg": 20, # "segments number"
+            "D_ch": 2e-3, # "channel diameter, semi circular tube"
+            "L_fp": 272e-3, # "channel flow path length"
+            "L_pitch": 12.3e-3, # "pitch length"
+            "a_phi": 36.0, # "pitch angle, degree"
+            "H_ch": 3.26e-3, # "Height of the solid domain, containing one cold tube and one hot tube"
+            "W_ch": 1.27e-3 * 2, # "Width of the solid domain"
+            # boundary conditon
+            "G_hot_in": 509.3, # "hot inlet velocity m/s";
+            "G_cold_in": 509.3, # "cold inlet velocity m/s";
+            "p_hot_in": from_bar(75), # "hot inlet pressure";
+            "p_cold_in":from_bar(150), # "cold inlet pressure";
+            "T_hot_in": from_degC(400), # "hot inlet temperature, K";
+            "T_hot_out": from_degC(140), # "cold outlet temperature, K";
+            "T_cold_in": from_degC(100), # "cold inlet temperature, K";
+            "T_cold_out": from_degC(300), # "cold outlet temperature, K";
+        }   
+
+        suffix_train = [("Fitting_CFD", "3D")] # use Marchionni's CFD result for params fitting
+
+        case_dict = {
+            name: {
+                "cfg": {
+                    "keys": [x for x in cfg_base.keys()] + cfg_offset_full['keys'],
+                    "train": [x for x in cfg_base.values()] + cfg_offset_full[name]
+                },
+                "data_ref": {
+                    "train": {
+                        "T_hs": data_ref_full["T_hs_" + suffix],
+                        "dp_hs": data_ref_full["dp_hs_" + suffix],
+                        "T_cs": data_ref_full["T_cs_" + suffix],
+                        "dp_cs": data_ref_full["dp_cs_" + suffix]
+                    }
+                }}
+            for (name, suffix) in suffix_train}
+
+        dim_y = 1
+
+        for l in range(0, dim_y):
+            # add mapping for calculated error
+            # src -> dest
+            k = f'err_fun_{l}'
+            mapping["Comparison of T and dp"][k] = k
+
+        for name, case in case_dict.items():
+            fitting = MarchionniExpFitting(
+                exp, case["cfg"], mapping, sim_ops, case["data_ref"], errfunc=ErrorFunc.Dp)
+
+            fitting.run_fitting(pt=(1,1,1),max_steps=50)
 
     print('All done!')
 

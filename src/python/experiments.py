@@ -1,5 +1,6 @@
 from collections import OrderedDict
 from logging import exception
+import datetime
 from math import trunc
 from copy import deepcopy
 from os.path import join, sep
@@ -11,14 +12,18 @@ from datetime import datetime as dt
 from numpy.core import test
 import pandas as pd
 import xlwings as xw
+from typing import Tuple, List
+from numpy.core.fromnumeric import mean
 
 from os import path,sep
 import os
 import numpy as np
+from enum import Enum
 
 # from ex.CoolPropQuery import result
 
-from model import TestDataSet, Variable, TestResult, TestItem, TestConstants
+from model import TestDataSet, TestGroup, Variable, TestResult, TestItem, TestConstants
+from CoolProp.CoolProp import PhaseSI, PropsSI, get_global_param_string
 from plotlib import PlotManager, DataSeries, AxisType
 from physics import Temperature, Pressure, MDot
 from utils import ExcelHelper, mkdir_filepath
@@ -119,29 +124,14 @@ class Experiment(object):
 
             self.model_loaded = True
 
-    def simulate(self, sim_ops, solution_dict, ds_test:TestDataSet, append_save=True):         
-
-        # options for simulation - steady state simulation, no iteration required, so set numberOfIntervals = 2 
-        if not self.model_loaded:
-            self.load_model() # load model once and once only to save time for batch execution
+    def simulate_batch(self, sim_ops, solution_dict, ds_test:TestDataSet, append_save=True):         
 
         for group in ds_test.values():
             for (test_name, test) in group.items():
-                sol_keys = list(solution_dict.keys())
-                solutions = np.ones((len(sol_keys),1)) * -1 # default value
-                
-                try:
-                    print(f' ready to run test={test_name} in group={group.name}\n')
-                    self.model.setParameters(test.cfg.gen_params())
-                    self.model.setSimulationOptions(sim_ops)
-                    self.model.simulate()
-                    solutions = self.model.getSolutions(sol_keys) 
-                except:
-                    pass
 
-                test.result = TestResult.from_keyvalues(solution_dict, solutions) 
-                
-                self.post_process(test, ds_test)
+                print(f' ready to run test={test_name} in group={group.name}\n')
+
+                self.simulate(sim_ops=sim_ops, solution_dict=solution_dict, test=test, data_ref=ds_test.ref_data)               
 
                 if(append_save): # append the result each time we finish the simulation
                     # use a copy for saving. avoid concurrent iteration on same object
@@ -149,7 +139,28 @@ class Experiment(object):
         
         print('all simulation(s) done, results saved in Test Data Set')        
 
-    def post_process(self, test:TestItem, ds_exp:TestDataSet):
+    def simulate(self, sim_ops, solution_dict, test:TestItem, data_ref=None):
+
+        sol_keys = list(solution_dict.keys())
+        solutions = np.ones((len(sol_keys),1)) * -1 # default value        
+
+        try:
+
+            if not self.model_loaded:
+                self.load_model() # load model once and once only to save time for batch execution
+
+            self.model.setParameters(test.cfg.gen_params())
+            self.model.setSimulationOptions(sim_ops)
+            self.model.simulate()
+            solutions = self.model.getSolutions(sol_keys) 
+        except:
+            pass
+
+        test.result = TestResult.from_keyvalues(solution_dict, solutions) 
+
+        self.post_process(test, data_ref)
+
+    def post_process(self, test:TestItem, data_ref):
         pass
 
     def save_results(self, ds_test : TestDataSet):
@@ -309,7 +320,7 @@ class Experiment(object):
         return ""        
 class PCHEExperiment(Experiment):
 
-    def post_process(self, test:TestItem, ds_exp:TestDataSet):
+    def post_process(self, test:TestItem, data_ref):
         '''
             post process the test result after simulation
             data mapping and re-collection can be applied in this function
@@ -494,3 +505,312 @@ class PCHEExperiment(Experiment):
 
         return sol_dict    
 
+    def Nu_cor(self, text, T_b, T_w, p_b, p_w, G, d, medium, verbose=False):
+        g = 9.80665 # gravity acceleration
+
+        rho_w = PropsSI("D", "T", T_w, "P", p_w, medium)
+        rho_b = PropsSI("D", "T", T_b, "P", p_b, medium)
+        mu_b = PropsSI("VISCOSITY", "T", T_b, "P", p_b, medium)
+        cp_b = PropsSI("CPMASS", "T", T_b, "P", p_b, medium)
+        k_b = PropsSI("CONDUCTIVITY", "T", T_b, "P", p_b, medium)
+        h_w = PropsSI("HMASS", "T", T_w, "P", p_w, medium)
+        h_b = PropsSI("HMASS", "T", T_b, "P", p_b, medium)
+        cp_bar = (h_w - h_b) / (T_w - T_b)
+
+        Gr = abs((rho_w - rho_b) * rho_b * g * (d**3) / (mu_b ** 2))
+        Re = G * d / mu_b
+        Pr = cp_b * mu_b / k_b
+
+        q1 = Gr / (Re ** 2)
+        q2 = rho_w / rho_b
+        q3 = cp_bar / cp_b
+
+        Nu = 0.124 * (Re ** 0.8) * (Pr ** 0.4) * (q1 ** 0.203) * (q2 ** 0.842) * (q3 ** 0.284)
+        # if q2 > 1:
+        #     q2 = 1 / q2
+        if verbose:
+            print(f'{text}: Nu={Nu}, q1={q1}, q2={q2}, q3={q3}')
+
+        return (Nu, q1, q2, q3)
+
+    # bcs = [bc1, bc2, ...]
+    # bcn = (st_hot_in, st_cold_in)
+    # st = (T [K], p [bar->ba])
+
+    def predict_cor_coff(self, T_h, p_h, T_c, p_c, G, d, medium, verbose=False) -> Tuple[float, float]:
+        '''
+            use boundary conditions to predict C1
+        '''
+        sides ={
+            "hot": {
+                "text": "for hot side",
+                "T_b": T_h,
+                "T_w": (T_h + T_c)/2,
+                "p_b": p_h, 
+                "p_w": p_h,
+                "G": G,
+                "d": d,
+                "medium": medium,
+                "verbose": verbose,
+            },
+            "cold": {
+                "text": "for cold side",
+                "T_b": T_c,
+                "T_w": (T_h + T_c)/2,
+                "p_b": p_c, 
+                "p_w": p_c,
+                "G": G,
+                "d": d,
+                "medium": medium,
+                "verbose": verbose   
+            }
+        }
+
+        (Nu, q1, q2, q3) = ([], [], [], [])
+
+        for side in sides.values():
+            (v1, v2, v3, v4) = self.Nu_cor(**side)
+            Nu.append(v1)
+            q1.append(v2)
+            q2.append(v3)
+            q3.append(v4)   
+
+        if verbose:
+            print(f"Averaged value: Nu_bar={mean(Nu)}, q1_bar={mean(q1)}, q2_bar={mean(q2)}, q3_bar={mean(q3)}")
+        C1 = 1.503212939 * mean(q3) -1.18150071
+        C2 = -1.618997638 * mean(q3) + 1.892017384
+
+        return (C1, C2)
+class FittingStage(Enum):
+    train = 1,
+    test = 2
+
+class ErrorFunc(Enum):
+    T = 1, # consider temperature only 
+    Dp = 2, # consider pressure drop only
+    T_Dp_both = 3
+
+class ParamFitting(object):
+    
+    KEY_GNAME = "C1_fitting"
+
+    def __init__(self, exp, cases, mapping, sim_ops, errfunc = ErrorFunc.T) -> None:
+        super().__init__() 
+        self.exp:Experiment = exp
+        self.cases = cases
+        self.mapping = mapping
+        self.sim_ops = sim_ops
+        self.errfunc = errfunc
+        self.case_name = "" # current case 
+
+
+    def run_fitting(self, pt = (1,1,1), max_steps=50, num_sumples=4, steplength=0.1):
+        '''
+            execute the fitting to find optimized C1
+        '''
+        self.stage = FittingStage.train.name
+
+        (h_pt, h_eval) = self.param_random_local_search(
+                            func_para=self.evaluate, 
+                            # Cf_a,b,c_hot, Cf_a,b,c_cold
+                            pt=pt, 
+                            max_steps=max_steps,
+                            num_samples=num_sumples, 
+                            steplength=steplength)
+
+        print('fitting done')
+
+    def param_random_local_search(self, func_para,pt,max_steps,num_samples,steplength):
+        '''
+            Concurrently train C1 for hot/cold side due to simulation is a time consuming process
+        '''
+        # starting point evaluation
+        (current_eval, tests) = func_para(pt)
+        dim_x = len(pt)
+        dim_y = len(current_eval)
+        current_pt = pt
+
+        exp_name = 'param_fitting_{:%Y-%m-%d-%H-%M-%S}'.format(datetime.datetime.now()) 
+        # test dataset keep trace of fitting process
+        ds_exp = TestDataSet.new_test_dataset(self.cases['cfg'], 'EmptyGroup', exp_name)
+        ds_exp.add_view(self.mapping)
+
+        for test in tests:
+            gname = test.name
+            ds_exp[gname] = TestGroup(gname, {'{:%H-%M-%S}'.format(datetime.datetime.now()): test})
+
+        # loop over max_its descend until no improvement or max_its reached
+        pt_history = [current_pt]
+        eval_history = [current_eval]
+        for i in range(max_steps):
+            # loop over num_samples, randomly sample direction and evaluate, move to best evaluation
+            swap = 0
+            keeper_pt = current_pt
+            
+            # check if diminishing steplength rule used
+            if steplength == 'diminish':
+                steplength_temp = 1/(1 + i)
+            else:
+                steplength_temp = steplength
+
+            for j in range(num_samples):            
+                # produce direction
+                import random as rnd
+                import math
+
+                # set x, y independently
+                d_C1 = rnd.uniform(-steplength_temp, steplength_temp) 
+                d_C2 = rnd.uniform(-steplength_temp, steplength_temp) 
+                d_C3 = rnd.uniform(-steplength_temp, steplength_temp) 
+
+                new_pt = np.asarray([d_C1, d_C2, d_C3])
+                temp_pt = deepcopy(keeper_pt) 
+                new_pt += temp_pt
+                
+                # evaluate new point
+                (new_eval, tests) = func_para(new_pt)
+
+                y_old = [current_eval[x] for x in range(0, dim_y)]
+                y_new = [new_eval[x] for x in range(0, dim_y)]
+
+                # evaluate results respectively
+                update = 0
+                for k in range(0, dim_y):
+                    if y_new[k] < y_old[k]:
+                        update += 1 # increase update counter if find a better y in this dimension
+
+                if update == dim_y: # find a better value for all dimensions out of the samples
+                    current_pt = [new_pt[x] for x in range(0, dim_x)]
+                    current_eval = [y_new[x] for x in range(0, dim_y)]                    
+
+                    swap = 1
+            
+            # if swap happened
+            if swap == 1:
+                pt_history.append(current_pt)
+                eval_history.append(current_eval)   
+                
+                for test in tests:
+                    gname = test.name
+                    # change test name to instance
+                    test.name = '{:%H-%M-%S}'.format(datetime.datetime.now())
+                    # merge it with previous result, keep trace of fitting
+                    ds_exp[gname].append_test(test)
+            
+        self.exp.save_results(ds_exp) # save 'better' result and its parameters for furture training
+
+        return pt_history,eval_history   
+
+    def evaluate(self, x_new) -> Tuple[List[float], List[TestItem]]:
+        init = False
+        err_sum = []
+        tests = []
+
+        for case_name, data_ref in self.cases["data_ref"].items():
+
+            cfg = deepcopy(self.get_cfg(case_name))
+
+            # add to-be-searched coefficients 
+            keys = ['Cf_C1', 'Cf_C2', 'Cf_C3']
+            cfg.update(
+                {
+                    keys[i]:x_new[i]
+                    for i in range(0, len(x_new))
+                })          
+
+            test = TestItem(case_name, cfg, {})
+
+            self.exp.simulate(
+                sim_ops=self.sim_ops,
+                
+                solution_dict=self.exp.gen_sol_dict(cfg), 
+                test=test)
+
+            err_cur = self.cal_func_err(test.post_data, data_ref)
+
+            # test.name = '{:%H-%M-%S}'.format(datetime.datetime.now())
+
+            for i in range(0, len(err_cur)):
+                k = f'err_fun_{i}'
+                test.result[k] = Variable(k, val = err_cur[i])
+
+            if not init:
+                err_sum = err_cur
+                init = True
+            else:
+                for i in range(0, len(err_cur)):
+                    err_sum[i] += err_cur[i]
+
+            tests.append(test)
+            
+            # merge it with previous result
+            # g.append_test(test) 
+
+        return (err_sum, tests)
+
+    def prepare_data(self, values):
+        return values
+
+    def cal_func_err(self, values, data_ref):
+        '''
+            calculate function errors against data referred
+        '''
+        # pre process on the values 
+        values = self.prepare_data(values)
+
+        T_hs = values['T_hot']
+        dp_hs = values['dp_hot']
+        T_cs = values['T_cold']
+        dp_cs = values['dp_cold']        
+
+        err_h_dp = 0.0
+        err_c_dp = 0.0
+        err_h_T = 0.0
+        err_c_T = 0.0
+        errFunc = self.errfunc
+
+        if errFunc == ErrorFunc.Dp:
+            err_h_dp = abs(dp_hs[-1] - data_ref['dp_hs'][-1]) 
+            # cold side in reverse order - 0 is the last one 
+            err_c_dp = abs(dp_cs[0] - data_ref['dp_cs'][0])
+        elif errFunc == ErrorFunc.T_Dp_both:
+            err_h_dp = self.cal_err(dp_hs[-1], data_ref['dp_hs'][-1])
+            err_c_dp = self.cal_err(dp_cs[0], data_ref['dp_cs'][0])
+
+        if errFunc == ErrorFunc.T:
+            err_h_T = sum([abs(T_hs[i] - data_ref['T_hs'][i]) for i in range(0, len(T_hs))])
+            err_c_T = sum([abs(T_cs[i] - data_ref['T_cs'][i]) for i in range(0, len(T_cs))])
+        elif errFunc == ErrorFunc.T_Dp_both:
+            err_h_T = sum([self.cal_err(T_hs[i], data_ref['T_hs'][i]) for i in range(0, len(T_hs))])
+            err_c_T = sum([self.cal_err(T_cs[i], data_ref['T_cs'][i]) for i in range(0, len(T_cs))])
+
+        return [err_h_T + err_h_dp + err_c_T + err_c_dp]
+
+    def get_cfg(self, case_name) -> dict:
+        '''
+            return config
+        '''
+        cfg_table = self.cases['cfg']
+        if not case_name in cfg_table.keys():
+            raise KeyError(f"No case with name={case_name}")
+        
+        return {
+            cfg_table['keys'][i] : cfg_table[case_name][i]
+            for i in range(0, len(cfg_table['keys']))
+        }
+
+    def get_data_ref(self, case_name):
+        '''
+            return data referenced
+        '''
+
+        if case_name in self.cases["data_ref"].keys():
+            raise KeyError(f"No case with name={case_name}")
+        
+        return self.cases["data_ref"][case_name]
+
+    def cal_err(self, x, y) -> float:
+        if abs(y) < 1e-10:
+            return 0
+        
+        return ((x - y) / y) ** 2   

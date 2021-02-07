@@ -13,6 +13,9 @@ import CoolProp.CoolProp as CoolProp
 from CoolProp.HumidAirProp import HAPropsSI
 import CoolProp.State 
 from math import log10, sin
+from numpy.core.fromnumeric import mean
+
+from numpy.lib.function_base import average
 
 # P, h -> T ([Pa], [J/kg] -> [degC])
 # result = CP.CoolProp.PropsSI("T", "P", 20e6, 'H', 995164, 'CO2') - 273.15
@@ -163,13 +166,13 @@ from math import log10, sin
 # h_in = 309.42e3
 # h_out = 329.94e3
 
-kc_cf_z_set = [10, 12, 15]    
-kc_cf_s_set = [1.0, 1.2, 1.5]
+# kc_cf_z_set = [10, 12, 15]    
+# kc_cf_s_set = [1.0, 1.2, 1.5]
 
-import itertools
+# import itertools
 
-for x in itertools.product(kc_cf_s_set, kc_cf_z_set):
-        print(x)
+# for x in itertools.product(kc_cf_s_set, kc_cf_z_set):
+#         print(x)
 
 # print('high pressure, low T')
 # # density
@@ -269,3 +272,97 @@ for x in itertools.product(kc_cf_s_set, kc_cf_z_set):
 # AS_SAT = AbstractState("HEOS", "CO2")
 # AS_SAT.update(CoolProp.PT_INPUTS, 20e6, 273.15+700)
 # print("First saturation derivative:", AS_SAT.hmass(), "Pa/K")
+
+def Nu_cor(text, T_b, T_w, p_b, p_w, G, d, verbose=False):
+    rho_w = PropsSI("D", "T", T_w, "P", p_w, media)
+    rho_b = PropsSI("D", "T", T_b, "P", p_b, media)
+    mu_b = PropsSI("VISCOSITY", "T", T_b, "P", p_b, media)
+    cp_b = PropsSI("CPMASS", "T", T_b, "P", p_b, media)
+    k_b = PropsSI("CONDUCTIVITY", "T", T_b, "P", p_b, media)
+    h_w = PropsSI("HMASS", "T", T_w, "P", p_w, media)
+    h_b = PropsSI("HMASS", "T", T_b, "P", p_b, media)
+    cp_bar = (h_w - h_b) / (T_w - T_b)
+
+    Gr = abs((rho_w - rho_b) * rho_b * g * (d**3) / (mu_b ** 2))
+    Re = G * d / mu_b
+    Pr = cp_b * mu_b / k_b
+
+    q1 = Gr / (Re ** 2)
+    q2 = rho_w / rho_b
+    q3 = cp_bar / cp_b
+
+    Nu = 0.124 * (Re ** 0.8) * (Pr ** 0.4) * (q1 ** 0.203) * (q2 ** 0.842) * (q3 ** 0.284)
+    # if q2 > 1:
+    #     q2 = 1 / q2
+    if verbose:
+        print(f'{text}: Nu={Nu}, q1={q1}, q2={q2}, q3={q3}')
+
+    return (Nu, q1, q2, q3)
+
+# bcs = [bc1, bc2, ...]
+# bcn = (st_hot_in, st_cold_in)
+# st = (T [K], p [bar->ba])
+
+def predict_C1(T_h, p_h, T_c, p_c, G, d, medium, verbose=False) -> float:
+    '''
+        use boundary conditions to predict C1
+    '''
+    sides ={
+        "hot": {
+            "text": "for hot side",
+            "T_b": T_h,
+            "T_w": (T_h + T_c)/2,
+            "p_b": p_h, 
+            "p_w": p_h,
+            "G": G,
+            "d": d,
+            "medium": medium,
+            "verbose": verbose,
+        },
+        "cold": {
+            "text": "for cold side",
+            "T_b": T_c,
+            "T_w": (T_h + T_c)/2,
+            "p_b": p_c, 
+            "p_w": p_c,
+            "G": G,
+            "d": d,
+            "medium": medium,
+            "verbose": verbose   
+        }
+    }
+
+    (Nu, q1, q2, q3) = ([], [], [], [])
+
+    for side in sides.values():
+        (v1, v2, v3, v4) = self.Nu_cor(**side)
+        Nu.append(v1)
+        q1.append(v2)
+        q2.append(v3)
+        q3.append(v4)   
+
+    if verbose:
+        print(f"Averaged value: Nu_bar={mean(Nu)}, q1_bar={mean(q1)}, q2_bar={mean(q2)}, q3_bar={mean(q3)}")
+
+    a = 12.12268499
+    b = -9.528231534
+
+    return a * mean(q3) + b
+
+bcs = {
+        "HT": ((730, 9e6), (500, 22.5e6)),
+        "LT": ((630, 9e6), (400, 22.5e6)),
+    }
+
+media = "CO2"
+
+g = 9.80665
+d = 2e-3 # diameter
+d_hyd = 1.27e-3
+G = 498.341
+
+for name, bc in bcs.items():
+    ((T_h, p_h),(T_c, p_c)) = bc
+    C1 = predict_C1(T_h, p_h, T_c, p_c, G, d, "CO2", verbose=True)
+
+    print(f'Predicted C1={C1}')

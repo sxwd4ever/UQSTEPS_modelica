@@ -1,21 +1,15 @@
 from collections import OrderedDict
-from copy import Error, deepcopy
+from copy import deepcopy
 import datetime
 import itertools
-import math
-import shutil
 from logging import exception
 from math import trunc
 from os.path import join, sep
-from typing import Tuple
-from OMPython import OMCSessionZMQ
-from OMPython import ModelicaSystem
 from datetime import datetime as dt
 from numpy.core import test
 from numpy.core.fromnumeric import size
 from numpy.lib.function_base import append
 from enum import Enum
-
 
 import os
 from os import path, sep
@@ -25,7 +19,7 @@ from ex.random_local_search import random_local_search_2d
 from model import TestDataSet,TestConfig, TestItem,Variable, TestConstants
 from plotlib import PlotManager, DataSeries, AxisType
 from physics import Temperature, Pressure, MDot
-from experiments import Experiment, PCHEExperiment
+from experiments import Experiment, PCHEExperiment, ErrorFunc, ParamFitting
 from utils import ExcelHelper, from_degC, from_bar,mkdir_filepath
 
 class MeshramTest(PCHEExperiment):
@@ -49,18 +43,22 @@ class MeshramTest(PCHEExperiment):
         #     Variable('HE.gasFlow.heatTransfer.kim_cor_d.y')
         # ]   
         # for MarchionniPCHEHeatTransferFV
-        # N_seg = cfg['N_seg']
-        # keys = [
-        #     'HE.fluidFlow.heatTransfer.C1[%s]',
-        #     # 'HE.fluidFlow.heatTransfer.C2[%s]',
-        #     'HE.gasFlow.heatTransfer.C1[%s]',
-        #     # 'HE.gasFlow.heatTransfer.C2[%s]'
-        # ]
+        N_seg = cfg['N_seg']
+        keys = [
+            'HE.fluidFlow.heatTransfer.q1[%s]',
+            'HE.fluidFlow.heatTransfer.q2[%s]',
+            'HE.fluidFlow.heatTransfer.q3[%s]',
+            # 'HE.fluidFlow.heatTransfer.C2[%s]',
+            'HE.gasFlow.heatTransfer.q1[%s]',
+            'HE.gasFlow.heatTransfer.q2[%s]',
+            'HE.gasFlow.heatTransfer.q3[%s]',
+            # 'HE.gasFlow.heatTransfer.C2[%s]'
+        ]
 
-        # for k in keys:
-        #     for i in range(1, N_seg+1):
-        #         key = k % i
-        #         sol_dict[key] = Variable(key)
+        for k in keys:
+            for i in range(1, N_seg+1):
+                key = k % i
+                sol_dict[key] = Variable(key)
 
         return sol_dict
 
@@ -141,269 +139,6 @@ class MeshramTest(PCHEExperiment):
             }                            
         }
 
-class FittingStage(Enum):
-    train = 1,
-    test = 2
-
-class ErrorFunc(Enum):
-    T = 1, # consider temperature only 
-    Dp = 2, # consider pressure drop only
-    T_Dp_both = 3
-
-class ParamFitting(object):
-    
-    KEY_GNAME = "C1_fitting"
-
-    def __init__(self, exp, cfg_base, cfg_offset, mapping, sim_ops, data_ref, errfunc = ErrorFunc.T) -> None:
-        super().__init__() 
-        self.exp = exp
-        self.cfg_base = cfg_base
-        self.cfg_offset = cfg_offset
-        self.mapping = mapping
-        self.sim_ops = sim_ops
-        self.data_ref = data_ref
-        self.errfunc = errfunc
-
-        # flag of current stage
-        self.stage = FittingStage.train.name
-
-    def execute(self, valid = False):
-        '''
-            execute the fitting to find optimized C1
-        '''
-        self.stage = FittingStage.train.name
-
-        (h_pt, h_eval) = self.param_random_local_search(
-                            func_para=self.evaluate, 
-                            # Cf_a,b,c_hot, Cf_a,b,c_cold
-                            pt=(1, 1, 1), 
-                            max_steps=100,
-                            num_samples=4, 
-                            steplength=0.1)
-
-        # x_min = [h_pt[-1][0], h_pt[-1][1]]
-        # y_min = (h_eval[-1][0], h_eval[-1][1])
-
-        # str_his_pt = ""        
-
-        # for (v1, v2) in h_pt:
-        #     str_his_pt += f'{v1},{v2}\n'
-
-        # str_his_eval = ""
-
-        # for (v1, v2) in h_eval:
-        #     str_his_eval += f'{v1},{v2}\n'
-
-        # # if validate using test dataset 
-        # name_test_set = FittingStage.test.name
-        # if valid and self.cfg_offset[name_test_set]:
-        #     self.stage = name_test_set
-
-        #     self.C1 = (1 + x_min[0], 1 + x_min[1])
-        #     self.err_train = y_min
-        #     self.err_valid = self.evaluate(x_min)
-
-        print('fitting done')
-
-    def param_random_local_search(self, func_para,pt,max_steps,num_samples,steplength):
-        '''
-            Concurrently train C1 for hot/cold side due to simulation is a time consuming process
-        '''
-        # starting point evaluation
-        (current_eval, ds_exp) = func_para(pt)
-        dim_x = len(pt)
-        dim_y = len(current_eval)
-        current_pt = pt
-
-        # record current error
-        test = self.extract_test(ds_exp)    
-
-        for l in range(0, 1):
-            k = f'err_fun_{l}'
-            test.result[k] = Variable(k, val = current_eval[l])
-
-
-        
-        # loop over max_its descend until no improvement or max_its reached
-        pt_history = [current_pt]
-        eval_history = [current_eval]
-        for i in range(max_steps):
-            # loop over num_samples, randomly sample direction and evaluate, move to best evaluation
-            swap = 0
-            keeper_pt = current_pt
-            
-            # check if diminishing steplength rule used
-            if steplength == 'diminish':
-                steplength_temp = 1/(1 + i)
-            else:
-                steplength_temp = steplength
-
-            ds_exp_new = None
-
-            for j in range(num_samples):            
-                # produce direction
-                import random as rnd
-                import math
-
-                # theta = np.random.rand(1)
-                # theta = rnd.uniform(0,1)
-
-                # x = steplength_temp*np.cos(2*np.pi*theta)
-                # y = steplength_temp*np.sin(2*np.pi*theta)
-                # x = steplength_temp*math.cos(2*math.pi*theta)
-                # y = steplength_temp*math.sin(2*math.pi*theta)
-
-                # set x, y independently
-                d_C1 = rnd.uniform(-steplength_temp, steplength_temp) 
-                d_C2 = rnd.uniform(-steplength_temp, steplength_temp) 
-                d_C3 = rnd.uniform(-steplength_temp, steplength_temp) 
-
-                new_pt = np.asarray([d_C1, d_C2, d_C3])
-                temp_pt = deepcopy(keeper_pt) 
-                new_pt += temp_pt
-                
-                # evaluate new point
-                (new_eval, ds_exp_new) = func_para(new_pt)
-
-                # x_new = [new_pt[x] for x in range(0, dim_x)]
-                y_old = [current_eval[x] for x in range(0, dim_y)]
-                # y_min = y_old
-                y_new = [new_eval[x] for x in range(0, dim_y)]
-
-                # evaluate results respectively
-                update = 0
-                for k in range(0, dim_y):
-                    if y_new[k] < y_old[k]:
-                        update += 1 # increase update counter if find a better y in this dimension
-
-                        # x_new = [new_pt[x] for x in range(0, dim_x)]
-                        # y_min = [y_new[x] if y_new[x] < y_old[k] else y_old[x] for x in range(0, dim_y)]
-                        # update = True
-
-                if update == dim_y: # find a better value for all dimensions out of the samples
-                    current_pt = [new_pt[x] for x in range(0, dim_x)]
-                    current_eval = [y_new[x] for x in range(0, dim_y)]                    
-
-                    swap = 1
-            
-            # if swap happened
-            if swap == 1:
-                pt_history.append(current_pt)
-                eval_history.append(current_eval)   
-                
-                for g in ds_exp.values():
-                    test = self.extract_test(ds_exp_new)    
-                    test.name = '{:%H-%M-%S}'.format(datetime.datetime.now())
-
-                    for l in range(0, dim_y):
-                        k = f'err_fun_{l}'
-                        test.result[k] = Variable(k, val = current_eval[l])
-                    
-                    # merge it with previous result
-                    g.append_test(test) 
-            
-        self.exp.save_results(ds_exp) # save 'better' result and its parameters for furture training
-
-        return pt_history,eval_history   
-
-    def evaluate(self, x_new) -> Tuple[Tuple[float], TestDataSet]:
-       
-        ds_exp = self.gen_experiment_ds(x_new)
-
-        self.exp.simulate(
-            sim_ops=self.sim_ops,
-            solution_dict=self.exp.gen_sol_dict(self.cfg_base), 
-            ds_test=ds_exp,
-            append_save=False)  
-
-        item = self.extract_test(ds_exp)
-
-        return (self.cal_func_err(item.post_data), ds_exp) 
-
-    def extract_test(self, ds_exp) -> TestItem:
-
-        item = None
-
-        # calculate errors
-        # only one test supposed to be
-        for g in ds_exp.values():
-            for test in g.values():
-                item = test
-                break
-            break
-        
-        # supress the assigment error hint of pylance - to assure item is of type TestItem
-        if item == None:
-            raise Error('no test result')
-
-        return item
-
-    def gen_experiment_ds(self, x_new) -> TestDataSet:  
-
-        (C1,C2,C3) = x_new
-
-        # use result C1 for validation
-        cfg_offset_cur = \
-            {
-                "keys" : deepcopy(self.cfg_offset["keys"]),
-                "test": deepcopy(self.cfg_offset[self.stage])
-            }
-
-        # add kc_cf_hot, kc_cf_cold
-        cfg_offset_cur['keys'].extend(['Cf_C1', 'Cf_C2', 'Cf_C3'])            
-        cfg_offset_cur["test"].extend([C1, C2, C3])
-
-        cfg_offset = {} 
-        cfg_offset[self.KEY_GNAME] = cfg_offset_cur
-
-        exp_name = 'Test-Meshram_diff_kc_cf {:%Y-%m-%d-%H-%M-%S}'.format(datetime.datetime.now()) 
-
-        ds_exp = TestDataSet.gen_test_dataset(self.cfg_base, cfg_offset, ds_name=exp_name)
-
-        ds_exp.add_view(self.mapping)  
-
-        return ds_exp
-
-    def cal_func_err(self, values):
-        '''
-            calculate function errors against data referred
-        '''
-
-        T_hs = values['T_hot']
-        dp_hs = values['dp_hot']
-        T_cs = values['T_cold']
-        dp_cs = values['dp_cold']
-
-        data_ref = self.data_ref[self.stage]
-
-        err_h_dp = 0.0
-        err_c_dp = 0.0
-        err_h_T = 0.0
-        err_c_T = 0.0
-        errFunc = self.errfunc
-
-        if errFunc == ErrorFunc.Dp:
-            err_h_dp = abs(dp_hs[-1] - data_ref['dp_hs'][-1]) 
-            # cold side in reverse order - 0 is the last one 
-            err_c_dp = abs(dp_cs[0] - data_ref['dp_cs'][0])
-        elif errFunc == ErrorFunc.T_Dp_both:
-            err_h_dp = self.cal_err(dp_hs[-1], data_ref['dp_hs'][-1])
-            err_c_dp = self.cal_err(dp_cs[0], data_ref['dp_cs'][0])
-
-        if errFunc == ErrorFunc.T:
-            err_h_T = sum([abs(T_hs[i] - data_ref['T_hs'][i]) for i in range(0, len(T_hs))])
-            err_c_T = sum([abs(T_cs[i] - data_ref['T_cs'][i]) for i in range(0, len(T_cs))])
-        elif errFunc == ErrorFunc.T_Dp_both:
-            err_h_T = sum([self.cal_err(T_hs[i], data_ref['T_hs'][i]) for i in range(0, len(T_hs))])
-            err_c_T = sum([self.cal_err(T_cs[i], data_ref['T_cs'][i]) for i in range(0, len(T_cs))])
-
-        return (err_h_T + err_h_dp + err_c_T + err_c_dp,)
-
-    def cal_err(self, x, y) -> float:
-        if abs(y) < 1e-10:
-            return 0
-        
-        return ((x - y) / y) ** 2   
 class ExpType(Enum):
     LOAD_PRE_EXP = 1,
     VS_CFD = 2,  # "aginst mesharm's 1D_vs_3D"
@@ -547,15 +282,30 @@ def main(work_root = []):
                 # Gnielinski cor for straight channel and Liao's Nusselt number cor + Ngo's friction factor cor for zigzag channels
                 # different C1, C2 applied for HT and LT respectively. 
                 # For Straight Channel, C2 is a dummy variable since C2 = 1 / C1
+                # cfg_offset[f"vs Meshram's CFD"] = {
+                #         # values in Table 3 in Meshram [2016]
+                #         "keys" : ["T_cold_in", "T_cold_out", "T_hot_in", "T_hot_out", "u_cold_in", "u_hot_in", "a_phi","L_fp", "Cf_C1", "Cf_C2"],
+                #         "Zigzag High T" : [500, 639.15, 730, 576.69, 1.876, 7.564, 36.0, 0.16, 2.146423845, 1.382382861],
+                #         "Zigzag Low T": [400, 522.23, 630, 466.69, 0.806, 4.501, 36.0, 0.16, 1.345870392, 2.647075995], 
+                #         "Straight High T": [500, 615.48, 730, 601.83, 1.518, 6.118, -1, 0.2, 1.504692615, 1],
+                #         "Straigth Low T": [400, 498.45, 630, 494.37, 0.842, 4.702, -1, 0.2, 1.660627977, 1]
+                # }                
+
+                # My correlation for zigzag PCHE
+                G = 498.341 # should be calculated as G = mdot / A
+
+                (C1_HT, C2_HT) = exp.predict_cor_coff(730, cfg_base['p_hot_in'], 500, cfg_base['p_cold_in'], G, cfg_base['D_ch'], "CO2")
+                (C1_LT, C2_LT) = exp.predict_cor_coff(630, cfg_base['p_hot_in'], 400, cfg_base['p_cold_in'], G, cfg_base['D_ch'], "CO2")      
+
                 cfg_offset[f"vs Meshram's CFD"] = {
                         # values in Table 3 in Meshram [2016]
                         "keys" : ["T_cold_in", "T_cold_out", "T_hot_in", "T_hot_out", "u_cold_in", "u_hot_in", "a_phi","L_fp", "Cf_C1", "Cf_C2"],
-                        "Zigzag High T" : [500, 639.15, 730, 576.69, 1.876, 7.564, 36.0, 0.16, 2.146423845, 1.382382861],
-                        "Zigzag Low T": [400, 522.23, 630, 466.69, 0.806, 4.501, 36.0, 0.16, 1.345870392, 2.647075995], 
+                        "Zigzag High T" : [500, 639.15, 730, 576.69, 1.876, 7.564, 36.0, 0.16, C1_HT, C2_HT],
+                        "Zigzag Low T": [400, 522.23, 630, 466.69, 0.806, 4.501, 36.0, 0.16, C1_LT, C2_LT], 
                         "Straight High T": [500, 615.48, 730, 601.83, 1.518, 6.118, -1, 0.2, 1.504692615, 1],
                         "Straigth Low T": [400, 498.45, 630, 494.37, 0.842, 4.702, -1, 0.2, 1.660627977, 1]
-                }                
-                                        
+                } 
+
                 exp_name = 'Test-Meshram_single {:%Y-%m-%d-%H-%M-%S}'.format(datetime.datetime.now())            
             
             ds_exp = TestDataSet.gen_test_dataset(cfg_base, cfg_offset, ds_name=exp_name)
@@ -565,7 +315,7 @@ def main(work_root = []):
             json_str = ds_exp.to_json()    
             print(json_str)
 
-            exp.simulate(
+            exp.simulate_batch(
                 sim_ops=sim_ops,
                 solution_dict=exp.gen_sol_dict(cfg_base), 
                 ds_test=ds_exp,
@@ -668,22 +418,64 @@ def main(work_root = []):
         # suffix_train = suffix_train_full
         # suffix_train = suffix_straight 
 
+        # case_dict = {
+        #     name: {
+        #         "cfg": {
+        #             "keys": [x for x in cfg_base.keys()] + ["T_cold_in", "T_cold_out", "T_hot_in", "T_hot_out", "u_cold_in", "u_hot_in", "a_phi", "L_fp"],
+        #             "train": [x for x in cfg_base.values()] + cfg_offset_full[name]
+        #         },
+        #         "data_ref": {
+        #             "train": {
+        #                 "T_hs": data_ref_full["T_hs_" + suffix],
+        #                 "dp_hs": data_ref_full["dp_hs_" + suffix],
+        #                 "T_cs": data_ref_full["T_cs_" + suffix],
+        #                 "dp_cs": data_ref_full["dp_cs_" + suffix]
+        #             }
+        #         }}
+        #     for (name, suffix) in suffix_train}
+
+        # create cfg table containing all tests in one, each row contains values for one cfg instance
+        # cfg_table = {
+        #     "keys": [x for x in cfg_base.keys()] + ["T_cold_in", "T_cold_out", "T_hot_in", "T_hot_out", "u_cold_in", "u_hot_in", "a_phi", "L_fp"]
+        # }
+        # # append all the cfg rows 
+        # cfg_table.update({
+        #         name : [x for x in cfg_base.values()] + cfg_offset_full[name]
+        #     for (name, suffix) in suffix_train})
+
+        # data_ref = {
+        #     name: {
+        #         "T_hs": data_ref_full["T_hs_" + suffix],
+        #         "dp_hs": data_ref_full["dp_hs_" + suffix],
+        #         "T_cs": data_ref_full["T_cs_" + suffix],
+        #         "dp_cs": data_ref_full["dp_cs_" + suffix]
+        #     }
+        #     for (name, suffix) in suffix_train}
+
+        # case_dict = {
+        #     "cfg": cfg_table,
+        #     "data_ref": data_ref
+        # }
+
+        # separate test cases into two groups
         case_dict = {
-            name: {
-                "cfg_offset": {
-                    "keys": ["T_cold_in", "T_cold_out", "T_hot_in", "T_hot_out", "u_cold_in", "u_hot_in", "a_phi", "L_fp"],
-                    "train": cfg_offset_full[name]
+            name:{
+                "cfg": {
+                    "keys": [x for x in cfg_base.keys()] + ["T_cold_in", "T_cold_out", "T_hot_in", "T_hot_out", "u_cold_in", "u_hot_in", "a_phi", "L_fp"],
+                    name : [x for x in cfg_base.values()] + cfg_offset_full[name]
                 },
                 "data_ref": {
-                    "train": {
+                    name: {
                         "T_hs": data_ref_full["T_hs_" + suffix],
                         "dp_hs": data_ref_full["dp_hs_" + suffix],
                         "T_cs": data_ref_full["T_cs_" + suffix],
                         "dp_cs": data_ref_full["dp_cs_" + suffix]
                     }
-                }}
-            for (name, suffix) in suffix_train}
-
+                }
+            }
+            for (name, suffix) in suffix_train
+        }
+            
         dim_y = 1
 
         for l in range(0, dim_y):
@@ -692,13 +484,12 @@ def main(work_root = []):
             k = f'err_fun_{l}'
             mapping["Calculated values"][k] = k
 
+        for case in case_dict.values():
 
-        for name, case in case_dict.items():
             fitting = ParamFitting(
-                exp, cfg_base, case["cfg_offset"], mapping, sim_ops, case["data_ref"], errfunc=ErrorFunc.T)
+                exp, case, mapping, sim_ops, errfunc=ErrorFunc.T)
 
-            fitting.execute()
-
+            fitting.run_fitting(pt=(1,1,1), max_steps=50)
 
 if __name__ == "__main__":
     main()

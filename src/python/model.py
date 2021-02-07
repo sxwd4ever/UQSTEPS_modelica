@@ -485,27 +485,31 @@ class TestDataSet(MyDict):
         return cfg_offset_table
 
     @classmethod
-    def gen_test_dataset(cls, cfg_ref:dict, cfg_offset_table:dict, ds_name):
+    def gen_test_dataset(cls, cfg_ref:dict, cfg_offset_dict:dict, ds_name):
         '''
         use cfg_offset_table create all the combinations of configuations
+        Create a datat set with multiple groups of configurations
         '''
         result = OrderedDict()
 
-        for gname, gnode in cfg_offset_table.items():
+        for gname, cfg_table in cfg_offset_dict.items():
 
-            param_keys = gnode['keys']
+            # read title
+            param_keys = cfg_table['keys']
             # for each row in the dict (except for key row)
             # use recursion to create a variation
-            for (test_name, test_cfg) in gnode.items(): 
+            for (test_name, cfg_row) in cfg_table.items(): 
+                # neglect the table title 
                 if test_name == 'keys':
                     continue
                 else:
                     cfg = deepcopy(cfg_ref)
 
-                    for i in range(0, len(param_keys)):
-                        k = param_keys[i]
-                        # if k in cfg.keys():
-                        cfg[k] = test_cfg[i]
+                    # merge offset row
+                    cfg.update({
+                        param_keys[i] : cfg_row[i]
+                        for i in range(0, len(param_keys))
+                    })
 
                     item = {}
                     item["cfg"] = cfg
@@ -522,5 +526,38 @@ class TestDataSet(MyDict):
 
         return ds_test    
 
+    @ classmethod
+    def new_test_dataset(cls, cfg_table:dict, gname, ds_name):
+        '''
+            use cfg_table to instanciate test data set, which contains one group of tests only
+        '''
+        result = OrderedDict()
+        result[gname] = {}
+
+        # read title
+        param_keys = cfg_table['keys']
+        # for each row in the dict (except for key row)
+        # use recursion to create a variation
+        for (test_name, cfg_row) in cfg_table.items(): 
+            # neglect the table title 
+            if test_name == 'keys':
+                continue
+            else:
+                cfg = {
+                    param_keys[i] : cfg_row[i]
+                    for i in range(0, len(param_keys))
+                }
+
+                item = {}
+                item["cfg"] = cfg
+                item['result'] = { }
+        
+            # may overwrite exist cfg
+            result[gname][test_name] = item              
+
+        json_cfg_batch = json.dumps(result,indent=2)
+        ds_test = TestDataSet.from_json(ds_name, json_cfg_batch)  
+
+        return ds_test       
 
 
