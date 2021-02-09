@@ -7,14 +7,22 @@ model PBConfiguration
   import Modelica.SIunits.{Temperature, Pressure, SpecificEnthalpy};
   import Util = Utilities.Util;
   import Steps.Utilities.CoolProp.PropsSI; 
-  import Steps.Components.PCHEGeoParam;
+  import Steps.Components.PCHEGeoParam;  
+
+  replaceable package medium_HTR_cold = Steps.Media.SCO2 constrainedby Modelica.Media.Interfaces.PartialPureSubstance;   
+  replaceable package medium_HTR_hot = Steps.Media.SCO2 constrainedby Modelica.Media.Interfaces.PartialPureSubstance;  
   
-  /*
-  replaceable package medium_cold = Steps.Media.SCO2;   
-  replaceable package medium_hot = Steps.Media.SCO2;  
-  replaceable package medium_heater = SolarTherm.Media.Sodium.Sodium_pT;
-  replaceable package medium_cooler = Modelica.Media.Water.WaterIF97_pT;
-  */
+  replaceable package medium_LTR_cold = Steps.Media.SCO2 constrainedby Modelica.Media.Interfaces.PartialPureSubstance;   
+  replaceable package medium_LTR_hot = Steps.Media.SCO2 constrainedby Modelica.Media.Interfaces.PartialPureSubstance;  
+
+  replaceable package medium_cooler_cold = Modelica.Media.Water.WaterIF97_pT constrainedby Modelica.Media.Interfaces.PartialPureSubstance;   
+  replaceable package medium_cooler_hot = Steps.Media.SCO2 constrainedby Modelica.Media.Interfaces.PartialPureSubstance;  
+  
+  replaceable package medium_heater_hot = Steps.Media.MoltenSalt constrainedby Modelica.Media.Interfaces.PartialPureSubstance;
+  replaceable package medium_heater_cold = Steps.Media.SCO2 constrainedby Modelica.Media.Interfaces.PartialPureSubstance;
+  // replaceable package medium_heater_cold = Modelica
+  //replaceable package medium_cooler = Modelica.Media.Water.WaterIF97_pT;
+  
   constant Real pi=Modelica.Constants.pi;
   // efficiency of main compressor, bypass_compressor and turbine
   parameter Real eta_main_compressor = 0.89;  
@@ -72,31 +80,96 @@ model PBConfiguration
   
   // DO NOT change following parameters - CHANGE input paramters instead  
   parameter HEBoundaryCondition bc_HTR(
-    st_hot_in(p = p_pump_in, T = T_HTR_hot_in, h = specificEnthalpy_CO2(bc_HTR.st_hot_in), mdot = mdot_main),    
-    st_cold_in(p = p_pump_out, T = T_HTR_cold_in, h = specificEnthalpy_CO2(bc_HTR.st_cold_in), mdot = mdot_main),
-    st_hot_out(p = p_pump_in, T = T_HTR_hot_out, h = specificEnthalpy_CO2(bc_HTR.st_hot_out), mdot = mdot_main),
-    st_cold_out(p = p_pump_out, T = T_HTR_cold_out, h = specificEnthalpy_CO2(bc_HTR.st_cold_out), mdot = mdot_main));      
+    st_hot_in(
+    p = p_pump_in, 
+    T = T_HTR_hot_in, 
+    h = medium_HTR_hot.specificEnthalpy(medium_HTR_hot.setState_pT(p = p_pump_in, T = T_HTR_hot_in)),
+    mdot = mdot_main),    
+    st_cold_in(
+    p = p_pump_out, 
+    T = T_HTR_cold_in, 
+    h = medium_HTR_cold.specificEnthalpy(medium_HTR_cold.setState_pT(p = p_pump_out, T = T_HTR_cold_in)),
+    mdot = mdot_pump),
+    st_hot_out(
+    p = p_pump_in, 
+    T = T_HTR_hot_out, 
+    h = medium_HTR_hot.specificEnthalpy(medium_HTR_hot.setState_pT(p = p_pump_in, T = T_HTR_hot_out)),
+    mdot = mdot_main),
+    st_cold_out(
+    p = p_pump_out, 
+    T = T_HTR_cold_out, 
+    h = medium_HTR_cold.specificEnthalpy(medium_HTR_cold.setState_pT(p = p_pump_out, T = T_HTR_cold_out)),
+    mdot = mdot_pump)); 
+
   
   // boundary condition for LTR test @ diff mdot
   parameter HEBoundaryCondition bc_LTR(
-    st_hot_in(p = p_pump_in, T = T_LTR_hot_in, h = specificEnthalpy_CO2(bc_LTR.st_hot_in),mdot = mdot_main),    
-    st_cold_in(p = p_pump_out, T = T_LTR_cold_in, h = specificEnthalpy_CO2(bc_LTR.st_cold_in),mdot = mdot_pump),
-    st_hot_out(p = p_pump_in, T = T_LTR_hot_out, h = specificEnthalpy_CO2(bc_LTR.st_hot_out),mdot = mdot_main),
-    st_cold_out(p = p_pump_out, T = T_LTR_cold_out, h = specificEnthalpy_CO2(bc_LTR.st_cold_out),mdot = mdot_pump)); 
+    st_hot_in(
+    p = p_pump_in, 
+    T = T_LTR_hot_in, 
+    h = medium_LTR_hot.specificEnthalpy(medium_LTR_hot.setState_pT(p = p_pump_in, T = T_LTR_hot_in)),
+    mdot = mdot_main),    
+    st_cold_in(
+    p = p_pump_out, 
+    T = T_LTR_cold_in, 
+    h = medium_LTR_cold.specificEnthalpy(medium_LTR_cold.setState_pT(p = p_pump_out, T = T_LTR_cold_in)),
+    mdot = mdot_pump),
+    st_hot_out(
+    p = p_pump_in, 
+    T = T_LTR_hot_out, 
+    h = medium_LTR_hot.specificEnthalpy(medium_LTR_hot.setState_pT(p = p_pump_in, T = T_LTR_hot_out)),
+    mdot = mdot_main),
+    st_cold_out(
+    p = p_pump_out, 
+    T = T_LTR_cold_out, 
+    h = medium_LTR_cold.specificEnthalpy(medium_LTR_cold.setState_pT(p = p_pump_out, T = T_LTR_cold_out)),
+    mdot = mdot_pump)); 
  
   parameter HEBoundaryCondition bc_cooler(
-    st_hot_in(p = bc_LTR.st_hot_out.p, T = bc_LTR.st_hot_out.T, h = specificEnthalpy_CO2(bc_cooler.st_hot_in), mdot = mdot_pump),  
-    st_cold_in(p = p_ATM, T = T_cooler_cold_in, h = specificEnthalpy_Water(bc_cooler.st_cold_in), mdot = mdot_cooler),
-    st_hot_out(p = bc_LTR.st_hot_out.p, T = T_cooler_hot_out, h = specificEnthalpy_CO2(bc_cooler.st_hot_out), mdot = mdot_pump),
-    st_cold_out(p = p_ATM, T = T_cooler_cold_out, h = specificEnthalpy_Water(bc_cooler.st_cold_out),mdot = mdot_cooler));
+    st_hot_in(
+    p = bc_LTR.st_hot_out.p, 
+    T = bc_LTR.st_hot_out.T, 
+    h = medium_cooler_hot.specificEnthalpy(medium_cooler_hot.setState_pT(p = bc_LTR.st_hot_out.p, T = bc_LTR.st_hot_out.T)), 
+    mdot = mdot_pump),  
+    st_cold_in(
+    p = p_ATM, 
+    T = T_cooler_cold_in, 
+    h = medium_cooler_cold.specificEnthalpy(medium_cooler_cold.setState_pT(p = p_ATM, T = T_cooler_cold_in)), 
+    mdot = mdot_cooler),
+    st_hot_out(
+    p = bc_LTR.st_hot_out.p, 
+    T = T_cooler_hot_out, 
+    h = medium_cooler_hot.specificEnthalpy(medium_cooler_hot.setState_pT(p = bc_LTR.st_hot_out.p, T = T_cooler_hot_out)), 
+    mdot = mdot_pump),
+    st_cold_out(
+    p = p_ATM, 
+    T = T_cooler_cold_out, 
+    h = medium_cooler_cold.specificEnthalpy(medium_cooler_cold.setState_pT(p = p_ATM, T = T_cooler_cold_out)), 
+    mdot = mdot_cooler));
     
   parameter HEBoundaryCondition bc_heater(
-    st_hot_in(p = p_heater, T = T_heater_hot_in, h = specificEnthalpy_Sodium(bc_heater.st_hot_in), mdot = mdot_heater),  
-    st_cold_in(p = bc_HTR.st_cold_out.p, T = bc_HTR.st_cold_out.T, h = specificEnthalpy_CO2(bc_heater.st_cold_in), mdot = mdot_main),
-    st_hot_out(p = p_heater, T = T_heater_hot_out, h = specificEnthalpy_Sodium(bc_heater.st_hot_out), mdot = mdot_heater),
-    st_cold_out(p = bc_HTR.st_cold_out.p, T = T_heater_cold_out, h = specificEnthalpy_CO2(bc_heater.st_cold_out), mdot = mdot_main));   
+    st_hot_in(
+    p = p_heater, 
+    T = T_heater_hot_in,
+    h = medium_heater_hot.specificEnthalpy(medium_heater_hot.setState_pT(p_heater, T_heater_hot_in)), 
+    mdot = mdot_heater),  
+    st_cold_in(
+    p = bc_HTR.st_cold_out.p, 
+    T = bc_HTR.st_cold_out.T, 
+    h = medium_heater_cold.specificEnthalpy(medium_heater_cold.setState_pT(p = bc_HTR.st_cold_out.p, T = bc_HTR.st_cold_out.T)), 
+    mdot = mdot_main),
+    st_hot_out(
+    p = p_heater, 
+    T = T_heater_hot_out, 
+    h = medium_heater_hot.specificEnthalpy(medium_heater_hot.setState_pT(p_heater, T_heater_hot_out)), 
+    mdot = mdot_heater),
+    st_cold_out(
+    p = bc_HTR.st_cold_out.p, 
+    T = T_heater_cold_out, 
+    h = medium_heater_cold.specificEnthalpy(medium_heater_cold.setState_pT(p = bc_HTR.st_cold_out.p, T = T_heater_cold_out)), 
+    mdot = mdot_main));   
  
-  parameter ThermoState st_bypass(p = p_pump_out, T = T_bypass_out, h = specificEnthalpy_CO2(st_bypass), mdot = mdot_bypass);
+  parameter ThermoState st_bypass(p = p_pump_out, T = T_bypass_out, h = medium_HTR_cold.specificEnthalpy(medium_HTR_cold.setState_pT(p = p_pump_out, T = T_bypass_out)), mdot = mdot_bypass);
   // **** Boundary Conditions as Start/Nominal values for recuperators - end ****      
   
   
@@ -296,7 +369,7 @@ model PBConfiguration
     * factory method to complete thermostate - fill in specific enthalpy h as determined by (p, T)
     * I can not replace the package for a function. 
     * So I use three inheirated functions to specify the medium explicitly
-    */    
+   
   function specificEnthalpy
     input ThermoState state;
     output Modelica.SIunits.SpecificEnthalpy h;
@@ -316,7 +389,7 @@ model PBConfiguration
   function specificEnthalpy_Water
     extends specificEnthalpy(redeclare package Medium = ThermoPower.Water.StandardWater);          
   end specificEnthalpy_Water;  
-
+    */ 
 /*
   equation
   

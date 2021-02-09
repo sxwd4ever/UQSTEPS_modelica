@@ -1,6 +1,5 @@
 within Steps.TPComponents;
 
-
 model KimPCHEHeatTransferFV "Kim [2012] heat transfer Correlation"
   extends BaseClasses.DistributedHeatTransferFV;
   import SI = Modelica.SIunits;

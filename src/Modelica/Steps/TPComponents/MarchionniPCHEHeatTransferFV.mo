@@ -1,6 +1,5 @@
 within Steps.TPComponents;
 
-
 model MarchionniPCHEHeatTransferFV "Marchionni [2019] heat transfer Correlation"
   extends BaseClasses.DistributedHeatTransferFV;
   import SI = Modelica.SIunits;
@@ -77,6 +76,11 @@ model MarchionniPCHEHeatTransferFV "Marchionni [2019] heat transfer Correlation"
   parameter Real use_rho_bar "> 0, use rho_bar for dp calculation. error in passing a boolean from OMPython so Real type variable is used here";
   parameter Real rho_bar "Averaged rho, >0: valid rho and will be used for dp calculation";   
   
+  parameter Correlations.NuCorrType NuCorr_z = Correlations.NuCorrType.Xin "flag of Nusselt Number correlation for zigzag channel PCHE";
+  parameter Correlations.NuCorrType NuCorr_s = Correlations.NuCorrType.Gnielinski "flag of Nusselt number correlation for straight channel PCHE";
+  parameter Correlations.FFCorrType FFCorr_z = Correlations.FFCorrType.Ngo "flag of Friction factor correlation for zigzag channel";
+  parameter Correlations.FFCorrType FFCorr_s = Correlations.FFCorrType.Gnielinski "flag of Friction factor correlation for straight channel";
+
   parameter Real Cf_C1 = 1.0;
   parameter Real Cf_C2 = 1.0;
   parameter Real Cf_C3 = 1.0;
@@ -148,7 +152,7 @@ equation
       // pressure drop calculation in Marchionni 2019
       co_A[j] = -2.0 * Modelica.Math.log10( 12 / Re_l[j]) "neglect roughness";
       co_B[j] = -2.0 * Modelica.Math.log10( 2.51 * co_A[j] / Re_l[j]);   
-   
+
       f[j] = Cf_C1 * (0.25 * (( 4.781 - (co_A[j] - 4.781) ^ 2 / (co_B[j] - 2 * co_A[j] + 4.781)) ^(-2)));
       Nu[j] = noEvent((1 / Cf_C1) * ((f[j]/2 * (Re_l[j] - 1000) * Pr[j]) / (1 + 12.7 * ( Pr[j] ^(2/3) - 1) * (f[j]/2)^0.5)));
       
@@ -158,27 +162,28 @@ equation
       q3[j] = 0;      
       
     else    
-      // for zigzag channel, use Ngo correlation
-      // Nu[j] = (0.1696 + Cf_C1) * (Re_l[j] ^ (0.629 + Cf_C2)) * (Pr[j] ^ (0.317 + Cf_C3));
-      // Nu[j] = 0.1696 * (Re_l[j] ^ 0.629) * (Pr[j] ^ 0.317);
-      //Nu[j] = Cf_C1 * 0.1696 * (Re_l[j] ^ 0.629) * (Pr[j] ^ 0.317);
-      
-      // Nusselt number by Liao-Zhao correlation
-      // Nu_l[j] = 0.124 * (Re_l[j] ^ 0.8) * (Pr[j] ^ 0.4) * (Gr[j] / (Re_l[j] ^ 2))^ 0.203 * (rho_w[j] / rho_vol[j]) ^ 0.842 * (cp_bar[j] / cp_vol[j]) ^ 0.384;    
-      // Nu[j] = Cf_C1 * Nu_l[j];
-      
-      // My update of Liao-zhao Nusselt number correlation, modify the temperature related item
-      // Nu_l[j] = 0.124 * (Re_l[j] ^ 0.8) * (Pr[j] ^ 0.4) * (Gr[j] / (Re_l[j] ^ 2))^ 0.203 * (rho_w[j] / rho_vol[j]) ^ (0.842 + Cf_C1) * (cp_bar[j] / cp_vol[j]) ^ (0.384 + Cf_C3);    
       q1[j] = Gr[j] / (Re_l[j] ^ 2);      
       q2[j] = rho_w[j] / rho_vol[j];      
-      q3[j] = cp_bar[j] / cp_vol[j];      
-      
-      Nu[j] = Cf_C1 * (Re_l[j] ^ 0.8) * (Pr[j] ^ 0.4) * q1[j]^ 0.203 * q2[j] ^ 0.842 * q3[j] ^ 0.384;       
-      
-      // Nu[j] = Cf_C1 * (Re_l[j] ^ Cf_C2) * (Pr[j] ^ Cf_C3);
-      // f[j] = (0.1924 + Cf_C1) * (Re_l[j] ^ (-0.091 + Cf_C2));
-      //f[j] = 0.1924 * (Re_l[j] ^ (-0.091));
-      f[j] = Cf_C2 * (Re_l[j] ^ (-0.091));
+      q3[j] = cp_bar[j] / cp_vol[j];  
+
+      // for zigzag channel
+      if NuCorr_z == Correlations.NuCorrType.Liao then
+        // Nusselt number by Liao-Zhao correlation
+        Nu_l[j] = 0.124 * (Re_l[j] ^ 0.8) * (Pr[j] ^ 0.4) * q1[j] ^ 0.203 * q2[j] ^ 0.842 * q3[j] ^ 0.384;   
+      elseif NuCorr_z == Correlations.NuCorrType.Xin then
+        // My update of Liao-zhao Nusselt number correlation, introducing Cf_C1, which is predicted by boundary condition with pre-trained coefficients
+        Nu[j] = Cf_C1 * (Re_l[j] ^ 0.8) * (Pr[j] ^ 0.4) * q1[j]^ 0.203 * q2[j] ^ 0.842 * q3[j] ^ 0.384;       
+      else 
+        // use Ngo correlation as default
+        Nu[j] = 0.1696 * (Re_l[j] ^ 0.629) * (Pr[j] ^ 0.317);      
+      end if;   
+         
+
+      if FFCorr_z == Correlations.FFCorrType.Xin then
+        f[j] = Cf_C2 * (Re_l[j] ^ (-0.091));
+      else // use Ngo's correlation as default
+        f[j] = 0.1924 * (Re_l[j] ^ (-0.091));
+      end if;
       
       co_A[j] = 1.0;
       co_B[j] = 1.0;
@@ -194,7 +199,6 @@ equation
     //   
 
     hc[j] = noEvent(Nu[j] * k_vol[j] / Dhyd);   
-
 
     //th_conductivity.u[1] = (Tw[j] + T_vol[j]) / 2;
     //k_wall[j] =  MyUtil.metal_conductivity(th_conductivity.tableID, (Tw[j] + T_vol[j]) / 2);

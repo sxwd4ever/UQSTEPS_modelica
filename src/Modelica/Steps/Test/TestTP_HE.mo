@@ -15,12 +15,15 @@ model TestTP_HE
   
   // package medium_hot = Steps.Media.CO2;
   package medium_heater_v1 = SolarTherm.Media.Sodium.Sodium_pT; // ThermoPower.Water.StandardWater; //Modelica.Media.IdealGases.SingleGases.CO2;
-  package medium_heater = Steps.Media.ThermiaOilD;//
+  package medium_heater = Media.MoltenSalt.MoltenSalt_pT;
+  package medium_heater_v3 = Steps.Media.ThermiaOilD;//
   //package medium_cold = Steps.Media.CO2; // Modelica.Media.IdealGases.SingleGases.CO2;
   package medium_hot = Steps.Media.SCO2;//ExternalMedia.Examples.CO2CoolProp;
   package medium_cold = Steps.Media.SCO2;//ExternalMedia.Examples.CO2CoolProp;    
   
   parameter Model.PBConfiguration cfg_tune( 
+  redeclare package medium_heater_hot = medium_heater,
+  redeclare package medium_heater_cold = medium_hot,
   //mdot_heater = 40,
   //T_heater_hot_in = from_degC(800),
   //T_heater_hot_out = from_degC(600),
@@ -31,13 +34,14 @@ model TestTP_HE
   L_h = 1); 
   
   parameter Model.PBConfiguration cfg_test( 
+  redeclare package medium_heater_hot = medium_heater,
+  redeclare package medium_heater_cold = medium_hot,  
   mdot_main = 93.75,
   mdot_heater = 55,
   T_heater_hot_in = from_degC(550),
   L_h = 1); 
   
-  parameter Model.PBConfiguration cfg_default;
-    
+  
   // select the configuration of parameters
   parameter Model.PBConfiguration cfg = cfg_tune;
   
