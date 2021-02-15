@@ -4,7 +4,7 @@ package SCO2 "supercritical CO2"
       // mediumName = "CarbonDioxide",
       mediumName = "CO2",
       //substanceNames = {"CO2|debug=40"}, // for single test, more detailed output
-      substanceNames = {"CO2"}, // for parameters sweep, lesser output
+      substanceNames = {"CO2"}, // for parameters sweep, lesser output with the debug flag
       ThermoStates = Modelica.Media.Interfaces.Choices.IndependentVariables.pT,
       inputChoice = ExternalMedia.Common.InputChoice.pT,
       singleState=false,
@@ -93,6 +93,14 @@ package SCO2 "supercritical CO2"
   external "C" TwoPhaseMedium_setState_pT_C_impl(p, T, state, mediumName, libraryName, substanceName)
     annotation(Include="#include \"externalmedialib.h\"", Library="ExternalMediaLib", IncludeDirectory="modelica://ExternalMedia/Resources/Include", LibraryDirectory="modelica://ExternalMedia/Resources/Library");
   end setState_pT;
+  
+  redeclare function extends specificEnthalpy "Return specific enthalpy as a function of the thermodynamic state record"
+      algorithm
+        h := specificEnthalpy_pT(p = state.p, T = state.T);
+      annotation(
+        Inline = true,
+        smoothOrder = 2);
+    end specificEnthalpy;  
 
   /*
   redeclare replaceable function setState_pT

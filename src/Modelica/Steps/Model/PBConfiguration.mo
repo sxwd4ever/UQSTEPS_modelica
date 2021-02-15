@@ -18,7 +18,7 @@ model PBConfiguration
   replaceable package medium_cooler_cold = Modelica.Media.Water.WaterIF97_pT constrainedby Modelica.Media.Interfaces.PartialPureSubstance;   
   replaceable package medium_cooler_hot = Steps.Media.SCO2 constrainedby Modelica.Media.Interfaces.PartialPureSubstance;  
   
-  replaceable package medium_heater_hot = Steps.Media.MoltenSalt constrainedby Modelica.Media.Interfaces.PartialPureSubstance;
+  replaceable package medium_heater_hot = Steps.Media.MoltenSalt.MoltenSalt_pT constrainedby Modelica.Media.Interfaces.PartialPureSubstance;
   replaceable package medium_heater_cold = Steps.Media.SCO2 constrainedby Modelica.Media.Interfaces.PartialPureSubstance;
   // replaceable package medium_heater_cold = Modelica
   //replaceable package medium_cooler = Modelica.Media.Water.WaterIF97_pT;
