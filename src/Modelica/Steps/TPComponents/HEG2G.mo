@@ -81,15 +81,31 @@ extends Interfaces.HeatExchangerG2G;
     Placement(transformation(extent = {{-12, 66}, {12, 46}}, rotation = 0)));
   
   Thermal.MetalTubeFV metalTube(
-  L = exchSurface_F ^ 2 / (fluidVol * pi * 4),  
-  Nw = Nw_F, 
-  Tstartbar = Tstartbar_M, 
-  WallRes = false, 
-  lambda = lambda, 
-  rext = (metalVol + fluidVol) * 4 / extSurfaceTub / 2, 
-  rhomcm = rhomcm, 
-  rint = fluidVol * 4 / exchSurface_F / 2) annotation(
-    Placement(transformation(extent = {{-10, -24}, {10, -4}})));
+    L = exchSurface_F ^ 2 / (fluidVol * pi * 4),  
+    Nw = Nw_F, 
+    Tstartbar = Tstartbar_M, 
+    WallRes = false, 
+    lambda = lambda, 
+    rext = (metalVol + fluidVol) * 4 / extSurfaceTub / 2, 
+    rhomcm = rhomcm, 
+    rint = fluidVol * 4 / exchSurface_F / 2) annotation(
+      Placement(transformation(extent = {{-10, -24}, {10, -4}})));
+
+  // PCHEMetalWallFV metalTube(
+  // L = L,  
+  // r_c = geo_tube.d / 2, 
+  // Nw = Nw_F,
+  // Nt = Nt, 
+  // Tstartbar = (Tstartbar_G + Tstartbar_F) / 2, 
+  // Tstart1 =  Tstartbar_G, //bc.st_hot_out.T, 
+  // TstartN = Tstartbar_F, //bc.st_hot_in.T,   
+  // WallRes = true, 
+  // lambda = lambda,
+  // QuasiStatic = true, 
+  // rhomcm = rhomcm 
+  // ) annotation(
+  //   Placement(transformation(extent = {{-10, -24}, {10, -4}})));
+  
   
   Thermal.HeatExchangerTopologyFV heatExchangerTopology(Nw = Nw_F, redeclare model HeatExchangerTopology = HeatExchangerTopology) annotation(
     Placement(transformation(extent = {{-10, 6}, {10, 26}})));

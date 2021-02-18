@@ -32,7 +32,7 @@ model PCHE "PCHE model based on Thermo Power"
   parameter Choices.Flow1D.HCtypes HCtype_F = ThermoPower.Choices.Flow1D.HCtypes.Downstream "Location of the hydraulic capacitance, fluid side";
   parameter Boolean gasQuasiStatic = false "Quasi-static model of the flue gas (mass, energy and momentum static balances";
   parameter Boolean fluidQuasiStatic = false "Quasi-static model of the fluid (mass, energy and momentum static balances";
-  parameter Boolean metalQuasiStatic = false "Quasi-static model of the metalWall (energy static balances)";
+  // parameter Boolean metalQuasiStatic = false "Quasi-static model of the metalWall (energy static balances)";
   constant Real pi = Modelica.Constants.pi;
   parameter SI.Distance L = 1 "Tube length";
   parameter Choices.FluidPhase.FluidPhases FluidPhaseStart = Choices.FluidPhase.FluidPhases.Liquid "Fluid phase (only for initialization!)" annotation(
@@ -112,7 +112,7 @@ model PCHE "PCHE model based on Thermo Power"
   Tstartout = Tstartbar_G, //bc.st_hot_out.T,   
   redeclare model HeatTransfer = HeatTransfer_G) annotation(
     Placement(transformation(extent = {{-12, 66}, {12, 46}}, rotation = 0)));
-  /*  
+  /*
   Thermal.MetalTubeFV metalWall(
   L = exchSurface_F ^ 2 / (fluidVol * pi * 4),  
   Nw = Nw_F, 
@@ -124,22 +124,22 @@ model PCHE "PCHE model based on Thermo Power"
   rint = fluidVol * 4 / exchSurface_F / 2) annotation(
     Placement(transformation(extent = {{-10, -24}, {10, -4}})));
   */
-
+  
   PCHEMetalWallFV metalWall(
-  L = L,  
-  r_c = geo_tube.d / 2, 
-  Nw = Nw_F,
-  Nt = Nt, 
-  Tstartbar = Tstartbar_M, 
-  Tstart1 =  Tstartbar_M, //bc.st_hot_out.T, 
-  TstartN = Tstartbar_M, //bc.st_hot_in.T,   
-  WallRes = true, 
-  lambda = lambda,
-  QuasiStatic = metalQuasiStatic, 
-  rhomcm = rhomcm 
+    L = L,  
+    r_c = geo_tube.d / 2, 
+    Nw = Nw_F,
+    Nt = Nt, 
+    Tstartbar = (Tstartbar_G + Tstartbar_F) / 2, 
+    Tstart1 =  Tstartbar_G, //bc.st_hot_out.T, 
+    TstartN = Tstartbar_F, //bc.st_hot_in.T,   
+    WallRes = true, 
+    lambda = lambda,
+    // QuasiStatic = metalQuasiStatic , 
+    rhomcm = rhomcm 
   ) annotation(
     Placement(transformation(extent = {{-10, -24}, {10, -4}})));
-
+  
   Thermal.HeatExchangerTopologyFV heatExchangerTopology(Nw = Nw_F, redeclare model HeatExchangerTopology = HeatExchangerTopology) annotation(
     Placement(transformation(extent = {{-10, 6}, {10, 26}})));
 equation

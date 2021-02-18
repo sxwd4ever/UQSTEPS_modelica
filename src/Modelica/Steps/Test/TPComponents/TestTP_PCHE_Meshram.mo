@@ -165,6 +165,7 @@ model TestTP_PCHE_Meshram
     // redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer, 
     // redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer, 
     redeclare model HeatExchangerTopology = ThermoPower.Thermal.HeatExchangerTopologies.CounterCurrentFlow, 
+    // redeclare model HeatExchangerTopology = ThermoPower.Thermal.HeatExchangerTopologies.ShellAndTube(Ntp = 2, inletTubeAtTop = true, inletShellAtTop=true),     
     bc = bc_HE, 
     geo_hot = cfg.cfg_LTR_hot.geo,
     geo_cold = cfg.cfg_LTR_cold.geo,
@@ -174,8 +175,8 @@ model TestTP_PCHE_Meshram
     thermo_tube = cfg.cfg_LTR_tube.thermo, 
     L = L_fp,
     SSInit = true,
-    gasQuasiStatic = false,
-    fluidQuasiStatic = false
+    gasQuasiStatic = true,
+    fluidQuasiStatic = true
     // override the values of Am and L of metaltubeFV
     // to make them agree with semi-circular tube of PCHE
     // ('final' modifier of Am in metalTubeFv was removed as well)
