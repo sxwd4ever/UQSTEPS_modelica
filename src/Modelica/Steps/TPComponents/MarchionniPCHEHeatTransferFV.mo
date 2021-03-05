@@ -68,7 +68,7 @@ model MarchionniPCHEHeatTransferFV "Marchionni [2019] heat transfer Correlation"
 
   Modelica.SIunits.Length t_wall = (2 - Modelica.Constants.pi / 4) * (d_c / 2) "thickness of wall between two neighboring hot and cold";
   parameter SI.Length pitch "pitch length";
-  parameter Real phi"pitch angle, degree";
+  parameter Real phi "pitch angle, degree";
   parameter String name_material = "inconel 750";
   // parameter Real kc_dp = 2 "Pressure drop correction coeffecient";
   // parameter Real kc_cf =if abs(phi - 0) < Modelica.Constants.eps then 1 else 12; 
@@ -111,25 +111,25 @@ equation
   for j in 1:Nw loop  
     // calculate averaged values    
     if useAverageTemperature then
-      T_vol[j] = (T[j] + T[j + 1]) / 2;
-      G_vol[j] = (G[j] + G[j+1]) / 2;
-      u_vol[j] = (u[j] + u[j+1]) / 2;
-      mu_vol[j] = (mu[j] + mu[j+1]) / 2;
-      k_vol[j] = (k[j] + k[j+1]) / 2;
-      rho_vol[j] = (rho[j] + rho[j+1]) / 2;
-      cp_vol[j] = (cp[j] + cp[j+1]) / 2; 
-      p_vol[j] = (fluidState[j].p + fluidState[j+1].p) / 2;
-      h_vol[j] = (h[j] + h[j+1]) / 2;
+      T_vol[j] = noEvent((T[j] + T[j + 1]) / 2);
+      G_vol[j] = noEvent((G[j] + G[j+1]) / 2);
+      u_vol[j] = noEvent((u[j] + u[j+1]) / 2);
+      mu_vol[j] = noEvent((mu[j] + mu[j+1]) / 2);
+      k_vol[j] = noEvent((k[j] + k[j+1]) / 2);
+      rho_vol[j] = noEvent((rho[j] + rho[j+1]) / 2);
+      cp_vol[j] = noEvent((cp[j] + cp[j+1]) / 2); 
+      p_vol[j] = noEvent((fluidState[j].p + fluidState[j+1].p) / 2);
+      h_vol[j] = noEvent((h[j] + h[j+1]) / 2);
     else
-      T_vol[j] = T[j+1];
-      G_vol[j] = G[j+1];
-      u_vol[j] = u[j+1];
-      mu_vol[j] = mu[j+1];
-      k_vol[j] = k[j+1];
-      rho_vol[j] = rho[j];
-      cp_vol[j] = cp[j+1];
-      p_vol[j] = fluidState[j].p;
-      h_vol[j] = h[j+1];
+      T_vol[j] = noEvent(T[j+1]);
+      G_vol[j] = noEvent(G[j+1]);
+      u_vol[j] = noEvent(u[j+1]);
+      mu_vol[j] = noEvent(mu[j+1]);
+      k_vol[j] = noEvent(k[j+1]);
+      rho_vol[j] = noEvent(rho[j]);
+      cp_vol[j] = noEvent(cp[j+1]);
+      p_vol[j] = noEvent(fluidState[j].p);
+      h_vol[j] = noEvent(h[j+1]);
     end if;    
     
     // kc_T[j] = if T_vol[j] < 600 then 2.0 else 1.0;  
@@ -138,72 +138,149 @@ equation
     rho_w[j] = Medium.density(state_w[j]);
     h_w[j] = Medium.specificEnthalpy(state_w[j]);    
     // use abs() to prevent negetive Gr
-    Gr[j] = abs((rho_w[j] - rho_vol[j]) * rho_vol[j] * g * (d_c ^ 3) / (mu_vol[j]^2));    
-    cp_bar[j] = (h_w[j] - h_vol[j]) / (Tw[j] - T_vol[j]);   
+    Gr[j] = abs((rho_w[j] - rho_vol[j]) * rho_vol[j] * g * (d_c ^ 3) / (mu_vol[j]^2));   
+    
+    if abs(Tw[j] - T_vol[j]) < 1e-3 then
+      cp_bar[j] = cp_vol[j]; 
+    else
+      cp_bar[j] = (h_w[j] - h_vol[j]) / (Tw[j] - T_vol[j]);  
+    end if;
     
     // calculate Re and Pr  
-    Re[j] =  noEvent(G_vol[j] * Dhyd / mu_vol[j]);
-    Re_l[j] = noEvent(Functions.smoothSat(Re[j], Re_min, 1e9, Re_min / 2));
-    Pr[j] = noEvent(cp_vol[j] * mu_vol[j] / k_vol[j]);          
-
-    //C1[j] = exp(Cf_C1 +  Cf_C2  * log(Re_l[j] / 1e4)  + Cf_C3 * log(Pr[j]));
-    if phi <= 0 then 
-      // for straight channel, use Gnieliski Correlation 
-      // pressure drop calculation in Marchionni 2019
-      co_A[j] = -2.0 * Modelica.Math.log10( 12 / Re_l[j]) "neglect roughness";
-      co_B[j] = -2.0 * Modelica.Math.log10( 2.51 * co_A[j] / Re_l[j]);   
-
-      f[j] = Cf_C1 * (0.25 * (( 4.781 - (co_A[j] - 4.781) ^ 2 / (co_B[j] - 2 * co_A[j] + 4.781)) ^(-2)));
-      Nu[j] = noEvent((1 / Cf_C1) * ((f[j]/2 * (Re_l[j] - 1000) * Pr[j]) / (1 + 12.7 * ( Pr[j] ^(2/3) - 1) * (f[j]/2)^0.5)));
+    Re[j] =  noEvent(G_vol[j] * Dhyd / mu_vol[j]);    
+    Pr[j] = noEvent(cp_vol[j] * mu_vol[j] / k_vol[j]);      
+          
+    // low Reynolds number case
+    if Re[j] < Re_min then 
+      // for low Reynolds case, use Dittus-Boelter correlations
+      Nu[j] = noEvent(0.023 * Re[j] ^ 0.8 * Pr[j] ^ 0.4);   
+      // Yoon-Sun's Correlations for (200 < Re < 4700)
+      // Nu[j] = 5.05 + (0.02 * from_deg(phi) + 0.003 ) * Re[j] * (Pr[j] ^ 0.6);
       
-      // dummy variables      
+      // Kim's Correlations for (0 < Re < 2500)
+      // Nu[j] = 4.089 + 0.00365 * Re[j] * (Pr[j] ^ 0.58);
+        
+      // dummy variables  
+      Re_l[j] = Re_min; 
+         
+      co_A[j] = 0;
+      co_B[j] = 0;      
+      f[j] = 0;
+      
       q1[j] = 0;
       q2[j] = 0;
-      q3[j] = 0;      
+      q3[j] = 0; 
+      dp[j] = 0;  
+    else      
+      Re_l[j] = noEvent(Functions.smoothSat(Re[j], Re_min, 1e9, Re_min / 2));
+        
+  
+      //C1[j] = exp(Cf_C1 +  Cf_C2  * log(Re_l[j] / 1e4)  + Cf_C3 * log(Pr[j]));
+      if phi <= 0 then 
+        // for straight channel, use Gnieliski Correlation 
+        // pressure drop calculation in Marchionni 2019
+        co_A[j] = noEvent(-2.0 * Modelica.Math.log10( 12 / Re_l[j])) "neglect roughness";
+        co_B[j] = noEvent(-2.0 * Modelica.Math.log10( 2.51 * co_A[j] / Re_l[j]));   
+  
+        f[j] = noEvent(Cf_C1 * (0.25 * (( 4.781 - (co_A[j] - 4.781) ^ 2 / (co_B[j] - 2 * co_A[j] + 4.781)) ^(-2))));
+        Nu[j] = noEvent((1 / Cf_C1) * ((f[j]/2 * (Re_l[j] - 1000) * Pr[j]) / (1 + 12.7 * ( Pr[j] ^(2/3) - 1) * (f[j]/2)^0.5)));
+        
+        // dummy variables      
+        q1[j] = 0;
+        q2[j] = 0;
+        q3[j] = 0;      
+        
+      else    
+        q1[j] = noEvent(Gr[j] / (Re_l[j] ^ 2));      
+        q2[j] = noEvent(rho_w[j] / rho_vol[j]);      
+        q3[j] = noEvent(cp_bar[j] / cp_vol[j]);  
+  
+        // for zigzag channel
+        if NuCorr_z == Correlations.NuCorrType.Liao then
+          // Nusselt number by Liao-Zhao correlation
+          Nu[j] = noEvent(0.124 * (Re_l[j] ^ 0.8) * (Pr[j] ^ 0.4) * q1[j] ^ 0.203 * q2[j] ^ 0.842 * q3[j] ^ 0.384);   
+        elseif NuCorr_z == Correlations.NuCorrType.Xin then
+          // My update of Liao-zhao Nusselt number correlation, introducing Cf_C1, which is predicted by boundary condition with pre-trained coefficients
+          Nu[j] = noEvent(Cf_C1 * (Re_l[j] ^ 0.8) * (Pr[j] ^ 0.4) * q1[j]^ 0.203 * q2[j] ^ 0.842 * q3[j] ^ 0.384);       
+        else 
+          // use Ngo correlation as default
+          Nu[j] = noEvent(0.1696 * (Re_l[j] ^ 0.629) * (Pr[j] ^ 0.317));      
+        end if;             
+  
+        if FFCorr_z == Correlations.FFCorrType.Xin then
+          f[j] = noEvent(Cf_C2 * (Re_l[j] ^ (-0.091)));
+        else // use Ngo's correlation as default
+          f[j] = noEvent(0.1924 * (Re_l[j] ^ (-0.091)));
+        end if;
+        
+        co_A[j] = 1.0;
+        co_B[j] = 1.0;
+      end if;      
       
-    else    
-      q1[j] = Gr[j] / (Re_l[j] ^ 2);      
-      q2[j] = rho_w[j] / rho_vol[j];      
-      q3[j] = cp_bar[j] / cp_vol[j];  
-
-      // for zigzag channel
-      if NuCorr_z == Correlations.NuCorrType.Liao then
-        // Nusselt number by Liao-Zhao correlation
-        Nu_l[j] = 0.124 * (Re_l[j] ^ 0.8) * (Pr[j] ^ 0.4) * q1[j] ^ 0.203 * q2[j] ^ 0.842 * q3[j] ^ 0.384;   
-      elseif NuCorr_z == Correlations.NuCorrType.Xin then
-        // My update of Liao-zhao Nusselt number correlation, introducing Cf_C1, which is predicted by boundary condition with pre-trained coefficients
-        Nu[j] = Cf_C1 * (Re_l[j] ^ 0.8) * (Pr[j] ^ 0.4) * q1[j]^ 0.203 * q2[j] ^ 0.842 * q3[j] ^ 0.384;       
-      else 
-        // use Ngo correlation as default
-        Nu[j] = 0.1696 * (Re_l[j] ^ 0.629) * (Pr[j] ^ 0.317);      
-      end if;   
-         
-
-      if FFCorr_z == Correlations.FFCorrType.Xin then
-        f[j] = Cf_C2 * (Re_l[j] ^ (-0.091));
-      else // use Ngo's correlation as default
-        f[j] = 0.1924 * (Re_l[j] ^ (-0.091));
-      end if;
+      if use_rho_bar > 0 then    
+        // dp[j] = noEvent(kc_dp * f[j] * l * rho_bar * u_vol[j] ^ 2 / Dhyd);
+        dp[j] = noEvent(f[j] * l * rho_bar * u_vol[j] ^ 2 / Dhyd);
+      else
+        // dp[j] = noEvent(kc_dp * f[j] * l * rho[j] * u_vol[j] ^ 2 / Dhyd);
+        dp[j] = noEvent(f[j] * l * rho[j] * u_vol[j] ^ 2 / Dhyd);
+      end if;  
+      //   
+    end if;
       
-      co_A[j] = 1.0;
-      co_B[j] = 1.0;
-    end if;      
-    
-    if use_rho_bar > 0 then    
-      // dp[j] = noEvent(kc_dp * f[j] * l * rho_bar * u_vol[j] ^ 2 / Dhyd);
-      dp[j] = noEvent(f[j] * l * rho_bar * u_vol[j] ^ 2 / Dhyd);
-    else
-      // dp[j] = noEvent(kc_dp * f[j] * l * rho[j] * u_vol[j] ^ 2 / Dhyd);
-      dp[j] = noEvent(f[j] * l * rho[j] * u_vol[j] ^ 2 / Dhyd);
-    end if;  
-    //   
-
     hc[j] = noEvent(Nu[j] * k_vol[j] / Dhyd);   
 
     //th_conductivity.u[1] = (Tw[j] + T_vol[j]) / 2;
     //k_wall[j] =  MyUtil.metal_conductivity(th_conductivity.tableID, (Tw[j] + T_vol[j]) / 2);
     k_wall[j] =  MyUtil.metal_conductivity(th_conductivity.tableID, Tw[j]);
-    gamma[j] = 1 / (1 / hc[j] + t_wall / k_wall[j]);
-    Qw[j] = (Tw[j] - T_vol[j]) * kc * omega * l * gamma[j] * Nt;
+    gamma[j] = noEvent(1 / (1 / hc[j] + t_wall / k_wall[j]));
+    /*
+    MyUtil.myAssert(
+    debug = false, 
+    val_test = Tw[j], min = 0, max = 1e6,
+    name_val = "Tw[j]", 
+    val_ref = {kc, gamma[j], hc[j], k_wall[j], k_vol[j]}, 
+    name_val_ref = {"kc", "gamma[j]", "hc[j]", "k_wall[j]", "k_vol[j]"});  
+    
+    MyUtil.myAssert(
+    debug = false, 
+    val_test = T_vol[j], min = 0, max = 1e6,
+    name_val = "T_vol[j]", 
+    val_ref = {kc, gamma[j], hc[j], k_wall[j], k_vol[j]}, 
+    name_val_ref = {"kc", "gamma[j]", "hc[j]", "k_wall[j]", "k_vol[j]"});        
+    */
+          
+    Qw[j] = noEvent((Tw[j] - T_vol[j]) * kc * omega * l * gamma[j] * Nt);
   end for;
+/*        
+algorithm 
+    // ******************************************** 
+    // this algorithm section is used for debug purpose
+    // if a variable become invalid (zero, inf or weired)
+    // 1. make a copy of its equation
+    // 2. move the copy into this section, rewrite the equation into an algorithm ('=' -> ':=')
+    // 3. comment the origin one
+    // 4. update the calling of function MyAseert accordingly to print value in console
+    //
+    // once the bug fixed, DO REMEMBER to rewind the changed lines reversely. 
+    // ********************************************
+    for j in 1:Nw loop
+      Qw[j] := (Tw[j] - T_vol[j]) * kc * omega * l * gamma[j] * Nt;    
+      
+        
+      MyUtil.myAssert(
+      debug = false, 
+      val_test = Tw[j], min = 0, max = 1e6,
+      name_val = "Tw[j]", 
+      val_ref = {kc, gamma[j], hc[j], k_wall[j], k_vol[j]}, 
+      name_val_ref = {"kc", "gamma[j]", "hc[j]", "k_wall[j]", "k_vol[j]"});    
+      
+    
+      MyUtil.myAssert(
+      debug = false, 
+      val_test = T_vol[j], min = 0, max = 1e6,
+      name_val = "T_vol[j]", 
+      val_ref = {kc, gamma[j], hc[j], k_wall[j], k_vol[j]}, 
+      name_val_ref = {"kc", "gamma[j]", "hc[j]", "k_wall[j]", "k_vol[j]"});    
+    end for;
+*/
 end MarchionniPCHEHeatTransferFV;

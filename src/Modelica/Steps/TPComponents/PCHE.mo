@@ -16,7 +16,7 @@ model PCHE "PCHE model based on Thermo Power"
      choicesAllMatching = true);
   replaceable model HeatTransfer_G = Thermal.HeatTransferFV.IdealHeatTransfer constrainedby ThermoPower.Thermal.BaseClasses.DistributedHeatTransferFV annotation(
      choicesAllMatching = true);
-  replaceable model HeatExchangerTopology = Thermal.HeatExchangerTopologies.CoCurrentFlow constrainedby ThermoPower.Thermal.BaseClasses.HeatExchangerTopologyData annotation(
+  replaceable model HeatExchangerTopology = Thermal.HeatExchangerTopologies.CounterCurrentFlow constrainedby ThermoPower.Thermal.BaseClasses.HeatExchangerTopologyData annotation(
      choicesAllMatching = true);
   parameter Choices.Flow1D.FFtypes FFtype_G = ThermoPower.Choices.Flow1D.FFtypes.NoFriction "Friction Factor Type, gas side"; 
   

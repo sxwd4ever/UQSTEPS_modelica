@@ -54,6 +54,13 @@ package ThermiaOilD "Shell Thermia Oil D the heat transfer fluid"
     //state.d := density(p, T=T_h(h)); //setState_phX(p, h, fill(0, 0));
     //state.phase := 1;
   end setState_ph;    
+  
+  redeclare replaceable function extends density_derp_T "Density derivative by pressure"
+  algorithm
+    ddpT := 0 "Incompressible"; 
+    // CP.PropsSI("d(DMASS)/d(P)|Hmass", "P", state.p, "Hmass", specificEnthalpy_pT(state.p, state.T), mediumName);
+    annotation (Inline=true);
+  end density_derp_T; 
     
     annotation (Documentation(info="<html>
 

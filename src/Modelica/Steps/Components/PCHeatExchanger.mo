@@ -286,7 +286,7 @@ algorithm
     // if a variable become invalid (zero, inf or weired)
     // 1. make a copy of its equation
     // 2. move the copy into this section, rewrite the equation into an algorithm ('=' -> ':=')
-    // 3. commet the origin one
+    // 3. comment the origin one
     // 4. update the calling of function MyAseert accordingly to print value in console
     //
     // once the bug fixed, DO REMEMBER to rewind the changed lines reversely. 

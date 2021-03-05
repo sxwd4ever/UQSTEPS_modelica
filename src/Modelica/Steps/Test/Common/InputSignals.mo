@@ -27,6 +27,30 @@ model InputSignals
     Placement(visible = true, transformation(origin = {-28, -42}, extent = {{-6, -6}, {6, 6}}, rotation = 0)));
   Modelica.Blocks.Sources.BooleanPulse booleanPulse1(period = 2, startTime = 1, width = 10) annotation(
     Placement(visible = true, transformation(origin = {-58, -76}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
+  Modelica.Blocks.Sources.Step step(height = -1, offset = 1, startTime = 2) annotation(
+    Placement(visible = true, transformation(origin = {-88, 108}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
+  Modelica.Blocks.Interaction.Show.RealValue realValue annotation(
+    Placement(visible = true, transformation(origin = {-20, 108}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
+  Modelica.Blocks.Interaction.Show.RealValue realValue1 annotation(
+    Placement(visible = true, transformation(origin = {-22, 82}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
+  Modelica.Blocks.Math.MultiSwitch multiSwitch1(nu = 2, expr = {2, 2.5}) annotation(
+    Placement(visible = true, transformation(origin = {-96, 80}, extent = {{-10, -10}, {30, 10}}, rotation = 0)));
+  Modelica.Blocks.Sources.BooleanStep booleanStep(startTime = 220, startValue = true) annotation(
+    Placement(visible = true, transformation(origin = {-148, 98}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
+  Modelica.Blocks.Sources.BooleanStep booleanStep1(startTime = 480) annotation(
+    Placement(visible = true, transformation(origin = {-150, 58}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
+  Modelica.Blocks.Sources.Ramp ramp(duration = 1500, height = 86.374, offset = 49.09959, startTime = 900) annotation(
+    Placement(visible = true, transformation(origin = {56, 108}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
+  Modelica.Blocks.Interaction.Show.RealValue realValue2 annotation(
+    Placement(visible = true, transformation(origin = {114, 108}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
+  Modelica.Blocks.Sources.TimeTable timeTable(offset = 0.606862, startTime = 0, table = [865, 0; 960, 0.289268; 1200, 0.492262; 1440, 0.576418; 1680, 0.621235; 1920, 0.64151; 2160, 0.65904; 2400, 0.66217]) annotation(
+    Placement(visible = true, transformation(origin = {76, 78}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
+  Modelica.Blocks.Interaction.Show.RealValue realValue3 annotation(
+    Placement(visible = true, transformation(origin = {118, 78}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
+  Modelica.Blocks.Sources.TimeTable timeTable1(table = [0, 48.220577; 910, 49.413678; 1015, 63.370455; 1200, 76.784507; 1440, 92.61866; 1680, 105.822528; 1920, 117.414751; 2160, 128.009885; 2340, 135.194766; 2400, 135.473485]) annotation(
+    Placement(visible = true, transformation(origin = {76, 44}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
+  Modelica.Blocks.Interaction.Show.RealValue realValue4 annotation(
+    Placement(visible = true, transformation(origin = {118, 44}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
 equation
   connect(integerConstant.y, triggeredAdd.u) annotation(
     Line(points = {{-73, 52}, {-26, 52}}, color = {255, 127, 0}));
@@ -50,7 +74,21 @@ equation
     Line(points = {{-46, -76}, {-32, -76}, {-32, -50}, {-32, -50}}, color = {255, 0, 255}));
   connect(triggeredAdd1.y, sum.u[2]) annotation(
     Line(points = {{-20, -42}, {18, -42}, {18, -38}, {18, -38}}, color = {255, 127, 0}));
+  connect(step.y, realValue.numberPort) annotation(
+    Line(points = {{-76, 108}, {-22, 108}, {-22, 108}, {-32, 108}, {-32, 108}}, color = {0, 0, 127}));
+  connect(booleanStep.y, multiSwitch1.u[1]) annotation(
+    Line(points = {{-137, 98}, {-122.5, 98}, {-122.5, 80}, {-106, 80}}, color = {255, 0, 255}));
+  connect(booleanStep1.y, multiSwitch1.u[2]) annotation(
+    Line(points = {{-139, 58}, {-106, 58}, {-106, 80}}, color = {255, 0, 255}));
+  connect(multiSwitch1.y, realValue1.numberPort) annotation(
+    Line(points = {{-64, 80}, {-34, 80}, {-34, 82}, {-34, 82}}, color = {255, 127, 0}));
+  connect(ramp.y, realValue2.numberPort) annotation(
+    Line(points = {{67, 108}, {102.5, 108}}, color = {0, 0, 127}));
+  connect(timeTable.y, realValue3.numberPort) annotation(
+    Line(points = {{87, 78}, {106.5, 78}}, color = {0, 0, 127}));
+  connect(timeTable1.y, realValue4.numberPort) annotation(
+    Line(points = {{88, 44}, {106, 44}, {106, 44}, {106, 44}}, color = {0, 0, 127}));
   annotation(
-    experiment(StartTime = 0, StopTime = 10, Interval = 0.1, Tolerance = 1e-6),
+    experiment(StartTime = 0, StopTime = 2400, Interval = 10, Tolerance = 1e-6),
     __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts");
 end InputSignals;
