@@ -23,15 +23,19 @@ model TestDyn_PCHE_PHE
   
   // geometry parameters
   constant Real pi = Modelica.Constants.pi;
-  parameter Integer N_ch = integer(1e2) "channel number";
+  parameter Integer N_ch = integer(2400) "channel number";
   parameter Integer N_seg = 10 "number of segments in one tube";
-  parameter SI.Length D_ch = 2e-3 "channel diameter, semi circular tube";
+  // parameter SI.Length D_ch = 2e-3 "channel diameter, semi circular tube";
+  parameter SI.Length D_ch = 1.72e-3  "channel diameter, semi circular tube";
   parameter SI.Length r_ch = D_ch / 2 "channel radiaus";
-  parameter SI.Length L_fp = 270e-3 "channel flow path length";  
+  // parameter SI.Length L_fp = 270e-3 "channel flow path length";  
+  // parameter SI.Length L_fp = (200 + 186) * 1e-3 "equivalent valid channel flow path length";  
+  parameter SI.Length L_fp = 250 * 1e-3 "equivalent valid channel flow path length"; 
   parameter SI.Length L_pitch = 12e-3 "pitch length";
   parameter Real a_phi = 36 "pitch angle degree";
-  parameter SI.Length H_ch = 3.2e-3 "Height of the solid domain, containing one cold tube and one hot tube";
-  parameter SI.Length W_ch = 2.5e-3 "Width of the solid domain";
+  parameter SI.Length H_ch = 4.17e-3 "Height of the solid domain, containing one cold tube and one hot tube";
+  parameter SI.Length W_ch = 2.3e-3 "Width of the solid domain";
+  parameter SI.Length L_wall = 420e-3 "Length of wall, not necessarily equals to length of flow path";
   parameter SI.Area A = pi * r_ch ^2 / 2 "Area of cross section of semi circular tube";
 
   // boundary conditon
@@ -129,7 +133,7 @@ model TestDyn_PCHE_PHE
     p0 = bc_HE.st_hot_in.p, 
     w0 = bc_HE.st_hot_in.mdot,
     use_in_T = false,
-    use_in_w0 = false,
+    use_in_w0 = true,
     gas(p(nominal = bc_HE.st_hot_in.p), 
     T(nominal=bc_HE.st_hot_in.T))) 
   annotation(
@@ -168,7 +172,8 @@ model TestDyn_PCHE_PHE
     L = L_fp,
     SSInit = true,
     gasQuasiStatic = false,
-    fluidQuasiStatic = false
+    fluidQuasiStatic = false,
+    metalWall(L = L_wall, w_ch = W_ch, h_ch = H_ch)
     // metalQuasiStatic = true
     // override the values of Am and L of metaltubeFV
     // to make them agree with semi-circular tube of PCHE
@@ -317,7 +322,7 @@ equation
     
 annotation(
     Diagram(graphics),
-    experiment(StartTime = 0, StopTime = 10, Tolerance = 1e-3, Interval = 1),
+    experiment(StartTime = 0, StopTime = 600, Tolerance = 1e-3, Interval = 10),
     __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts",        
     // remove the option flag --matchingAlgorithm=PFPlusExt, which may lead to 'Internal error - IndexReduction.dynamicStateSelectionWork failed!' during Translation
     // __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts,bltdump",    

@@ -23,15 +23,17 @@ model TestDyn_PCHE_PHE_ramp
   
   // geometry parameters
   constant Real pi = Modelica.Constants.pi;
-  parameter Integer N_ch = integer(1e2) "channel number";
+  parameter Integer N_ch = integer(2400) "channel number";
   parameter Integer N_seg = 10 "number of segments in one tube";
-  parameter SI.Length D_ch = 2e-3 "channel diameter, semi circular tube";
+  // parameter SI.Length D_ch = 2e-3 "channel diameter, semi circular tube";
+  parameter SI.Length D_ch = 1.72e-3  "channel diameter, semi circular tube";
   parameter SI.Length r_ch = D_ch / 2 "channel radiaus";
-  parameter SI.Length L_fp = 270e-3 "channel flow path length";  
+  // parameter SI.Length L_fp = 270e-3 "channel flow path length";  
+  parameter SI.Length L_fp = (200 + 186) * 1e-3 "channel flow path length";  
   parameter SI.Length L_pitch = 12e-3 "pitch length";
   parameter Real a_phi = 36 "pitch angle degree";
-  parameter SI.Length H_ch = 3.2e-3 "Height of the solid domain, containing one cold tube and one hot tube";
-  parameter SI.Length W_ch = 2.5e-3 "Width of the solid domain";
+  parameter SI.Length H_ch = 3.66e-3 "Height of the solid domain, containing one cold tube and one hot tube";
+  parameter SI.Length W_ch = 2.3e-3 "Width of the solid domain";
   parameter SI.Area A = pi * r_ch ^2 / 2 "Area of cross section of semi circular tube";
 
   // boundary conditon
@@ -155,9 +157,10 @@ model TestDyn_PCHE_PHE_ramp
     fluidFlow(heatTransfer(pitch = cfg.pitch, phi = cfg.phi, Cf_C1 = Cf_C1, Cf_C2 = Cf_C2, Cf_C3 = Cf_C3)),    
     /*
     // fast and works fine for now. Error occurs when mass flow rate is zero, i.e. one flow is shut down. 
-    redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer, 
+    redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer,      
     redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer,   
-    */  
+    */ 
+    
     bc = bc_HE, 
     geo_hot = cfg.cfg_LTR_hot.geo,
     geo_cold = cfg.cfg_LTR_cold.geo,
@@ -294,7 +297,6 @@ equation
     Line(points = {{-117, 72}, {-104, 72}, {-104, 126}}, color = {255, 127, 0}));
   connect(I2R_T_c.y, source_cold.in_T) annotation(
     Line(points = {{-37, 124}, {6, 124}, {6, 64}}, color = {0, 0, 127}));
-
  /*
   // without sensors
   connect(source_cold.flange, HE.waterIn) annotation(
@@ -310,10 +312,11 @@ equation
     
 annotation(
     Diagram(graphics),
-    experiment(StartTime = 0, StopTime = 2200, Tolerance = 1e-3, Interval = 10),
+    experiment(StartTime = 0, StopTime = 2200, Tolerance = 1e-3, Interval = 20),
     __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts",        
     // remove the option flag --matchingAlgorithm=PFPlusExt, which may lead to 'Internal error - IndexReduction.dynamicStateSelectionWork failed!' during Translation
     // __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts,bltdump",    
+    // disable some log flags to avoid incredible large log files and false dead of simulation
     // __OpenModelica_simulationFlags(lv = "LOG_DEBUG,LOG_NLS,LOG_NLS_V,LOG_STATS,LOG_INIT,LOG_STDOUT, -w", outputFormat = "mat", s = "dassl", nls = "homotopy")
     __OpenModelica_simulationFlags(lv = "LOG_STATS,LOG_INIT, -w", outputFormat = "mat", s = "dassl", nls = "homotopy")
     );

@@ -6,12 +6,12 @@ model PCHEMetalWallFV "simplified PCHE's fin-like metal wall between parallel mi
   import ThermoPower.Functions;
   
   parameter Integer Nw = 1 "Number of volumes on the wall ports";
-  parameter Integer Nt = 1 "Number of tubes in parallel";
+  parameter Integer Nt = 1 "Number of tubes in parallel (for both sides Nt";
   parameter SI.Length L "Tube length";
   parameter SI.Length r_c "channel raidus";
   parameter SI.Length w_ch = 2.5e-3 "Wall width, mm. see table 2 in Meshram [2016]";
   parameter SI.Length h_ch = 3.2e-3 "height of computational domain, mm. see table 2 in Meshram [2016]";
-  parameter SI.Length dx = 0.4e-3 "(equivalent) delta x between channels";
+  parameter SI.Length dx = 0.5e-3 "(equivalent) delta x between channels";
   parameter Real rhomcm "Metal heat capacity per unit volume [J/m^3.K]";
   parameter SI.ThermalConductivity lambda "Thermal conductivity";
   parameter Boolean WallRes = true "Wall thermal resistance accounted for";

@@ -129,7 +129,7 @@ model PCHE "PCHE model based on Thermo Power"
     L = L,  
     r_c = geo_tube.d / 2, 
     Nw = Nw_F,
-    Nt = Nt, 
+    Nt = Nt * 2, 
     Tstartbar = (Tstartbar_G + Tstartbar_F) / 2, 
     Tstart1 =  Tstartbar_G, //bc.st_hot_out.T, 
     TstartN = Tstartbar_F, //bc.st_hot_in.T,   

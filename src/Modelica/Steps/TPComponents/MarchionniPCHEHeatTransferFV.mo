@@ -153,12 +153,16 @@ equation
     // low Reynolds number case
     if Re[j] < Re_min then 
       // for low Reynolds case, use Dittus-Boelter correlations
-      Nu[j] = noEvent(0.023 * Re[j] ^ 0.8 * Pr[j] ^ 0.4);   
+      // Nu[j] = noEvent(0.023 * Re[j] ^ 0.8 * Pr[j] ^ 0.4);   
       // Yoon-Sun's Correlations for (200 < Re < 4700)
       // Nu[j] = 5.05 + (0.02 * from_deg(phi) + 0.003 ) * Re[j] * (Pr[j] ^ 0.6);
       
       // Kim's Correlations for (0 < Re < 2500)
-      // Nu[j] = 4.089 + 0.00365 * Re[j] * (Pr[j] ^ 0.58);
+      if abs(w[j]) < 1e-6 then
+        Nu[j] = 1; // 1e-10 extrem case, no mass flow or heat transfer.
+      else
+        Nu[j] = 4.089 + 0.00365 * Re[j] * (Pr[j] ^ 0.58);
+      end if;
         
       // dummy variables  
       Re_l[j] = Re_min; 
@@ -172,8 +176,7 @@ equation
       q3[j] = 0; 
       dp[j] = 0;  
     else      
-      Re_l[j] = noEvent(Functions.smoothSat(Re[j], Re_min, 1e9, Re_min / 2));
-        
+      Re_l[j] = noEvent(Functions.smoothSat(Re[j], Re_min, 1e9, Re_min / 2));        
   
       //C1[j] = exp(Cf_C1 +  Cf_C2  * log(Re_l[j] / 1e4)  + Cf_C3 * log(Pr[j]));
       if phi <= 0 then 
@@ -232,8 +235,16 @@ equation
     //th_conductivity.u[1] = (Tw[j] + T_vol[j]) / 2;
     //k_wall[j] =  MyUtil.metal_conductivity(th_conductivity.tableID, (Tw[j] + T_vol[j]) / 2);
     k_wall[j] =  MyUtil.metal_conductivity(th_conductivity.tableID, Tw[j]);
+    
     gamma[j] = noEvent(1 / (1 / hc[j] + t_wall / k_wall[j]));
+    
     /*
+    if abs(hc[j]) < 1e-6 then
+      gamma[j] = 0;
+    else
+      gamma[j] = noEvent(1 / (1 / hc[j] + t_wall / k_wall[j]));
+    end if;
+    
     MyUtil.myAssert(
     debug = false, 
     val_test = Tw[j], min = 0, max = 1e6,
@@ -247,8 +258,15 @@ equation
     name_val = "T_vol[j]", 
     val_ref = {kc, gamma[j], hc[j], k_wall[j], k_vol[j]}, 
     name_val_ref = {"kc", "gamma[j]", "hc[j]", "k_wall[j]", "k_vol[j]"});        
+              
+    MyUtil.myAssert(
+    debug = false, 
+    val_test = gamma[j], min = 0, max = 1e6,
+    name_val = "gamma[j]", 
+    val_ref = {kc, j, hc[j], k_wall[j], t_wall, Re[j], Pr[j]}, 
+    name_val_ref = {"kc", "j", "hc[j]", "k_wall[j]", "t_wall", "Re[j]", "Pr[j]"});   
     */
-          
+              
     Qw[j] = noEvent((Tw[j] - T_vol[j]) * kc * omega * l * gamma[j] * Nt);
   end for;
 /*        
