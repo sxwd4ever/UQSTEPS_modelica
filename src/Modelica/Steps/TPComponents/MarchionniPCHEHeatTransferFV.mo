@@ -43,7 +43,7 @@ model MarchionniPCHEHeatTransferFV "Marchionni [2019] heat transfer Correlation"
   SI.PerUnit Nu[Nw] "Nussult numbers";
   SI.PerUnit Re_l[Nw] "Reynolds number limited to validity range";
   SI.CoefficientOfHeatTransfer gamma[Nw] "Heat transfer coefficients at the volumes";  
-  SI.ThermalConductivity k_wall[Nw] "wall thermal conductivity - determined by material of wall and local temperature";      
+
   // Real kc_T[Nw];    
   Medium.AbsolutePressure p_vol[Nw] "volume averaged pressure";
   SI.SpecificEnthalpy h_vol[Nw];
@@ -87,11 +87,7 @@ model MarchionniPCHEHeatTransferFV "Marchionni [2019] heat transfer Correlation"
   
   // Real C1[Nw] "calibration coefficient in Eq. 1 in [Marchionni 2019], = 1 / kc_dp for straight Channel and = 12 / kc_dp for zigzag Channel, which is conducted by numerical simulation against CFD result in [Meshram 2012]";
   //Real C2[Nw] "calibration coefficient in Eq. 4 in [Marchionni 2019], = 1.0 / C1 ,which is conducted by numerical simulation against CFD result in [Meshram 2012]";
-  parameter Real table_th_conductivity[:, :] = [149, 16.9; 316, 20.5; 538, 26.5; 649, 28.7; 760, 31.4; 871, 35.3];  
-
-  Modelica.Blocks.Tables.CombiTable1D th_conductivity(tableOnFile = false, table = table_th_conductivity, tableName = "conductivity", fileName = "conductivity", smoothness = Modelica.Blocks.Types.Smoothness.ContinuousDerivative) annotation(
-    Placement(transformation(extent = {{60, -80}, {80, -60}}, rotation = 0)));    
-   
+  
 equation
   assert(Nw == Nf - 1, "Number of volumes Nw on wall side should be equal to number of volumes fluid side Nf - 1");
    
@@ -106,7 +102,7 @@ equation
     h[j] = noEvent(Medium.specificEnthalpy(fluidState[j])); 
   end for;   
   
-  th_conductivity.u[1] = 0.0;
+  //th_conductivity.u[1] = 0.0;
   
   for j in 1:Nw loop  
     // calculate averaged values    
@@ -159,7 +155,7 @@ equation
       
       // Kim's Correlations for (0 < Re < 2500)
       if abs(w[j]) < 1e-6 then
-        Nu[j] = 1; // 1e-10 extrem case, no mass flow or heat transfer.
+        Nu[j] = 1e-10; // ,1 extrem case, no mass flow or heat transfer.
       else
         Nu[j] = 4.089 + 0.00365 * Re[j] * (Pr[j] ^ 0.58);
       end if;
@@ -233,10 +229,11 @@ equation
     hc[j] = noEvent(Nu[j] * k_vol[j] / Dhyd);   
 
     //th_conductivity.u[1] = (Tw[j] + T_vol[j]) / 2;
-    //k_wall[j] =  MyUtil.metal_conductivity(th_conductivity.tableID, (Tw[j] + T_vol[j]) / 2);
-    k_wall[j] =  MyUtil.metal_conductivity(th_conductivity.tableID, Tw[j]);
+    // k_wall[j] =  MyUtil.metal_conductivity(th_conductivity.tableID, (Tw[j] + T_vol[j]) / 2);
+    // k_wall[j] =  MyUtil.metal_conductivity(th_conductivity.tableID, Tw[j]);
     
-    gamma[j] = noEvent(1 / (1 / hc[j] + t_wall / k_wall[j]));
+    // gamma[j] = noEvent(1 / (1 / hc[j] + t_wall / k_wall[j]));
+    gamma[j] = noEvent(hc[j]);
     
     /*
     if abs(hc[j]) < 1e-6 then

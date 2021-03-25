@@ -29,11 +29,14 @@ model TestDyn_PCHE_PHE_ramp
   parameter SI.Length D_ch = 1.72e-3  "channel diameter, semi circular tube";
   parameter SI.Length r_ch = D_ch / 2 "channel radiaus";
   // parameter SI.Length L_fp = 270e-3 "channel flow path length";  
-  parameter SI.Length L_fp = (200 + 186) * 1e-3 "channel flow path length";  
+  // parameter SI.Length L_fp = (200 + 186) * 1e-3 "equivalent valid channel flow path length";  
+  parameter SI.Length L_fp = 270 * 1e-3 "equivalent valid channel flow path length"; 
   parameter SI.Length L_pitch = 12e-3 "pitch length";
   parameter Real a_phi = 36 "pitch angle degree";
-  parameter SI.Length H_ch = 3.66e-3 "Height of the solid domain, containing one cold tube and one hot tube";
+  parameter SI.Length H_ch = 4.17e-3 "Height of the solid domain, containing one cold tube and one hot tube";
   parameter SI.Length W_ch = 2.3e-3 "Width of the solid domain";
+  parameter SI.Length T_wall = 0.51e-3 "Wall thinckness";
+  parameter SI.Length L_wall = 420e-3 "Length of wall, not necessarily equals to length of flow path";
   parameter SI.Area A = pi * r_ch ^2 / 2 "Area of cross section of semi circular tube";
 
   // boundary conditon
@@ -66,7 +69,10 @@ model TestDyn_PCHE_PHE_ramp
    
   // Stainless 316, 316L, 317, 317L
   parameter Modelica.SIunits.Density rho_wall = 8030 "density of wall, kg/m3";
-  parameter Modelica.SIunits.SpecificHeatCapacity cp_wall = 485 "cp of wall, J/kg-K";    
+  parameter Modelica.SIunits.SpecificHeatCapacity cp_wall = 485 "cp of wall, J/kg-K";  
+  // thermal conductivity (T in K) https://www.theworldmaterial.com/aisi-316-ss316-stainless-steel-properties-composition/
+  // parameter Real table_k_metalwall[:,:] = [20, 12.1; 100, 16.3; 500, 21.5];
+  parameter Real table_k_metalwall[:,:] = [293.15, 12.1; 373.15, 16.3; 773.15, 21.5];  
 
   // parameter SI.Density rho_hot_in = medium_hot.density_pT(p_hot_in, T_hot_in);
   // parameter SI.Density rho_cold_in = medium_cold.density_pT(p_cold_in, T_cold_in);
@@ -171,7 +177,9 @@ model TestDyn_PCHE_PHE_ramp
     L = L_fp,
     SSInit = true,
     gasQuasiStatic = false,
-    fluidQuasiStatic = false
+    fluidQuasiStatic = false,
+    metalWall(L = L_wall, w_ch = W_ch, h_ch = H_ch, dx = T_wall),
+    table_k_metalwall =   table_k_metalwall
     // metalQuasiStatic = true
     // override the values of Am and L of metaltubeFV
     // to make them agree with semi-circular tube of PCHE
@@ -205,7 +213,7 @@ model TestDyn_PCHE_PHE_ramp
   Modelica.Blocks.Math.IntegerToReal I2R_T_h annotation(
     Placement(visible = true, transformation(origin = {-102, 8}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
   
-  Modelica.Blocks.Sources.TimeTable tt_mdot_hot_in(offset = 0.606862, startTime = 0, table = [865, 0; 960, 0.289268; 1200, 0.492262; 1440, 0.576418; 1680, 0.621235; 1920, 0.64151; 2160, 0.65904; 2400, 0.66217]) annotation(
+  Modelica.Blocks.Sources.TimeTable tt_mdot_hot_in(offset = 0.567217, startTime = 0, table = [0, 0; 865, 0.039645; 960, 0.328913; 1200, 0.531907; 1440, 0.616063; 1680, 0.66088; 1920, 0.681155; 2160, 0.698685; 2400, 0.701815]) annotation(
     Placement(visible = true, transformation(origin = {76, 78}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
   // hot inlet temperature in K
   Modelica.Blocks.Sources.TimeTable tt_T_hot_in(table = [0, 321.370577; 910, 322.563678; 1015, 336.520455; 1200, 349.934507; 1440, 365.76866; 1680, 378.972528; 1920, 390.564751; 2160, 401.159885; 2340, 408.344766; 2400, 408.623485]) annotation(
@@ -312,8 +320,11 @@ equation
     
 annotation(
     Diagram(graphics),
-    experiment(StartTime = 0, StopTime = 2200, Tolerance = 1e-3, Interval = 20),
-    __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts",        
+    // for steady-state simulation - value check
+    // experiment(StartTime = 0, StopTime = 10, Tolerance = 1e-3, Interval = 1),
+    // for complete transient simulation    
+    experiment(StartTime = 0, StopTime = 2200, Tolerance = 1e-3, Interval = 10),
+    __OpenModelica_commandLineOptions = "-showErrorMessages --matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts",        
     // remove the option flag --matchingAlgorithm=PFPlusExt, which may lead to 'Internal error - IndexReduction.dynamicStateSelectionWork failed!' during Translation
     // __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts,bltdump",    
     // disable some log flags to avoid incredible large log files and false dead of simulation

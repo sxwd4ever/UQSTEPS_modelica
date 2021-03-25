@@ -4,9 +4,10 @@ model PCHEMetalWallFV "simplified PCHE's fin-like metal wall between parallel mi
   extends ThermoPower.Icons.MetalWall;
   import ThermoPower.Choices;
   import ThermoPower.Functions;
+  import MyUtil = Steps.Utilities.Util;
   
   parameter Integer Nw = 1 "Number of volumes on the wall ports";
-  parameter Integer Nt = 1 "Number of tubes in parallel (for both sides Nt";
+  parameter Integer Nt = 1 "Number of tubes in parallel (for both sides Nt = Nt_cold/Nt_hot * 2)";
   parameter SI.Length L "Tube length";
   parameter SI.Length r_c "channel raidus";
   parameter SI.Length w_ch = 2.5e-3 "Wall width, mm. see table 2 in Meshram [2016]";
@@ -25,6 +26,8 @@ model PCHEMetalWallFV "simplified PCHE's fin-like metal wall between parallel mi
     Dialog(tab = "Initialisation"));
   parameter Choices.Init.Options initOpt = system.initOpt "Initialisation option" annotation(
     Dialog(tab = "Initialisation"));
+  parameter Real table_th_conductivity[:, :] = [149, 16.9; 316, 20.5; 538, 26.5; 649, 28.7; 760, 31.4; 871, 35.3];  
+  
   constant Real pi = Modelica.Constants.pi;
   // parameter SI.Area Am = (rext ^ 2 - rint ^ 2) * pi "Area of the metal tube cross-section";
   // parameter SI.Area Am =  w_ch * h_ch - pi * r_c * r_c * 4 "Area of the metal tube cross-section";
@@ -32,6 +35,12 @@ model PCHEMetalWallFV "simplified PCHE's fin-like metal wall between parallel mi
   // parameter Boolean QuasiStatic = true "=True: Dynamic behavior or heat storage will NOT be simulated for metal wall";  
   final parameter SI.HeatCapacity Cm = Nt * L * Am * rhomcm "Total heat capacity";
   outer ThermoPower.System system "System wide properties";
+
+  SI.ThermalConductivity k_wall[Nw] "wall thermal conductivity - determined by material of wall and local temperature";      
+
+  Modelica.Blocks.Tables.CombiTable1D th_conductivity(tableOnFile = false, table = table_th_conductivity, tableName = "conductivity", fileName = "conductivity", smoothness = Modelica.Blocks.Types.Smoothness.ContinuousDerivative) annotation(
+    Placement(transformation(extent = {{60, -80}, {80, -60}}, rotation = 0)));    
+ 
   // Real Q_res[Nw];
   SI.Temperature Tvol[Nw](start = Tvolstart) "Volume temperatures";
   ThermoPower.Thermal.DHTVolumes int(final N = Nw, T(start = Tvolstart)) "Internal surface" annotation(
@@ -50,10 +59,22 @@ equation
   //else
     L / Nw * Nt * rhomcm * Am * der(Tvol) = int.Q + ext.Q "Energy balance";
   //end if;
+  
+  th_conductivity.u[1] = 0.0;
+  
   if WallRes then
 // Thermal resistance of the tube walls accounted for
-    int.Q = lambda * pi * r_c * L / Nw * (int.T - Tvol) / dx * Nt "Heat conduction through the internal half-thickness";
-    ext.Q = lambda * 2 * r_c * L / Nw * (ext.T - Tvol) / dx * Nt "Heat conduction through the external half-thickness";
+    // int.Q = lambda * pi * r_c * L / Nw * (int.T - Tvol) / dx * Nt "Heat conduction through the internal half-thickness";
+    // ext.Q = lambda * 2 * r_c * L / Nw * (ext.T - Tvol) / dx * Nt "Heat conduction through the external half-thickness";
+    for j in 1:Nw loop
+      k_wall[j] =  MyUtil.metal_conductivity(th_conductivity.tableID, Tvol[j]);
+    end for;
+    
+      int.Q = ((int.T - Tvol) .* k_wall) / (dx / 2) * L / Nw * Nt "Heat conduction through the internal half-thickness";
+      ext.Q = ((ext.T - Tvol) .* k_wall) / (dx / 2) * L / Nw * Nt "Heat conduction through the internal half-thickness";
+      
+      //ext.Q[j] = k_wall[j] / (dx / 2) * L / Nw * Nt * (ext.T[j] - Tvol[j]) "Heat conduction through the internal half-thickness";    
+
   else
 // No temperature gradients across the thickness
     ext.T = Tvol;

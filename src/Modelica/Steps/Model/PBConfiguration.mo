@@ -357,6 +357,12 @@ model PBConfiguration
     thermo(gamma_he = 200 "4000")
   );  
   
+  // Thermal conductivity of LTR's metal wall 
+  // material inconel_750
+  parameter Real table_k_LTR_wall[:, :] = [149, 16.9; 316, 20.5; 538, 26.5; 649, 28.7; 760, 31.4; 871, 35.3];  
+  
+  parameter Real table_k_HTR_wall [:, :] = table_k_LTR_wall;
+  
   // default sim parameters, 'slow' in solution finding with high accuracy, faster for PB's convergence 
   parameter SimParam sim_param_def(err=5e-4, delta_T_init = 5, N_iter = 20, step_rel=0.13, log_level = 4);
   // default sim parameters with verbose output for debug

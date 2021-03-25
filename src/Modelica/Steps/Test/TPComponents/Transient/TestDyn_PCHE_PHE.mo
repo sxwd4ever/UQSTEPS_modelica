@@ -35,6 +35,7 @@ model TestDyn_PCHE_PHE
   parameter Real a_phi = 36 "pitch angle degree";
   parameter SI.Length H_ch = 4.17e-3 "Height of the solid domain, containing one cold tube and one hot tube";
   parameter SI.Length W_ch = 2.3e-3 "Width of the solid domain";
+  parameter SI.Length T_wall = 0.51e-3 "Wall thinckness";
   parameter SI.Length L_wall = 420e-3 "Length of wall, not necessarily equals to length of flow path";
   parameter SI.Area A = pi * r_ch ^2 / 2 "Area of cross section of semi circular tube";
 
@@ -68,7 +69,10 @@ model TestDyn_PCHE_PHE
    
   // Stainless 316, 316L, 317, 317L
   parameter Modelica.SIunits.Density rho_wall = 8030 "density of wall, kg/m3";
-  parameter Modelica.SIunits.SpecificHeatCapacity cp_wall = 485 "cp of wall, J/kg-K";    
+  parameter Modelica.SIunits.SpecificHeatCapacity cp_wall = 485 "cp of wall, J/kg-K";  
+  // thermal conductivity (T in K) https://www.theworldmaterial.com/aisi-316-ss316-stainless-steel-properties-composition/
+  // parameter Real table_k_metalwall[:,:] = [20, 12.1; 100, 16.3; 500, 21.5];
+  parameter Real table_k_metalwall[:,:] = [293.15, 12.1; 373.15, 16.3; 773.15, 21.5];
 
   // parameter SI.Density rho_hot_in = medium_hot.density_pT(p_hot_in, T_hot_in);
   // parameter SI.Density rho_cold_in = medium_cold.density_pT(p_cold_in, T_cold_in);
@@ -159,7 +163,7 @@ model TestDyn_PCHE_PHE
     fluidFlow(heatTransfer(pitch = cfg.pitch, phi = cfg.phi, Cf_C1 = Cf_C1, Cf_C2 = Cf_C2, Cf_C3 = Cf_C3)),    
     /*
     // fast and works fine for now. Error occurs when mass flow rate is zero, i.e. one flow is shut down. 
-    redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer, 
+    redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer,
     redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer,   
     */  
     bc = bc_HE, 
@@ -168,12 +172,13 @@ model TestDyn_PCHE_PHE
     geo_tube = cfg.cfg_LTR_tube.geo,  
     thermo_hot = cfg.cfg_LTR_hot.thermo,
     thermo_cold = cfg.cfg_LTR_cold.thermo,
-    thermo_tube = cfg.cfg_LTR_tube.thermo,   
+    thermo_tube = cfg.cfg_LTR_tube.thermo, 
+    table_k_metalwall =   table_k_metalwall,
     L = L_fp,
     SSInit = true,
     gasQuasiStatic = false,
     fluidQuasiStatic = false,
-    metalWall(L = L_wall, w_ch = W_ch, h_ch = H_ch)
+    metalWall(L = L_wall, w_ch = W_ch, h_ch = H_ch, dx = T_wall)
     // metalQuasiStatic = true
     // override the values of Am and L of metaltubeFV
     // to make them agree with semi-circular tube of PCHE
@@ -322,6 +327,9 @@ equation
     
 annotation(
     Diagram(graphics),
+    // for steady-state simulation - value check
+    // experiment(StartTime = 0, StopTime = 10, Tolerance = 1e-3, Interval = 1),
+    // for complete transient simulation
     experiment(StartTime = 0, StopTime = 600, Tolerance = 1e-3, Interval = 10),
     __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts",        
     // remove the option flag --matchingAlgorithm=PFPlusExt, which may lead to 'Internal error - IndexReduction.dynamicStateSelectionWork failed!' during Translation

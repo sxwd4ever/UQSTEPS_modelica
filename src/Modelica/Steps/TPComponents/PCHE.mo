@@ -134,7 +134,7 @@ model PCHE "PCHE model based on Thermo Power"
     Tstart1 =  Tstartbar_G, //bc.st_hot_out.T, 
     TstartN = Tstartbar_F, //bc.st_hot_in.T,   
     WallRes = true, 
-    lambda = lambda,
+    table_th_conductivity = table_k_metalwall,
     // QuasiStatic = metalQuasiStatic , 
     rhomcm = rhomcm 
   ) annotation(

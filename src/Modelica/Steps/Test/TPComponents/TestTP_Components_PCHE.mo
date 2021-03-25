@@ -252,7 +252,7 @@ protected
   
 equation
 
-  //HTR + mixer + LTR + Heater + Turbine - OPEN LOOP
+  // HTR + mixer + LTR + Heater + Turbine - OPEN LOOP
   // main stream, water/cold side  
   connect(source_mixer_in.flange, mixer.inlet1);  
   connect(source_cold.flange, LTR.waterIn);  
