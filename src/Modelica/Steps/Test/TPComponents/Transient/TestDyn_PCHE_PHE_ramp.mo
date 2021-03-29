@@ -103,6 +103,7 @@ model TestDyn_PCHE_PHE_ramp
   parameter HEBoundaryCondition bc_HE = cfg.bc_LTR; 
 
   //Components
+  // for transient simulation, set initOpt = steadyState
   inner ThermoPower.System system(allowFlowReversal = false, initOpt = ThermoPower.Choices.Init.Options.steadyState) annotation(
     Placement(transformation(extent = {{80, 80}, {100, 100}})));  
   

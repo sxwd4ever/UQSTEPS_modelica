@@ -89,7 +89,7 @@ model PCHE "PCHE model based on Thermo Power"
     
   //changed Medium=FlueGasMedium to Medium=FluidMedium
   Gas.Flow1DFV gasFlow(
-  Nt = Nt, //1, 
+  Nt = 1, 
   N = N_G, 
   Nw = Nw_G,
   wnom = gasNomFlowRate,  // wnom(total) of gasFlow is different from wnom(for single tube, = gasNomFlowRate /Nt) of HeatTransfer_G

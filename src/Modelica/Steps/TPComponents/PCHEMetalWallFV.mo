@@ -60,14 +60,15 @@ equation
     L / Nw * Nt * rhomcm * Am * der(Tvol) = int.Q + ext.Q "Energy balance";
   //end if;
   
-  th_conductivity.u[1] = 0.0;
+  // th_conductivity.u[1] = 0.0;
   
   if WallRes then
 // Thermal resistance of the tube walls accounted for
     // int.Q = lambda * pi * r_c * L / Nw * (int.T - Tvol) / dx * Nt "Heat conduction through the internal half-thickness";
     // ext.Q = lambda * 2 * r_c * L / Nw * (ext.T - Tvol) / dx * Nt "Heat conduction through the external half-thickness";
     for j in 1:Nw loop
-      k_wall[j] =  MyUtil.metal_conductivity(th_conductivity.tableID, Tvol[j]);
+      // k_wall[j] =  MyUtil.metal_conductivity(th_conductivity.tableID, Tvol[j]);
+      k_wall[j] = 25;
     end for;
     
       int.Q = ((int.T - Tvol) .* k_wall) / (dx / 2) * L / Nw * Nt "Heat conduction through the internal half-thickness";
