@@ -57,8 +57,6 @@ model Flow1DFV
     Medium.Density rho[N] "Fluid nodal density";
     SI.Mass M "Fluid mass (single tube)";
     SI.Mass Mtot "Fluid mass (total)";
-    SI.MassFlowRate dMdt[N - 1]
-      "Time derivative of mass in each cell between two nodes";    
     // SI.Power Q "Total heat flow through the wall (all Nt tubes)" - Defined in baseClass;    
 /*
   variables in Water.Flow1DFV
@@ -81,7 +79,25 @@ model Flow1DFV
       "Derivative of average density by enthalpy";
     SI.DerDensityByPressure drdp[N] "Derivative of density by pressure";
     SI.DerDensityByPressure drbdp[N - 1]
-      "Derivative of average density by pressure";          
+      "Derivative of average density by pressure";     
+
+    Medium.DerDensityByTemperature drbdT1[N - 1]
+      "Derivative of average density by left temperature";
+    Medium.DerDensityByTemperature drbdT2[N - 1]
+      "Derivative of average density by right temperature";
+    /*
+    Real drbdX1[N - 1, nX](each unit="kg/m3")
+      "Derivative of average density by left composition";
+    Real drbdX2[N - 1, nX](each unit="kg/m3")
+      "Derivative of average density by right composition";
+    */
+    Medium.SpecificHeatCapacity cvbar[N - 1] "Average cv";
+    SI.MassFlowRate dMdt[N - 1] "Derivative of mass in a finite volume";
+    Medium.SpecificHeatCapacity cv[N];
+    Medium.DerDensityByTemperature dddT[N]
+      "Derivative of density by temperature";
+    Medium.DerDensityByPressure dddp[N] "Derivative of density by pressure";
+    // Real dddX[N, nX](each unit="kg/m3") "Derivative of density by composition";           
   equation
     assert(FFtype == ThermoPower.Choices.Flow1D.FFtypes.NoFriction or dpnom > 0,
       "dpnom=0 not supported, it is also used in the homotopy trasformation during the inizialization");  
@@ -130,25 +146,64 @@ model Flow1DFV
     "Pressure drop due to friction";
     
     for j in 1:N-1 loop
-      if Medium.singleState then
-        A*l*rhobar[j]*der(htilde[j]) + wbar[j]*(h[j + 1] - h[j]) = Q_single[j]
-          "Energy balance (pressure effects neglected)";
-          //Qvol = l*omega*phibar[j]
+      if not QuasiStatic then
+        // "Energy balance"
+        
+        if Medium.singleState then
+          A*l*rhobar[j]*der(htilde[j]) + wbar[j]*(h[j + 1] - h[j]) = Q_single[j]
+            "(pressure effects neglected)";
+            //Qvol = l*omega*phibar[j]
+        else
+          A*l*rhobar[j]*der(htilde[j]) + wbar[j]*(h[j + 1] - h[j]) - A*l*der(p) =
+            Q_single[j] "Energy balance";  //Qvol = l*omega*phibar[j]
+        end if;
+        
+        dMdt[j] = A*l*(drbdh[j]*der(htilde[j]) + drbdp[j]*der(p))
+          "Mass derivative for each volume";
+          
+        if avoidInletEnthalpyDerivative and j == 1 then
+          // first volume properties computed by the volume outlet properties
+          rhobar[j] = fluidState[j + 1].d;
+          drbdp[j] = dddp[j + 1];
+          drbdT1[j] = 0;
+          drbdT2[j] = dddT[j + 1];
+          // drbdX1[j, :] = zeros(size(Xtilde, 2));
+          // drbdX2[j, :] = dddX[j + 1, :];
+        else
+          // volume properties computed by averaging
+          rhobar[j] = (fluidState[j].d + fluidState[j + 1].d)/2;
+          drbdp[j] = (dddp[j] + dddp[j + 1])/2;
+          drbdT1[j] = dddT[j]/2;
+          drbdT2[j] = dddT[j + 1]/2;
+          // drbdX1[j, :] = dddX[j, :]/2;
+          // drbdX2[j, :] = dddX[j + 1, :]/2;
+        end if;
+                
+        // Average volume quantities
+        // rhobar[j] = (rho[j] + rho[j + 1])/2;
+        // drbdp[j] = (drdp[j] + drdp[j + 1])/2;
+        drbdh[j] = (drdh[j] + drdh[j + 1])/2;
+        vbar[j] = 1/rhobar[j];
+        if fixedMassFlowSimplified then
+          wbar[j] = homotopy(infl.m_flow/Nt - sum(dMdt[1:j - 1]) - dMdt[j]/2, wnom/Nt);
+        else
+          wbar[j] = infl.m_flow/Nt - sum(dMdt[1:j - 1]) - dMdt[j]/2;
+        end if;
+        cvbar[j] = (cv[j] + cv[j + 1])/2;
       else
-        A*l*rhobar[j]*der(htilde[j]) + wbar[j]*(h[j + 1] - h[j]) - A*l*der(p) =
-          Q_single[j] "Energy balance";  //Qvol = l*omega*phibar[j]
-      end if;
-      dMdt[j] = A*l*(drbdh[j]*der(htilde[j]) + drbdp[j]*der(p))
-        "Mass derivative for each volume";
-      // Average volume quantities
-      rhobar[j] = (rho[j] + rho[j + 1])/2;
-      drbdp[j] = (drdp[j] + drdp[j + 1])/2;
-      drbdh[j] = (drdh[j] + drdh[j + 1])/2;
-      vbar[j] = 1/rhobar[j];
-      if fixedMassFlowSimplified then
-        wbar[j] = homotopy(infl.m_flow/Nt - sum(dMdt[1:j - 1]) - dMdt[j]/2, wnom/Nt);
-      else
-        wbar[j] = infl.m_flow/Nt - sum(dMdt[1:j - 1]) - dMdt[j]/2;
+        // Static mass and energy balances
+        wbar[j]*(gas[j + 1].h - gas[j].h) = Q_single[j] "Energy balance";
+        dMdt[j] = 0 "Mass balance";
+        // Dummy values for unused average quantities
+        rhobar[j] = 0;
+        drbdp[j] = 0;
+        drbdT1[j] = 0;
+        drbdT2[j] = 0;
+        // drbdX1[j, :] = zeros(nX);
+        // drbdX2[j, :] = zeros(nX);
+        vbar[j] = 0;
+        wbar[j] = infl.m_flow/Nt;
+        cvbar[j] = 0;      
       end if;
     end for;
 
@@ -166,6 +221,26 @@ model Flow1DFV
       drdh[j] = Medium.density_derh_p(fluidState[j]);
       u[j] = w/(rho[j]*A);
     end for;
+    
+    // Fluid property computations
+    for j in 1:N loop
+      if not QuasiStatic then
+        cv[j] = Medium.heatCapacity_cv(fluidState[j]);
+        dddT[j] = Medium.density_derT_p(fluidState[j]);
+        dddp[j] = Medium.density_derp_T(fluidState[j]);
+        /*
+        if nX > 0 then
+          dddX[j, :] = Medium.density_derX(gas[j].state);
+        end if;
+        */
+      else
+        // Dummy values (not needed by dynamic equations)
+        cv[j] = 0;
+        dddT[j] = 0;
+        dddp[j] = 0;
+        // dddX[j, :] = zeros(nX);
+      end if;
+    end for;    
 
     // Boundary conditions
     win = infl.m_flow/Nt;
