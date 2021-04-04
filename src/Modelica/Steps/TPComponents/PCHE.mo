@@ -38,7 +38,8 @@ model PCHE "PCHE model based on Thermo Power"
   parameter Choices.FluidPhase.FluidPhases FluidPhaseStart = Choices.FluidPhase.FluidPhases.Liquid "Fluid phase (only for initialization!)" annotation(
     Dialog(tab = "Initialization"));
   parameter Boolean SSInit = false "Steady State initialization";  
- 
+  // parameter Real [:, :] table_k_metalwall; 
+  
   //MaterialConductivity mc(name_material = name_material);  
   /*
   Gas.Flow1DFV fluidFlow(
@@ -101,7 +102,7 @@ model PCHE "PCHE model based on Thermo Power"
   L = L, // Should be L = exchSurface_G ^ 2 / (gasVol * pi * 4), instead of fixed L = 1
   A = gasVol / L, // gasVol is account for single tube, 
   omega = exchSurface_G / L, // exchSurface_G is account for single tube, 
-  Dhyd = gasVol*4 / exchSurface_G,
+  Dhyd = 1, //gasVol*4 / exchSurface_G,
   FFtype = FFtype_G, 
   Kfnom = Kfnom_G, 
   dpnom = dpnom_G, 
@@ -133,8 +134,8 @@ model PCHE "PCHE model based on Thermo Power"
     Tstartbar = (Tstartbar_G + Tstartbar_F) / 2, 
     Tstart1 =  Tstartbar_G, //bc.st_hot_out.T, 
     TstartN = Tstartbar_F, //bc.st_hot_in.T,   
-    WallRes = true, 
-    table_th_conductivity = table_k_metalwall,
+    WallRes = false, 
+    // table_th_conductivity = table_k_metalwall,
     // QuasiStatic = metalQuasiStatic , 
     rhomcm = rhomcm 
   ) annotation(

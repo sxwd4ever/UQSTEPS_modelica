@@ -102,7 +102,7 @@ model TestDyn_Comps_PCHE_ramp
   
   // global init opition (system.initOpt) leads to order reduction error
   // use this flag to control the initialization of all components instead. 
-  parameter Boolean SSInit = false "Steady-state initialization";
+  // parameter Boolean SSInit = false "Steady-state initialization";
 
   ThermoPower.Gas.SourceMassFlow source_cold(
     redeclare package Medium = medium_cold, 
@@ -112,6 +112,7 @@ model TestDyn_Comps_PCHE_ramp
     w0 = bc_LTR.st_cold_in.mdot) 
   annotation(
     Placement(transformation(origin = {0, 60}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
+  
 
   ThermoPower.Gas.SourceMassFlow source_mixer_in(
     redeclare package Medium = medium_cold,
@@ -119,8 +120,8 @@ model TestDyn_Comps_PCHE_ramp
     p0 = st_bypass.p,
     use_in_T = false,
     w0 = st_bypass.mdot    
-  );
-
+  );  
+  
   ThermoPower.Gas.SinkPressure sink_cold(
     redeclare package Medium = medium_cold, 
     // p0 = bc_HTR.st_cold_out.p, 
@@ -183,8 +184,8 @@ model TestDyn_Comps_PCHE_ramp
 
   // ThermoPower.PowerPlants.HRSG.Components.HEG2G HTR(
   // ThermoPower.PowerPlants.HRSG.Components.HE HTR(
-  // Steps.TPComponents.HE HTR(
-  Steps.TPComponents.HEG2G HTR(
+  Steps.TPComponents.HE HTR(
+  // Steps.TPComponents.HEG2G HTR(
     redeclare package FluidMedium = medium_cold, 
     redeclare package FlueGasMedium = medium_hot, 
     redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficient(gamma = gamma_F), 
@@ -204,6 +205,7 @@ model TestDyn_Comps_PCHE_ramp
     fluidVol = 2.234, 
     gasNomFlowRate = gasNomFlowRate, 
     gasNomPressure = gasNomPressure, 
+    // fluidQuasiStatic = true,
     gasVol = 10, 
     lambda = 20, 
     metalVol = 0.573, 
@@ -214,8 +216,8 @@ model TestDyn_Comps_PCHE_ramp
  
   // ThermoPower.PowerPlants.HRSG.Components.HEG2G LTR(
   // ThermoPower.PowerPlants.HRSG.Components.HE LTR(
-  // Steps.TPComponents.HE LTR(
-  Steps.TPComponents.HEG2G LTR(
+  Steps.TPComponents.HE LTR(
+  // Steps.TPComponents.HEG2G LTR(
     redeclare package FluidMedium = medium_cold, 
     redeclare package FlueGasMedium = medium_hot, 
     redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficient(gamma = gamma_F), 
@@ -232,6 +234,7 @@ model TestDyn_Comps_PCHE_ramp
     extSurfaceTub = 252.286, 
     fluidNomFlowRate = fluidNomFlowRate, 
     fluidNomPressure = fluidNomPressure, 
+    // fluidQuasiStatic = true,
     fluidVol = 2.234, 
     gasNomFlowRate = gasNomFlowRate, 
     gasNomPressure = gasNomPressure, 
@@ -250,14 +253,14 @@ model TestDyn_Comps_PCHE_ramp
      
     // use Marchionni PCHE HeatTransfer
     // slow but can have a result - set a_phi = 0 to use Gnielinski's correlation 
-    // redeclare replaceable model HeatTransfer_F = Steps.TPComponents.MarchionniPCHEHeatTransferFV(),
-    // redeclare replaceable model HeatTransfer_G = Steps.TPComponents.MarchionniPCHEHeatTransferFV(),
-    // gasFlow(heatTransfer(pitch = cfg.pitch, phi = cfg.phi, Cf_C1 = Cf_C1, Cf_C2 = Cf_C2, Cf_C3 = Cf_C3)),
-    // fluidFlow(heatTransfer(pitch = cfg.pitch, phi = cfg.phi, Cf_C1 = Cf_C1, Cf_C2 = Cf_C2, Cf_C3 = Cf_C3)),    
+    redeclare replaceable model HeatTransfer_F = Steps.TPComponents.MarchionniPCHEHeatTransferFV(),
+    redeclare replaceable model HeatTransfer_G = Steps.TPComponents.MarchionniPCHEHeatTransferFV(),
+    gasFlow(heatTransfer(pitch = cfg.pitch, phi = cfg.phi, Cf_C1 = Cf_C1, Cf_C2 = Cf_C2, Cf_C3 = Cf_C3)),
+    fluidFlow(heatTransfer(pitch = cfg.pitch, phi = cfg.phi, Cf_C1 = Cf_C1, Cf_C2 = Cf_C2, Cf_C3 = Cf_C3)),    
     
     // fast and works fine for now. Error occurs when mass flow rate is zero, i.e. one flow is shut down. 
-    redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer,      
-    redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer, 
+    // redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer,      
+    // redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer, 
     
     bc = bc_LTR, 
     geo_hot = cfg.cfg_LTR_hot.geo,
@@ -269,7 +272,7 @@ model TestDyn_Comps_PCHE_ramp
     L = L_fp,
     SSInit = true,
     gasQuasiStatic = false,
-    fluidQuasiStatic = true
+    fluidQuasiStatic = false
     // metalWall(L = L_wall, w_ch = W_ch, h_ch = H_ch, dx = T_wall),
     // table_k_metalwall =   table_k_metalwall
     // metalQuasiStatic = true
@@ -280,7 +283,8 @@ model TestDyn_Comps_PCHE_ramp
   )
   annotation(
     Placement(transformation(extent = {{-20, -20}, {20, 20}}, rotation = 0)));
-  
+*/
+/*   
   Steps.TPComponents.PCHE HTR(
     redeclare package FluidMedium = medium_cold, 
     redeclare package FlueGasMedium = medium_hot, 
@@ -400,19 +404,25 @@ equation
   connect(source_cold.flange, mixer.inlet2);  
   connect(mixer.outlet, HTR.waterIn);
 
-  //connect(source_cold.flange, HTR.waterIn);
   connect(HTR.waterOut, T_waterOut.inlet) annotation(
     Line(points = {{8.88178e-016, -44}, {8.88178e-016, -20}, {0, -20}}, thickness = 0.5, color = {0, 0, 255}));
   connect(sink_cold.flange, T_waterOut.outlet) annotation(
     Line(points = {{1.83697e-015, -70}, {1.83697e-015, -56}, {-8.88178e-016, -56}}, thickness = 0.5, color = {0, 0, 255}));
-    
+
+  // connect(HTR.waterOut, sink_cold.flange) 
+   //annotation(Line(points = {{1.83697e-015, -70}, {1.83697e-015, -56}, {-8.88178e-016, -56}}, thickness = 0.5, color = {0, 0, 255}));   
+  
   connect(source_hot.flange, HTR.gasIn) annotation(
-   Line(points = {{-50, 0}, {-20, 0}}, color = {159, 159, 223}, thickness = 0.5, smooth = Smooth.None));   
+    Line(points = {{-50, 0}, {-20, 0}}, color = {159, 159, 223}, thickness = 0.5, smooth = Smooth.None));   
+    
   connect(HTR.gasOut, T_gasOut.inlet ) annotation(
     Line(points = {{34, 0}, {34, 0}, {20, 0}}, color = {159, 159, 223}, thickness = 0.5));
   connect(T_gasOut.outlet, sink_hot.flange) annotation(
     Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));
-*/
+  
+  // connect(HTR.gasOut, sink_hot.flange) annotation(
+  //   Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));
+*/  
 /*
   // mixer + LTR
   // water/cold side  
@@ -434,6 +444,8 @@ equation
   connect(T_gasOut.outlet, sink_hot.flange) annotation(
     Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));
 */
+
+
   //HTR + mixer + LTR 
   // water/cold side    
   connect(source_cold.flange, LTR.waterIn);
@@ -455,6 +467,30 @@ equation
   
   connect(LTR.gasOut, sink_hot.flange) annotation(
     Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));
+
+/*
+  //LTR + HTR + mixer
+  // water/cold side    
+  connect(source_mixer_in.flange, mixer.inlet1);  
+  connect(source_cold.flange, mixer.inlet2);  
+  connect(mixer.outlet, HTR.waterIn);
+  
+  // connect(LTR.waterOut, HTR.waterIn);
+
+  connect(HTR.waterOut, LTR.waterIn);
+  connect(LTR.waterOut, sink_cold.flange) annotation(
+    Line(points = {{1.83697e-015, -70}, {1.83697e-015, -56}, {-8.88178e-016, -56}}, thickness = 0.5, color = {0, 0, 255}));
+  
+  // gas/hot side
+  connect(source_hot.flange, LTR.gasIn) annotation(
+   Line(points = {{-50, 0}, {-20, 0}}, color = {159, 159, 223}, thickness = 0.5, smooth = Smooth.None));
+
+  connect(LTR.gasOut, HTR.gasIn);
+  
+  connect(HTR.gasOut, sink_hot.flange) annotation(
+    Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));
+*/
+
 /*
   // temperature input
   // hot / gas side
@@ -498,6 +534,6 @@ annotation(
     Diagram(graphics),
     experiment(StartTime = 0, StopTime = 20, Tolerance = 1e-3, Interval = 1),    
     // options = "-showErrorMessages -demoMode",
-    __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts",    
+    __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts,dumpCSE",    
     __OpenModelica_simulationFlags(lv = "LOG_DEBUG,LOG_NLS,LOG_NLS_V,LOG_STATS,LOG_INIT,LOG_STDOUT, -w", outputFormat = "mat", s = "dassl", nls = "homotopy"));
 end TestDyn_Comps_PCHE_ramp;

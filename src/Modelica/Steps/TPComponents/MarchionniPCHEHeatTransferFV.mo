@@ -102,7 +102,7 @@ equation
     h[j] = noEvent(Medium.specificEnthalpy(fluidState[j])); 
   end for;   
   
-  //th_conductivity.u[1] = 0.0;
+  // th_conductivity.u[1] = 0.0;
   
   for j in 1:Nw loop  
     // calculate averaged values    

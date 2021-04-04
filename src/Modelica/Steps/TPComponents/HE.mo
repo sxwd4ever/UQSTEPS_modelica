@@ -51,7 +51,7 @@ model HE "Heat Exchanger fluid - gas"
     annotation(
     Placement(transformation(extent = {{-10, -66}, {10, -46}}, rotation = 0)));
   
-  Gas.Flow1DFV gasFlow(
+  Gas.Flow1DFV gasFlow(  
     Nt = 1, 
     N = N_G, 
     Nw = Nw_G, 

@@ -7,7 +7,7 @@ package SCO2 "supercritical CO2"
       substanceNames = {"CO2"}, // for parameters sweep, lesser output with the debug flag
       ThermoStates = Modelica.Media.Interfaces.Choices.IndependentVariables.pT,
       // inputChoice = ExternalMedia.Common.InputChoice.pT,
-      // singleState=false,
+      singleState=false,
       onePhase = true,
       final reducedX = true, 
       final fixedX = true, 
@@ -22,7 +22,6 @@ package SCO2 "supercritical CO2"
      Density(start=10, nominal=10),
      fluidConstants = {CO2FluidConstants});
      
-  import CP = Steps.Utilities.CoolProp;       
   import Modelica.Media.Interfaces.Choices.ReferenceEnthalpy;   
   import Modelica.Media.IdealGases.Common;
   import Modelica.Media.IdealGases.Common.Functions;
@@ -85,33 +84,19 @@ package SCO2 "supercritical CO2"
       meltingPoint=  CO2Constants.meltingPoint,
       normalBoilingPoint=  CO2Constants.normalBoilingPoint,
       dipoleMoment=  CO2Constants.dipoleMoment); 	  
-  /* 
+/*
   redeclare replaceable function setState_pT
     "Return thermodynamic state record from p and T"
     extends Modelica.Icons.Function;
-    input AbsolutePressure p = 10e6 "pressure";
-    input Temperature T=500 "temperature";
+    input AbsolutePressure p "pressure";
+    input Temperature T "temperature";
     input FixedPhase phase = 1
       "2 for two-phase, 1 for one-phase, 0 if not known";
     output ThermodynamicState state;
-      
-  algorithm
-    state := ThermodynamicState(p = p, T = T);
-    // state := newState_pT(p = p, T = T);
-    annotation(Inline=true,smoothOrder=2);
-
   external "C" TwoPhaseMedium_setState_pT_C_impl(p, T, state, mediumName, libraryName, substanceName)
-    annotation(
-    Include="#include \"externalmedialib.h\"", 
-    Library="ExternalMediaLib", 
-    IncludeDirectory="modelica://ExternalMedia/Resources/Include", 
-    LibraryDirectory="modelica://ExternalMedia/Resources/Library",
-    Inline = true,
-    smoothOrder = 2);
-
+    annotation(Include="#include \"externalmedialib.h\"", Library="ExternalMediaLib", IncludeDirectory="modelica://ExternalMedia/Resources/Include", LibraryDirectory="modelica://ExternalMedia/Resources/Library");
   end setState_pT;
-     */  
-  /*   
+  
   redeclare function extends specificEnthalpy "Return specific enthalpy as a function of the thermodynamic state record"
       algorithm
         h := specificEnthalpy_pT(p = state.p, T = state.T);
@@ -119,8 +104,8 @@ package SCO2 "supercritical CO2"
         Inline = true,
         smoothOrder = 2);
     end specificEnthalpy;  
-  */
-/*
+*/
+  /*
   redeclare replaceable function setState_pT
     "Return thermodynamic state record from p and T"
     extends Modelica.Icons.Function;
@@ -133,9 +118,6 @@ package SCO2 "supercritical CO2"
     assert(p >= 7.3773e6, "pressure out of range");
     assert(T >= 304.128 and T <=2000, "temperature out of critical range");
     state := setState_pT_lib(p, T, phase);
-    annotation(
-        Inline = true,
-        smoothOrder = 2);
   end setState_pT;
 
 
@@ -150,5 +132,5 @@ package SCO2 "supercritical CO2"
   external "C" TwoPhaseMedium_setState_pT_C_impl(p, T, state, mediumName, libraryName, substanceName)
     annotation(Include="#include \"externalmedialib.h\"", Library="ExternalMediaLib", IncludeDirectory="modelica://ExternalMedia/Resources/Include", LibraryDirectory="modelica://ExternalMedia/Resources/Library");
   end setState_pT_lib;
-*/  
+  */   
 end SCO2;
