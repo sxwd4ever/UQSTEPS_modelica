@@ -184,8 +184,8 @@ model TestDyn_Comps_PCHE_ramp
 
   // ThermoPower.PowerPlants.HRSG.Components.HEG2G HTR(
   // ThermoPower.PowerPlants.HRSG.Components.HE HTR(
-  Steps.TPComponents.HE HTR(
-  // Steps.TPComponents.HEG2G HTR(
+  // Steps.TPComponents.HE HTR(
+  Steps.TPComponents.HEG2G HTR(
     redeclare package FluidMedium = medium_cold, 
     redeclare package FlueGasMedium = medium_hot, 
     redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficient(gamma = gamma_F), 
@@ -216,8 +216,8 @@ model TestDyn_Comps_PCHE_ramp
  
   // ThermoPower.PowerPlants.HRSG.Components.HEG2G LTR(
   // ThermoPower.PowerPlants.HRSG.Components.HE LTR(
-  Steps.TPComponents.HE LTR(
-  // Steps.TPComponents.HEG2G LTR(
+  // Steps.TPComponents.HE LTR(
+  Steps.TPComponents.HEG2G LTR(
     redeclare package FluidMedium = medium_cold, 
     redeclare package FlueGasMedium = medium_hot, 
     redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficient(gamma = gamma_F), 

@@ -1,7 +1,7 @@
 within Steps.TPComponents;
 
     partial model Flow1DBase "Basic interface for 1-dimensional water/steam gas flow models"
-      extends Icons.Gas.Tube;
+      extends ThermoPower.Icons.Gas.Tube;
       import ThermoPower.Choices.Flow1D.FFtypes;
       import ThermoPower.Choices.Flow1D.HCtypes;
       replaceable package Medium = Modelica.Media.Interfaces.PartialMedium annotation(
@@ -37,17 +37,17 @@ within Steps.TPComponents;
       parameter Boolean allowFlowReversal = system.allowFlowReversal "= true to allow flow reversal, false restricts to design direction" annotation(
         Evaluate = true);
       outer ThermoPower.System system "System wide properties";
-      parameter Choices.FluidPhase.FluidPhases FluidPhaseStart=Choices.FluidPhase.FluidPhases.Liquid
+      parameter ThermoPower.Choices.FluidPhase.FluidPhases FluidPhaseStart=ThermoPower.Choices.FluidPhase.FluidPhases.Liquid
         "Fluid phase (only for initialization!)"
         annotation (Dialog(tab="Initialisation"));
       parameter Medium.AbsolutePressure pstart = 1e5 "Pressure start value" annotation(
         Dialog(tab = "Initialisation"));
-      parameter Medium.SpecificEnthalpy hstartin=if FluidPhaseStart == Choices.FluidPhase.FluidPhases.Liquid
-           then 1e5 else if FluidPhaseStart == Choices.FluidPhase.FluidPhases.Steam
+      parameter Medium.SpecificEnthalpy hstartin=if FluidPhaseStart == ThermoPower.Choices.FluidPhase.FluidPhases.Liquid
+           then 1e5 else if FluidPhaseStart == ThermoPower.Choices.FluidPhase.FluidPhases.Steam
            then 3e6 else 1e6 "Inlet enthalpy start value"
         annotation (Dialog(tab="Initialisation"));
-      parameter Medium.SpecificEnthalpy hstartout=if FluidPhaseStart == Choices.FluidPhase.FluidPhases.Liquid
-           then 1e5 else if FluidPhaseStart == Choices.FluidPhase.FluidPhases.Steam
+      parameter Medium.SpecificEnthalpy hstartout=if FluidPhaseStart == ThermoPower.Choices.FluidPhase.FluidPhases.Liquid
+           then 1e5 else if FluidPhaseStart == ThermoPower.Choices.FluidPhase.FluidPhases.Steam
            then 3e6 else 1e6 "Outlet enthalpy start value"
         annotation (Dialog(tab="Initialisation"));
       parameter Medium.SpecificEnthalpy hstart[N]=linspace(
@@ -67,7 +67,7 @@ within Steps.TPComponents;
       parameter Real wnf = 0.01 "Fraction of nominal flow rate at which linear friction equals turbulent friction";
       parameter Medium.MassFraction Xstart[nX] = Medium.reference_X "Start gas composition" annotation(
         Dialog(tab = "Initialisation"));
-      parameter Choices.Init.Options initOpt = system.initOpt "Initialisation option" annotation(
+      parameter ThermoPower.Choices.Init.Options initOpt = system.initOpt "Initialisation option" annotation(
         Dialog(tab = "Initialisation"));
       parameter Boolean noInitialPressure = false "Remove initial equation on pressure" annotation(
         Dialog(tab = "Initialisation"),
@@ -77,9 +77,9 @@ within Steps.TPComponents;
       parameter Integer nXi = Medium.nXi "number of independent mass fractions";
       parameter Integer nX = Medium.nX "total number of mass fractions";
     public
-      FlangeA infl(redeclare package Medium = Medium, m_flow(start = wnom, min = if allowFlowReversal then -Modelica.Constants.inf else 0)) annotation(
+      ThermoPower.Gas.FlangeA infl(redeclare package Medium = Medium, m_flow(start = wnom, min = if allowFlowReversal then -Modelica.Constants.inf else 0)) annotation(
         Placement(transformation(extent = {{-120, -20}, {-80, 20}}, rotation = 0)));
-      FlangeB outfl(redeclare package Medium = Medium, m_flow(start = -wnom, max = if allowFlowReversal then +Modelica.Constants.inf else 0)) annotation(
+      ThermoPower.Gas.FlangeB outfl(redeclare package Medium = Medium, m_flow(start = -wnom, max = if allowFlowReversal then +Modelica.Constants.inf else 0)) annotation(
         Placement(transformation(extent = {{80, -20}, {120, 20}}, rotation = 0)));
       SI.Power Q "Total heat flow through the lateral boundary (all Nt tubes)";
       SI.Time Tr "Residence time";
