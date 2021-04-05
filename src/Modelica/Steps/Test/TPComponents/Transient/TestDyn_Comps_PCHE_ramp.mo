@@ -181,7 +181,7 @@ model TestDyn_Comps_PCHE_ramp
   annotation(
     Placement(transformation(extent = {{30, -6}, {50, 14}}, rotation = 0)));
   */
-
+/*
   // ThermoPower.PowerPlants.HRSG.Components.HEG2G HTR(
   // ThermoPower.PowerPlants.HRSG.Components.HE HTR(
   // Steps.TPComponents.HE HTR(
@@ -245,22 +245,22 @@ model TestDyn_Comps_PCHE_ramp
     rhomcm = 7900 * 578.05) 
     annotation(
       Placement(transformation(extent = {{-20, -20}, {20, 20}}, rotation = 0)));
+*/
 
-/*
   Steps.TPComponents.PCHE LTR(
     redeclare package FluidMedium = medium_cold, 
     redeclare package FlueGasMedium = medium_hot, 
      
     // use Marchionni PCHE HeatTransfer
     // slow but can have a result - set a_phi = 0 to use Gnielinski's correlation 
-    redeclare replaceable model HeatTransfer_F = Steps.TPComponents.MarchionniPCHEHeatTransferFV(),
-    redeclare replaceable model HeatTransfer_G = Steps.TPComponents.MarchionniPCHEHeatTransferFV(),
-    gasFlow(heatTransfer(pitch = cfg.pitch, phi = cfg.phi, Cf_C1 = Cf_C1, Cf_C2 = Cf_C2, Cf_C3 = Cf_C3)),
-    fluidFlow(heatTransfer(pitch = cfg.pitch, phi = cfg.phi, Cf_C1 = Cf_C1, Cf_C2 = Cf_C2, Cf_C3 = Cf_C3)),    
+    // redeclare replaceable model HeatTransfer_F = Steps.TPComponents.MarchionniPCHEHeatTransferFV(),
+    // redeclare replaceable model HeatTransfer_G = Steps.TPComponents.MarchionniPCHEHeatTransferFV(),
+    // gasFlow(heatTransfer(pitch = cfg.pitch, phi = cfg.phi, Cf_C1 = Cf_C1, Cf_C2 = Cf_C2, Cf_C3 = Cf_C3)),
+    // fluidFlow(heatTransfer(pitch = cfg.pitch, phi = cfg.phi, Cf_C1 = Cf_C1, Cf_C2 = Cf_C2, Cf_C3 = Cf_C3)),    
     
     // fast and works fine for now. Error occurs when mass flow rate is zero, i.e. one flow is shut down. 
-    // redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer,      
-    // redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer, 
+    redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer,      
+    redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer, 
     
     bc = bc_LTR, 
     geo_hot = cfg.cfg_LTR_hot.geo,
@@ -272,9 +272,9 @@ model TestDyn_Comps_PCHE_ramp
     L = L_fp,
     SSInit = true,
     gasQuasiStatic = false,
-    fluidQuasiStatic = false
-    // metalWall(L = L_wall, w_ch = W_ch, h_ch = H_ch, dx = T_wall),
-    // table_k_metalwall =   table_k_metalwall
+    fluidQuasiStatic = false,
+    metalWall(L = L_wall, w_ch = W_ch, h_ch = H_ch, dx = T_wall),
+    table_k_metalwall =   table_k_metalwall
     // metalQuasiStatic = true
     // override the values of Am and L of metaltubeFV
     // to make them agree with semi-circular tube of PCHE
@@ -283,8 +283,8 @@ model TestDyn_Comps_PCHE_ramp
   )
   annotation(
     Placement(transformation(extent = {{-20, -20}, {20, 20}}, rotation = 0)));
-*/
-/*   
+
+   
   Steps.TPComponents.PCHE HTR(
     redeclare package FluidMedium = medium_cold, 
     redeclare package FlueGasMedium = medium_hot, 
@@ -298,8 +298,7 @@ model TestDyn_Comps_PCHE_ramp
     
     // fast and works fine for now. Error occurs when mass flow rate is zero, i.e. one flow is shut down. 
     redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer,      
-    redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer,      
-    
+    redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer,  
     bc = bc_HTR, 
     geo_hot = cfg.cfg_HTR_hot.geo,
     geo_cold = cfg.cfg_HTR_cold.geo,
@@ -310,9 +309,9 @@ model TestDyn_Comps_PCHE_ramp
     L = L_fp,
     SSInit = true,
     gasQuasiStatic = false,
-    fluidQuasiStatic = true
-    // metalWall(L = L_wall, w_ch = W_ch, h_ch = H_ch, dx = T_wall),
-    // table_k_metalwall =   table_k_metalwall
+    fluidQuasiStatic = false,
+    metalWall(L = L_wall, w_ch = W_ch, h_ch = H_ch, dx = T_wall),
+    table_k_metalwall = table_k_metalwall
     // metalQuasiStatic = true
     // override the values of Am and L of metaltubeFV
     // to make them agree with semi-circular tube of PCHE
@@ -321,7 +320,7 @@ model TestDyn_Comps_PCHE_ramp
   )
   annotation(
     Placement(transformation(extent = {{-20, -20}, {20, 20}}, rotation = 0)));
-*/
+
 /* 
   ThermoPower.Gas.Turbine Turbine1(
   redeclare package Medium = medium_hot, 
