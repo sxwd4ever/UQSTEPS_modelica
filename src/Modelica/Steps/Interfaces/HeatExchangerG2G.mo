@@ -38,7 +38,7 @@ partial model HeatExchangerG2G "Base class for heat exchanger gas - gas (derived
   parameter SI.Volume metalVol = geo_tube.V "Volume of the metal part in the tubes";
   parameter Real rhomcm = thermo_tube.rho_mcm "Metal heat capacity per unit volume [J/m^3.K]";
   parameter SI.ThermalConductivity lambda = thermo_tube.lambda "Thermal conductivity of the metal (density by specific heat capacity)";
-  parameter Real [:, :] table_k_metalwall;  
+  
   //Start value
   parameter SI.Temperature Tstartbar_G = bc.st_hot_in.T "Start value of the average gas temperature" annotation(
     Dialog(tab = "Initialization"));

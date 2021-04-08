@@ -6,7 +6,7 @@ package SCO2 "supercritical CO2"
       //substanceNames = {"CO2|debug=40"}, // for single test, more detailed output
       substanceNames = {"CO2"}, // for parameters sweep, lesser output with the debug flag
       ThermoStates = Modelica.Media.Interfaces.Choices.IndependentVariables.pT,
-      inputChoice = ExternalMedia.Common.InputChoice.pT,
+      // inputChoice = ExternalMedia.Common.InputChoice.pT,
       singleState=false,
       onePhase = true,
       final reducedX = true, 
@@ -84,7 +84,7 @@ package SCO2 "supercritical CO2"
       meltingPoint=  CO2Constants.meltingPoint,
       normalBoilingPoint=  CO2Constants.normalBoilingPoint,
       dipoleMoment=  CO2Constants.dipoleMoment); 	  
-
+/*
   redeclare replaceable function setState_pT
     "Return thermodynamic state record from p and T"
     extends Modelica.Icons.Function;
@@ -105,7 +105,7 @@ package SCO2 "supercritical CO2"
         smoothOrder = 2);
     end specificEnthalpy;  
 
-  /*
+  
   redeclare replaceable function setState_pT
     "Return thermodynamic state record from p and T"
     extends Modelica.Icons.Function;

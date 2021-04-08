@@ -38,7 +38,8 @@ model PCHE "PCHE model based on Thermo Power"
   parameter Choices.FluidPhase.FluidPhases FluidPhaseStart = Choices.FluidPhase.FluidPhases.Liquid "Fluid phase (only for initialization!)" annotation(
     Dialog(tab = "Initialization"));
   parameter Boolean SSInit = false "Steady State initialization";  
- 
+  parameter Real [:, :] table_k_metalwall;  
+  
   //MaterialConductivity mc(name_material = name_material);  
   /*
   Gas.Flow1DFV fluidFlow(
