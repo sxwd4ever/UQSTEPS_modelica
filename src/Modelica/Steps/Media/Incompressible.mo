@@ -34,7 +34,18 @@ package Incompressible "Medium model for T-dependent properties, defined by tabl
 
   package TableBased "Incompressible medium properties based on tables"
     import Poly = Modelica.Media.Incompressible.TableBased.Polynomials_Temp;
-    extends Modelica.Media.Interfaces.PartialPureSubstance(ThermoStates = if enthalpyOfT then Modelica.Media.Interfaces.Choices.IndependentVariables.T else Modelica.Media.Interfaces.Choices.IndependentVariables.pT, final reducedX = true, final fixedX = true, mediumName = "tableMedium", redeclare record ThermodynamicState = Modelica.Media.Incompressible.Common.BaseProps_Tpoly, singleState = true, reference_p = 1.013e5, Temperature(min = T_min, max = T_max));
+    extends Modelica.Media.Interfaces.PartialPureSubstance(
+    ThermoStates = if enthalpyOfT 
+    then Modelica.Media.Interfaces.Choices.IndependentVariables.T 
+    else Modelica.Media.Interfaces.Choices.IndependentVariables.pT, 
+    final reducedX = true, 
+    final fixedX = true, 
+    mediumName = "tableMedium", 
+    redeclare record ThermodynamicState = Modelica.Media.Incompressible.Common.BaseProps_Tpoly, 
+    singleState = true, 
+    reference_p = 1.013e5, 
+    Temperature(min = T_min, max = T_max));
+    
     // redeclare replaceable record ThermodynamicState=Common.BaseProps_Tpoly,
     // Constants to be set in actual Medium
     constant Boolean enthalpyOfT = true "True if enthalpy is approximated as a function of T only, (p-dependence neglected)";

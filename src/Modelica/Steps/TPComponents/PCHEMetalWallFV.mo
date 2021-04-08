@@ -64,6 +64,7 @@ equation
   
   for j in 1:Nw loop
     k_wall[j] =  MyUtil.metal_conductivity(th_conductivity.tableID, Tvol[j]);    
+    // k_wall[j] = 25.0;
   end for;
     
   if WallRes then
@@ -83,7 +84,7 @@ equation
   end if;
 initial equation
   if initOpt == Choices.Init.Options.noInit then
-// do nothing
+// do nothing    
   elseif initOpt == Choices.Init.Options.fixedState then
     Tvol = Tvolstart;
   elseif initOpt == Choices.Init.Options.steadyState then

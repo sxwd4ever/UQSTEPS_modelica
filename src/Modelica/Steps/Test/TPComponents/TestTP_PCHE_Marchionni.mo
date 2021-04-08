@@ -30,6 +30,8 @@ model TestTP_PCHE_Marchionni
   parameter Real a_phi "pitch angle degree";
   parameter SI.Length H_ch = 3.26e-3 "Height of the solid domain, containing one cold tube and one hot tube";
   parameter SI.Length W_ch = 1.27e-3 * 2"Width of the solid domain";
+  parameter SI.Length T_wall = 0.51e-3 "Wall thinckness";
+  parameter SI.Length L_wall = 420e-3 "Length of wall, not necessarily equals to length of flow path";  
   parameter SI.Area A = pi * r_ch ^2 / 2 "Area of cross section of semi circular tube";
 
   // boundary conditon
@@ -55,6 +57,7 @@ model TestTP_PCHE_Marchionni
   // meshram's cp and rho for alloy Inconel 617
   parameter Modelica.SIunits.Density rho_wall = 7990 "density of wall, kg/m3";
   parameter Modelica.SIunits.SpecificHeatCapacity cp_wall = 500 "cp of wall, J/kg-K";  
+  parameter Real table_k_metalwall[:,:] = [293.15, 12.1; 373.15, 16.3; 773.15, 21.5];  
 
 /*  
   // zigzag lower T
@@ -133,24 +136,24 @@ model TestTP_PCHE_Marchionni
   annotation(
     Placement(visible = true, transformation(extent = {{-92, -10}, {-72, 10}}, rotation = 0)));
   
-  TPComponents.GasStateReader sr_water_in(redeclare package Medium = medium_cold) annotation(
+  Steps.TPComponents.GasStateReader sr_water_in(redeclare package Medium = medium_cold) annotation(
     Placement(visible = true, transformation(origin = {0, 48}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
  
-  TPComponents.GasStateReader sr_water_out(redeclare package Medium = medium_cold) annotation(
+  Steps.TPComponents.GasStateReader sr_water_out(redeclare package Medium = medium_cold) annotation(
     Placement(visible = true, transformation(origin = {0, -48}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
  
-  TPComponents.GasStateReader sr_gas_in(redeclare package Medium = medium_hot) annotation(
+  Steps.TPComponents.GasStateReader sr_gas_in(redeclare package Medium = medium_hot) annotation(
     Placement(visible = true, transformation(origin = {-50, 0}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
  
-  TPComponents.GasStateReader sr_gas_out(redeclare package Medium = medium_hot) annotation(
+  Steps.TPComponents.GasStateReader sr_gas_out(redeclare package Medium = medium_hot) annotation(
     Placement(visible = true, transformation(origin = {44, 0}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
      
-  TPComponents.PCHE HE(
+  Steps.TPComponents.PCHE HE(
     redeclare package FluidMedium = medium_cold, 
     redeclare package FlueGasMedium = medium_hot,     
     // use Marchionni PCHE HeatTransfer
-    redeclare replaceable model HeatTransfer_F = TPComponents.MarchionniPCHEHeatTransferFV(),
-    redeclare replaceable model HeatTransfer_G = TPComponents.MarchionniPCHEHeatTransferFV(),
+    redeclare replaceable model HeatTransfer_F = Steps.TPComponents.MarchionniPCHEHeatTransferFV(),
+    redeclare replaceable model HeatTransfer_G = Steps.TPComponents.MarchionniPCHEHeatTransferFV(),
     gasFlow(heatTransfer(
       pitch = cfg.pitch, 
       phi = cfg.phi, 
@@ -187,7 +190,9 @@ model TestTP_PCHE_Marchionni
     L = L_fp,
     SSInit = true,
     gasQuasiStatic = true,
-    fluidQuasiStatic = true
+    fluidQuasiStatic = true,
+    metalWall(L = L_wall, w_ch = W_ch, h_ch = H_ch, dx = T_wall),
+    table_k_metalwall =   table_k_metalwall    
     // override the values of Am and L of metaltubeFV
     // to make them agree with semi-circular tube of PCHE
     // ('final' modifier of Am in metalTubeFv was removed as well)
@@ -243,6 +248,9 @@ equation
 annotation(
     Diagram(graphics),
     experiment(StartTime = 0, StopTime = 10, Tolerance = 1e-3, Interval = 2),
-    __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts,bltdump",    
-    __OpenModelica_simulationFlags(lv = "LOG_DEBUG,LOG_NLS,LOG_NLS_V,LOG_STATS,LOG_INIT,LOG_STDOUT, -w", outputFormat = "mat", s = "dassl", nls = "homotopy"));
+    __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts",    
+    // disable some log flags to avoid incredible large log files and false dead of simulation
+    // __OpenModelica_simulationFlags(lv = "LOG_DEBUG,LOG_NLS,LOG_NLS_V,LOG_STATS,LOG_INIT,LOG_STDOUT, -w", outputFormat = "mat", s = "dassl", nls = "homotopy")
+    __OpenModelica_simulationFlags(lv = "LOG_STATS,LOG_INIT, -w", outputFormat = "mat", s = "dassl", nls = "homotopy")
+    );
 end TestTP_PCHE_Marchionni;

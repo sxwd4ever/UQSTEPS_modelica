@@ -23,6 +23,8 @@ model TestTP_Components_PCHE
   package medium_heater = SolarTherm.Media.Sodium.Sodium_pT;
   //package medium_heater = ThermoPower.Water.StandardWater;// Modelica.Media.IdealGases.SingleGases.CO2;
 
+  parameter Real table_k_metalwall[:,:] = [293.15, 12.1; 373.15, 16.3; 773.15, 21.5]; 
+
   // select the configuration of parameters
   parameter Model.PBConfig_PCHE cfg(
     mdot_heater = 90
@@ -75,7 +77,7 @@ model TestTP_Components_PCHE
     annotation(
     Placement(transformation(origin = {0, -80}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
 
-  TPComponents.HE heater(
+  Steps.TPComponents.HE heater(
     redeclare package FluidMedium = medium_heater, 
     redeclare package FlueGasMedium = medium_cold, 
     fluidFlow(fixedMassFlowSimplified = true, hstartin = bc_heater.st_hot_in.h, hstartout=bc_heater.st_hot_out.h), // set the fluid flow as fixed mdot for simplarity
@@ -154,15 +156,15 @@ model TestTP_Components_PCHE
   annotation(
     Placement(transformation(extent = {{30, -6}, {50, 14}}, rotation = 0)));
 */
-  TPComponents.PCHE HTR(
+  Steps.TPComponents.PCHE HTR(
   redeclare package FluidMedium = medium_cold, 
   redeclare package FlueGasMedium = medium_hot, 
   gasFlow(QuasiStatic = true, Tstartin = bc_HTR.st_hot_in.T, Tstartout = bc_HTR.st_hot_out.T),
   fluidFlow(Tstartin = bc_HTR.st_cold_in.T, Tstartout = bc_HTR.st_cold_out.T),     
-  redeclare replaceable model HeatTransfer_F = TPComponents.KimPCHEHeatTransferFV(
+  redeclare replaceable model HeatTransfer_F = Steps.TPComponents.KimPCHEHeatTransferFV(
   pitch = pitch,
   phi = phi), 
-  redeclare replaceable model HeatTransfer_G = TPComponents.KimPCHEHeatTransferFV(
+  redeclare replaceable model HeatTransfer_G = Steps.TPComponents.KimPCHEHeatTransferFV(
   pitch = pitch,
   phi = phi), 
   redeclare model HeatExchangerTopology = ThermoPower.Thermal.HeatExchangerTopologies.CounterCurrentFlow,  
@@ -176,23 +178,24 @@ model TestTP_Components_PCHE
   SSInit=SSInit,
   gasQuasiStatic = true,
   fluidQuasiStatic = true, 
-  metalQuasiStatic = false,   
-  metalWall(WallRes=false)) annotation(
+  //metalQuasiStatic = false,   
+  metalWall(WallRes=false),
+  table_k_metalwall =   table_k_metalwall) annotation(
     Placement(transformation(extent = {{-20, -20}, {20, 20}}, rotation = 0)));
 
   //Real kim_cor_coe[4] = {kim.a, kim.b, kim.c, kim.d};
   parameter SI.Length pitch = 12.3e-3 "pitch length";
   parameter Real phi = 35 "pitch angle °";
   
-  TPComponents.PCHE LTR(
+  Steps.TPComponents.PCHE LTR(
   redeclare package FluidMedium = medium_cold, 
   redeclare package FlueGasMedium = medium_hot, 
-  redeclare replaceable model HeatTransfer_F = TPComponents.KimPCHEHeatTransferFV(
+  redeclare replaceable model HeatTransfer_F = Steps.TPComponents.KimPCHEHeatTransferFV(
   pitch = pitch,
   phi = phi),
   // ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficient(gamma = thermo_LTR_cold.gamma_he),
   // redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer, 
-  redeclare replaceable model HeatTransfer_G = TPComponents.KimPCHEHeatTransferFV(
+  redeclare replaceable model HeatTransfer_G = Steps.TPComponents.KimPCHEHeatTransferFV(
   pitch = pitch,
   phi = phi),  
   gasFlow(QuasiStatic = true, Tstartin = bc_LTR.st_hot_in.T, Tstartout = bc_LTR.st_hot_out.T),
@@ -212,8 +215,9 @@ model TestTP_Components_PCHE
   SSInit=SSInit,
   gasQuasiStatic = true,
   fluidQuasiStatic = true, 
-  metalQuasiStatic = false, 
-  metalWall(WallRes=false)) annotation(
+  //metalQuasiStatic = false, 
+  metalWall(WallRes=false),
+  table_k_metalwall =   table_k_metalwall) annotation(
     Placement(transformation(extent = {{-20, -20}, {20, 20}}, rotation = 0)));
 
   ThermoPower.Gas.Turbine Turbine1(

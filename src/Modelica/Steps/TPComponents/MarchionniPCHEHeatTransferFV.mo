@@ -76,7 +76,7 @@ model MarchionniPCHEHeatTransferFV "Marchionni [2019] heat transfer Correlation"
   parameter Real use_rho_bar "> 0, use rho_bar for dp calculation. error in passing a boolean from OMPython so Real type variable is used here";
   parameter Real rho_bar "Averaged rho, >0: valid rho and will be used for dp calculation";   
   
-  parameter Correlations.NuCorrType NuCorr_z = Correlations.NuCorrType.Xin "flag of Nusselt Number correlation for zigzag channel PCHE";
+  parameter Correlations.NuCorrType NuCorr_z = Correlations.NuCorrType.Ngo;//Xin "flag of Nusselt Number correlation for zigzag channel PCHE";
   parameter Correlations.NuCorrType NuCorr_s = Correlations.NuCorrType.Gnielinski "flag of Nusselt number correlation for straight channel PCHE";
   parameter Correlations.FFCorrType FFCorr_z = Correlations.FFCorrType.Ngo "flag of Friction factor correlation for zigzag channel";
   parameter Correlations.FFCorrType FFCorr_s = Correlations.FFCorrType.Gnielinski "flag of Friction factor correlation for straight channel";
@@ -241,21 +241,23 @@ equation
     else
       gamma[j] = noEvent(1 / (1 / hc[j] + t_wall / k_wall[j]));
     end if;
+    */
     
     MyUtil.myAssert(
     debug = false, 
     val_test = Tw[j], min = 0, max = 1e6,
     name_val = "Tw[j]", 
-    val_ref = {kc, gamma[j], hc[j], k_wall[j], k_vol[j]}, 
-    name_val_ref = {"kc", "gamma[j]", "hc[j]", "k_wall[j]", "k_vol[j]"});  
+    val_ref = {kc, gamma[j], hc[j], k_vol[j]}, 
+    name_val_ref = {"kc", "gamma[j]", "hc[j]", "k_vol[j]"});  
     
     MyUtil.myAssert(
     debug = false, 
     val_test = T_vol[j], min = 0, max = 1e6,
     name_val = "T_vol[j]", 
-    val_ref = {kc, gamma[j], hc[j], k_wall[j], k_vol[j]}, 
-    name_val_ref = {"kc", "gamma[j]", "hc[j]", "k_wall[j]", "k_vol[j]"});        
-              
+    val_ref = {kc, gamma[j], hc[j], k_vol[j]}, 
+    name_val_ref = {"kc", "gamma[j]", "hc[j]", "k_vol[j]"});        
+    
+    /*         
     MyUtil.myAssert(
     debug = false, 
     val_test = gamma[j], min = 0, max = 1e6,

@@ -63,7 +63,9 @@ model PCHE "PCHE model based on Thermo Power"
   wnom = fluidNomFlowRate) annotation(
     Placement(transformation(extent = {{-10, -66}, {10, -46}}, rotation = 0)));
   */
-  TPComponents.Flow1DFV fluidFlow(
+  //TPComponents.Flow1DFV fluidFlow(
+  //TPComponents.GasFlow1DFV fluidFlow(
+  Gas.Flow1DFV fluidFlow(
   Nt = Nt, //1, 
   N = N_F, 
   Nw = Nw_F,
@@ -89,7 +91,9 @@ model PCHE "PCHE model based on Thermo Power"
     Placement(transformation(extent = {{-10, -66}, {10, -46}}, rotation = 0)));
     
   //changed Medium=FlueGasMedium to Medium=FluidMedium
-  TPComponents.Flow1DFV gasFlow(
+  //TPComponents.Flow1DFV gasFlow(
+  //TPComponents.GasFlow1DFV gasFlow(
+  Gas.Flow1DFV gasFlow(
   Nt = Nt, //1,  
   N = N_G, 
   Nw = Nw_G,

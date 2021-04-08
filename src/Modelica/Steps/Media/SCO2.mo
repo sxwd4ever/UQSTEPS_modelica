@@ -12,9 +12,9 @@ package SCO2 "supercritical CO2"
       final reducedX = true, 
       final fixedX = true, 
       // just for Pijarra Hill Experimental data which is below critical point. 
-      Temperature(min=204.128, max=2000, start=204.128, nominal=204.128),
+      //Temperature(min=204.128, max=2000, start=204.128, nominal=204.128),
       // Valid range of temperature
-      //Temperature(min=304.128, max=2000, start=304.128, nominal=304.128),
+      Temperature(min=304.128, max=2000, start=304.128, nominal=304.128),
       // SpecificEnthalpy(start=2e5, nominal=1.0e5),
       AbsolutePressure(min=7.377e6, start=7.377e6, nominal=7.377e6),
       SpecificEnthalpy(start=if Functions.referenceChoice==ReferenceEnthalpy.ZeroAt0K then data.H0 else
