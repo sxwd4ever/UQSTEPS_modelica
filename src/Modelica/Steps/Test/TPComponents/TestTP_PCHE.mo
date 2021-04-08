@@ -24,7 +24,8 @@ model TestTP_PCHE
   package medium_cold = Steps.Media.SCO2; 
   // package medium_hot = Modelica.Media.IdealGases.SingleGases.CO2;
   // package medium_cold = Modelica.Media.IdealGases.SingleGases.CO2;    
-
+  parameter Real table_k_metalwall[:,:] = [293.15, 12.1; 373.15, 16.3; 773.15, 21.5]; 
+  
   parameter Model.PBConfig_PCHE cfg(mdot_heater = 90);
   
   // set the values of parameters accordingly - For HTR test
@@ -88,7 +89,7 @@ model TestTP_PCHE
   parameter SI.Length pitch = 12.3e-3 "pitch length";
   parameter Real phi = 35 "pitch angle °";
     
-  TPComponents.PCHE HE(
+  Steps.TPComponents.PCHE HE(
     redeclare package FluidMedium = medium_cold, 
     redeclare package FlueGasMedium = medium_hot,     
     redeclare replaceable model HeatTransfer_F = Steps.TPComponents.KimPCHEHeatTransferFV(
@@ -109,7 +110,8 @@ model TestTP_PCHE
     thermo_tube = if test_LTR then cfg.cfg_LTR_tube.thermo else cfg.cfg_HTR_tube.thermo, 
     SSInit = true,
     gasQuasiStatic = true,
-    fluidQuasiStatic = true
+    fluidQuasiStatic = true,
+    table_k_metalwall =   table_k_metalwall
     // override the values of Am and L of metaltubeFV
     // to make them agree with semi-circular tube of PCHE
     // ('final' modifier of Am in metalTubeFv was removed as well)
