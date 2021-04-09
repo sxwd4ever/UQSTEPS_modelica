@@ -99,7 +99,17 @@ equation
 //      MyUtil.myAssert(debug = false, val_test = Ttilde[j], min = 274, max = 1e6, name_val = "Ttilde[j]", val_ref = {j, A, l, rhobar[j], cvbar[j], wbar[j], gas[j + 1].h,  gas[j].h, Q_single[j]}, name_val_ref = {"j", "A", "l", "rhobar[j]", "cvbar[j]", "wbar[j]", "gas[j + 1].h", "gas[j].h", "Q_single[j]"});
       A * l * rhobar[j] * cvbar[j] * der(Ttilde[j]) + wbar[j] * (gas[j + 1].h - gas[j].h) = Q_single[j] "Energy balance";
       // dMdt[j] = A * l * (drbdp[j] * der(p) + drbdT1[j] * der(T[j]) + drbdT2[j] * der(T[j + 1]) + vector(drbdX1[j, :]) * vector(X[j]) + vector(drbdX2[j, :]) * vector(X[j+1])) "Mass balance";
-      dMdt[j] = A * l * (drbdp[j] * der(p) + drbdT1[j] * der(T[j]) + drbdT2[j] * der(T[j + 1]) + vector(dddX[j, :]) * vector(Xtilde[j])) "Mass balance";
+      //dMdt[j] = A * l * (drbdp[j] * der(p) + drbdT1[j] * der(T[j]) + drbdT2[j] * der(T[j + 1]) + vector(dddX[j, :]) * vector(Xtilde[j])) "Mass balance";
+      /*
+      if j == 1 then
+        dMdt[j] = A * l * (drbdp[j] * der(p) + drbdT2[j] * der(T[j]) + vector(dddX[j, :]) * vector(Xtilde[j])) "Mass balance";
+      else 
+        dMdt[j] = A * l * (drbdp[j] * der(p) + drbdT1[j] * der(T[j]) + drbdT2[j] * der(T[j+1]) + vector(dddX[j, :]) * vector(Xtilde[j])) "Mass balance";
+      end if;
+       */
+      dMdt[j] = A * l * (drbdp[j] * der(p) + drbdT1[j] * der(Ttilde[j-1]) + drbdT2[j] * der(Ttilde[j]) + vector(dddX[j, :]) * vector(Xtilde[j])) "Mass balance";       
+       
+      
 /*
     dMdt[j] = A*l*(drbdT[j]*der(Ttilde[j]) + drbdp[j]*der(p) + vector(drbdX[j, :])*
     vector(der(Xtilde[if UniformComposition then 1 else j, :])))
@@ -223,7 +233,7 @@ initial equation
     if not Medium.singleState and not noInitialPressure then
       der(p) = 0;
     end if;
-    der(Ttilde) = zeros(N - 1);
+    der(Ttilde) = zeros(N - 1);    
     if not Medium.fixedX then
       der(Xtilde) = zeros(size(Xtilde, 1), size(Xtilde, 2));
     end if;

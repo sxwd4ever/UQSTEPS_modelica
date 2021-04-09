@@ -40,37 +40,13 @@ model PCHE "PCHE model based on Thermo Power"
   parameter Boolean SSInit = false "Steady State initialization";  
   parameter Real [:, :] table_k_metalwall; 
   
-  //MaterialConductivity mc(name_material = name_material);  
-  /*
-  Gas.Flow1DFV fluidFlow(
-   
-  redeclare package Medium = FluidMedium, 
-  redeclare model HeatTransfer = HeatTransfer_F, 
-  A = (fluidVol * 4 / exchSurface_F) ^ 2 / 4 * pi, 
-  Cfnom = Cfnom_F, 
-  Dhyd = fluidVol * 4 / exchSurface_F, 
-  FFtype = FFtype_F, 
-  HydraulicCapacitance = HCtype_F, 
-  Kfnom = Kfnom_F, 
-  L = exchSurface_F ^ 2 / (fluidVol * pi * 4), F
-  N = N_F,Nt = Nt, 
-  Nw = Nw_F, 
-  dpnom = dpnom_F, 
-  initOpt = if SSInit then Options.steadyState else Options.noInit, 
-  omega = fluidVol * 4 / exchSurface_F * pi, 
-  pstart = pstart_F, 
-  rhonom = rhonom_F, 
-  wnom = fluidNomFlowRate) annotation(
-    Placement(transformation(extent = {{-10, -66}, {10, -46}}, rotation = 0)));
-  */
   //TPComponents.Flow1DFV fluidFlow(
-  //TPComponents.GasFlow1DFV fluidFlow(
-  Gas.Flow1DFV fluidFlow(
+  //Gas.Flow1DFV fluidFlow(
+  TPComponents.GasFlow1DFV fluidFlow(
   Nt = Nt, //1, 
   N = N_F, 
   Nw = Nw_F,
-  wnom = fluidNomFlowRate, 
-  //initOpt = if SSInit then Options.steadyState else Options.noInit, 
+  wnom = fluidNomFlowRate,   
   redeclare package Medium = FluidMedium, 
   initOpt = if SSInit then Options.steadyState else Options.noInit,
   QuasiStatic = fluidQuasiStatic, 
@@ -91,14 +67,13 @@ model PCHE "PCHE model based on Thermo Power"
     Placement(transformation(extent = {{-10, -66}, {10, -46}}, rotation = 0)));
     
   //changed Medium=FlueGasMedium to Medium=FluidMedium
-  //TPComponents.Flow1DFV gasFlow(
-  //TPComponents.GasFlow1DFV gasFlow(
-  Gas.Flow1DFV gasFlow(
+  //TPComponents.Flow1DFV gasFlow(  
+  TPComponents.GasFlow1DFV gasFlow(
+  //Gas.Flow1DFV gasFlow(
   Nt = Nt, //1,  
   N = N_G, 
   Nw = Nw_G,
-  wnom = gasNomFlowRate,  // wnom(total) of gasFlow is different from wnom(for single tube, = gasNomFlowRate /Nt) of HeatTransfer_G
-  //initOpt = if SSInit then Options.steadyState else Options.noInit, 
+  wnom = gasNomFlowRate,  // wnom(total) of gasFlow is different from wnom(for single tube, = gasNomFlowRate /Nt) of HeatTransfer_G  
   redeclare package Medium = FlueGasMedium, 
   initOpt = if SSInit then Options.steadyState else Options.noInit,
   QuasiStatic = gasQuasiStatic, 
@@ -117,18 +92,6 @@ model PCHE "PCHE model based on Thermo Power"
   Tstartout = Tstartbar_G, //bc.st_hot_out.T,   
   redeclare model HeatTransfer = HeatTransfer_G) annotation(
     Placement(transformation(extent = {{-12, 66}, {12, 46}}, rotation = 0)));
-  /*
-  Thermal.MetalTubeFV metalWall(
-  L = exchSurface_F ^ 2 / (fluidVol * pi * 4),  
-  Nw = Nw_F, 
-  Tstartbar = Tstartbar_M, 
-  WallRes = false, 
-  lambda = lambda, 
-  rext = (metalVol + fluidVol) * 4 / extSurfaceTub / 2, 
-  rhomcm = rhomcm, 
-  rint = fluidVol * 4 / exchSurface_F / 2) annotation(
-    Placement(transformation(extent = {{-10, -24}, {10, -4}})));
-  */
   
   PCHEMetalWallFV metalWall(
     L = L,  

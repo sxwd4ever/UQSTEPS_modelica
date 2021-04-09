@@ -17,8 +17,8 @@ model TestDyn_PCHE_PHE_ramp
   import Steps.Components.MaterialConductivity;    
 
   // package medium_hot = Modelica.Media.IdealGases.SingleGases.CO2;
-  // package medium_hot = Steps.Media.ThermiaOilD;
-  package medium_hot = Steps.Media.SCO2;
+  package medium_hot = Steps.Media.ThermiaOilD;
+  // package medium_hot = Steps.Media.SCO2;
   // package medium_hot = ExternalMedia.Examples.CO2CoolProp;
   // package medium_cold = Modelica.Media.IdealGases.SingleGases.CO2;
   package medium_cold = Steps.Media.SCO2;  
@@ -83,9 +83,9 @@ model TestDyn_PCHE_PHE_ramp
   parameter SI.MassFlowRate mdot_cold_in = 0.083115;
   
   // use configuration of LTR for this test since the mdot are different for hot and cold side
-  parameter Model.PBConfig_PCHE cfg(mdot_heater = 90);
+  // parameter Model.PBConfig_PCHE cfg(mdot_heater = 90);
   
-  /*
+  
   parameter Model.PBConfig_PCHE cfg(
     p_pump_in = p_hot_in,
     p_pump_out = p_cold_in,
@@ -107,14 +107,14 @@ model TestDyn_PCHE_PHE_ramp
     rho_wall = rho_wall,
     cp_wall = cp_wall
   );
-  */
+  
   
   // set the values of parameters accordingly
-  parameter HEBoundaryCondition bc_HE = cfg.bc_HTR; 
+  parameter HEBoundaryCondition bc_HE = cfg.bc_LTR; 
 
   //Components
   // for transient simulation, set initOpt = steadyState
-  inner ThermoPower.System system(allowFlowReversal = false, initOpt = ThermoPower.Choices.Init.Options.noInit) annotation(
+  inner ThermoPower.System system(allowFlowReversal = false, initOpt = ThermoPower.Choices.Init.Options.steadyState) annotation(
     Placement(transformation(extent = {{80, 80}, {100, 100}})));  
   
   ThermoPower.Gas.SourceMassFlow source_cold(
@@ -168,12 +168,12 @@ model TestDyn_PCHE_PHE_ramp
      
     // use Marchionni PCHE HeatTransfer
     // slow but can have a result - set a_phi = 0 to use Gnielinski's correlation 
-    /*
+    
     redeclare replaceable model HeatTransfer_F = Steps.TPComponents.MarchionniPCHEHeatTransferFV(),
     redeclare replaceable model HeatTransfer_G = Steps.TPComponents.MarchionniPCHEHeatTransferFV(),
     gasFlow(heatTransfer(pitch = cfg.pitch, phi = cfg.phi, Cf_C1 = Cf_C1, Cf_C2 = Cf_C2, Cf_C3 = Cf_C3)),
     fluidFlow(heatTransfer(pitch = cfg.pitch, phi = cfg.phi, Cf_C1 = Cf_C1, Cf_C2 = Cf_C2, Cf_C3 = Cf_C3)),   
-    */
+    /*
     redeclare replaceable model HeatTransfer_F = Steps.TPComponents.KimPCHEHeatTransferFV(
     pitch = L_pitch,
     phi = a_phi),
@@ -182,7 +182,7 @@ model TestDyn_PCHE_PHE_ramp
     redeclare replaceable model HeatTransfer_G = Steps.TPComponents.KimPCHEHeatTransferFV(
     pitch = L_pitch,
     phi = a_phi),
-    
+    */
     /*    
     redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.DittusBoelter,    
     redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.DittusBoelter,
@@ -196,17 +196,17 @@ model TestDyn_PCHE_PHE_ramp
     */ 
     
     bc = bc_HE, 
-    geo_hot = cfg.cfg_HTR_hot.geo,
-    geo_cold = cfg.cfg_HTR_cold.geo,
-    geo_tube = cfg.cfg_HTR_tube.geo,  
-    thermo_hot = cfg.cfg_HTR_hot.thermo,
-    thermo_cold = cfg.cfg_HTR_cold.thermo,
-    thermo_tube = cfg.cfg_HTR_tube.thermo,   
+    geo_hot = cfg.cfg_LTR_hot.geo,
+    geo_cold = cfg.cfg_LTR_cold.geo,
+    geo_tube = cfg.cfg_LTR_tube.geo,  
+    thermo_hot = cfg.cfg_LTR_hot.thermo,
+    thermo_cold = cfg.cfg_LTR_cold.thermo,
+    thermo_tube = cfg.cfg_LTR_tube.thermo,   
     L = L_fp,
     SSInit = true,
-    gasQuasiStatic = true,
-    fluidQuasiStatic = true,
-    metalWall(L = L_wall, w_ch = W_ch, h_ch = H_ch, dx = T_wall),
+    gasQuasiStatic = false,
+    fluidQuasiStatic = false,
+    metalWall(L = L_wall, w_ch = W_ch, h_ch = H_ch, dx = T_wall,WallRes = false),
     table_k_metalwall =   table_k_metalwall
     // metalQuasiStatic = true
     // override the values of Am and L of metaltubeFV
@@ -352,10 +352,9 @@ annotation(
     experiment(StartTime = 0, StopTime = 10, Tolerance = 1e-3, Interval = 1),
     // for complete transient simulation    
     // experiment(StartTime = 0, StopTime = 2200, Tolerance = 1e-3, Interval = 10),
-    __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts",        
     // remove the option flag --matchingAlgorithm=PFPlusExt, which may lead to 'Internal error - IndexReduction.dynamicStateSelectionWork failed!' during Translation
-    // __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts,bltdump",    
-    // disable some log flags to avoid incredible large log files and false dead of simulation
+    // __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts,bltdump",        
+    __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts",        
     // __OpenModelica_simulationFlags(lv = "LOG_DEBUG,LOG_NLS,LOG_NLS_V,LOG_STATS,LOG_INIT,LOG_STDOUT, -w", outputFormat = "mat", s = "dassl", nls = "homotopy")
     __OpenModelica_simulationFlags(lv = "LOG_STATS,LOG_INIT,LOG_NLS -w", outputFormat = "mat", s = "dassl", nls = "homotopy")
     );

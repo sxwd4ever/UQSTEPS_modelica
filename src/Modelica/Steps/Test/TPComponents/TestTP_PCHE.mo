@@ -41,6 +41,8 @@ model TestTP_PCHE
   inner ThermoPower.System system(allowFlowReversal = false, initOpt=ThermoPower.Choices.Init.Options.noInit) annotation(
     Placement(transformation(extent = {{80, 80}, {100, 100}})));  
   
+  parameter Boolean SSInit = false "Steady-state initialization";
+  
   ThermoPower.Gas.SourceMassFlow source_cold(
     redeclare package Medium = medium_cold, 
     T = bc_HE.st_cold_in.T, 
@@ -108,7 +110,7 @@ model TestTP_PCHE
     thermo_hot = if test_LTR then cfg.cfg_LTR_hot.thermo else cfg.cfg_HTR_hot.thermo,
     thermo_cold = if test_LTR then cfg.cfg_LTR_cold.thermo else cfg.cfg_HTR_cold.thermo,
     thermo_tube = if test_LTR then cfg.cfg_LTR_tube.thermo else cfg.cfg_HTR_tube.thermo, 
-    SSInit = true,
+    SSInit=SSInit,
     gasQuasiStatic = true,
     fluidQuasiStatic = true,
     table_k_metalwall =   table_k_metalwall

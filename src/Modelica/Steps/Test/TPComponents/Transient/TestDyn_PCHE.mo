@@ -45,6 +45,7 @@ model TestDyn_PCHE
   parameter SI.Temperature T_hot_out = 576.69 "cold outlet temperature, K";
   parameter SI.Temperature T_cold_in = 500 "cold inlet temperature, K";
   parameter SI.Temperature T_cold_out = 639.15 "cold outlet temperature, K";
+  parameter Real table_k_metalwall[:,:] = [293.15, 12.1; 373.15, 16.3; 773.15, 21.5];  
   
   // pressure drop correction coefficient 
   // parameter Real kc_dp = 1.0;  
@@ -167,7 +168,8 @@ model TestDyn_PCHE
     L = L_fp,
     SSInit = true,
     gasQuasiStatic = false,
-    fluidQuasiStatic = false
+    fluidQuasiStatic = false,
+    table_k_metalwall =   table_k_metalwall
     // metalQuasiStatic = true
     // override the values of Am and L of metaltubeFV
     // to make them agree with semi-circular tube of PCHE
@@ -304,10 +306,12 @@ equation
     
 annotation(
     Diagram(graphics),
-    experiment(StartTime = 0, StopTime = 600, Tolerance = 1e-3, Interval = 1),
-    __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts",        
+    experiment(StartTime = 0, StopTime = 100, Tolerance = 1e-3, Interval = 1),
     // remove the option flag bltdump in -d options, which may lead to 'Internal error - IndexReduction.dynamicStateSelectionWork failed!' during Translation
+    __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts",        
     // __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts,bltdump",    
-    __OpenModelica_simulationFlags(lv = "LOG_DEBUG,LOG_NLS,LOG_NLS_V,LOG_STATS,LOG_INIT,LOG_STDOUT, -w", outputFormat = "mat", s = "dassl", nls = "homotopy")
+    // disable some log flags to avoid incredible large log files and false dead of simulation
+    // __OpenModelica_simulationFlags(lv = "LOG_DEBUG,LOG_NLS,LOG_NLS_V,LOG_STATS,LOG_INIT,LOG_STDOUT, -w", outputFormat = "mat", s = "dassl", nls = "homotopy")
+    __OpenModelica_simulationFlags(lv = "LOG_STATS,LOG_INIT -w", outputFormat = "mat", s = "dassl", nls = "homotopy")
     );
 end TestDyn_PCHE;

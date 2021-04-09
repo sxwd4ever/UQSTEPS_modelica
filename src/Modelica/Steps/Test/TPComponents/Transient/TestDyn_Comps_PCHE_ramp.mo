@@ -104,7 +104,7 @@ model TestDyn_Comps_PCHE_ramp
   parameter EntityThermoParam thermo_LTR_cold = cfg.cfg_LTR_cold.thermo;
 
   //Components
-  inner ThermoPower.System system(allowFlowReversal = false, initOpt=ThermoPower.Choices.Init.Options.noInit) annotation(
+  inner ThermoPower.System system(allowFlowReversal = false, initOpt=ThermoPower.Choices.Init.Options.steadyState) annotation(
     Placement(transformation(extent = {{80, 80}, {100, 100}})));
   
   // global init opition (system.initOpt) leads to order reduction error
@@ -280,8 +280,8 @@ model TestDyn_Comps_PCHE_ramp
     thermo_tube = cfg.cfg_LTR_tube.thermo,   
     L = L_fp,
     SSInit = true,
-    gasQuasiStatic = true,
-    fluidQuasiStatic = true,
+    gasQuasiStatic = false,
+    fluidQuasiStatic = false,
     metalWall(L = L_wall, w_ch = W_ch, h_ch = H_ch, dx = T_wall),
     table_k_metalwall =   table_k_metalwall
     // metalQuasiStatic = true
@@ -300,18 +300,18 @@ model TestDyn_Comps_PCHE_ramp
      
     // use Marchionni PCHE HeatTransfer
     // slow but can have a result - set a_phi = 0 to use Gnielinski's correlation 
-    /*
+    
     redeclare replaceable model HeatTransfer_F = Steps.TPComponents.MarchionniPCHEHeatTransferFV(),
     redeclare replaceable model HeatTransfer_G = Steps.TPComponents.MarchionniPCHEHeatTransferFV(),
     gasFlow(heatTransfer(pitch = cfg.pitch, phi = cfg.phi, Cf_C1 = Cf_C1, Cf_C2 = Cf_C2, Cf_C3 = Cf_C3)),
     fluidFlow(heatTransfer(pitch = cfg.pitch, phi = cfg.phi, Cf_C1 = Cf_C1, Cf_C2 = Cf_C2, Cf_C3 = Cf_C3)),    
-    */
     
+    /*
     redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.DittusBoelter,    
     redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.DittusBoelter,
     gasFlow(heatTransfer(heating=true)),
     fluidFlow(heatTransfer(heating=false)),    
-
+    */
     
     // fast and works fine for now. Error occurs when mass flow rate is zero, i.e. one flow is shut down. 
     // redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer,      
@@ -325,8 +325,8 @@ model TestDyn_Comps_PCHE_ramp
     thermo_tube = cfg.cfg_HTR_tube.thermo,   
     L = L_fp,
     SSInit = true,
-    gasQuasiStatic = true,
-    fluidQuasiStatic = true,
+    gasQuasiStatic = false,
+    fluidQuasiStatic = false,
     metalWall(L = L_wall, w_ch = W_ch, h_ch = H_ch, dx = T_wall),
     table_k_metalwall = table_k_metalwall
     // metalQuasiStatic = true
