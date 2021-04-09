@@ -32,8 +32,8 @@ model GasFlow1DFV "1-dimensional fluid flow model for gas (finite volumes)"
   Real dwdt "Time derivative of mass flow rate";
   SI.PerUnit Cf "Fanning friction factor";
   Medium.MassFlowRate w(start = wnom / Nt) "Mass flowrate (single tube)";
-  Medium.Temperature Ttilde[N - 1](start = Tstart[2:N], each stateSelect = StateSelect.prefer) "Temperature state variables";
-  Medium.Temperature T[N](start = Tstart) "Node temperatures";
+  Medium.Temperature Ttilde[N - 1](start = Tstart[2:N]) "Temperature state variables";
+  Medium.Temperature T[N](start = Tstart, each stateSelect = StateSelect.prefer) "Node temperatures";
   Medium.SpecificEnthalpy h[N] "Node specific enthalpies";
   // Medium.MassFraction X[if UniformComposition or Medium.fixedX then 1 else N, nX] "Node mass fraction - all compositions";    
   Medium.Temperature Tin(start = Tstartin);
@@ -99,15 +99,7 @@ equation
 //      MyUtil.myAssert(debug = false, val_test = Ttilde[j], min = 274, max = 1e6, name_val = "Ttilde[j]", val_ref = {j, A, l, rhobar[j], cvbar[j], wbar[j], gas[j + 1].h,  gas[j].h, Q_single[j]}, name_val_ref = {"j", "A", "l", "rhobar[j]", "cvbar[j]", "wbar[j]", "gas[j + 1].h", "gas[j].h", "Q_single[j]"});
       A * l * rhobar[j] * cvbar[j] * der(Ttilde[j]) + wbar[j] * (gas[j + 1].h - gas[j].h) = Q_single[j] "Energy balance";
       // dMdt[j] = A * l * (drbdp[j] * der(p) + drbdT1[j] * der(T[j]) + drbdT2[j] * der(T[j + 1]) + vector(drbdX1[j, :]) * vector(X[j]) + vector(drbdX2[j, :]) * vector(X[j+1])) "Mass balance";
-      //dMdt[j] = A * l * (drbdp[j] * der(p) + drbdT1[j] * der(T[j]) + drbdT2[j] * der(T[j + 1]) + vector(dddX[j, :]) * vector(Xtilde[j])) "Mass balance";
-      /*
-      if j == 1 then
-        dMdt[j] = A * l * (drbdp[j] * der(p) + drbdT2[j] * der(T[j]) + vector(dddX[j, :]) * vector(Xtilde[j])) "Mass balance";
-      else 
-        dMdt[j] = A * l * (drbdp[j] * der(p) + drbdT1[j] * der(T[j]) + drbdT2[j] * der(T[j+1]) + vector(dddX[j, :]) * vector(Xtilde[j])) "Mass balance";
-      end if;
-       */
-      dMdt[j] = A * l * (drbdp[j] * der(p) + drbdT1[j] * der(Ttilde[j-1]) + drbdT2[j] * der(Ttilde[j]) + vector(dddX[j, :]) * vector(Xtilde[j])) "Mass balance";       
+      dMdt[j] = A * l * (drbdp[j] * der(p) + (drbdT1[j]  + drbdT2[j]) / 2 * der(Ttilde[j]) + vector(dddX[j, :]) * vector(Xtilde[j])) "Mass balance";
        
       
 /*
