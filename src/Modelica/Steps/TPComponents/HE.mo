@@ -1,7 +1,9 @@
 within Steps.TPComponents;
 
 model HE "Heat Exchanger fluid - gas"
+  //extends ThermoPower.PowerPlants.HRSG.Interfaces.HeatExchanger;
   extends Interfaces.HeatExchanger;
+  
   import Gas = ThermoPower.Gas;  
   import Water = ThermoPower.Water;
   import Choices = ThermoPower.Choices;
@@ -52,6 +54,7 @@ model HE "Heat Exchanger fluid - gas"
     Placement(transformation(extent = {{-10, -66}, {10, -46}}, rotation = 0)));
   
   Gas.Flow1DFV gasFlow(  
+  // Steps.TPComponents.GasFlow1DFV gasFlow(
     Nt = 1, 
     N = N_G, 
     Nw = Nw_G, 
@@ -80,7 +83,8 @@ model HE "Heat Exchanger fluid - gas"
     rint = fluidVol * 4 / exchSurface_F / 2, 
     rext = (metalVol + fluidVol) * 4 / extSurfaceTub / 2, 
     rhomcm = rhomcm, 
-    lambda = lambda, 
+    lambda = lambda,
+    Tstartbar = Tstartbar_M,
     WallRes = false) 
     annotation(
     Placement(transformation(extent = {{-10, -24}, {10, -4}})));

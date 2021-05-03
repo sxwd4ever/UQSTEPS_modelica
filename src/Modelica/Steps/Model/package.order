@@ -7,3 +7,4 @@ SimParam
 HEBoundaryCondition
 PBConfig_5MW
 PBConfig_PCHE
+SimpleCycleConfig

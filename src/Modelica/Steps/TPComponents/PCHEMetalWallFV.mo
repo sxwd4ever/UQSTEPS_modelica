@@ -49,7 +49,7 @@ model PCHEMetalWallFV "simplified PCHE's fin-like metal wall between parallel mi
     Placement(transformation(extent = {{-40, -42}, {40, -20}}, rotation = 0)));
 
 equation
-   assert(Am > 0, "Area of the metal wall cross-section must be positive");  
+   assert(Am > 0, "Area of the metal wall cross-section must be positive, now Am=" + String(Am));  
   // L / Nw * Nt * rhomcm * Am * der(Tvol) = int.Q + ext.Q "Energy balance";
   // For now, we consider static-state simulation and ignore the heat storage in metal tube for PCHE;
   // fill(0.0, Nw) = int.Q + ext.Q "Energy balance";

@@ -59,7 +59,7 @@ model TestTP_Components_PCHE
   // global init opition (system.initOpt) leads to order reduction error
   // use this flag to control the initialization of all components instead. 
   parameter Boolean SSInit = false "Steady-state initialization";
-/*
+
   ThermoPower.Water.SourceMassFlow source_heater_hot(
     redeclare package Medium = medium_heater,
     w0 = bc_heater.st_hot_in.mdot,
@@ -71,7 +71,7 @@ model TestTP_Components_PCHE
     
   ThermoPower.Water.SinkPressure sink_heater_hot(
     redeclare package Medium = medium_heater, 
-    p0 = bc_heater.st_hot_out.mdot, 
+    p0 = bc_heater.st_hot_out.p, 
     T = bc_heater.st_hot_out.T,
     use_T = true) 
     annotation(
@@ -96,7 +96,7 @@ model TestTP_Components_PCHE
     redeclare model HeatExchangerTopology = ThermoPower.Thermal.HeatExchangerTopologies.CounterCurrentFlow,
     metalTube(WallRes=false, Tstartbar=heater.Tstartbar_M)) annotation(
     Placement(transformation(extent = {{-20, -20}, {20, 20}}, rotation = 0)));
-*/
+
   ThermoPower.Gas.SourceMassFlow source_cold(
     redeclare package Medium = medium_cold, 
     T = bc_LTR.st_cold_in.T, 
@@ -289,7 +289,7 @@ equation
   connect(source_heater_hot.flange, heater.waterIn);
   connect(heater.waterOut, sink_heater_hot.flange);
 */
-/*
+
   //HTR + mixer + LTR + Heater
   // main stream, water/cold side  
   connect(source_mixer_in.flange, mixer.inlet1);  
@@ -310,7 +310,7 @@ equation
   // hot stream for heater
   connect(source_heater_hot.flange, heater.waterIn);
   connect(heater.waterOut, sink_heater_hot.flange);
-*/
+
 
 /*
   // mixer alone
@@ -392,7 +392,7 @@ equation
     Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));
 
 */
-
+/*
   //HTR + mixer + LTR 
   // water/cold side  
   connect(source_mixer_in.flange, mixer.inlet1);
@@ -414,7 +414,7 @@ equation
   
   connect(LTR.gasOut, sink_hot.flange) annotation(
     Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));
-
+*/
 
 
 annotation(

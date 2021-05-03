@@ -62,7 +62,7 @@ model PCHE "PCHE model based on Thermo Power"
   Cfnom = Cfnom_F, 
   Tstartbar = Tstartbar_F, 
   Tstartin = Tstartbar_F, //bc.st_cold_in.T, 
-  Tstartout = Tstartbar_F, //bc.st_cold_out.T, 
+  Tstartout = Tstartbar_F, //bc.st_cold_out.T,   
   redeclare model HeatTransfer = HeatTransfer_F) annotation(
     Placement(transformation(extent = {{-10, -66}, {10, -46}}, rotation = 0)));
     
@@ -89,7 +89,7 @@ model PCHE "PCHE model based on Thermo Power"
   Cfnom = Cfnom_G, 
   Tstartbar = Tstartbar_G, 
   Tstartin = Tstartbar_G, //bc.st_hot_in.T, 
-  Tstartout = Tstartbar_G, //bc.st_hot_out.T,   
+  Tstartout = Tstartbar_G, //bc.st_hot_out.T,     
   redeclare model HeatTransfer = HeatTransfer_G) annotation(
     Placement(transformation(extent = {{-12, 66}, {12, 46}}, rotation = 0)));
   

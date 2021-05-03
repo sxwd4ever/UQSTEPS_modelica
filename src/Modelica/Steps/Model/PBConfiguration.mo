@@ -1,7 +1,7 @@
 within Steps.Model;
 
 model PBConfiguration
-  "full set of params set for Off-design power block test - DON'T Alter it directly, use override instead, see Model PBConfigs"
+  "full set of params set for Off-design RCBC - DON'T Alter it directly, use override instead, see Model PBConfigs"
   
   import Modelica.SIunits.Conversions.{from_degC, from_deg};
   import Modelica.SIunits.{Temperature, Pressure, SpecificEnthalpy};
@@ -285,7 +285,7 @@ model PBConfiguration
     d = 2 * r_i_h, 
     N_seg = N_seg_heater, 
     N_ch = 1),
-    thermo(gamma_he = 200 "4000")
+    thermo(UAnom = 1.938761018e6, gamma_he = cfg_heater_hot.thermo.UAnom/(cfg_heater_hot.geo.A_ex * N_ch_h) "200 4000")
   );
     
   // cfg for heater's cold/fluid side
@@ -297,7 +297,7 @@ model PBConfiguration
     d = 2 * r_o_h, 
     N_seg = N_seg_heater, 
     N_ch = N_ch_h),
-    thermo(gamma_he = 200 "4000")
+    thermo(UAnom = 1.938761018e6, gamma_he = cfg_heater_cold.thermo.UAnom/(cfg_heater_cold.geo.A_ex * N_ch_h) "200 4000")
   );
   
   // cfg for heater's tube

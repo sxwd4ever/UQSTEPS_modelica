@@ -3,6 +3,7 @@ within Steps.Media;
 package ThermiaOilD "Shell Thermia Oil D the heat transfer fluid"
   
   import Modelica.SIunits.Conversions.from_degC;
+  import Poly = Modelica.Media.Incompressible.TableBased.Polynomials_Temp;
   
   extends Incompressible.TableBased(
     mediumName="Thermia Oil D",
@@ -61,7 +62,14 @@ package ThermiaOilD "Shell Thermia Oil D the heat transfer fluid"
     // CP.PropsSI("d(DMASS)/d(P)|Hmass", "P", state.p, "Hmass", specificEnthalpy_pT(state.p, state.T), mediumName);
     annotation (Inline=true);
   end density_derp_T; 
-    
+  /* 
+  redeclare replaceable function extends density_derh_p
+      "Return density derivative w.r.t. specific enthalpy at constant pressure"
+      algorithm
+        ddhp := Poly.derivativeValue(poly_rho, h_T(state.T));
+        //ddhp:= drho_dT_T(state.T) * dT_dh_h(h_T(state.T));
+    end density_derh_p;    
+  */
     annotation (Documentation(info="<html>
 
 </html>"));
