@@ -21,17 +21,17 @@ model TestTP_PCHE_Marchionni
   
   // geometry parameters
   constant Real pi = Modelica.Constants.pi;
-  parameter Integer N_ch = 10000 "channel number";
+  parameter Integer N_ch = 2268 "channel number";
   parameter Integer N_seg = 20 "number of segments in one tube";
   parameter SI.Length D_ch = 2e-3 "channel diameter, semi circular tube";
   parameter SI.Length r_ch = D_ch / 2 "channel radiaus";
-  parameter SI.Length L_fp = 272e-3 "channel flow path length";  
+  parameter SI.Length L_fp = 1012e-3 "channel flow path length";  
   parameter SI.Length L_pitch = 12.3e-3 "pitch length"; 
-  parameter Real a_phi "pitch angle degree";
+  parameter Real a_phi  = 45 "pitch angle degree";
   parameter SI.Length H_ch = 3.26e-3 "Height of the solid domain, containing one cold tube and one hot tube";
-  parameter SI.Length W_ch = 1.27e-3 * 2"Width of the solid domain";
+  parameter SI.Length W_ch = 2.54e-3 * 2"Width of the solid domain";
   parameter SI.Length T_wall = 0.51e-3 "Wall thinckness";
-  parameter SI.Length L_wall = 420e-3 "Length of wall, not necessarily equals to length of flow path";  
+  parameter SI.Length L_wall = 1000-3 "Length of wall, not necessarily equals to length of flow path";  
   parameter SI.Area A = pi * r_ch ^2 / 2 "Area of cross section of semi circular tube";
 
   // boundary conditon
@@ -41,18 +41,19 @@ model TestTP_PCHE_Marchionni
   parameter Real G_cold_in = 509.3 "cold inlet mass flux kg/(m^2 s";
   parameter SI.Pressure p_hot_in =  from_bar(75) "hot inlet pressure";
   parameter SI.Pressure p_cold_in = from_bar(150) "cold inlet pressure";
-  parameter SI.Temperature T_hot_in = from_degC(400) "hot inlet temperature, K";
-  parameter SI.Temperature T_hot_out = from_degC(140) "cold outlet temperature, K";
-  parameter SI.Temperature T_cold_in = from_degC(100) "cold inlet temperature, K";
-  parameter SI.Temperature T_cold_out = from_degC(300) "cold outlet temperature, K";
+  parameter SI.Temperature T_hot_in = from_degC(344.3) "hot inlet temperature, K";
+  parameter SI.Temperature T_hot_out = from_degC(81) "cold outlet temperature, K";
+  parameter SI.Temperature T_cold_in = from_degC(72.9) "cold inlet temperature, K";
+  parameter SI.Temperature T_cold_out = from_degC(283) "cold outlet temperature, K";
   
   // pressure drop correction coefficient 
   // parameter Real kc_dp = 1.0;
   
-  parameter Real Cf_C1 = 1, Cf_C2 = 1, Cf_C3 = 1;
-  parameter Real use_rho_bar;  
-  parameter Real rho_bar_hot;
-  parameter Real rho_bar_cold;
+  parameter Real Cf_C1_hot = 7.3, Cf_C2_hot = 1, Cf_C3_hot = 1;
+  parameter Real Cf_C1_cold = 14.6, Cf_C2_cold = 1, Cf_C3_cold = 1;
+  parameter Real use_rho_bar = -1.0;  
+  parameter Real rho_bar_hot = 1.0;
+  parameter Real rho_bar_cold = 1.0;
   
   // meshram's cp and rho for alloy Inconel 617
   parameter Modelica.SIunits.Density rho_wall = 7990 "density of wall, kg/m3";
@@ -158,18 +159,18 @@ model TestTP_PCHE_Marchionni
       pitch = cfg.pitch, 
       phi = cfg.phi, 
       // kc_dp = kc_dp, 
-      Cf_C1 = Cf_C1, 
-      Cf_C2 = Cf_C2, 
-      Cf_C3 = Cf_C3, 
+      Cf_C1 = Cf_C1_hot, 
+      Cf_C2 = Cf_C2_hot, 
+      Cf_C3 = Cf_C3_hot, 
       use_rho_bar = use_rho_bar,
       rho_bar = rho_bar_hot)),
     fluidFlow(heatTransfer(
       pitch = cfg.pitch, 
       phi = cfg.phi, 
       //kc_dp = kc_dp, 
-      Cf_C1 = Cf_C1, 
-      Cf_C2 = Cf_C2, 
-      Cf_C3 = Cf_C3, 
+      Cf_C1 = Cf_C1_cold, 
+      Cf_C2 = Cf_C2_cold, 
+      Cf_C3 = Cf_C3_cold, 
       use_rho_bar = use_rho_bar, 
       rho_bar = rho_bar_cold)),    
     /*    
@@ -190,9 +191,9 @@ model TestTP_PCHE_Marchionni
     L = L_fp,
     SSInit = true,
     gasQuasiStatic = true,
-    fluidQuasiStatic = true,
-    metalWall(L = L_wall, w_ch = W_ch, h_ch = H_ch, dx = T_wall),
-    table_k_metalwall =   table_k_metalwall    
+    fluidQuasiStatic = true
+    // metalWall(L = L_wall, w_ch = W_ch, h_ch = H_ch, dx = T_wall),
+    // table_k_metalwall =   table_k_metalwall    
     // override the values of Am and L of metaltubeFV
     // to make them agree with semi-circular tube of PCHE
     // ('final' modifier of Am in metalTubeFv was removed as well)

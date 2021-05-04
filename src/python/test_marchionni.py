@@ -64,14 +64,14 @@ class MarchionniTest(PCHEExperiment):
 
         test.set_post_data('hc_hot', np.array(hc_hot[::-1]))
         test.set_post_data('hc_cold', np.array(hc_cold[::-1]))
-
-        keys = data_ref['keys']
+        data_ref_cur = data_ref[test.name]
+        keys = data_ref_cur['keys']
         row_names = ['1D', 'OEM']
 
         err_dict = {}
 
         for rname in row_names:
-            row = data_ref[rname]
+            row = data_ref_cur[rname]
 
             for i in range(0, len(keys)):
                 k = keys[i] + "_act"
@@ -231,8 +231,8 @@ def main(work_root = []):
         work_root = os.path.abspath(os.curdir)  
 
     # parameters initialization for this simulation
-    exp_type:ExpType = ExpType.Fitting
-    model_name = "Steps.Test.TestTP_PCHE_Marchionni"  
+    exp_type:ExpType = ExpType.FULL_SCALE
+    model_name = "Steps.Test.TPComponents.TestTP_PCHE_Marchionni"  
     # exp flags 
     use_rho_bar = -1.0 # > 1.0 use rho_bar for dp calculation 
 
@@ -415,7 +415,7 @@ def main(work_root = []):
             "H_ch": 3.26e-3, # "Height of the solid domain, containing one cold tube and one hot tube"
             "W_ch": 1.27e-3 * 2, # "Width of the solid domain"
             # boundary conditon
-            "G_in": 2.06 / A_stack,  # "inlet mass flux rate kg/(m^2 s)";            
+            "G_hot_in": 2.06 / A_stack,  # "inlet mass flux rate kg/(m^2 s)";            
             "p_hot_in": from_bar(75), # "hot inlet pressure";
             "p_cold_in":from_bar(125), # "cold inlet pressure";
             "T_hot_in": from_degC(344.3), # "hot inlet temperature, K";
@@ -426,7 +426,7 @@ def main(work_root = []):
         } 
 
         cfg_offset_base = {
-                "keys" : ["G_in", "T_cold_in"],   
+                "keys" : ["G_hot_in", "T_cold_in"],   
                 "Design point" : [2.06 / A_stack, from_degC(72.9)],
                 "off-design #1" : [1.57 / A_stack, from_degC(72.9)],
                 "off-design #2" : [2.09 / A_stack, from_degC(87.5)],                  
@@ -453,16 +453,17 @@ def main(work_root = []):
                 cfg_offset[f'phi={phi}'] = cfg_offset_cp
         else:
             # kc_cfs = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-            kc_cfs_1 = [7, 7.3, 7.5, 7.8, 8] 
+            # kc_cfs_1 = [7, 7.3, 7.5, 7.8, 8] 
+            kc_cfs_1 = [7, 7.3]  # quick version
             kc_cfs = []
             kc_cfs.extend(kc_cfs_1)
-            kc_cfs.extend(kc_cfs_1 * 2)
+            # kc_cfs.extend(kc_cfs_1 * 2)
 
             cfg_offset = {} 
             l = []            
             for kc_cf in kc_cfs:
                 cfg_offset_cp = deepcopy(cfg_offset_base)
-                cfg_offset_cp['keys'].extend(['kc_cf_hot','kc_cf_cold'])
+                cfg_offset_cp['keys'].extend(['Cf_C1_hot','Cf_C1_cold'])
                 for k, v in cfg_offset_cp.items():
                     if k == 'keys':
                         continue

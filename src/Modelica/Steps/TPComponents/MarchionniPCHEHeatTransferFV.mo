@@ -76,9 +76,9 @@ model MarchionniPCHEHeatTransferFV "Marchionni [2019] heat transfer Correlation"
   parameter Real use_rho_bar "> 0, use rho_bar for dp calculation. error in passing a boolean from OMPython so Real type variable is used here";
   parameter Real rho_bar "Averaged rho, >0: valid rho and will be used for dp calculation";   
   
-  parameter Correlations.NuCorrType NuCorr_z = Correlations.NuCorrType.Ngo;//Xin "flag of Nusselt Number correlation for zigzag channel PCHE";
+  parameter Correlations.NuCorrType NuCorr_z = Correlations.NuCorrType.Gnielinski; //Ngo;//Xin "flag of Nusselt Number correlation for zigzag channel PCHE";
   parameter Correlations.NuCorrType NuCorr_s = Correlations.NuCorrType.Gnielinski "flag of Nusselt number correlation for straight channel PCHE";
-  parameter Correlations.FFCorrType FFCorr_z = Correlations.FFCorrType.Ngo "flag of Friction factor correlation for zigzag channel";
+  parameter Correlations.FFCorrType FFCorr_z = Correlations.FFCorrType.Gnielinski; //Ngo "flag of Friction factor correlation for zigzag channel";
   parameter Correlations.FFCorrType FFCorr_s = Correlations.FFCorrType.Gnielinski "flag of Friction factor correlation for straight channel";
 
   parameter Real Cf_C1 = 1.0;
@@ -172,14 +172,15 @@ equation
       q3[j] = 0; 
       dp[j] = 0;  
     else      
-      Re_l[j] = noEvent(Functions.smoothSat(Re[j], Re_min, 1e9, Re_min / 2));        
+      Re_l[j] = noEvent(Functions.smoothSat(Re[j], Re_min, 1e9, Re_min / 2));       
+      co_A[j] = noEvent(-2.0 * Modelica.Math.log10( 12 / Re_l[j])) "neglect roughness";
+      co_B[j] = noEvent(-2.0 * Modelica.Math.log10( 2.51 * co_A[j] / Re_l[j]));         
   
       //C1[j] = exp(Cf_C1 +  Cf_C2  * log(Re_l[j] / 1e4)  + Cf_C3 * log(Pr[j]));
       if phi <= 0 then 
         // for straight channel, use Gnieliski Correlation 
         // pressure drop calculation in Marchionni 2019
-        co_A[j] = noEvent(-2.0 * Modelica.Math.log10( 12 / Re_l[j])) "neglect roughness";
-        co_B[j] = noEvent(-2.0 * Modelica.Math.log10( 2.51 * co_A[j] / Re_l[j]));   
+ 
   
         f[j] = noEvent(Cf_C1 * (0.25 * (( 4.781 - (co_A[j] - 4.781) ^ 2 / (co_B[j] - 2 * co_A[j] + 4.781)) ^(-2))));
         Nu[j] = noEvent((1 / Cf_C1) * ((f[j]/2 * (Re_l[j] - 1000) * Pr[j]) / (1 + 12.7 * ( Pr[j] ^(2/3) - 1) * (f[j]/2)^0.5)));
@@ -201,6 +202,8 @@ equation
         elseif NuCorr_z == Correlations.NuCorrType.Xin then
           // My update of Liao-zhao Nusselt number correlation, introducing Cf_C1, which is predicted by boundary condition with pre-trained coefficients
           Nu[j] = noEvent(Cf_C1 * (Re_l[j] ^ 0.8) * (Pr[j] ^ 0.4) * q1[j]^ 0.203 * q2[j] ^ 0.842 * q3[j] ^ 0.384);       
+        elseif NuCorr_z == Correlations.NuCorrType.Gnielinski then
+          Nu[j] = noEvent((1 / Cf_C1) * ((f[j]/2 * (Re_l[j] - 1000) * Pr[j]) / (1 + 12.7 * ( Pr[j] ^(2/3) - 1) * (f[j]/2)^0.5)));
         else 
           // use Ngo correlation as default
           Nu[j] = noEvent(0.1696 * (Re_l[j] ^ 0.629) * (Pr[j] ^ 0.317));      
@@ -208,12 +211,14 @@ equation
   
         if FFCorr_z == Correlations.FFCorrType.Xin then
           f[j] = noEvent(Cf_C2 * (Re_l[j] ^ (-0.091)));
+        elseif FFCorr_z == Correlations.FFCorrType.Gnielinski then
+          f[j] = noEvent(Cf_C1 * (0.25 * (( 4.781 - (co_A[j] - 4.781) ^ 2 / (co_B[j] - 2 * co_A[j] + 4.781)) ^(-2))));          
         else // use Ngo's correlation as default
           f[j] = noEvent(0.1924 * (Re_l[j] ^ (-0.091)));
         end if;
         
-        co_A[j] = 1.0;
-        co_B[j] = 1.0;
+        // co_A[j] = 1.0;
+        //  co_B[j] = 1.0;
       end if;      
       
       if use_rho_bar > 0 then    

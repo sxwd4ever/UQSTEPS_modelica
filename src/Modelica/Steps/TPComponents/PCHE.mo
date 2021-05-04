@@ -38,7 +38,10 @@ model PCHE "PCHE model based on Thermo Power"
   parameter Choices.FluidPhase.FluidPhases FluidPhaseStart = Choices.FluidPhase.FluidPhases.Liquid "Fluid phase (only for initialization!)" annotation(
     Dialog(tab = "Initialization"));
   parameter Boolean SSInit = false "Steady State initialization";  
-  parameter Real [:, :] table_k_metalwall; 
+  
+  // Thermal conductivity of LTR's metal wall 
+  // material inconel_750
+  parameter Real table_k_metalwall[:, :] = [149, 16.9; 316, 20.5; 538, 26.5; 649, 28.7; 760, 31.4; 871, 35.3];  
   
   //TPComponents.Flow1DFV fluidFlow(
   //Gas.Flow1DFV fluidFlow(
