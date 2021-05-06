@@ -22,30 +22,32 @@ model TP_SimpleCycle
   package medium_cold = Steps.Media.SCO2;  
   
   // geometry parameters
-  constant Real pi = Modelica.Constants.pi;
-  parameter Integer N_ch = integer(2400) "channel number";
+  constant  Real pi       = Modelica.Constants.pi;
+  parameter Integer N_ch  = integer(2400) "channel number";
   parameter Integer N_seg = 10 "number of segments in one tube";
   // parameter SI.Length D_ch = 2e-3 "channel diameter, semi circular tube";
   parameter SI.Length D_ch = 1.72e-3  "channel diameter, semi circular tube";
   parameter SI.Length r_ch = D_ch / 2 "channel radiaus";
   // parameter SI.Length L_fp = 270e-3 "channel flow path length";  
   // parameter SI.Length L_fp = (200 + 186) * 1e-3 "equivalent valid channel flow path length";  
-  parameter SI.Length L_fp = 250 * 1e-3 "equivalent valid channel flow path length"; 
+  parameter SI.Length L_fp    = 250 * 1e-3 "equivalent valid channel flow path length";
   parameter SI.Length L_pitch = 12e-3 "pitch length";
-  parameter Real a_phi = 36 "pitch angle degree";
-  parameter SI.Length H_ch = 4.17e-3 "Height of the solid domain, containing one cold tube and one hot tube";
-  parameter SI.Length W_ch = 2.3e-3 "Width of the solid domain";
-  parameter SI.Length T_wall = 0.51e-3 "Wall thinckness";
-  parameter SI.Length L_wall = 420e-3 "Length of wall, not necessarily equals to length of flow path";
-  parameter SI.Area A = pi * r_ch ^2 / 2 "Area of cross section of semi circular tube";
+  parameter Real a_phi        = 36 "pitch angle degree";
+  parameter SI.Length H_ch    = 4.17e-3 "Height of the solid domain, containing one cold tube and one hot tube";
+  parameter SI.Length W_ch    = 2.3e-3 "Width of the solid domain";
+  parameter SI.Length T_wall  = 0.51e-3 "Wall thinckness";
+  parameter SI.Length L_wall  = 420e-3 "Length of wall, not necessarily equals to length of flow path";
+  parameter SI.Area A         = pi * r_ch ^2 / 2 "Area of cross section of semi circular tube";
 
   // boundary conditon
   
   // zigzag higher T
   // parameter SI.Velocity u_hot_in = 7.564 "hot inlet velocity m/s";
   // parameter SI.Velocity u_cold_in = 1.876 "cold inlet velocity m/s";
-  parameter SI.Pressure p_hot_in =  4e6; //from_bar(10) "hot inlet pressure - Irrelevant for Incompressible Thermia Oil" ;
-  parameter SI.Pressure p_cold_in = 9.2e6;// 12.567478e6 "cold inlet pressure";
+  parameter SI.Pressure p_hot_in    = 4e6; //from_bar(10) "hot inlet pressure - Irrelevant for Incompressible Thermia Oil" ;
+  parameter SI.Pressure p_source    = 8.65e6 ;
+  parameter SI.Pressure p_comp_out  = 12e6; // 12.567478e6 "cold inlet pressure";  
+  parameter SI.Pressure p_sink      = 9.2e6; // Not used by Config. Record only;
   /*
   parameter SI.Temperature T_hot_in = 595; // from_degC(103.222748) "hot inlet temperature, K";
   parameter SI.Temperature T_hot_out = 478; // from_degC(96.145935) "cold outlet temperature, K";
@@ -53,14 +55,14 @@ model TP_SimpleCycle
   parameter SI.Temperature T_cold_out = 571; //from_degC(99.666342) "cold outlet temperature, K";
   */
   
-  parameter Modelica.SIunits.Temperature T_source = 322;
-  parameter Modelica.SIunits.Temperature T_comp_out = 348;
-  parameter Modelica.SIunits.Temperature T_heater_hin = 595;
-  parameter Modelica.SIunits.Temperature T_heater_hout = 478;
-  parameter Modelica.SIunits.Temperature T_heater_cin = 350;
-  parameter Modelica.SIunits.Temperature T_heater_cout = 571;
-  parameter Modelica.SIunits.Temperature T_turb_in = 570;
-  parameter Modelica.SIunits.Temperature T_sink = 545;  
+  parameter Modelica.SIunits.Temperature T_source       = 322;
+  parameter Modelica.SIunits.Temperature T_comp_out     = 348;
+  parameter Modelica.SIunits.Temperature T_heater_hin   = 595;
+  parameter Modelica.SIunits.Temperature T_heater_hout  = 478;
+  parameter Modelica.SIunits.Temperature T_heater_cin   = 350;
+  parameter Modelica.SIunits.Temperature T_heater_cout  = 571;
+  parameter Modelica.SIunits.Temperature T_turb_in      = 570;
+  parameter Modelica.SIunits.Temperature T_sink         = 545;  
   
   // pressure drop correction coefficient 
   // parameter Real kc_dp = 1.0;  
@@ -87,36 +89,39 @@ model TP_SimpleCycle
 
   // parameter SI.Density rho_hot_in = medium_hot.density_pT(p_hot_in, T_hot_in);
   // parameter SI.Density rho_cold_in = medium_cold.density_pT(p_cold_in, T_cold_in);
-  parameter SI.MassFlowRate mdot_hot_in = 10; //1.218944;
-  parameter SI.MassFlowRate mdot_cold_in = 10.5; // 0.0854299999999999;
+  parameter SI.MassFlowRate mdot_heater = 10; //1.218944;
+  parameter SI.MassFlowRate mdot_main = 10.5; // 0.0854299999999999;
   
-  parameter Real N_s_compressor = 1200 "rotational speed of compressor";
+  parameter Real N_s_compressor = 2100 "rotational speed of compressor";
 
   // use configuration of LTR for this test since the mdot are different for hot and cold side
   parameter Model.PBConfig_PCHE cfg(
-    p_pump_in = p_hot_in,
-    p_pump_out = p_cold_in,
-    mdot_main = mdot_hot_in,
-    mdot_pump = mdot_cold_in, 
-    T_LTR_cold_in = T_heater_cin, 
-    T_LTR_cold_out = T_heater_cout,
-    T_HTR_hot_out = T_heater_hin, // T_LTR_hot_in = T_HTR_hot_out,
-    T_LTR_hot_out = T_heater_hout,
+    p_pump_in         = p_source,
+    p_ATM             = p_source,
+    p_pump_out        = p_comp_out,
+    p_heater          = p_hot_in,
+    mdot_main         = mdot_main,
+    mdot_pump         = mdot_main, 
+    mdot_heater       = mdot_heater,
+    T_HTR_cold_out    = T_heater_cin, 
+    T_heater_cold_out = T_heater_cout,
+    T_heater_hot_in   = T_heater_hin, // T_LTR_hot_in = T_HTR_hot_out,
+    T_heater_hot_out  = T_heater_hout,
     T_cooler_cold_out = T_source,
-    T_HTR_hot_in = T_sink,
-    r_LTR = r_ch,
-    L_LTR = L_fp,
-    N_ch_LTR = N_ch,
-    N_seg = N_seg,
-    pitch = L_pitch,
-    phi = a_phi,
-    rho_wall = rho_wall,
-    cp_wall = cp_wall
-  );
+    T_HTR_hot_in      = T_sink,
+    r_heater          = r_ch,
+    L_h               = L_fp,
+    N_ch_h            = N_ch,
+    N_seg_heater      = N_seg,
+    pitch             = L_pitch,
+    phi               = a_phi,
+    rho_wall          = rho_wall,
+    cp_wall           = cp_wall
+  ); 
   
   // set the values of parameters accordingly
-  parameter HEBoundaryCondition bc_HE = cfg.bc_LTR; 
-
+  parameter HEBoundaryCondition bc_HE = cfg.bc_heater; 
+  
   //Components
   // for transient simulation, set initOpt = steadyState
   inner ThermoPower.System system(allowFlowReversal = false, initOpt = ThermoPower.Choices.Init.Options.noInit) annotation(
@@ -126,30 +131,38 @@ model TP_SimpleCycle
     redeclare package Medium = medium_cold, 
     // T = bc_HE.st_cold_in.T, 
     T = cfg.bc_cooler.st_cold_out.T,
+    // T = 322,
     // p0 = bc_HE.st_cold_in.p, 
     p0 = cfg.bc_cooler.st_cold_out.p,
+    // p0 = 8.65e6,
     use_in_T = false, 
-    w0 = bc_HE.st_cold_in.mdot,
+    w0 = cfg.bc_cooler.st_cold_out.mdot,
+    // w0 = 10.5,
     // gas(p(nominal = bc_HE.st_cold_in.p), 
-    gas(p(nominal = cfg.bc_cooler.st_cold_out.p), 
-    // T(nominal=bc_HE.st_cold_in.T))) 
-    T(nominal=cfg.bc_cooler.st_cold_out.T))) 
+    gas(
+      p(nominal = cfg.bc_cooler.st_cold_out.p), 
+      // p(nominal = 8.65e6), 
+      // T(nominal=bc_HE.st_cold_in.T))) 
+      T(nominal = cfg.bc_cooler.st_cold_out.T))
+      // T(start = 322, nominal=322))
+    ) 
   annotation(
     Placement(transformation(origin = {0, 60}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
   
   ThermoPower.Gas.SinkPressure sink_cold(
     redeclare package Medium = medium_cold,     
-    p0 = bc_HE.st_cold_in.p, 
-    T = bc_HE.st_cold_in.T);
+    p0 = cfg.bc_HTR.st_hot_in.p, 
+    // p0 = 12e6, 
+    T = cfg.bc_HTR.st_hot_in.T,
+    // T = 348,
+    gas(
+      p(nominal = cfg.bc_HTR.st_hot_in.p), 
+      // p(nominal = 12e6), 
+      // T(nominal=bc_HE.st_cold_in.T))) 
+      T(nominal= cfg.bc_HTR.st_hot_in.T))
+      // T(start = 348, nominal=348))
     
-    // p0 = bc_HE.st_cold_out.p, 
-    // T = bc_HE.st_cold_out.T)
-    
-    // p0 = cfg.bc_HTR.st_hot_in.p,    
-    // T = cfg.bc_HTR.st_hot_in.T) 
-  /*  
-  annotation(
-    Placement(transformation(origin = {0, -80}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
+  );
 
   ThermoPower.Gas.SinkPressure sink_hot(
     redeclare package Medium = medium_hot,
@@ -169,16 +182,17 @@ model TP_SimpleCycle
     T(nominal=bc_HE.st_hot_in.T))) 
   annotation(
     Placement(transformation(extent = {{-70, -10}, {-50, 10}}, rotation = 0))); 
-  */
+
+
   ThermoPower.Gas.SensT T_waterIn(redeclare package Medium = medium_cold) annotation(
     Placement(transformation(origin = {4, -50}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
   ThermoPower.Gas.SensT T_waterOut(redeclare package Medium = medium_cold) annotation(
     Placement(transformation(origin = {4, -50}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
-  /*
+
+
   ThermoPower.Gas.SensT T_gasIn(redeclare package Medium = medium_hot);
   ThermoPower.Gas.SensT T_gasOut(redeclare package Medium = medium_hot);
-  */
-  /*
+
   Steps.TPComponents.PCHE HE(
     redeclare package FluidMedium = medium_cold, 
     redeclare package FlueGasMedium = medium_hot, 
@@ -195,12 +209,12 @@ model TP_SimpleCycle
     // redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer,   
     
     bc = bc_HE, 
-    geo_hot = cfg.cfg_LTR_hot.geo,
-    geo_cold = cfg.cfg_LTR_cold.geo,
-    geo_tube = cfg.cfg_LTR_tube.geo,  
-    thermo_hot = cfg.cfg_LTR_hot.thermo,
-    thermo_cold = cfg.cfg_LTR_cold.thermo,
-    thermo_tube = cfg.cfg_LTR_tube.thermo, 
+    geo_hot = cfg.cfg_heater_hot.geo,
+    geo_cold = cfg.cfg_heater_cold.geo,
+    geo_tube = cfg.cfg_heater_tube.geo,  
+    thermo_hot = cfg.cfg_heater_hot.thermo,
+    thermo_cold = cfg.cfg_heater_cold.thermo,
+    thermo_tube = cfg.cfg_heater_tube.thermo, 
     table_k_metalwall =   table_k_metalwall,
     L = L_fp,
     SSInit = false,
@@ -214,21 +228,25 @@ model TP_SimpleCycle
     //metalTube(WallRes=false, L = 1, rhomcm=200, Am = HE.metalVol / 1) 
   )
   annotation(
-    Placement(transformation(extent = {{-20, -20}, {20, 20}}, rotation = 0)));
-  */
+    Placement(transformation(extent = {{-20, -20}, {20, 20}}, rotation = 0)));  
 
   ThermoPower.Gas.Compressor compressor(
     redeclare package Medium = medium_cold,
-    pstart_in= cfg.bc_cooler.st_cold_out.p,
-    pstart_out=cfg.bc_LTR.st_cold_in.p,
-    Tstart_in= cfg.bc_cooler.st_cold_out.T,
-    Tstart_out= cfg.bc_LTR.st_cold_in.T,
-    tablePhic=tablePhic_comp_mc,
-    tableEta=tableEta_comp_mc,
-    tablePR=tablePR_comp_mc,
-    Table=ThermoPower.Choices.TurboMachinery.TableTypes.matrix,
-    Ndesign=N_s_compressor,
-    Tdes_in=compressor.Tstart_in) annotation(
+    pstart_in  = cfg.bc_cooler.st_cold_out.p,
+    // pstart_in  = 8.65e6,
+    pstart_out = cfg.bc_LTR.st_cold_in.p,
+    // pstart_out = 12e6,
+    Tstart_in  = cfg.bc_cooler.st_cold_out.T,
+    // Tstart_in  = 322,
+    Tstart_out = cfg.bc_LTR.st_cold_in.T,
+    // Tstart_out = 348,
+    tablePhic  = tablePhic_comp_mc,
+    tableEta   = tableEta_comp_mc,
+    tablePR    = tablePR_comp_mc,
+    Table      = ThermoPower.Choices.TurboMachinery.TableTypes.matrix,
+    Ndesign    = N_s_compressor,    
+    Tdes_in    = compressor.Tstart_in) 
+    annotation(
     Placement(visible = true, transformation(origin = {103, -11}, extent = {{-11, -11}, {11, 11}}, rotation = 0)));
 
   Modelica.Mechanics.Rotational.Sources.ConstantSpeed const_speed_comp(
@@ -287,11 +305,44 @@ model TP_SimpleCycle
   */
 protected
   // performance map for main compressor
-  parameter Real tableEta_comp_mc[5, 4]=[0, 95, 100, 105; 1, 0.85310219, 0.837591241, 0.832420925; 2, 0.868613139, 0.857238443, 0.851034063; 3, 0.860340633, 0.85, 0.842761557; 4, 0.85310219, 0.839659367, 0.816909976];
-  
-  parameter Real tablePhic_comp_mc[5, 4]=[0, 95, 100, 105; 1, 0.000134346, 0.000150832, 0.000164161; 2, 0.000137854, 0.000153638, 0.00016802; 3, 0.000142414, 0.000158549, 0.000169774; 4, 0.000145921, 0.000161706, 0.000171528];
+  parameter Real tableEta_comp_mc[:, :] = [
+  0,85.0,90.0,95.0,100.0,105.0,110.0;
+  1,0.771,0.777,0.785,0.796,0.804,0.808;
+  2,0.8,0.804,0.809,0.812,0.815,0.818;
+  3,0.813,0.816,0.819,0.822,0.824,0.827;
+  4,0.818,0.823,0.826,0.83,0.83,0.83;
+  5,0.818,0.829,0.83,0.83,0.83,0.83;
+  6,0.818,0.827,0.83,0.83,0.83,0.83;
+  7,0.815,0.82,0.824,0.829,0.83,0.83;
+  8,0.8,0.808,0.814,0.817,0.824,0.829;
+  9,0.766,0.78,0.787,0.804,0.809,0.815;
+  10,0.725,0.745,0.762,0.771,0.779,0.796];
 
-  parameter Real tablePR_comp_mc[5, 4]=[0, 95, 100, 105; 1, 1.967529638, 2.350588505, 2.785882673; 2, 1.915294338, 2.315764972, 2.681412073; 3, 1.810823737, 2.220000255, 2.524706172; 4, 1.654117837, 2.115529655, 2.359294389];
+  parameter Real tablePhic_comp_mc[:, :] = [
+  0,85.0,90.0,95.0,100.0,105.0,110.0;
+  1,1.54e-05,1.66e-05,1.78e-05,1.9e-05,2.02e-05,2.14e-05;
+  2,1.66e-05,1.78e-05,1.9e-05,2.02e-05,2.14e-05,2.26e-05;
+  3,1.78e-05,1.9e-05,2.02e-05,2.14e-05,2.26e-05,2.38e-05;
+  4,1.9e-05,2.02e-05,2.14e-05,2.26e-05,2.38e-05,2.5e-05;
+  5,2.02e-05,2.14e-05,2.26e-05,2.38e-05,2.5e-05,2.61e-05;
+  6,2.14e-05,2.26e-05,2.38e-05,2.5e-05,2.61e-05,2.73e-05;
+  7,2.26e-05,2.38e-05,2.5e-05,2.61e-05,2.73e-05,2.85e-05;
+  8,2.38e-05,2.5e-05,2.61e-05,2.73e-05,2.85e-05,2.97e-05;
+  9,2.5e-05,2.61e-05,2.73e-05,2.85e-05,2.97e-05,3.09e-05;
+  10,2.61e-05,2.73e-05,2.85e-05,2.97e-05,3.09e-05,3.21e-05];
+
+  parameter Real tablePR_comp_mc[:, :] = [
+  0,85.0,90.0,95.0,100.0,105.0,110.0;
+  1,1.63,1.72,1.83,1.95,2.08,2.21;
+  2,1.65,1.74,1.85,1.96,2.09,2.22;
+  3,1.65,1.75,1.85,1.96,2.09,2.22;
+  4,1.65,1.75,1.85,1.96,2.09,2.21;
+  5,1.64,1.74,1.84,1.95,2.07,2.2;
+  6,1.62,1.72,1.83,1.93,2.05,2.17;
+  7,1.6,1.7,1.79,1.9,2.02,2.14;
+  8,1.56,1.66,1.75,1.85,1.97,2.1;
+  9,1.5,1.6,1.68,1.79,1.92,2.04;
+  10,1.45,1.53,1.62,1.72,1.83,1.97];  
 
   // performance map for re compressor      
   parameter Real tableEta_comp_rc[5, 4]=[0, 95, 100, 105; 1, 0.85310219, 0.837591241, 0.832420925; 2, 0.868613139, 0.857238443, 0.851034063; 3, 0.860340633, 0.85, 0.842761557; 4, 0.85310219, 0.839659367, 0.816909976];
@@ -313,8 +364,27 @@ equation
   connect(HE.gasOut, sink_hot.flange) annotation(
     Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));    
 */   
-/* 
-  heater + compressor
+
+/*
+  // compressor alone
+//  connect(source_cold.flange, T_waterIn.inlet);
+//  connect(T_waterIn.outlet, compressor.inlet);  
+  
+  connect(source_cold.flange, compressor.inlet);  
+  
+  
+//   connect(compressor.outlet, T_waterOut.inlet);
+//   connect(T_waterOut.outlet, sink_cold.flange);
+  
+  connect(compressor.outlet, sink_cold.flange);
+  
+  connect(const_speed_comp.flange, compressor.shaft_a) annotation(
+    Line(points = {{86, -6}, {96, -6}, {96, -10}, {96, -10}}));
+
+*/
+
+
+  // heater + compressor
   connect(source_cold.flange, T_waterIn.inlet);
   connect(T_waterIn.outlet, compressor.inlet);
   
@@ -325,6 +395,9 @@ equation
   connect(T_waterOut.outlet, sink_cold.flange) annotation(
     Line(points = {{1.83697e-015, -70}, {1.83697e-015, -56}, {-8.88178e-016, -56}}, thickness = 0.5, color = {0, 0, 255}));
   
+  connect(const_speed_comp.flange, compressor.shaft_a) annotation(
+    Line(points = {{86, -6}, {96, -6}, {96, -10}, {96, -10}}));
+  
   connect(source_hot.flange, T_gasIn.inlet);
   connect(T_gasIn.outlet, HE.gasIn) annotation(
         Line(points = {{-50, 0}, {-20, 0}}, color = {159, 159, 223}, thickness = 0.5, smooth = Smooth.None)); 
@@ -332,16 +405,9 @@ equation
     Line(points = {{34, 0}, {34, 0}, {20, 0}}, color = {159, 159, 223}, thickness = 0.5));
   connect(T_gasOut.outlet, sink_hot.flange) annotation(
     Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));     
-*/
 
-  // compressor alone
-  connect(source_cold.flange, T_waterIn.inlet);
-  connect(T_waterIn.outlet, compressor.inlet);
-  
-  connect(compressor.outlet, T_waterOut.inlet) annotation(
-    Line(points = {{8.88178e-016, -44}, {8.88178e-016, -20}, {0, -20}}, thickness = 0.5, color = {0, 0, 255}));      
-  connect(T_waterOut.outlet, sink_cold.flange) annotation(
-    Line(points = {{1.83697e-015, -70}, {1.83697e-015, -56}, {-8.88178e-016, -56}}, thickness = 0.5, color = {0, 0, 255}));
+
+
   /*
   // temperature input1
   // hot / gas side
@@ -391,7 +457,7 @@ equation
 annotation(
     Diagram(graphics),
     // for steady-state simulation - value check
-    experiment(StartTime = 0, StopTime = 10, Tolerance = 1e-3, Interval = 1),
+    experiment(StartTime = 0, StopTime = 2, Tolerance = 1e-3, Interval = 1),
     // for complete transient simulation
     // experiment(StartTime = 0, StopTime = 600, Tolerance = 1e-3, Interval = 10),
     __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts",        

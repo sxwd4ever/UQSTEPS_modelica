@@ -18,7 +18,7 @@ model TestTP_PCHE_Marchionni
 
   package medium_hot = Steps.Media.SCO2;
   package medium_cold = Steps.Media.SCO2; 
-  
+  /*
   // geometry parameters
   constant Real pi = Modelica.Constants.pi;
   parameter Integer N_ch = 2268 "channel number";
@@ -27,9 +27,9 @@ model TestTP_PCHE_Marchionni
   parameter SI.Length r_ch = D_ch / 2 "channel radiaus";
   parameter SI.Length L_fp = 1012e-3 "channel flow path length";  
   parameter SI.Length L_pitch = 12.3e-3 "pitch length"; 
-  parameter Real a_phi  = 45 "pitch angle degree";
+  parameter Real a_phi = 45 "pitch angle degree";
   parameter SI.Length H_ch = 3.26e-3 "Height of the solid domain, containing one cold tube and one hot tube";
-  parameter SI.Length W_ch = 2.54e-3 * 2"Width of the solid domain";
+  parameter SI.Length W_ch = 1.27e-3 * 2"Width of the solid domain";
   parameter SI.Length T_wall = 0.51e-3 "Wall thinckness";
   parameter SI.Length L_wall = 1000-3 "Length of wall, not necessarily equals to length of flow path";  
   parameter SI.Area A = pi * r_ch ^2 / 2 "Area of cross section of semi circular tube";
@@ -54,11 +54,47 @@ model TestTP_PCHE_Marchionni
   parameter Real use_rho_bar = -1.0;  
   parameter Real rho_bar_hot = 1.0;
   parameter Real rho_bar_cold = 1.0;
+  */
   
+  // geometry parameters
+  constant Real         pi      = Modelica.Constants.pi;
+  parameter Integer     N_ch    = integer(1e4) "channel number";
+  parameter Integer     N_seg   = 20 "number of segments in one tube";
+  parameter SI.Length   D_ch    = 2e-3 "channel diameter, semi circular tube";
+  parameter SI.Length   r_ch    = D_ch / 2 "channel radiaus";
+  parameter SI.Length   L_fp    = 272e-3 "channel flow path length";  
+  parameter SI.Length   L_pitch = 12.3e-3 "pitch length"; 
+  parameter Real        a_phi   = 36 "pitch angle degree";
+  parameter SI.Length   H_ch    = 3.26e-3 "Height of the solid domain, one cold tube, one hot tube contained";
+  parameter SI.Length   W_ch    = 1.27e-3 * 2 "Width of the solid domain";
+  parameter SI.Area     A       = pi * r_ch ^2 / 2 "Area of cross section of semi circular tube";
+  
+  // boundary conditon
+  
+  // zigzag higher T
+  parameter Real            G_hot_in    = 509.3 "hot inlet mass flux kg/(m^2 s";
+  parameter Real            G_cold_in   = 509.3 "cold inlet mass flux kg/(m^2 s";
+  parameter SI.Pressure     p_hot_in    = from_bar(75) "hot inlet pressure";
+  parameter SI.Pressure     p_cold_in   = from_bar(150) "cold inlet pressure";
+  parameter SI.Temperature  T_hot_in    = from_degC(400) "hot inlet temperature, K";
+  parameter SI.Temperature  T_hot_out   = from_degC(140) "cold outlet temperature, K";
+  parameter SI.Temperature  T_cold_in   = from_degC(100) "cold inlet temperature, K";
+  parameter SI.Temperature  T_cold_out  = from_degC(300) "cold outlet temperature, K";
+  
+  // pressure drop correction coefficient 
+  // parameter Real kc_dp = 1.0;
+  
+  parameter Real Cf_C1 = 1.626, Cf_C2 = 1, Cf_C3 = 1;
+  // parameter Real Cf_C1_cold = 1, Cf_C2_cold = 1, Cf_C3_cold = 1;
+  parameter Real use_rho_bar = -1.0;  
+  parameter Real rho_bar_hot = 1.0;
+  parameter Real rho_bar_cold = 1.0;  
+    
   // meshram's cp and rho for alloy Inconel 617
-  parameter Modelica.SIunits.Density rho_wall = 7990 "density of wall, kg/m3";
-  parameter Modelica.SIunits.SpecificHeatCapacity cp_wall = 500 "cp of wall, J/kg-K";  
-  parameter Real table_k_metalwall[:,:] = [293.15, 12.1; 373.15, 16.3; 773.15, 21.5];  
+  parameter Modelica.SIunits.Density              rho_wall  = 7990 "density of wall, kg/m3";
+  parameter Modelica.SIunits.SpecificHeatCapacity cp_wall   = 500 "cp of wall, J/kg-K";  
+  
+  parameter Real  table_k_metalwall[:,:] = [293.15, 12.1; 373.15, 16.3; 773.15, 21.5];  
 
 /*  
   // zigzag lower T
@@ -71,27 +107,27 @@ model TestTP_PCHE_Marchionni
   parameter SI.Temperature T_cold_in = 400 "cold inlet temperature, K";
   parameter SI.Temperature T_cold_out = 522.23 "cold outlet temperature, K";  
 */  
-  parameter SI.MassFlowRate mdot_hot_in = G_hot_in * A * N_ch;
-  parameter SI.MassFlowRate mdot_cold_in = G_cold_in * A * N_ch;
+  parameter SI.MassFlowRate mdot_hot_in   = G_hot_in * A * N_ch;
+  parameter SI.MassFlowRate mdot_cold_in  = G_cold_in * A * N_ch;
 
   // use configuration of LTR for this test since the mdot are different for hot and cold side
   parameter Model.PBConfig_PCHE cfg(
-    p_pump_in = p_hot_in,
-    p_pump_out = p_cold_in,
-    mdot_main = mdot_hot_in,
-    mdot_pump = mdot_cold_in, 
-    T_LTR_cold_in = T_cold_in, 
-    T_LTR_cold_out = T_cold_out,
-    T_HTR_hot_out = T_hot_in, // T_LTR_hot_in = T_HTR_hot_out,
-    T_LTR_hot_out = T_hot_out,
-    r_LTR = r_ch,
-    L_LTR = L_fp,
-    N_ch_LTR = N_ch,
-    N_seg = N_seg,
-    pitch = L_pitch,
-    phi = a_phi,
-    rho_wall = rho_wall,
-    cp_wall = cp_wall
+    p_pump_in       = p_hot_in,
+    p_pump_out      = p_cold_in,
+    mdot_main       = mdot_hot_in,
+    mdot_pump       = mdot_cold_in, 
+    T_LTR_cold_in   = T_cold_in, 
+    T_LTR_cold_out  = T_cold_out,
+    T_HTR_hot_out   = T_hot_in, // T_LTR_hot_in = T_HTR_hot_out,
+    T_LTR_hot_out   = T_hot_out,
+    r_LTR           = r_ch,
+    L_LTR           = L_fp,
+    N_ch_LTR        = N_ch,
+    N_seg           = N_seg,
+    pitch           = L_pitch,
+    phi             = a_phi,
+    rho_wall        = rho_wall,
+    cp_wall         = cp_wall
   );
   
   // set the values of parameters accordingly
@@ -103,37 +139,43 @@ model TestTP_PCHE_Marchionni
   
   ThermoPower.Gas.SourceMassFlow source_cold(
     redeclare package Medium = medium_cold, 
-    T = bc_HE.st_cold_in.T, 
-    p0 = bc_HE.st_cold_in.p, 
+    T   = bc_HE.st_cold_in.T, 
+    p0  = bc_HE.st_cold_in.p, 
     //use_in_T = false, 
-    w0 = bc_HE.st_cold_in.mdot,
-    gas(p(nominal = bc_HE.st_cold_in.p), 
-    T(nominal=bc_HE.st_cold_in.T))) 
+    w0  = bc_HE.st_cold_in.mdot,
+    gas(
+      p(nominal = bc_HE.st_cold_in.p), 
+      T(nominal=bc_HE.st_cold_in.T)
+    )
+  ) 
   annotation(
     Placement(visible = true, transformation(origin = {0, 80}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
    
   ThermoPower.Gas.SinkPressure sink_cold(
     redeclare package Medium = medium_cold, 
-    p0 = bc_HE.st_cold_out.p, 
-    T = bc_HE.st_cold_out.T) 
+    p0  = bc_HE.st_cold_out.p, 
+    T   = bc_HE.st_cold_out.T) 
   annotation(
     Placement(transformation(origin = {0, -80}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
 
   ThermoPower.Gas.SinkPressure sink_hot(
     redeclare package Medium = medium_hot,
-    T = bc_HE.st_hot_out.T, 
-    p0 = bc_HE.st_hot_out.p) 
+    T   = bc_HE.st_hot_out.T, 
+    p0  = bc_HE.st_hot_out.p) 
   annotation(
     Placement(visible = true, transformation(extent = {{70, -10}, {90, 10}}, rotation = 0)));
   
   ThermoPower.Gas.SourceMassFlow source_hot(
     redeclare package Medium = medium_hot, 
-    T = bc_HE.st_hot_in.T, 
-    p0 = bc_HE.st_hot_in.p, 
-    w0 = bc_HE.st_hot_in.mdot,
+    T   = bc_HE.st_hot_in.T, 
+    p0  = bc_HE.st_hot_in.p, 
+    w0  = bc_HE.st_hot_in.mdot,
     //use_in_T = false,
-    gas(p(nominal = bc_HE.st_hot_in.p), 
-    T(nominal=bc_HE.st_hot_in.T))) 
+    gas(
+      p(nominal = bc_HE.st_hot_in.p), 
+      T(nominal = bc_HE.st_hot_in.T)
+    )
+  ) 
   annotation(
     Placement(visible = true, transformation(extent = {{-92, -10}, {-72, 10}}, rotation = 0)));
   
@@ -155,24 +197,28 @@ model TestTP_PCHE_Marchionni
     // use Marchionni PCHE HeatTransfer
     redeclare replaceable model HeatTransfer_F = Steps.TPComponents.MarchionniPCHEHeatTransferFV(),
     redeclare replaceable model HeatTransfer_G = Steps.TPComponents.MarchionniPCHEHeatTransferFV(),
-    gasFlow(heatTransfer(
-      pitch = cfg.pitch, 
-      phi = cfg.phi, 
-      // kc_dp = kc_dp, 
-      Cf_C1 = Cf_C1_hot, 
-      Cf_C2 = Cf_C2_hot, 
-      Cf_C3 = Cf_C3_hot, 
-      use_rho_bar = use_rho_bar,
-      rho_bar = rho_bar_hot)),
-    fluidFlow(heatTransfer(
-      pitch = cfg.pitch, 
-      phi = cfg.phi, 
-      //kc_dp = kc_dp, 
-      Cf_C1 = Cf_C1_cold, 
-      Cf_C2 = Cf_C2_cold, 
-      Cf_C3 = Cf_C3_cold, 
-      use_rho_bar = use_rho_bar, 
-      rho_bar = rho_bar_cold)),    
+    gasFlow(
+      heatTransfer(
+        pitch       = cfg.pitch, 
+        phi         = cfg.phi, 
+        // kc_dp    = kc_dp, 
+        Cf_C1       = Cf_C1, 
+        Cf_C2       = Cf_C2, 
+        Cf_C3       = Cf_C3, 
+        use_rho_bar = use_rho_bar,
+        rho_bar     = rho_bar_hot,
+        useAverageTemperature = false)),
+    fluidFlow(
+      heatTransfer(
+        pitch       = cfg.pitch, 
+        phi         = cfg.phi, 
+        //  kc_dp   = kc_dp, 
+        Cf_C1       = Cf_C1, 
+        Cf_C2       = Cf_C2, 
+        Cf_C3       = Cf_C3, 
+        use_rho_bar = use_rho_bar, 
+        rho_bar     = rho_bar_cold,
+        useAverageTemperature = false)),    
     /*    
     // use Kim PCHE HeatTransfer
     redeclare replaceable model HeatTransfer_F = TPComponents.KimPCHEHeatTransferFV(), 
@@ -181,17 +227,17 @@ model TestTP_PCHE_Marchionni
     fluidFlow(heatTransfer(pitch = cfg.pitch, phi = cfg.phi, kc_dp = kc_dp)), 
     */
     redeclare model HeatExchangerTopology = ThermoPower.Thermal.HeatExchangerTopologies.CounterCurrentFlow, 
-    bc = bc_HE, 
-    geo_hot = cfg.cfg_LTR_hot.geo,
-    geo_cold = cfg.cfg_LTR_cold.geo,
-    geo_tube = cfg.cfg_LTR_tube.geo,  
-    thermo_hot = cfg.cfg_LTR_hot.thermo,
-    thermo_cold = cfg.cfg_LTR_cold.thermo,
-    thermo_tube = cfg.cfg_LTR_tube.thermo, 
-    L = L_fp,
-    SSInit = true,
-    gasQuasiStatic = true,
-    fluidQuasiStatic = true
+    bc                = bc_HE, 
+    geo_hot           = cfg.cfg_LTR_hot.geo,
+    geo_cold          = cfg.cfg_LTR_cold.geo,
+    geo_tube          = cfg.cfg_LTR_tube.geo,  
+    thermo_hot        = cfg.cfg_LTR_hot.thermo,
+    thermo_cold       = cfg.cfg_LTR_cold.thermo,
+    thermo_tube       = cfg.cfg_LTR_tube.thermo, 
+    L                 = L_fp,
+    SSInit            = true,
+    gasQuasiStatic    = true,
+    fluidQuasiStatic  = true
     // metalWall(L = L_wall, w_ch = W_ch, h_ch = H_ch, dx = T_wall),
     // table_k_metalwall =   table_k_metalwall    
     // override the values of Am and L of metaltubeFV
@@ -203,14 +249,14 @@ model TestTP_PCHE_Marchionni
     Placement(transformation(extent = {{-20, -20}, {20, 20}}, rotation = 0)));
 
   // variable for validation
-  Modelica.SIunits.Power Q_out = (HE.gasIn.h_outflow - HE.gasOut.h_outflow) * HE.gasIn.m_flow; 
-  Modelica.SIunits.Power Q_in = (HE.waterOut.h_outflow - HE.waterIn.h_outflow) * HE.waterIn.m_flow;
-  Boolean isQMatch = abs(Q_out -Q_in) < 1e-3;  
+  Modelica.SIunits.Power Q_out  = (HE.gasIn.h_outflow - HE.gasOut.h_outflow) * HE.gasIn.m_flow; 
+  Modelica.SIunits.Power Q_in   = (HE.waterOut.h_outflow - HE.waterIn.h_outflow) * HE.waterIn.m_flow;
+  Boolean isQMatch              = abs(Q_out -Q_in) < 1e-3;  
   
-  Real T_hot_out_act = sr_gas_out.T;
+  Real T_hot_out_act  = sr_gas_out.T;
   Real T_cold_out_act = sr_water_out.T;
-  Real dp_hot_act = sum(HE.gasFlow.heatTransfer.dp);
-  Real dp_cold_act = sum(HE.fluidFlow.heatTransfer.dp);
+  Real dp_hot_act     = sum(HE.gasFlow.heatTransfer.dp);
+  Real dp_cold_act    = sum(HE.fluidFlow.heatTransfer.dp);
   // Real dp_hot_act_m = sum(HE.gasFlow.heatTransfer.dp_m) * 10 "actual dp calculated by Eq. 1 [Marchionni 2019]"; 
   // Real dp_cold_act_m = sum(HE.fluidFlow.heatTransfer.dp_m) * 10 "actual dp calculated by Eq. 1 [Marchionni 2019]"; 
 equation

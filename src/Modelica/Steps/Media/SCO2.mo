@@ -3,18 +3,18 @@ package SCO2 "supercritical CO2"
   extends ExternalMedia.Media.CoolPropMedium(
       // mediumName = "CarbonDioxide",
       mediumName = "CO2",
-      //substanceNames = {"CO2|debug=40"}, // for single test, more detailed output
+      // substanceNames = {"CO2|debug=40"}, // for single test, more detailed output
       substanceNames = {"CO2"}, // for parameters sweep, lesser output with the debug flag
       ThermoStates = Modelica.Media.Interfaces.Choices.IndependentVariables.pT,
-      // inputChoice = ExternalMedia.Common.InputChoice.pT,
+      inputChoice = ExternalMedia.Common.InputChoice.pT,
       singleState=false,
       onePhase = true,
       final reducedX = true, 
       final fixedX = true, 
       // just for Pijarra Hill Experimental data which is below critical point. 
-      Temperature(min=204.128, max=2000, start=204.128, nominal=204.128),
+      // Temperature(min=204.128, max=2000, start=204.128, nominal=204.128),
       // Valid range of temperature
-      //Temperature(min=304.128, max=2000, start=304.128, nominal=304.128),
+      Temperature(min=304.128, max=2000, start=304.128, nominal=304.128),
       // SpecificEnthalpy(start=2e5, nominal=1.0e5),
       AbsolutePressure(min=7.377e6, start=7.377e6, nominal=7.377e6),
       SpecificEnthalpy(start=if Functions.referenceChoice==ReferenceEnthalpy.ZeroAt0K then data.H0 else
@@ -84,7 +84,12 @@ package SCO2 "supercritical CO2"
       meltingPoint=  CO2Constants.meltingPoint,
       normalBoilingPoint=  CO2Constants.normalBoilingPoint,
       dipoleMoment=  CO2Constants.dipoleMoment); 	  
-/*
+
+  // It is necessary to redeclare this function 
+  // althought these two (here and ExternalMedia's code) are identical. 
+  // Or else runtime error will occour in the way that Hmoler, P, T will out of range
+  // The cause of this bug is not clear yet. - Xin, 06/05/2021
+
   redeclare replaceable function setState_pT
     "Return thermodynamic state record from p and T"
     extends Modelica.Icons.Function;
@@ -97,6 +102,7 @@ package SCO2 "supercritical CO2"
     annotation(Include="#include \"externalmedialib.h\"", Library="ExternalMediaLib", IncludeDirectory="modelica://ExternalMedia/Resources/Include", LibraryDirectory="modelica://ExternalMedia/Resources/Library");
   end setState_pT;
   
+/*  
   redeclare function extends specificEnthalpy "Return specific enthalpy as a function of the thermodynamic state record"
       algorithm
         h := specificEnthalpy_pT(p = state.p, T = state.T);

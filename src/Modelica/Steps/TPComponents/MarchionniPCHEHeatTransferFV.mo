@@ -87,6 +87,12 @@ model MarchionniPCHEHeatTransferFV "Marchionni [2019] heat transfer Correlation"
   
   // Real C1[Nw] "calibration coefficient in Eq. 1 in [Marchionni 2019], = 1 / kc_dp for straight Channel and = 12 / kc_dp for zigzag Channel, which is conducted by numerical simulation against CFD result in [Meshram 2012]";
   //Real C2[Nw] "calibration coefficient in Eq. 4 in [Marchionni 2019], = 1.0 / C1 ,which is conducted by numerical simulation against CFD result in [Meshram 2012]";
+  parameter Real table_th_conductivity[:, :] = [149, 16.9; 316, 20.5; 538, 26.5; 649, 28.7; 760, 31.4; 871, 35.3];
+  Modelica.Blocks.Tables.CombiTable1D th_conductivity(tableOnFile = false, table = table_th_conductivity, tableName = "conductivity", fileName = "conductivity", smoothness = Modelica.Blocks.Types.Smoothness.ContinuousDerivative) annotation(
+    Placement(transformation(extent = {{60, -80}, {80, -60}}, rotation = 0)));    
+
+  SI.ThermalConductivity k_wall[Nw] "wall thermal conductivity - determined by material of wall and local temperature";
+
   
 equation
   assert(Nw == Nf - 1, "Number of volumes Nw on wall side should be equal to number of volumes fluid side Nf - 1");
@@ -102,7 +108,8 @@ equation
     h[j] = noEvent(Medium.specificEnthalpy(fluidState[j])); 
   end for;   
   
-  // th_conductivity.u[1] = 0.0;
+  // required for table initialization and equation balance
+  th_conductivity.u[1] = 0.0;
   
   for j in 1:Nw loop  
     // calculate averaged values    
@@ -117,24 +124,48 @@ equation
       p_vol[j] = noEvent((fluidState[j].p + fluidState[j+1].p) / 2);
       h_vol[j] = noEvent((h[j] + h[j+1]) / 2);
     else
+    /*
+      // downstream
       T_vol[j] = noEvent(T[j+1]);
       G_vol[j] = noEvent(G[j+1]);
       u_vol[j] = noEvent(u[j+1]);
       mu_vol[j] = noEvent(mu[j+1]);
       k_vol[j] = noEvent(k[j+1]);
-      rho_vol[j] = noEvent(rho[j]);
+      rho_vol[j] = noEvent(rho[j+1]);
       cp_vol[j] = noEvent(cp[j+1]);
-      p_vol[j] = noEvent(fluidState[j].p);
+      p_vol[j] = noEvent(fluidState[j+1].p);
       h_vol[j] = noEvent(h[j+1]);
+    */
+      // upstream
+      T_vol[j] = noEvent(T[j]);
+      G_vol[j] = noEvent(G[j]);
+      u_vol[j] = noEvent(u[j]);
+      mu_vol[j] = noEvent(mu[j]);
+      k_vol[j] = noEvent(k[j]);
+      rho_vol[j] = noEvent(rho[j]);
+      cp_vol[j] = noEvent(cp[j]);
+      p_vol[j] = noEvent(fluidState[j].p);
+      h_vol[j] = noEvent(h[j]);
     end if;    
     
     // kc_T[j] = if T_vol[j] < 600 then 2.0 else 1.0;  
+    
     // calculate thermaldynamic state and relative quantities on wall temperature       
-    state_w[j] = Medium.setState_pT(p_vol[j], Tw[j]);
-    rho_w[j] = Medium.density(state_w[j]);
-    h_w[j] = Medium.specificEnthalpy(state_w[j]);    
-    // use abs() to prevent negetive Gr
-    Gr[j] = abs((rho_w[j] - rho_vol[j]) * rho_vol[j] * g * (d_c ^ 3) / (mu_vol[j]^2));   
+    // Only for Liao's correlation and its update since the calculation is time consuming
+    if NuCorr_z == Correlations.NuCorrType.Liao or NuCorr_z == Correlations.NuCorrType.Xin then 
+      state_w[j] = Medium.setState_pT(p_vol[j], Tw[j]);
+      rho_w[j] = Medium.density(state_w[j]);
+      h_w[j] = Medium.specificEnthalpy(state_w[j]);    
+      // use abs() to prevent negetive Gr
+      Gr[j] = abs((rho_w[j] - rho_vol[j]) * rho_vol[j] * g * (d_c ^ 3) / (mu_vol[j]^2));   
+    else
+      // dummy variables
+      state_w[j] = fluidState[j];
+      rho_w[j] = 0.0;
+      h_w[j] = 0.0;
+      // use abs() to prevent negetive Gr
+      Gr[j] = 0.0;
+    end if;
     
     if abs(Tw[j] - T_vol[j]) < 1e-3 then
       cp_bar[j] = cp_vol[j]; 
@@ -179,8 +210,7 @@ equation
       //C1[j] = exp(Cf_C1 +  Cf_C2  * log(Re_l[j] / 1e4)  + Cf_C3 * log(Pr[j]));
       if phi <= 0 then 
         // for straight channel, use Gnieliski Correlation 
-        // pressure drop calculation in Marchionni 2019
- 
+        // pressure drop calculation in Marchionni 2019 
   
         f[j] = noEvent(Cf_C1 * (0.25 * (( 4.781 - (co_A[j] - 4.781) ^ 2 / (co_B[j] - 2 * co_A[j] + 4.781)) ^(-2))));
         Nu[j] = noEvent((1 / Cf_C1) * ((f[j]/2 * (Re_l[j] - 1000) * Pr[j]) / (1 + 12.7 * ( Pr[j] ^(2/3) - 1) * (f[j]/2)^0.5)));
@@ -190,25 +220,38 @@ equation
         q2[j] = 0;
         q3[j] = 0;      
         
-      else    
-        q1[j] = noEvent(Gr[j] / (Re_l[j] ^ 2));      
-        q2[j] = noEvent(rho_w[j] / rho_vol[j]);      
-        q3[j] = noEvent(cp_bar[j] / cp_vol[j]);  
+      else // for zigzag channel
+      
+        // Nusselt number correlation        
+        if NuCorr_z == Correlations.NuCorrType.Liao or NuCorr_z == Correlations.NuCorrType.Xin then
+          
+          q1[j] = noEvent(Gr[j] / (Re_l[j] ^ 2));      
+          q2[j] = noEvent(rho_w[j] / rho_vol[j]);      
+          q3[j] = noEvent(cp_bar[j] / cp_vol[j]);  
+          
+          if NuCorr_z == Correlations.NuCorrType.Liao then 
+            // Nusselt number by Liao-Zhao correlation
+            Nu[j] = noEvent(0.124 * (Re_l[j] ^ 0.8) * (Pr[j] ^ 0.4) * q1[j] ^ 0.203 * q2[j] ^ 0.842 * q3[j] ^ 0.384);   
+          else //NuCorr_z == Correlations.NuCorrType.Xin
+            // My update of Liao-zhao Nusselt number correlation,
+            // introducing Cf_C1, which is predicted by boundary condition with pre-trained coefficients          
+            Nu[j] = noEvent(Cf_C1 * (Re_l[j] ^ 0.8) * (Pr[j] ^ 0.4) * q1[j]^ 0.203 * q2[j] ^ 0.842 * q3[j] ^ 0.384);     
+          end if;
+          
+        else
+          q1[j] = 0;
+          q2[j] = 0;
+          q3[j] = 0;         
+          
+          if NuCorr_z == Correlations.NuCorrType.Gnielinski then
+            Nu[j] = noEvent((1 / Cf_C1) * ((f[j]/2 * (Re_l[j] - 1000) * Pr[j]) / (1 + 12.7 * ( Pr[j] ^(2/3) - 1) * (f[j]/2)^0.5)));
+          else 
+            // use Ngo correlation as default
+            Nu[j] = noEvent(0.1696 * (Re_l[j] ^ 0.629) * (Pr[j] ^ 0.317));      
+          end if; 
+        end if;            
   
-        // for zigzag channel
-        if NuCorr_z == Correlations.NuCorrType.Liao then
-          // Nusselt number by Liao-Zhao correlation
-          Nu[j] = noEvent(0.124 * (Re_l[j] ^ 0.8) * (Pr[j] ^ 0.4) * q1[j] ^ 0.203 * q2[j] ^ 0.842 * q3[j] ^ 0.384);   
-        elseif NuCorr_z == Correlations.NuCorrType.Xin then
-          // My update of Liao-zhao Nusselt number correlation, introducing Cf_C1, which is predicted by boundary condition with pre-trained coefficients
-          Nu[j] = noEvent(Cf_C1 * (Re_l[j] ^ 0.8) * (Pr[j] ^ 0.4) * q1[j]^ 0.203 * q2[j] ^ 0.842 * q3[j] ^ 0.384);       
-        elseif NuCorr_z == Correlations.NuCorrType.Gnielinski then
-          Nu[j] = noEvent((1 / Cf_C1) * ((f[j]/2 * (Re_l[j] - 1000) * Pr[j]) / (1 + 12.7 * ( Pr[j] ^(2/3) - 1) * (f[j]/2)^0.5)));
-        else 
-          // use Ngo correlation as default
-          Nu[j] = noEvent(0.1696 * (Re_l[j] ^ 0.629) * (Pr[j] ^ 0.317));      
-        end if;             
-  
+        // Friction factor correlation
         if FFCorr_z == Correlations.FFCorrType.Xin then
           f[j] = noEvent(Cf_C2 * (Re_l[j] ^ (-0.091)));
         elseif FFCorr_z == Correlations.FFCorrType.Gnielinski then
@@ -235,10 +278,10 @@ equation
 
     //th_conductivity.u[1] = (Tw[j] + T_vol[j]) / 2;
     // k_wall[j] =  MyUtil.metal_conductivity(th_conductivity.tableID, (Tw[j] + T_vol[j]) / 2);
-    // k_wall[j] =  MyUtil.metal_conductivity(th_conductivity.tableID, Tw[j]);
+    k_wall[j] =  MyUtil.metal_conductivity(th_conductivity.tableID, Tw[j]);
     
-    // gamma[j] = noEvent(1 / (1 / hc[j] + t_wall / k_wall[j]));
-    gamma[j] = noEvent(hc[j]);
+    gamma[j] = noEvent(1 / (1 / hc[j] + t_wall / k_wall[j]));
+    //gamma[j] = noEvent(hc[j]);
     
     /*
     if abs(hc[j]) < 1e-6 then

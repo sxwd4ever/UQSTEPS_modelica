@@ -38,10 +38,10 @@ model TestTP_Compressor
   parameter HEBoundaryCondition bc_LTR = cfg.bc_LTR;  
   parameter HEBoundaryCondition bc_cooler = cfg.bc_cooler;
   parameter Real N_des = 523.3;
- 
+   /*  
   //configuration for re-compressor 
   parameter Modelica.SIunits.Temperature T_comp_des = from_degC(90) "Design temperature for recompressor";   
-  
+
   ThermoPower.Gas.SourcePressure SourceP1(
     redeclare package Medium = Medium,
     p0=bc_LTR.st_hot_out.p,
@@ -79,7 +79,8 @@ model TestTP_Compressor
       p(nominal = Compressor.pstart_out), 
       T(nominal = Compressor.Tstart_out))) annotation (Placement(transformation(extent={{-20,-20},{
               20,20}}, rotation=0)));
-  /*
+    */ 
+
   //configuration for main compressor          
   parameter Modelica.SIunits.Temperature T_comp_des = from_degC(45) "Design temperature for main compressor";
   
@@ -120,7 +121,7 @@ model TestTP_Compressor
       p(nominal = Compressor.pstart_out), 
       T(nominal = Compressor.Tstart_out))) annotation (Placement(transformation(extent={{-20,-20},{
               20,20}}, rotation=0)));  
-  */          
+         
   Modelica.Mechanics.Rotational.Sources.ConstantSpeed ConstantSpeed1(
       w_fixed=N_des, useSupport=false) annotation (Placement(transformation(
           extent={{-50,-10},{-30,10}}, rotation=0)));

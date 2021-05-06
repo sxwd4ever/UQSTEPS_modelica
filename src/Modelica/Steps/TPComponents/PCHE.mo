@@ -43,9 +43,13 @@ model PCHE "PCHE model based on Thermo Power"
   // material inconel_750
   parameter Real table_k_metalwall[:, :] = [149, 16.9; 316, 20.5; 538, 26.5; 649, 28.7; 760, 31.4; 871, 35.3];  
   
-  //TPComponents.Flow1DFV fluidFlow(
-  //Gas.Flow1DFV fluidFlow(
-  TPComponents.GasFlow1DFV fluidFlow(
+  //IMPORTANT:
+  // To date, (because of a bug in Gas.Flow1DFV
+  // use TPComponents.GasFlow1DFV for transient simulation when two PCHEs connected (LTR and HTR),
+  // use GasFlow1DFV otherwise, which is much quicker due to the property calculation
+  
+  Gas.Flow1DFV fluidFlow(
+  // TPComponents.GasFlow1DFV fluidFlow(
   Nt = Nt, //1, 
   N = N_F, 
   Nw = Nw_F,
@@ -70,9 +74,14 @@ model PCHE "PCHE model based on Thermo Power"
     Placement(transformation(extent = {{-10, -66}, {10, -46}}, rotation = 0)));
     
   //changed Medium=FlueGasMedium to Medium=FluidMedium
-  //TPComponents.Flow1DFV gasFlow(  
-  TPComponents.GasFlow1DFV gasFlow(
-  //Gas.Flow1DFV gasFlow(
+  
+  //IMPORTANT:
+  // To date, (because of a bug in Gas.Flow1DFV
+  // use TPComponents.GasFlow1DFV for transient simulation when two PCHEs connected (LTR and HTR),
+  // use GasFlow1DFV otherwise, which is much quicker due to the property calculation  
+  
+  // TPComponents.GasFlow1DFV gasFlow(
+  Gas.Flow1DFV gasFlow(
   Nt = Nt, //1,  
   N = N_G, 
   Nw = Nw_G,
@@ -100,7 +109,7 @@ model PCHE "PCHE model based on Thermo Power"
     L = L,  
     r_c = geo_tube.d / 2, 
     Nw = Nw_F,
-    Nt = Nt * 2, 
+    Nt = Nt * 2,     
     Tstartbar = (Tstartbar_G + Tstartbar_F) / 2, 
     Tstart1 =  Tstartbar_G, //bc.st_hot_out.T, 
     TstartN = Tstartbar_F, //bc.st_hot_in.T,   

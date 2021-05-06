@@ -231,7 +231,7 @@ def main(work_root = []):
         work_root = os.path.abspath(os.curdir)  
 
     # parameters initialization for this simulation
-    exp_type:ExpType = ExpType.FULL_SCALE
+    exp_type:ExpType = ExpType.Fitting
     model_name = "Steps.Test.TPComponents.TestTP_PCHE_Marchionni"  
     # exp flags 
     use_rho_bar = -1.0 # > 1.0 use rho_bar for dp calculation 
@@ -400,29 +400,29 @@ def main(work_root = []):
         exp.plot_results(ds_exp, plot_metacfg_base, plot_metacfg_offest)        
 
     elif exp_type == ExpType.FULL_SCALE:
-        N_ch = 54 * 42
-        A_c = 1.57e-6 # mm^2 -> m^2
+        N_ch    = 54 * 42
+        A_c     = 1.57e-6 # mm^2 -> m^2
         A_stack = N_ch * A_c # area of cross section for a stack containg all channels
         # referred base cfg
         cfg_base = {
             # geometry parameters
-            "N_ch": N_ch, # "channel number"
-            "N_seg": 20, # "segments number"
-            "D_ch": 2e-3, # "channel diameter, semi circular tube"
-            "L_fp": 1012e-3, # "channel flow path length"
-            "L_pitch": 12.3e-3, # "pitch length"
-            "a_phi": 45.0, # "pitch angle, degree"
-            "H_ch": 3.26e-3, # "Height of the solid domain, containing one cold tube and one hot tube"
-            "W_ch": 1.27e-3 * 2, # "Width of the solid domain"
+            "N_ch"   : N_ch,        # "channel number"
+            "N_seg"  : 20,          # "segments number"
+            "D_ch"   : 2e-3,        # "channel diameter, semi circular tube"
+            "L_fp"   : 1012e-3,     # "channel flow path length"
+            "L_pitch": 12.3e-3,     # "pitch length"
+            "a_phi"  : 45.0,        # "pitch angle, degree"
+            "H_ch"   : 3.26e-3,     # "Height of the solid domain, containing one cold tube and one hot tube"
+            "W_ch"   : 1.27e-3 * 2, # "Width of the solid domain"
             # boundary conditon
-            "G_hot_in": 2.06 / A_stack,  # "inlet mass flux rate kg/(m^2 s)";            
-            "p_hot_in": from_bar(75), # "hot inlet pressure";
-            "p_cold_in":from_bar(125), # "cold inlet pressure";
-            "T_hot_in": from_degC(344.3), # "hot inlet temperature, K";
-            "T_hot_out": from_degC(81), # "cold outlet temperature, K";
-            "T_cold_in": from_degC(72.9), # "cold inlet temperature, K";
-            "T_cold_out": from_degC(283), # "cold outlet temperature, K";
-            # "kc_dp": 1 # "pressure drop correction coefficient"
+              "G_hot_in"  : 2.06 / A_stack,   # "inlet mass flux rate kg/(m^2 s)";
+              "p_hot_in"  : from_bar(75),     # "hot inlet pressure";
+              "p_cold_in" : from_bar(125),    # "cold inlet pressure";
+              "T_hot_in"  : from_degC(344.3), # "hot inlet temperature, K";
+              "T_hot_out" : from_degC(81),    # "cold outlet temperature, K";
+              "T_cold_in" : from_degC(72.9),  # "cold inlet temperature, K";
+              "T_cold_out": from_degC(283),   # "cold outlet temperature, K";
+            # "kc_dp"     : 1 # "pressure drop correction coefficient"
         } 
 
         cfg_offset_base = {
@@ -529,22 +529,22 @@ def main(work_root = []):
         # referred base cfg
         cfg_base = {
             # geometry parameters
-            "N_ch": 1e4, # "channel number"
-            "N_seg": 20, # "segments number"
-            "D_ch": 2e-3, # "channel diameter, semi circular tube"
-            "L_fp": 272e-3, # "channel flow path length"
-            "L_pitch": 12.3e-3, # "pitch length"
-            "a_phi": 36.0, # "pitch angle, degree"
-            "H_ch": 3.26e-3, # "Height of the solid domain, containing one cold tube and one hot tube"
-            "W_ch": 1.27e-3 * 2, # "Width of the solid domain"
+            "N_ch"   : 1e4,         # "channel number"
+            "N_seg"  : 20,          # "segments number"
+            "D_ch"   : 2e-3,        # "channel diameter, semi circular tube"
+            "L_fp"   : 272e-3,      # "channel flow path length"
+            "L_pitch": 12.3e-3,     # "pitch length"
+            "a_phi"  : 36.0,        # "pitch angle, degree"
+            "H_ch"   : 3.26e-3,     # "Height of the solid domain, containing one cold tube and one hot tube"
+            "W_ch"   : 1.27e-3 * 2, # "Width of the solid domain"
             # boundary conditon
-            "G_hot_in": 509.3, # "hot inlet velocity m/s";
-            "G_cold_in": 509.3, # "cold inlet velocity m/s";
-            "p_hot_in": from_bar(75), # "hot inlet pressure";
-            "p_cold_in":from_bar(150), # "cold inlet pressure";
-            "T_hot_in": from_degC(400), # "hot inlet temperature, K";
-            "T_hot_out": from_degC(140), # "cold outlet temperature, K";
-            "T_cold_in": from_degC(100), # "cold inlet temperature, K";
+            "G_hot_in"  : 509.3,          # "hot inlet velocity m/s";
+            "G_cold_in" : 509.3,          # "cold inlet velocity m/s";
+            "p_hot_in"  : from_bar(75),   # "hot inlet pressure";
+            "p_cold_in" : from_bar(150),  # "cold inlet pressure";
+            "T_hot_in"  : from_degC(400), # "hot inlet temperature, K";
+            "T_hot_out" : from_degC(140), # "cold outlet temperature, K";
+            "T_cold_in" : from_degC(100), # "cold inlet temperature, K";
             "T_cold_out": from_degC(300), # "cold outlet temperature, K";
         }   
 
@@ -553,14 +553,14 @@ def main(work_root = []):
         case_dict = {
             name: {
                 "cfg": {
-                    "keys": [x for x in cfg_base.keys()] + cfg_offset_full['keys'],
+                    "keys" : [x for x in cfg_base.keys()] + cfg_offset_full['keys'],
                     "train": [x for x in cfg_base.values()] + cfg_offset_full[name]
                 },
                 "data_ref": {
                     "train": {
-                        "T_hs": data_ref_full["T_hs_" + suffix],
+                        "T_hs" : data_ref_full["T_hs_" + suffix],
                         "dp_hs": data_ref_full["dp_hs_" + suffix],
-                        "T_cs": data_ref_full["T_cs_" + suffix],
+                        "T_cs" : data_ref_full["T_cs_" + suffix],
                         "dp_cs": data_ref_full["dp_cs_" + suffix]
                     }
                 }}
@@ -576,9 +576,11 @@ def main(work_root = []):
 
         for name, case in case_dict.items():
             fitting = MarchionniExpFitting(
-                exp, case["cfg"], mapping, sim_ops, case["data_ref"], errfunc=ErrorFunc.Dp)
+                exp, case, mapping, sim_ops, errfunc=ErrorFunc.T)
 
             fitting.run_fitting(pt=(1,1,1),max_steps=50)
+
+        print('No results will be saved, debug and check the fitting params (set a breakpoint here)')
 
     print('All done!')
 
