@@ -19,7 +19,7 @@ model TP_SimpleCycle
   // package medium_hot = Modelica.Media.IdealGases.SingleGases.CO2;
   package medium_hot = Steps.Media.ThermiaOilD;
   // package medium_cold = Modelica.Media.IdealGases.SingleGases.CO2;
-  package medium_cold = Steps.Media.SCO2;  
+  package medium_cold = Steps.Media.SCO2;
   
   // geometry parameters
   constant  Real pi       = Modelica.Constants.pi;
@@ -44,33 +44,33 @@ model TP_SimpleCycle
   // zigzag higher T
   // parameter SI.Velocity u_hot_in = 7.564 "hot inlet velocity m/s";
   // parameter SI.Velocity u_cold_in = 1.876 "cold inlet velocity m/s";
-  parameter SI.Pressure p_hot_in    = 4e6; //from_bar(10) "hot inlet pressure - Irrelevant for Incompressible Thermia Oil" ;
-  parameter SI.Pressure p_source    = 8.65e6 ;
-  parameter SI.Pressure p_comp_out  = 12e6; // 12.567478e6 "cold inlet pressure";  
-  parameter SI.Pressure p_sink      = 9.2e6; // Not used by Config. Record only;
+  parameter SI.Pressure p_hot_in   = 4e6;      //from_bar(10) "hot inlet pressure - Irrelevant for Incompressible Thermia Oil" ;
+  parameter SI.Pressure p_source   = 8.65e6 ;
+  parameter SI.Pressure p_comp_out = 12e6;     // 12.567478e6 "cold inlet pressure";  
+  parameter SI.Pressure p_sink     = 9.2e6;    // Not used by Config. Record only;
   /*
-  parameter SI.Temperature T_hot_in = 595; // from_degC(103.222748) "hot inlet temperature, K";
-  parameter SI.Temperature T_hot_out = 478; // from_degC(96.145935) "cold outlet temperature, K";
-  parameter SI.Temperature T_cold_in = 350; //from_degC(28.910231) "cold inlet temperature, K";
-  parameter SI.Temperature T_cold_out = 571; //from_degC(99.666342) "cold outlet temperature, K";
+  parameter SI.Temperature T_hot_in   = 595;  // from_degC(103.222748) "hot inlet temperature, K";
+  parameter SI.Temperature T_hot_out  = 478;  // from_degC(96.145935) "cold outlet temperature, K";
+  parameter SI.Temperature T_cold_in  = 350;  //from_degC(28.910231) "cold inlet temperature, K";
+  parameter SI.Temperature T_cold_out = 571;  //from_degC(99.666342) "cold outlet temperature, K";
   */
   
-  parameter Modelica.SIunits.Temperature T_source       = 322;
-  parameter Modelica.SIunits.Temperature T_comp_out     = 348;
-  parameter Modelica.SIunits.Temperature T_heater_hin   = 595;
-  parameter Modelica.SIunits.Temperature T_heater_hout  = 478;
-  parameter Modelica.SIunits.Temperature T_heater_cin   = 350;
-  parameter Modelica.SIunits.Temperature T_heater_cout  = 571;
-  parameter Modelica.SIunits.Temperature T_turb_in      = 570;
-  parameter Modelica.SIunits.Temperature T_sink         = 545;  
+  parameter Modelica.SIunits.Temperature T_source      = 322;
+  parameter Modelica.SIunits.Temperature T_comp_out    = 348;
+  parameter Modelica.SIunits.Temperature T_heater_hin  = 595;
+  parameter Modelica.SIunits.Temperature T_heater_hout = 478;
+  parameter Modelica.SIunits.Temperature T_heater_cin  = 350;
+  parameter Modelica.SIunits.Temperature T_heater_cout = 571;
+  parameter Modelica.SIunits.Temperature T_turb_in     = 570;
+  parameter Modelica.SIunits.Temperature T_sink        = 545;
   
   // pressure drop correction coefficient 
   // parameter Real kc_dp = 1.0;  
   /*
-  parameter Real kc_cf_hot = 1;  
+  parameter Real kc_cf_hot  = 1;
   parameter Real kc_cf_cold = 1;
-  parameter Real Cf_a_hot = 1, Cf_b_hot = 1, Cf_c_hot = 1;
-  parameter Real Cf_a_cold = 1, Cf_b_cold = 1, Cf_c_cold = 1;
+  parameter Real Cf_a_hot   = 1, Cf_b_hot  = 1, Cf_c_hot  = 1;
+  parameter Real Cf_a_cold  = 1, Cf_b_cold = 1, Cf_c_cold = 1;
   */
   
   parameter Real Cf_C1 = 1, Cf_C2 = 1, Cf_C3 = 1;
@@ -81,16 +81,16 @@ model TP_SimpleCycle
   // parameter Modelica.SIunits.SpecificHeatCapacity cp_wall = 417 "cp of wall, J/kg-K";  
    
   // Stainless 316, 316L, 317, 317L
-  parameter Modelica.SIunits.Density rho_wall = 8030 "density of wall, kg/m3";
-  parameter Modelica.SIunits.SpecificHeatCapacity cp_wall = 485 "cp of wall, J/kg-K";  
+  parameter Modelica.SIunits.Density rho_wall             = 8030 "density of wall, kg/m3";
+  parameter Modelica.SIunits.SpecificHeatCapacity cp_wall = 485 "cp of wall, J/kg-K";
   // thermal conductivity (T in K) https://www.theworldmaterial.com/aisi-316-ss316-stainless-steel-properties-composition/
   // parameter Real table_k_metalwall[:,:] = [20, 12.1; 100, 16.3; 500, 21.5];
   parameter Real table_k_metalwall[:,:] = [293.15, 12.1; 373.15, 16.3; 773.15, 21.5];
 
   // parameter SI.Density rho_hot_in = medium_hot.density_pT(p_hot_in, T_hot_in);
   // parameter SI.Density rho_cold_in = medium_cold.density_pT(p_cold_in, T_cold_in);
-  parameter SI.MassFlowRate mdot_heater = 10; //1.218944;
-  parameter SI.MassFlowRate mdot_main = 10.5; // 0.0854299999999999;
+  parameter SI.MassFlowRate mdot_heater = 10;    //1.218944;
+  parameter SI.MassFlowRate mdot_main   = 10.5;  // 0.0854299999999999;
   
   parameter Real N_s_compressor = 2100 "rotational speed of compressor";
 
@@ -101,11 +101,11 @@ model TP_SimpleCycle
     p_pump_out        = p_comp_out,
     p_heater          = p_hot_in,
     mdot_main         = mdot_main,
-    mdot_pump         = mdot_main, 
+    mdot_pump         = mdot_main,
     mdot_heater       = mdot_heater,
-    T_HTR_cold_out    = T_heater_cin, 
+    T_HTR_cold_out    = T_heater_cin,
     T_heater_cold_out = T_heater_cout,
-    T_heater_hot_in   = T_heater_hin, // T_LTR_hot_in = T_HTR_hot_out,
+    T_heater_hot_in   = T_heater_hin,    // T_LTR_hot_in = T_HTR_hot_out,
     T_heater_hot_out  = T_heater_hout,
     T_cooler_cold_out = T_source,
     T_HTR_hot_in      = T_sink,
@@ -120,7 +120,7 @@ model TP_SimpleCycle
   ); 
   
   // set the values of parameters accordingly
-  parameter HEBoundaryCondition bc_HE = cfg.bc_heater; 
+  parameter HEBoundaryCondition bc_HE = cfg.bc_heater;
   
   //Components
   // for transient simulation, set initOpt = steadyState
@@ -128,15 +128,15 @@ model TP_SimpleCycle
     Placement(transformation(extent = {{80, 80}, {100, 100}})));  
   
   ThermoPower.Gas.SourceMassFlow source_cold(
-    redeclare package Medium = medium_cold, 
+    redeclare package Medium = medium_cold,
     // T = bc_HE.st_cold_in.T, 
     T = cfg.bc_cooler.st_cold_out.T,
     // T = 322,
     // p0 = bc_HE.st_cold_in.p, 
     p0 = cfg.bc_cooler.st_cold_out.p,
     // p0 = 8.65e6,
-    use_in_T = false, 
-    w0 = cfg.bc_cooler.st_cold_out.mdot,
+    use_in_T = false,
+    w0       = cfg.bc_cooler.st_cold_out.mdot,
     // w0 = 10.5,
     // gas(p(nominal = bc_HE.st_cold_in.p), 
     gas(
@@ -150,8 +150,8 @@ model TP_SimpleCycle
     Placement(transformation(origin = {0, 60}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
   
   ThermoPower.Gas.SinkPressure sink_cold(
-    redeclare package Medium = medium_cold,     
-    p0 = cfg.bc_HTR.st_hot_in.p, 
+    redeclare package Medium = medium_cold,
+              p0             = cfg.bc_HTR.st_hot_in.p,
     // p0 = 12e6, 
     T = cfg.bc_HTR.st_hot_in.T,
     // T = 348,
@@ -166,18 +166,18 @@ model TP_SimpleCycle
 
   ThermoPower.Gas.SinkPressure sink_hot(
     redeclare package Medium = medium_hot,
-    T = bc_HE.st_hot_out.T, 
-    p0 = bc_HE.st_hot_out.p) 
+              T              = bc_HE.st_hot_out.T,
+              p0             = bc_HE.st_hot_out.p)
   annotation(
     Placement(transformation(extent = {{60, -10}, {80, 10}}, rotation = 0)));
   
   ThermoPower.Gas.SourceMassFlow source_hot(
-    redeclare package Medium = medium_hot, 
-    T = bc_HE.st_hot_in.T, 
-    p0 = bc_HE.st_hot_in.p, 
-    w0 = bc_HE.st_hot_in.mdot,
-    use_in_T = false,
-    use_in_w0 = false,
+    redeclare package Medium = medium_hot,
+              T              = bc_HE.st_hot_in.T,
+              p0             = bc_HE.st_hot_in.p,
+              w0             = bc_HE.st_hot_in.mdot,
+              use_in_T       = false,
+              use_in_w0      = false,
     gas(p(nominal = bc_HE.st_hot_in.p), 
     T(nominal=bc_HE.st_hot_in.T))) 
   annotation(
@@ -194,8 +194,8 @@ model TP_SimpleCycle
   ThermoPower.Gas.SensT T_gasOut(redeclare package Medium = medium_hot);
 
   Steps.TPComponents.PCHE HE(
-    redeclare package FluidMedium = medium_cold, 
-    redeclare package FlueGasMedium = medium_hot, 
+    redeclare package FluidMedium   = medium_cold,
+    redeclare package FlueGasMedium = medium_hot,
      
     // use Marchionni PCHE HeatTransfer
     // slow but can have a result - set a_phi = 0 to use Gnielinski's correlation 
@@ -208,18 +208,18 @@ model TP_SimpleCycle
     // redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer,
     // redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer,   
     
-    bc = bc_HE, 
-    geo_hot = cfg.cfg_heater_hot.geo,
-    geo_cold = cfg.cfg_heater_cold.geo,
-    geo_tube = cfg.cfg_heater_tube.geo,  
-    thermo_hot = cfg.cfg_heater_hot.thermo,
-    thermo_cold = cfg.cfg_heater_cold.thermo,
-    thermo_tube = cfg.cfg_heater_tube.thermo, 
-    table_k_metalwall =   table_k_metalwall,
-    L = L_fp,
-    SSInit = false,
-    gasQuasiStatic = true,
-    fluidQuasiStatic = true,
+    bc                = bc_HE,
+    geo_hot           = cfg.cfg_heater_hot.geo,
+    geo_cold          = cfg.cfg_heater_cold.geo,
+    geo_tube          = cfg.cfg_heater_tube.geo,
+    thermo_hot        = cfg.cfg_heater_hot.thermo,
+    thermo_cold       = cfg.cfg_heater_cold.thermo,
+    thermo_tube       = cfg.cfg_heater_tube.thermo,
+    table_k_metalwall = table_k_metalwall,
+    L                 = L_fp,
+    SSInit            = false,
+    gasQuasiStatic    = true,
+    fluidQuasiStatic  = true,
     metalWall(L = L_wall, w_ch = W_ch, h_ch = H_ch, dx = T_wall)
     // metalQuasiStatic = true
     // override the values of Am and L of metaltubeFV
@@ -232,20 +232,20 @@ model TP_SimpleCycle
 
   ThermoPower.Gas.Compressor compressor(
     redeclare package Medium = medium_cold,
-    pstart_in  = cfg.bc_cooler.st_cold_out.p,
+              pstart_in      = cfg.bc_cooler.st_cold_out.p,
     // pstart_in  = 8.65e6,
     pstart_out = cfg.bc_LTR.st_cold_in.p,
     // pstart_out = 12e6,
-    Tstart_in  = cfg.bc_cooler.st_cold_out.T,
+    Tstart_in = cfg.bc_cooler.st_cold_out.T,
     // Tstart_in  = 322,
     Tstart_out = cfg.bc_LTR.st_cold_in.T,
     // Tstart_out = 348,
-    tablePhic  = tablePhic_comp_mc,
-    tableEta   = tableEta_comp_mc,
-    tablePR    = tablePR_comp_mc,
-    Table      = ThermoPower.Choices.TurboMachinery.TableTypes.matrix,
-    Ndesign    = N_s_compressor,    
-    Tdes_in    = compressor.Tstart_in) 
+    tablePhic = tablePhic_comp_mc,
+    tableEta  = tableEta_comp_mc,
+    tablePR   = tablePR_comp_mc,
+    Table     = ThermoPower.Choices.TurboMachinery.TableTypes.matrix,
+    Ndesign   = N_s_compressor,
+    Tdes_in   = compressor.Tstart_in)
     annotation(
     Placement(visible = true, transformation(origin = {103, -11}, extent = {{-11, -11}, {11, 11}}, rotation = 0)));
 
@@ -254,9 +254,9 @@ model TP_SimpleCycle
     Placement(visible = true, transformation(origin = {81, -7}, extent = {{-5, -5}, {5, 5}}, rotation = 0)));  
   /*
   // variable for validation
-  Modelica.SIunits.Power Q_out = (HE.gasIn.h_outflow - HE.gasOut.h_outflow) * HE.gasIn.m_flow; 
-  Modelica.SIunits.Power Q_in = (HE.waterOut.h_outflow - HE.waterIn.h_outflow) * HE.waterIn.m_flow;
-  Boolean isQMatch = abs(Q_out - Q_in) < 1e-3;  
+  Modelica.SIunits.Power Q_out    = (HE.gasIn.h_outflow - HE.gasOut.h_outflow) * HE.gasIn.m_flow;
+  Modelica.SIunits.Power Q_in     = (HE.waterOut.h_outflow - HE.waterIn.h_outflow) * HE.waterIn.m_flow;
+  Boolean                isQMatch = abs(Q_out - Q_in) < 1e-3;
   
   // Input signals for transient simulation
   // hot/gas side
@@ -345,10 +345,10 @@ protected
   10,1.45,1.53,1.62,1.72,1.83,1.97];  
 
   // performance map for re compressor      
-  parameter Real tableEta_comp_rc[5, 4]=[0, 95, 100, 105; 1, 0.85310219, 0.837591241, 0.832420925; 2, 0.868613139, 0.857238443, 0.851034063; 3, 0.860340633, 0.85, 0.842761557; 4, 0.85310219, 0.839659367, 0.816909976];
-  parameter Real tablePhic_comp_rc[5, 4]=[0, 95, 100, 105; 1, 7.17663E-05, 8.05731E-05, 8.76935E-05; 2, 7.36401E-05, 8.20721E-05, 8.97547E-05; 3, 7.6076E-05, 8.46954E-05, 9.06916E-05; 4, 7.79498E-05, 8.63819E-05, 9.16285E-05];
+  parameter Real tableEta_comp_rc[5, 4]  = [0, 95, 100, 105; 1, 0.85310219, 0.837591241, 0.832420925; 2, 0.868613139, 0.857238443, 0.851034063; 3, 0.860340633, 0.85, 0.842761557; 4, 0.85310219, 0.839659367, 0.816909976];
+  parameter Real tablePhic_comp_rc[5, 4] = [0, 95, 100, 105; 1, 7.17663E-05, 8.05731E-05, 8.76935E-05; 2, 7.36401E-05, 8.20721E-05, 8.97547E-05; 3, 7.6076E-05, 8.46954E-05, 9.06916E-05; 4, 7.79498E-05, 8.63819E-05, 9.16285E-05];
 
-  parameter Real tablePR_comp_rc[5, 4]=[0, 95, 100, 105; 1, 1.967529638, 2.350588505, 2.785882673; 2, 1.915294338, 2.315764972, 2.681412073; 3, 1.810823737, 2.220000255, 2.524706172; 4, 1.654117837, 2.115529655, 2.359294389]; 
+  parameter Real tablePR_comp_rc[5, 4] = [0, 95, 100, 105; 1, 1.967529638, 2.350588505, 2.785882673; 2, 1.915294338, 2.315764972, 2.681412073; 3, 1.810823737, 2.220000255, 2.524706172; 4, 1.654117837, 2.115529655, 2.359294389];
   
 equation
 
@@ -460,7 +460,7 @@ annotation(
     experiment(StartTime = 0, StopTime = 2, Tolerance = 1e-3, Interval = 1),
     // for complete transient simulation
     // experiment(StartTime = 0, StopTime = 600, Tolerance = 1e-3, Interval = 10),
-    __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts",        
+    __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts",
     // remove the option flag --matchingAlgorithm=PFPlusExt, which may lead to 'Internal error - IndexReduction.dynamicStateSelectionWork failed!' during Translation
     // __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts,bltdump",    
     __OpenModelica_simulationFlags(lv = "LOG_DEBUG,LOG_NLS,LOG_NLS_V,LOG_STATS,LOG_INIT,LOG_STDOUT, -w", outputFormat = "mat", s = "dassl", nls = "homotopy")

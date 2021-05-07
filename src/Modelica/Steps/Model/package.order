@@ -2,6 +2,8 @@ EntityConfig
 EntityThermoParam
 EntityGeoParam
 ThermoState
+AreaGeometry
+HeatExchangerConfig
 PBConfiguration
 SimParam
 HEBoundaryCondition
