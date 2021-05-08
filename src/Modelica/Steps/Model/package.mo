@@ -3,7 +3,7 @@ within Steps;
 package Model "Data model definition for consistent parameter configuration"
   extends Modelica.Icons.Package;
   import ThermoPower.Choices.Flow1D.FFtypes;
-
+  // ****** START - record named EntityXXXX will be descrepted ***** 
   record EntityConfig "Record for the ThermoState, align with the struct definition in C"
     parameter ThermoState st_start "thermo state for start point";
     parameter ThermoState st_nom "nominal state values";
@@ -39,7 +39,9 @@ package Model "Data model definition for consistent parameter configuration"
     parameter Integer N_seg = 10 "number of segments";
     parameter Real e_rel "Relative roughness (ratio roughness/diameter)";
   end EntityGeoParam;  
-
+  
+  // ****** END - record named EntityXXXX will be descrepted ***** 
+  
   record ThermoState "Record for the ThermoState, align with the struct definition in C"
     Real T "Temperature, K";
     Real p "Pressure, pa";
@@ -49,52 +51,63 @@ package Model "Data model definition for consistent parameter configuration"
     // because of the mapping constraintns of Modelica and external functions
     // integer id is used instead of string(char *) name
     // more detailed naming specificaiton should be provided
-    // hot_in=0, cold_in=1, hot_out=2, cold_out=3
+    // hot_in=0, cold_in=1, hot_out=2, cold_out=3    
     Integer id = -1;
   end ThermoState;
   
   record AreaGeometry
-    parameter Modelica.SIunits.Area A "Area of cross section";
-    parameter Modelica.SIunits.Length peri "perimeter";
-    parameter Modelica.SIunits.Length peri_wet "wet perimeter";  
-    parameter Modelica.SIunits.Length d "Diameter, valid for circle, semi-circle, otherwise 0";
-    parameter Modelica.SIunits.Length w "Width, valid for square rectangle or triangle, otherwise 0";
-    parameter Modelica.SIunits.Length h "Height, valid for square rectangle or triangle, otherwise 0";
-    parameter Modelica.SIunits.Length d_hyd "Hydraulic Diameter"
+    Modelica.SIunits.Area A "Area of cross section";
+    Modelica.SIunits.Length peri "perimeter";
+    Modelica.SIunits.Length peri_wet "wet perimeter";  
+    Modelica.SIunits.Length d "Diameter, valid for circle, semi-circle, otherwise 0";
+    Modelica.SIunits.Length w "Width, valid for square rectangle or triangle, otherwise 0";
+    Modelica.SIunits.Length h "Height, valid for square rectangle or triangle, otherwise 0";
+    Modelica.SIunits.Length d_hyd "Hydraulic Diameter";
   end AreaGeometry;
 
   record PathGeometry
-    parameter Modelica.SIunits.Length l "path length";
-    parameter Modelica.SIunits.Volume V "volume of the path";
-    parameter Modelica.SIunits.Area A_cr "cross-sectional area";
-    parameter Modelica.SIunits.Area A_surf "surface area";
-    parameter Real e_rel "(Relative) Roughness";
-    parameter Integer N_seg "Number of segments, valid for a discritized path";
+    Modelica.SIunits.Length l "path length";
+    Modelica.SIunits.Volume V "volume of the path";
+    Modelica.SIunits.Area A_cr "cross-sectional area";
+    Modelica.SIunits.Area A_surf "surface area";
+    Real e_rel "(Relative) Roughness";
+    Integer N_seg "Number of segments, valid for a discritized path";
   end PathGeometry;
 
   record FlowConfig
-    parameter ThermoState st_in "inlet state";
-    parameter ThermoState st_out "outlet state";
-    parameter AreaGeometry geo_area "Cross sectional area geometry, for area of single path";
-    parameter PathGeometry geo_path "Path geometry, for single path";
-    parameter Integer N_ch "number of channels";
-    parameter Modelica.SIunits.Velocity u "flow velocity";
+    ThermoState st_in "inlet state";
+    ThermoState st_out "outlet state";
+    AreaGeometry geo_area "Cross sectional area geometry, for area of single path";
+    PathGeometry geo_path "Path geometry, for single path";
+    Integer N_ch "number of channels";
+    Modelica.SIunits.Velocity u "flow velocity";
+    Real l_pitch"pitch length";
+    Real a_phi "pitch angle";
   end FlowConfig;
 
   record WallConfig
-    parameter ThermoState st_init "global averaged config for wall initialization";
-    parameter AreaGeometry geo_area "Wall cross section geometry";
-    parameter PathGeometry geo_wall "Wall geometry along the length";
+    ThermoState st_init "global averaged config for wall initialization";
+    AreaGeometry geo_area "Wall cross section geometry";
+    PathGeometry geo_wall "Wall geometry along the length";
 
     // material inconel_750
-    parameter Real table_k_LTR_wall[:, :] = [149, 16.9; 316, 20.5; 538, 26.5; 649, 28.7; 760, 31.4; 871, 35.3] "Thermal conductivity of metal wall";
-    parameter Real rho_mcm = 7900 * 578.05;
+    Real table_k[:, :] = [149, 16.9; 316, 20.5; 538, 26.5; 649, 28.7; 760, 31.4; 871, 35.3] "Thermal conductivity of metal wall";
+    Real rho_mcm       = 7900 * 578.05;
+    Real lambda; 
   end WallConfig;
 
+  record TurbomachineryConfig
+    parameter ThermoState st_in "inlet state";
+    parameter ThermoState st_out "outlet state";
+    parameter Real N "rotational speed";
+    parameter Real T_nom "nominal torque"; 
+    parameter Real eta "efficiency";   
+  end TurbomachineryConfig;
+
   record HeatExchangerConfig
-    parameter FlowConfig cfg_hot "hot side config";
-    parameter FlowConfig cfg_cold "cold side config";
-    parameter WallConfig cfg_wall "wall configuration";       
+    FlowConfig cfg_hot "hot side config";
+    FlowConfig cfg_cold "cold side config";
+    WallConfig cfg_wall "wall configuration";       
   end HeatExchangerConfig;
   
 end Model;
