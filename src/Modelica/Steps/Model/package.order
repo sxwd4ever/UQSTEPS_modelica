@@ -8,9 +8,9 @@ FlowConfig
 WallConfig
 TurbomachineryConfig
 HeatExchangerConfig
-SimpleCycleConfig
-SimParam
-PBConfiguration
-PBConfig_PCHE
-PBConfig_5MW
-HEBoundaryCondition
+SetAreaGeometry
+SetAreaGeometry_Circle
+SetAreaGeometry_Rect
+SetPathGeometry
+SetPathGeometry_Circle
+SetPathGeometry_Rect

@@ -46,26 +46,25 @@ model SimpleCycleConfig
   parameter Real phi                      = 36 "pitch angle, degree";
   
   // DO NOT change following parameters - CHANGE input paramters instead  
-  
-  // thermal state of points of cycles
   parameter Model.ThermoState st_source(
     p    = p_source,
     T    = T_source,
-    h    = medium_main.specificEnthalpy(medium_main.setState_pT(p = st_source.p, T = st_source.T)),
-    mdot = mdot_main);
+    h    = medium_main.specificEnthalpy_pT(p = p_source, T = T_source),
+    // medium_main.specificEnthalpy(medium_main.setState_pT(p = st_source.p, T = st_source.T)),
+    mdot = mdot_main);  
 
   parameter Model.ThermoState st_comp_in = st_source;
   
   parameter Model.ThermoState st_comp_out(
     p    = p_comp_out,
     T    = T_comp_out,
-    h    = medium_main.specificEnthalpy(medium_main.setState_pT(p = st_comp_out.p, T = st_comp_out.T)),
+    h    = medium_main.specificEnthalpy_pT(p = st_comp_out.p, T = st_comp_out.T),
     mdot = mdot_main);
 
   parameter Model.ThermoState st_turb_in(
     p    = p_comp_out,
     T    = T_turb_in,
-    h    = medium_main.specificEnthalpy(medium_main.setState_pT(p = st_turb_in.p, T = st_turb_in.T)),
+    h    = medium_main.specificEnthalpy_pT(p = st_turb_in.p, T = st_turb_in.T),
     mdot = mdot_main);
     
   parameter Model.ThermoState st_turb_out = st_sink;
@@ -73,19 +72,19 @@ model SimpleCycleConfig
   parameter Model.ThermoState st_sink(
     p    = p_sink,
     T    = T_sink,
-    h    = medium_main.specificEnthalpy(medium_main.setState_pT(p = st_sink.p, T = st_sink.T)),
+    h    = medium_main.specificEnthalpy_pT(p = st_sink.p, T = st_sink.T),
     mdot = mdot_main);
 
   parameter Model.ThermoState st_heater_hin(
     p    = p_heater_hin,
     T    = T_heater_hin,    
-    h    = medium_heater.specificEnthalpy(medium_heater.setState_pT(p = st_heater_hin.p, T = st_heater_hin.T)),
+    h    = medium_heater.specificEnthalpy_pT(p = st_heater_hin.p, T = st_heater_hin.T),
     mdot = mdot_heater);
 
   parameter Model.ThermoState st_heater_hout(
     p    = p_heater_hin,
     T    = T_heater_hout,    
-    h    = medium_heater.specificEnthalpy(medium_heater.setState_pT(p = st_heater_hout.p, T = st_heater_hout.T)),
+    h    = medium_heater.specificEnthalpy_pT(p = st_heater_hout.p, T = st_heater_hout.T),
     mdot = mdot_heater);  
 
   // geometry parameters
@@ -108,46 +107,16 @@ model SimpleCycleConfig
 
  
   // ga : geometry of area
-  Model.AreaGeometry ga_heater_flow(
-    d        = r_h * 2,
-    peri     = (pi + 2) * r_h,
-    peri_wet = (pi + 2) * r_h,
-    A        = ga_heater_flow.peri * L_h,
-    w        = 0,
-    h        = 0,
-    d_hyd    = r_h * 2
-  );
+  parameter Model.AreaGeometry ga_heater_flow = SetAreaGeometry_Circle(r = r_h, L = L_h);
 
   // gp : geometry of path
-  Model.PathGeometry gp_heater_flow(
-    l      = L_h,
-    V      = r_h ^ 2 * pi * L_h / 2,
-    A_cr   = r_h ^ 2 * pi,
-    A_surf = r_h * 2 * pi * L_h,
-    e_rel  = 0,
-    N_seg  = N_seg
-  );
+  parameter Model.PathGeometry gp_heater_flow = SetPathGeometry_Circle(r = r_h, L = L_h, N_seg = N_seg);
 
-  Model.AreaGeometry ga_heater_wall(
-    d        = r_h * 2,
-    peri     = (pi + 2) * r_h,
-    peri_wet = (pi + 2) * r_h,
-    A        = ga_heater_wall.peri * L_h,
-    w        = r_h,
-    h        = r_h * 2,
-    d_hyd    = r_h * 2
-  );
+  parameter Model.AreaGeometry ga_heater_wall = SetAreaGeometry_Rect(r = r_h, L = L_h);
 
-  Model.PathGeometry gp_heater_wall(
-    l      = L_h,
-    V      = r_h ^ 2 * pi * L_h / 2,
-    A_cr   = r_h ^ 2 * pi,
-    A_surf = r_h * 2 * pi * L_h,
-    e_rel  = 0,
-    N_seg  = N_seg
-  ); 
+  parameter Model.PathGeometry gp_heater_wall = SetPathGeometry_Rect(r = r_h, L = L_h, N_seg = N_seg);
 
-  Model.HeatExchangerConfig cfg_heater(
+  parameter Model.HeatExchangerConfig cfg_heater(
     // identical geometry for both sides
     cfg_hot(
       st_in    = st_heater_hin,
@@ -192,5 +161,5 @@ model SimpleCycleConfig
   );
 
   // **** Boundary Conditions as Start/Nominal values for recuperators - end ****     
-    
+
 end SimpleCycleConfig;
