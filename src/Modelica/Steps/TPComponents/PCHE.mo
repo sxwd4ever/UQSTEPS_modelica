@@ -47,8 +47,8 @@ model PCHE "PCHE model based on Thermo Power"
   // use TPComponents.GasFlow1DFV for transient simulation when two PCHEs connected (LTR and HTR),
   // use GasFlow1DFV otherwise, which is much quicker due to the property calculation
   
-  Gas.Flow1DFV fluidFlow(
-  // TPComponents.GasFlow1DFV fluidFlow(
+  // Gas.Flow1DFV fluidFlow(
+  TPComponents.GasFlow1DFV fluidFlow(
   redeclare package Medium     = FluidMedium,
   redeclare model HeatTransfer = HeatTransfer_F,
   Nt          = Nt,                                                       //1, 
@@ -79,8 +79,8 @@ model PCHE "PCHE model based on Thermo Power"
   // use TPComponents.GasFlow1DFV for transient simulation when two PCHEs connected (LTR and HTR),
   // use GasFlow1DFV otherwise, which is much quicker due to the property calculation  
   
-  // TPComponents.GasFlow1DFV gasFlow(
-  Gas.Flow1DFV gasFlow(
+  TPComponents.GasFlow1DFV gasFlow(
+  // Gas.Flow1DFV gasFlow(
   redeclare package Medium = FlueGasMedium, 
   redeclare model HeatTransfer = HeatTransfer_G,
   Nt          = Nt,                                                       //1,  

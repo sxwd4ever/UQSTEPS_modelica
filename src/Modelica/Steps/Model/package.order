@@ -8,6 +8,7 @@ FlowConfig
 WallConfig
 TurbomachineryConfig
 HeatExchangerConfig
+SplitterConfig
 SetAreaGeometry
 SetAreaGeometry_Circle
 SetAreaGeometry_Rect
