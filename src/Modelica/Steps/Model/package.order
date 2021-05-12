@@ -15,3 +15,10 @@ SetAreaGeometry_Rect
 SetPathGeometry
 SetPathGeometry_Circle
 SetPathGeometry_Rect
+HEBoundaryCondition
+PBConfiguration
+PBConfig_5MW
+PBConfig_PCHE
+RCBCycleConfig
+SimParam
+SimpleCycleConfig

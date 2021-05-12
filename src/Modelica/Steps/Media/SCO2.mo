@@ -3,10 +3,10 @@ package SCO2 "supercritical CO2"
   extends ExternalMedia.Media.CoolPropMedium(
       // mediumName = "CarbonDioxide",
       mediumName = "CO2",
-      // substanceNames = {"CO2|debug=40"}, // for single test, more detailed output
-      substanceNames = {"CO2"}, // for parameters sweep, lesser output with the debug flag
+      substanceNames = {"CO2|debug=40"}, // for single test, more detailed output
+      // substanceNames = {"CO2"}, // for parameters sweep, lesser output with the debug flag
       ThermoStates = Modelica.Media.Interfaces.Choices.IndependentVariables.pT,
-      inputChoice = ExternalMedia.Common.InputChoice.pT,
+      // inputChoice = ExternalMedia.Common.InputChoice.pT,
       singleState=false,
       onePhase = true,
       final reducedX = true, 
@@ -102,7 +102,7 @@ package SCO2 "supercritical CO2"
     annotation(Include="#include \"externalmedialib.h\"", Library="ExternalMediaLib", IncludeDirectory="modelica://ExternalMedia/Resources/Include", LibraryDirectory="modelica://ExternalMedia/Resources/Library");
   end setState_pT;
   
-  redeclare function setState_ph
+  redeclare replaceable function setState_ph
     "Return thermodynamic state record from p and h"
     extends Modelica.Icons.Function;
     input AbsolutePressure p "pressure";

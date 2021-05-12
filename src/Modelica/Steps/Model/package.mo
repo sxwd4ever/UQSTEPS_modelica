@@ -114,7 +114,7 @@ package Model "Data model definition for consistent parameter configuration"
     ThermoState st_in "inlet config";
     ThermoState st_out "outlet config";
     ThermoState st_split "split inlet/outlet config";
-    Real gamma = "split ratio";
+    Real gamma "split ratio";
   end SplitterConfig;
 
   partial function SetAreaGeometry

@@ -53,21 +53,21 @@ model SimpleCycleConfig
     // medium_main.specificEnthalpy(medium_main.setState_pT(p = st_source.p, T = st_source.T)),
     mdot = mdot_main);  
 
-  parameter Model.ThermoState st_comp_in = st_source;
+  // parameter Model.ThermoState st_comp_in = st_source;
   
-  parameter Model.ThermoState st_comp_out(
+  parameter Model.ThermoState st_heater_cin(
     p    = p_comp_out,
     T    = T_comp_out,
-    h    = medium_main.specificEnthalpy_pT(p = st_comp_out.p, T = st_comp_out.T),
+    h    = medium_main.specificEnthalpy_pT(p = st_heater_cin.p, T = st_heater_cin.T),
     mdot = mdot_main);
 
-  parameter Model.ThermoState st_turb_in(
+  parameter Model.ThermoState st_heater_cout(
     p    = p_comp_out,
     T    = T_turb_in,
-    h    = medium_main.specificEnthalpy_pT(p = st_turb_in.p, T = st_turb_in.T),
+    h    = medium_main.specificEnthalpy_pT(p = st_heater_cout.p, T = st_heater_cout.T),
     mdot = mdot_main);
     
-  parameter Model.ThermoState st_turb_out = st_sink;
+  // parameter Model.ThermoState st_turb_out = st_sink;
 
   parameter Model.ThermoState st_sink(
     p    = p_sink,
@@ -127,8 +127,8 @@ model SimpleCycleConfig
       u        = 0
     ),     
     cfg_cold(
-      st_in    = st_comp_out,
-      st_out   = st_turb_in,
+      st_in    = st_heater_cin,
+      st_out   = st_heater_cout,
       geo_area = ga_heater_flow,
       geo_path = gp_heater_flow,
       N_ch     = N_ch,
@@ -145,16 +145,16 @@ model SimpleCycleConfig
   );
   
   parameter Model.TurbomachineryConfig cfg_turb(
-    st_in  = st_turb_in,
-    st_out = st_turb_out,
+    st_in  = st_heater_cout,
+    st_out = st_sink,
     N      = Ns_turb,
     T_nom  = 0,
     eta    = eta_turb
   );
   
   parameter Model.TurbomachineryConfig cfg_comp(
-    st_in  = st_comp_in,
-    st_out = st_comp_out,
+    st_in  = st_source,
+    st_out = st_heater_cin,
     N      = Ns_comp,
     T_nom  = 0,
     eta    = eta_comp
