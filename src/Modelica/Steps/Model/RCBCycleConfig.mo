@@ -244,7 +244,7 @@ model RCBCycleConfig
       table_k  = table_k_LTR_wall,
       rho_mcm  = rho_wall * cp_wall,
       lambda   = 200
-    )    
+    )
   );
 
   // LTR
@@ -291,7 +291,7 @@ model RCBCycleConfig
       table_k  = table_k_LTR_wall,
       rho_mcm  = rho_wall * cp_wall,
       lambda   = 200
-    )    
+    )
   );
 
   // HTR
@@ -336,7 +336,7 @@ model RCBCycleConfig
       table_k  = table_k_HTR_wall,
       rho_mcm  = rho_wall * cp_wall,
       lambda   = 200
-    )    
+    )     
   );
 
   // heater
@@ -382,7 +382,7 @@ model RCBCycleConfig
       table_k  = table_k_LTR_wall,
       rho_mcm  = rho_wall * cp_wall,
       lambda   = 200
-    )    
+    )
   );
 
   parameter TurbomachineryConfig cfg_comp(
