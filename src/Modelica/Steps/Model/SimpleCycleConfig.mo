@@ -112,9 +112,9 @@ model SimpleCycleConfig
   // gp : geometry of path
   parameter Model.PathGeometry gp_heater_flow = SetPathGeometry_Circle(r = r_h, L = L_h, N_seg = N_seg);
 
-  parameter Model.AreaGeometry ga_heater_wall = SetAreaGeometry_Rect(r = r_h, L = L_h);
+  parameter Model.AreaGeometry ga_heater_wall = SetAreaGeometry_Wall(r = r_h, L = L_h);
 
-  parameter Model.PathGeometry gp_heater_wall = SetPathGeometry_Rect(r = r_h, L = L_h, N_seg = N_seg);
+  parameter Model.PathGeometry gp_heater_wall = SetPathGeometry(r = r_h, L = L_h, N_seg = N_seg);
 
   parameter Model.HeatExchangerConfig cfg_heater(
     // identical geometry for both sides

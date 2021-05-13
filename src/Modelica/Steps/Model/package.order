@@ -11,10 +11,8 @@ HeatExchangerConfig
 SplitterConfig
 SetAreaGeometry
 SetAreaGeometry_Circle
-SetAreaGeometry_Rect
+SetAreaGeometry_Wall
 SetPathGeometry
-SetPathGeometry_Circle
-SetPathGeometry_Rect
 HEBoundaryCondition
 PBConfiguration
 PBConfig_5MW

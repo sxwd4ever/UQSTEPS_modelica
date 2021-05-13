@@ -64,6 +64,8 @@ package Model "Data model definition for consistent parameter configuration"
     Modelica.SIunits.Length w "Width, valid for square rectangle or triangle, otherwise 0";
     Modelica.SIunits.Length h "Height, valid for square rectangle or triangle, otherwise 0";
     Modelica.SIunits.Length d_hyd "Hydraulic Diameter";
+    Real p1 "customerized parameters, app determined";
+    Real p2 "customerized parameters, app determined";    
   end AreaGeometry;
 
   record PathGeometry
@@ -73,6 +75,8 @@ package Model "Data model definition for consistent parameter configuration"
     Modelica.SIunits.Area A_surf "surface area";
     Real e_rel "(Relative) Roughness";
     Integer N_seg "Number of segments, valid for a discritized path";
+    Real p1 "customerized parameters, app determined";
+    Real p2 "customerized parameters, app determined";      
   end PathGeometry;
 
   record FlowConfig
@@ -137,11 +141,18 @@ package Model "Data model definition for consistent parameter configuration"
       A        = peri_in * L,
       w        = 0,
       h        = 0,
-      d_hyd    = r * 2
+      d_hyd    = r * 2,
+      p1       = 0,
+      p2       = 0
     );
   end SetAreaGeometry_Circle;
 
-  function SetAreaGeometry_Rect
+  function SetAreaGeometry_Wall
+    "Specific function to set the wall geometry of a PCHE"
+    input Real w;
+    input Real h;
+    input Real p1 = 0;
+    input Real p2 = 0;    
     extends SetAreaGeometry;
   protected 
     Real peri_in;    
@@ -152,23 +163,23 @@ package Model "Data model definition for consistent parameter configuration"
       peri     = peri_in,
       peri_wet = peri_in,
       A        = peri_in * L,
-      w        = r,
-      h        = r * 2,
-      d_hyd    = r * 2
+      w        = w,
+      h        = h,
+      d_hyd    = r * 2,
+      p1       = p1,
+      p2       = p2
     );
-  end SetAreaGeometry_Rect;
+  end SetAreaGeometry_Wall;
 
-  partial function SetPathGeometry
+  function SetPathGeometry
     input Real r;
     input Real L;
-    input Real e_rel = 0;
     input Integer N_seg;
+    input Real e_rel = 0;
+    input Real p1    = 0;
+    input Real p2    = 0;
     output PathGeometry geo;
     constant Real pi = Modelica.Constants.pi;
-  end SetPathGeometry;
-
-  function SetPathGeometry_Circle
-    extends SetPathGeometry; 
   protected
     Real peri_in;
   algorithm
@@ -179,25 +190,10 @@ package Model "Data model definition for consistent parameter configuration"
       A_cr   = r ^ 2 * pi,
       A_surf = r * 2 * pi * L,
       e_rel  = e_rel,
-      N_seg  = N_seg  
+      N_seg  = N_seg,
+      p1     = p1,
+      p2     = p2
     );
-  end SetPathGeometry_Circle;  
-
-  function SetPathGeometry_Rect
-    extends SetPathGeometry;
-  protected
-    Real peri_in;    
-  algorithm
-    peri_in := (pi + 2) * r;
-    geo := PathGeometry(
-      l      = L,
-      V      = r ^ 2 * pi * L / 2,
-      A_cr   = r ^ 2 * pi,
-      A_surf = r * 2 * pi * L,
-      e_rel  = 0,
-      N_seg  = N_seg
-    );
-  end SetPathGeometry_Rect;  
-
+  end SetPathGeometry;  
 
 end Model;

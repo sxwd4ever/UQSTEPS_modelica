@@ -24,19 +24,29 @@ model TestTP_PCHE
   package medium_cold = Steps.Media.SCO2; 
   // package medium_hot = Modelica.Media.IdealGases.SingleGases.CO2;
   // package medium_cold = Modelica.Media.IdealGases.SingleGases.CO2;    
-  parameter Real table_k_metalwall[:,:] = [293.15, 12.1; 373.15, 16.3; 773.15, 21.5];  
-
-  parameter Model.PBConfig_PCHE cfg(mdot_heater = 90);
+  parameter Real table_k_metalwall[:,:] = [293.15, 12.1; 373.15, 16.3; 773.15, 21.5];    
   
-  // set the values of parameters accordingly - For HTR test
-  parameter Boolean test_LTR = false;
-  parameter HEBoundaryCondition bc_HE = cfg.bc_HTR; // use if-then-else clause leads simulation error???
-/*
+  parameter Model.RCBCycleConfig cfg(
+    N_ch_HTR = 10000,
+    N_ch_LTR = 10000
+  );
+  /*
+  (
+    mdot_heater = 90,
+    table_k_LTR_wall = table_k_metalwall,
+    table_k_HTR_wall = table_k_metalwall
+  );
+  */
+  
+  // set the values of parameters accordingly - For HTR test.
+  // modify it to cfg_heater = cfg.cfg_LTR for LTR test
+  parameter Model.HeatExchangerConfig cfg_heater = cfg.cfg_LTR;
+  parameter Model.ThermoState st_source_hot      = cfg_heater.cfg_hot.st_in;
+  parameter Model.ThermoState st_sink_hot        = cfg_heater.cfg_hot.st_out;
+  parameter Model.ThermoState st_source_cold     = cfg_heater.cfg_cold.st_in;
+  parameter Model.ThermoState st_sink_cold       = cfg_heater.cfg_cold.st_out;
+  parameter Integer N_seg_HE                     = cfg.cfg_LTR.cfg_hot.geo_path.N_seg;
 
-  // set the values of parameters accordingly - for LTR test
-  parameter Boolean test_LTR = true;
-  parameter HEBoundaryCondition bc_HE = cfg.bc_LTR; // use if-then-else clause leads simulation error???
-*/
   //Components
   inner ThermoPower.System system(allowFlowReversal = false, initOpt=ThermoPower.Choices.Init.Options.noInit) annotation(
     Placement(transformation(extent = {{80, 80}, {100, 100}})));  
@@ -45,37 +55,39 @@ model TestTP_PCHE
   
   ThermoPower.Gas.SourceMassFlow source_cold(
     redeclare package Medium = medium_cold, 
-    T = bc_HE.st_cold_in.T, 
-    p0 = bc_HE.st_cold_in.p, 
+    T  = st_source_cold.T,
+    p0 = st_source_cold.p,
     //use_in_T = false, 
-    w0 = bc_HE.st_cold_in.mdot,
-    gas(p(nominal = bc_HE.st_cold_in.p), 
-    T(nominal=bc_HE.st_cold_in.T))) 
+    w0 = st_source_cold.mdot,
+    gas(
+      p(nominal = st_source_cold.p), 
+      T(nominal = st_source_cold.T))) 
   annotation(
     Placement(transformation(origin = {0, 60}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
   
   ThermoPower.Gas.SinkPressure sink_cold(
     redeclare package Medium = medium_cold, 
-    p0 = bc_HE.st_cold_out.p, 
-    T = bc_HE.st_cold_out.T) 
+    p0 = st_sink_cold.p, 
+    T = st_sink_cold.T) 
   annotation(
     Placement(transformation(origin = {0, -80}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
  
   ThermoPower.Gas.SinkPressure sink_hot(
     redeclare package Medium = medium_hot,
-    T = bc_HE.st_hot_out.T, 
-    p0 = bc_HE.st_hot_out.p) 
+    T  = st_sink_hot.T,
+    p0 = st_sink_hot.p)
   annotation(
     Placement(transformation(extent = {{60, -10}, {80, 10}}, rotation = 0)));
   
   ThermoPower.Gas.SourceMassFlow source_hot(
     redeclare package Medium = medium_hot, 
-    T = bc_HE.st_hot_in.T, 
-    p0 = bc_HE.st_hot_in.p, 
-    w0 = bc_HE.st_hot_in.mdot,
+    T  = st_source_hot.T,
+    p0 = st_source_hot.p,
+    w0 = st_source_hot.mdot,
     //use_in_T = false,
-    gas(p(nominal = bc_HE.st_hot_in.p), 
-    T(nominal=bc_HE.st_hot_in.T))) 
+    gas(
+      p(nominal = st_source_hot.p), 
+      T(nominal = st_source_hot.T))) 
   annotation(
     Placement(transformation(extent = {{-70, -10}, {-50, 10}}, rotation = 0))); 
   
@@ -89,31 +101,27 @@ model TestTP_PCHE
 
   //Real kim_cor_coe[4] = {kim.a, kim.b, kim.c, kim.d};
   parameter SI.Length pitch = 12.3e-3 "pitch length";
-  parameter Real phi = 35 "pitch angle °";
+  parameter Real phi        = 35 "pitch angle °";
     
   Steps.TPComponents.PCHE HE(
     redeclare package FluidMedium = medium_cold, 
     redeclare package FlueGasMedium = medium_hot,     
     redeclare replaceable model HeatTransfer_F = Steps.TPComponents.KimPCHEHeatTransferFV(
     pitch = pitch,
-    phi = phi),
+    phi   = phi),
     // ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficient(gamma = thermo_LTR_cold.gamma_he),
     // redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer, 
     redeclare replaceable model HeatTransfer_G = Steps.TPComponents.KimPCHEHeatTransferFV(
     pitch = pitch,
-    phi = phi),
+    phi   = phi),
     redeclare model HeatExchangerTopology = ThermoPower.Thermal.HeatExchangerTopologies.CounterCurrentFlow, 
-    bc = bc_HE, 
-    geo_hot = if test_LTR then cfg.cfg_LTR_hot.geo else cfg.cfg_HTR_hot.geo,
-    geo_cold = if test_LTR then cfg.cfg_LTR_cold.geo else cfg.cfg_HTR_cold.geo,
-    geo_tube = if test_LTR then cfg.cfg_LTR_tube.geo else cfg.cfg_HTR_tube.geo,  
-    thermo_hot = if test_LTR then cfg.cfg_LTR_hot.thermo else cfg.cfg_HTR_hot.thermo,
-    thermo_cold = if test_LTR then cfg.cfg_LTR_cold.thermo else cfg.cfg_HTR_cold.thermo,
-    thermo_tube = if test_LTR then cfg.cfg_LTR_tube.thermo else cfg.cfg_HTR_tube.thermo, 
-    SSInit=SSInit,
-    gasQuasiStatic = true,
-    fluidQuasiStatic = true,
-    table_k_metalwall =   table_k_metalwall
+    cfg               = cfg_heater,
+    N_G               = N_seg_HE,
+    N_F               = N_seg_HE,
+    SSInit            = SSInit,
+    gasQuasiStatic    = true,
+    fluidQuasiStatic  = true
+    //table_k_metalwall = table_k_metalwall
     // override the values of Am and L of metaltubeFV
     // to make them agree with semi-circular tube of PCHE
     // ('final' modifier of Am in metalTubeFv was removed as well)
@@ -123,9 +131,9 @@ model TestTP_PCHE
     Placement(transformation(extent = {{-20, -20}, {20, 20}}, rotation = 0)));
 
   // variable for validation
-  Modelica.SIunits.Power Q_out = (HE.gasIn.h_outflow - HE.gasOut.h_outflow) * HE.gasIn.m_flow; 
-  Modelica.SIunits.Power Q_in = (HE.waterOut.h_outflow - HE.waterIn.h_outflow) * HE.waterIn.m_flow;
-  Boolean isQMatch = abs(Q_out -Q_in) < 1e-3;  
+  Modelica.SIunits.Power Q_out    = (HE.gasIn.h_outflow - HE.gasOut.h_outflow) * HE.gasIn.m_flow;
+  Modelica.SIunits.Power Q_in     = (HE.waterOut.h_outflow - HE.waterIn.h_outflow) * HE.waterIn.m_flow;
+  Boolean                isQMatch = abs(Q_out -Q_in) < 1e-3;
 equation
 
 /*

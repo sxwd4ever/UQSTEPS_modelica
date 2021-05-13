@@ -12,35 +12,30 @@ model PCHE "PCHE model based on Thermo Power"
   import Steps.Components.MaterialConductivity;  
   import Steps.Model.{EntityConfig, EntityGeoParam, EntityThermoParam, HEBoundaryCondition};
   
-  replaceable model HeatTransfer_F = Thermal.HeatTransferFV.IdealHeatTransfer constrainedby ThermoPower.Thermal.BaseClasses.DistributedHeatTransferFV annotation(
-     choicesAllMatching = true);
-  replaceable model HeatTransfer_G = Thermal.HeatTransferFV.IdealHeatTransfer constrainedby ThermoPower.Thermal.BaseClasses.DistributedHeatTransferFV annotation(
-     choicesAllMatching = true);
-  replaceable model HeatExchangerTopology = Thermal.HeatExchangerTopologies.CounterCurrentFlow constrainedby ThermoPower.Thermal.BaseClasses.HeatExchangerTopologyData annotation(
-     choicesAllMatching = true);
-  parameter Choices.Flow1D.FFtypes FFtype_G = ThermoPower.Choices.Flow1D.FFtypes.NoFriction "Friction Factor Type, gas side"; 
-  parameter Real Kfnom_G                    = 0 "Nominal hydraulic resistance coefficient, gas side";
-  parameter SI.Pressure dpnom_G             = 0 "Nominal pressure drop, gas side (friction term only!)";
-  parameter SI.Density rhonom_G             = 0 "Nominal inlet density, gas side";
-  parameter Real Cfnom_G                    = 0 "Nominal Fanning friction factor, gas side";
-  parameter Choices.Flow1D.FFtypes FFtype_F = ThermoPower.Choices.Flow1D.FFtypes.NoFriction "Friction Factor Type, fluid side";
-  parameter Real Kfnom_F                    = 0 "Nominal hydraulic resistance coefficient";
-  parameter SI.Pressure dpnom_F             = 0 "Nominal pressure drop fluid side (friction term only!)";
-  parameter SI.Density rhonom_F             = 0 "Nominal inlet density fluid side";
-  parameter SI.PerUnit Cfnom_F              = 0 "Nominal Fanning friction factor";
-  parameter Choices.Flow1D.HCtypes HCtype_F = ThermoPower.Choices.Flow1D.HCtypes.Downstream "Location of the hydraulic capacitance, fluid side";
-  parameter Boolean gasQuasiStatic          = false "Quasi-static model of the flue gas (mass, energy and momentum static balances";
-  parameter Boolean fluidQuasiStatic        = false "Quasi-static model of the fluid (mass, energy and momentum static balances";
-  // parameter Boolean metalQuasiStatic = false "Quasi-static model of the metalWall (energy static balances)";
-  constant  Real pi                                        = Modelica.Constants.pi;
-  parameter SI.Distance L                                  = 1 "Tube length";
-  parameter Choices.FluidPhase.FluidPhases FluidPhaseStart = Choices.FluidPhase.FluidPhases.Liquid "Fluid phase (only for initialization!)" annotation(
-    Dialog(tab = "Initialization"));
-  parameter Boolean SSInit = false "Steady State initialization";  
+  replaceable model HeatTransfer_F                           = Thermal.HeatTransferFV.IdealHeatTransfer constrainedby ThermoPower.Thermal.BaseClasses.DistributedHeatTransferFV annotation(choicesAllMatching = true);
+  replaceable model HeatTransfer_G                           = Thermal.HeatTransferFV.IdealHeatTransfer constrainedby ThermoPower.Thermal.BaseClasses.DistributedHeatTransferFV annotation(choicesAllMatching = true);
+  replaceable model HeatExchangerTopology                    = Thermal.HeatExchangerTopologies.CounterCurrentFlow constrainedby ThermoPower.Thermal.BaseClasses.HeatExchangerTopologyData annotation(choicesAllMatching = true);
+  parameter   Choices.Flow1D.FFtypes FFtype_G                = ThermoPower.Choices.Flow1D.FFtypes.NoFriction "Friction Factor Type, gas side";
+  parameter   Real Kfnom_G                                   = 0 "Nominal hydraulic resistance coefficient, gas side";
+  parameter   SI.Pressure dpnom_G                            = 0 "Nominal pressure drop, gas side (friction term only!)";
+  parameter   SI.Density rhonom_G                            = 0 "Nominal inlet density, gas side";
+  parameter   Real Cfnom_G                                   = 0 "Nominal Fanning friction factor, gas side";
+  parameter   Choices.Flow1D.FFtypes FFtype_F                = ThermoPower.Choices.Flow1D.FFtypes.NoFriction "Friction Factor Type, fluid side";
+  parameter   Real Kfnom_F                                   = 0 "Nominal hydraulic resistance coefficient";
+  parameter   SI.Pressure dpnom_F                            = 0 "Nominal pressure drop fluid side (friction term only!)";
+  parameter   SI.Density rhonom_F                            = 0 "Nominal inlet density fluid side";
+  parameter   SI.PerUnit Cfnom_F                             = 0 "Nominal Fanning friction factor";
+  parameter   Choices.Flow1D.HCtypes HCtype_F                = ThermoPower.Choices.Flow1D.HCtypes.Downstream "Location of the hydraulic capacitance, fluid side";
+  parameter   Boolean gasQuasiStatic                         = false "Quasi-static model of the flue gas (mass, energy and momentum static balances";
+  parameter   Boolean fluidQuasiStatic                       = false "Quasi-static model of the fluid (mass, energy and momentum static balances";
+  constant    Real pi                                        = Modelica.Constants.pi;
+  parameter   SI.Distance L                                  = 1 "Tube length";
+  parameter   Choices.FluidPhase.FluidPhases FluidPhaseStart = Choices.FluidPhase.FluidPhases.Liquid "Fluid phase (only for initialization!)" annotation(Dialog(tab = "Initialization"));
+  parameter   Boolean SSInit                                 = false "Steady State initialization";
   
   // Thermal conductivity of LTR's metal wall 
   // material inconel_750
-  parameter Real table_k_metalwall[:, :] = [149, 16.9; 316, 20.5; 538, 26.5; 649, 28.7; 760, 31.4; 871, 35.3];  
+  // parameter Real table_k_metalwall[:, :] = [149, 16.9; 316, 20.5; 538, 26.5; 649, 28.7; 760, 31.4; 871, 35.3];  
   
   //IMPORTANT:
   // To date, (because of a bug in Gas.Flow1DFV
@@ -106,17 +101,20 @@ model PCHE "PCHE model based on Thermo Power"
     Placement(transformation(extent = {{-12, 66}, {12, 46}}, rotation = 0)));
   
   PCHEMetalWallFV metalWall(
-    L                     = L,
+    L                     = cfg_wall.geo_wall.l,
     r_c                   = cfg_wall.geo_area.d / 2,
+    w_ch                  = cfg_wall.geo_area.w,
+    h_ch                  = cfg_wall.geo_area.h,
+    dx                    = cfg_wall.geo_area.p1,
+    //L_wall                = cfg_wall.geo_wall.p1,
     Nw                    = Nw_F,
     Nt                    = Nt * 2,
     Tstartbar             = (Tstartbar_G + Tstartbar_F) / 2,
     Tstart1               = Tstartbar_G,                       //bc.st_hot_out.T, 
     TstartN               = Tstartbar_F,                       //bc.st_hot_in.T,   
     WallRes               = false,
-    table_th_conductivity = table_k_metalwall,
-    // QuasiStatic = metalQuasiStatic , 
-    rhomcm = rhomcm 
+    table_th_conductivity = cfg_wall.table_k,
+    rhomcm                = rhomcm
   ) annotation(
     Placement(transformation(extent = {{-10, -24}, {10, -4}})));
   

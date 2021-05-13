@@ -12,28 +12,23 @@ model PCHEMetalWallFV "simplified PCHE's fin-like metal wall between parallel mi
   parameter SI.Length r_c "channel raidus";
   parameter SI.Length w_ch = 2.5e-3 "Wall width, mm. see table 2 in Meshram [2016]";
   parameter SI.Length h_ch = 3.2e-3 "height of computational domain, mm. see table 2 in Meshram [2016]";
-  parameter SI.Length dx = 0.5e-3 "(equivalent) delta x between channels";
+  parameter SI.Length dx   = 0.5e-3 "(equivalent) delta x between channels";
   parameter Real rhomcm "Metal heat capacity per unit volume [J/m^3.K]";
   parameter SI.ThermalConductivity lambda "Thermal conductivity";
   parameter Boolean WallRes = true "Wall thermal resistance accounted for";
   parameter SI.Temperature Tstartbar = 300 "Avarage temperature" annotation(
     Dialog(tab = "Initialisation"));
-  parameter SI.Temperature Tstart1 = Tstartbar "Temperature start value - first volume" annotation(
-    Dialog(tab = "Initialisation"));
-  parameter SI.Temperature TstartN = Tstartbar "Temperature start value - last volume" annotation(
-    Dialog(tab = "Initialisation"));
-  parameter SI.Temperature Tvolstart[Nw] = Functions.linspaceExt(Tstart1, TstartN, Nw) annotation(
-    Dialog(tab = "Initialisation"));
-  parameter Choices.Init.Options initOpt = system.initOpt "Initialisation option" annotation(
-    Dialog(tab = "Initialisation"));
-  parameter Real table_th_conductivity[:, :] = [149, 16.9; 316, 20.5; 538, 26.5; 649, 28.7; 760, 31.4; 871, 35.3];  
+  parameter SI.Temperature Tstart1           = Tstartbar "Temperature start value - first volume" annotation(Dialog(tab = "Initialisation"));
+  parameter SI.Temperature TstartN           = Tstartbar "Temperature start value - last volume" annotation(Dialog(tab = "Initialisation"));
+  parameter SI.Temperature Tvolstart[Nw]     = Functions.linspaceExt(Tstart1, TstartN, Nw) annotation(Dialog(tab = "Initialisation"));
+  parameter Choices.Init.Options initOpt     = system.initOpt "Initialisation option" annotation(Dialog(tab = "Initialisation"));
+  parameter Real table_th_conductivity[:, :] = [149, 16.9; 316, 20.5; 538, 26.5; 649, 28.7; 760, 31.4; 871, 35.3];
   
   constant Real pi = Modelica.Constants.pi;
   // parameter SI.Area Am = (rext ^ 2 - rint ^ 2) * pi "Area of the metal tube cross-section";
   // parameter SI.Area Am =  w_ch * h_ch - pi * r_c * r_c * 4 "Area of the metal tube cross-section";
-  parameter SI.Area Am =  w_ch * h_ch - pi * r_c * r_c "Area of the metal tube cross-section";
-  // parameter Boolean QuasiStatic = true "=True: Dynamic behavior or heat storage will NOT be simulated for metal wall";  
-  final parameter SI.HeatCapacity Cm = Nt * L * Am * rhomcm "Total heat capacity";
+  parameter SI.Area Am                   = w_ch * h_ch - pi * r_c * r_c "Area of the metal tube cross-section";
+  final     parameter SI.HeatCapacity Cm = Nt * L * Am * rhomcm "Total heat capacity";
   outer ThermoPower.System system "System wide properties";
 
   SI.ThermalConductivity k_wall[Nw] "wall thermal conductivity - determined by material of wall and local temperature";      
@@ -43,10 +38,8 @@ model PCHEMetalWallFV "simplified PCHE's fin-like metal wall between parallel mi
  
   // Real Q_res[Nw];
   SI.Temperature Tvol[Nw](start = Tvolstart) "Volume temperatures";
-  ThermoPower.Thermal.DHTVolumes int(final N = Nw, T(start = Tvolstart)) "Internal surface" annotation(
-    Placement(transformation(extent = {{-40, 20}, {40, 40}}, rotation = 0)));
-  ThermoPower.Thermal.DHTVolumes ext(final N = Nw, T(start = Tvolstart)) "External surface" annotation(
-    Placement(transformation(extent = {{-40, -42}, {40, -20}}, rotation = 0)));
+  ThermoPower.Thermal.DHTVolumes int(final N = Nw, T(start = Tvolstart)) "Internal surface" annotation(Placement(transformation(extent = {{-40, 20}, {40, 40}}, rotation = 0)));
+  ThermoPower.Thermal.DHTVolumes ext(final N = Nw, T(start = Tvolstart)) "External surface" annotation(Placement(transformation(extent = {{-40, -42}, {40, -20}}, rotation = 0)));
 
 equation
    assert(Am > 0, "Area of the metal wall cross-section must be positive, now Am=" + String(Am));  
