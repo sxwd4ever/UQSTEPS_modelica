@@ -44,27 +44,28 @@ model PCHE "PCHE model based on Thermo Power"
   
   // Gas.Flow1DFV fluidFlow(
   TPComponents.GasFlow1DFV fluidFlow(
-  redeclare package Medium     = FluidMedium,
-  redeclare model HeatTransfer = HeatTransfer_F,
-  Nt          = Nt,                                                       //1, 
-  N           = N_F,
-  Nw          = Nw_F,
-  wnom        = fluidNomFlowRate,
-  initOpt     = if SSInit then Options.steadyState else Options.noInit,
-  QuasiStatic = fluidQuasiStatic,
-  pstart      = pstart_F,
-  L           = fluidLength,                                              // Should be L = exchSurface_F ^ 2 / (fluidVol * pi * 4), instead of fixed L = 1 
-  A           = fluidVol / fluidLength,                                   // fluidVol is account for single tube
-  omega       = exchSurface_F / fluidLength,                              // exchSurface_F is account for single tube
-  Dhyd        = fluidVol*4 / exchSurface_F,
-  FFtype      = FFtype_F,
-  Kfnom       = Kfnom_F,
-  dpnom       = dpnom_F,
-  rhonom      = rhonom_F,
-  Cfnom       = Cfnom_F,
-  Tstartbar   = Tstartbar_F,
-  Tstartin    = Tstartbar_F,                                              //bc.st_cold_in.T, 
-  Tstartout   = Tstartbar_F) annotation(
+    redeclare package Medium     = FluidMedium,
+    redeclare model HeatTransfer = HeatTransfer_F,
+    Nt          = Nt,                                                       //1, 
+    N           = N_F,
+    Nw          = Nw_F,
+    wnom        = fluidNomFlowRate,
+    initOpt     = if SSInit then Options.steadyState else Options.noInit,
+    QuasiStatic = fluidQuasiStatic,
+    pstart      = pstart_F,
+    L           = fluidLength,                                              // Should be L = exchSurface_F ^ 2 / (fluidVol * pi * 4), instead of fixed L = 1 
+    A           = fluidVol / fluidLength,                                   // fluidVol is account for single tube
+    omega       = exchSurface_F / fluidLength,                              // exchSurface_F is account for single tube
+    Dhyd        = fluidVol*4 / exchSurface_F,
+    FFtype      = FFtype_F,
+    Kfnom       = Kfnom_F,
+    dpnom       = dpnom_F,
+    rhonom      = rhonom_F,
+    Cfnom       = Cfnom_F,
+    Tstartbar   = Tstartbar_F,
+    Tstartin    = Tstartbar_F,                                              //bc.st_cold_in.T, 
+    Tstartout   = Tstartbar_F) 
+  annotation(
     Placement(transformation(extent = {{-10, -66}, {10, -46}}, rotation = 0)));
     
   //changed Medium=FlueGasMedium to Medium=FluidMedium
@@ -76,27 +77,27 @@ model PCHE "PCHE model based on Thermo Power"
   
   TPComponents.GasFlow1DFV gasFlow(
   // Gas.Flow1DFV gasFlow(
-  redeclare package Medium = FlueGasMedium, 
-  redeclare model HeatTransfer = HeatTransfer_G,
-  Nt          = Nt,                                                       //1,  
-  N           = N_G,
-  Nw          = Nw_G,
-  wnom        = gasNomFlowRate,                                           // wnom(total) of gasFlow is different from wnom(for single tube, = gasNomFlowRate /Nt) of HeatTransfer_G  
-  initOpt     = if SSInit then Options.steadyState else Options.noInit,
-  QuasiStatic = gasQuasiStatic,
-  pstart      = pstart_G,
-  L           = gasLength,                                                // Should be L = exchSurface_G ^ 2 / (gasVol * pi * 4), instead of fixed L = 1
-  A           = gasVol / gasLength,                                       // gasVol is account for single tube, 
-  omega       = exchSurface_G / gasLength,                                // exchSurface_G is account for single tube, 
-  Dhyd        = gasVol*4 / exchSurface_G,
-  FFtype      = FFtype_G,
-  Kfnom       = Kfnom_G,
-  dpnom       = dpnom_G,
-  rhonom      = rhonom_G,
-  Cfnom       = Cfnom_G,
-  Tstartbar   = Tstartbar_G,
-  Tstartin    = Tstartbar_G,                                              //bc.st_hot_in.T, 
-  Tstartout   = Tstartbar_G)
+    redeclare package Medium = FlueGasMedium, 
+    redeclare model HeatTransfer = HeatTransfer_G,
+    Nt          = Nt,                                                       //1,  
+    N           = N_G,
+    Nw          = Nw_G,
+    wnom        = gasNomFlowRate,                                           // wnom(total) of gasFlow is different from wnom(for single tube, = gasNomFlowRate /Nt) of HeatTransfer_G  
+    initOpt     = if SSInit then Options.steadyState else Options.noInit,
+    QuasiStatic = gasQuasiStatic,
+    pstart      = pstart_G,
+    L           = gasLength,                                                // Should be L = exchSurface_G ^ 2 / (gasVol * pi * 4), instead of fixed L = 1
+    A           = gasVol / gasLength,                                       // gasVol is account for single tube, 
+    omega       = exchSurface_G / gasLength,                                // exchSurface_G is account for single tube, 
+    Dhyd        = gasVol*4 / exchSurface_G,
+    FFtype      = FFtype_G,
+    Kfnom       = Kfnom_G,
+    dpnom       = dpnom_G,
+    rhonom      = rhonom_G,
+    Cfnom       = Cfnom_G,
+    Tstartbar   = Tstartbar_G,
+    Tstartin    = Tstartbar_G,                                              //bc.st_hot_in.T, 
+    Tstartout   = Tstartbar_G)
    annotation(
     Placement(transformation(extent = {{-12, 66}, {12, 46}}, rotation = 0)));
   

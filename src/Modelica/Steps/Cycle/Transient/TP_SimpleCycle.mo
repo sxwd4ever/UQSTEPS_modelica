@@ -21,7 +21,9 @@ model TP_SimpleCycle
   // package medium_main = Modelica.Media.IdealGases.SingleGases.CO2;
   // package medium_main =  ExternalMedia.Examples.CO2CoolProp;
   // package medium_hot  = Steps.Media.SCO2;
-  package medium_main = Steps.Media.SCO2(inputChoice = ExternalMedia.Common.InputChoice.pT);
+  package medium_main = Steps.Media.SCO2(
+    inputChoice = ExternalMedia.Common.InputChoice.pT
+  );
   
   // geometry parameters
   constant  Real pi           = Modelica.Constants.pi;
@@ -256,11 +258,12 @@ model TP_SimpleCycle
   Table = ThermoPower.Choices.TurboMachinery.TableTypes.file,
   explicitIsentropicEnthalpy = false,
   gas_in(
-    p(nominal = turbine.pstart_in), 
-    T(nominal = turbine.Tstart_in)),
+    p(nominal = cfg_turb.st_in.p), 
+    T(nominal = cfg_turb.st_in.T)),
   gas_iso(
-    p(nominal = turbine.pstart_out), 
-    T(nominal = turbine.Tstart_out))) annotation(
+    p(nominal = cfg_turb.st_out.p), 
+    T(nominal = cfg_turb.st_out.T),
+    h(start = cfg_turb.st_out.h))) annotation(
     Placement(visible = true, transformation(origin = {-69, -51}, extent = {{-11, -11}, {11, 11}}, rotation = 0))); 
  
   Modelica.Mechanics.Rotational.Sources.ConstantSpeed const_speed_turbine(

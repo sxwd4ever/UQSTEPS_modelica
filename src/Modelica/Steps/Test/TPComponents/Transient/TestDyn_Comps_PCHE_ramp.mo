@@ -16,7 +16,7 @@ model TestDyn_Comps_PCHE_ramp
   // package medium_main = Modelica.Media.IdealGases.SingleGases.CO2; //Steps.Media.CO2;
   // package medium_main = Modelica.Media.IdealGases.SingleGases.CO2; //Steps.Media.CO2;
   package medium_main = Steps.Media.SCO2(
-    // inputChoice = ExternalMedia.Common.InputChoice.pT,
+    inputChoice = ExternalMedia.Common.InputChoice.pT,
     substanceNames = {"CO2|debug=40"}  
   );  
   
@@ -66,7 +66,29 @@ model TestDyn_Comps_PCHE_ramp
   parameter Integer T_step = 5 "Step change of temperature";
 
   // results based on sscar's simulation for 10 Mw power block
-  parameter Model.RCBCycleConfig cfg;
+  parameter Model.RCBCycleConfig cfg(
+    redeclare package medium_heater = medium_heater,
+    redeclare package medium_main   = medium_main,
+    // mdot_heater      = 40,
+    // T_heater_hot_in  = from_degC(800),
+    // T_heater_hot_out = from_degC(600),
+    r_i_heater  = 20e-3,
+    r_t_heater  = cfg.r_i_heater + 10e-3,
+    r_o_heater  = 1/2,                      // agree with the final parameter Dhyd = 1 in HE, should be checked to see if it is capable of containing all fluid-metal tubes
+    N_ch_heater = 100,
+    L_heater    = 1,
+    N_ch_HTR = 30000,
+    L_HTR    = 2.5, 
+    r_i_HTR  = 1.5e-3,   
+    r_o_HTR  = 1.5e-3,    
+    N_ch_LTR = 30000,
+    L_LTR    = 2.5,
+    r_i_LTR  = 1.5e-3,   
+    r_o_LTR  = 1.5e-3,
+    Ns_turb  = 30000,
+    mdot_main = 100,
+    mdot_heater = 40
+  );
   
   // set the values of parameters accordingly
   parameter Model.HeatExchangerConfig cfg_heater = cfg.cfg_heater;
@@ -91,10 +113,10 @@ model TestDyn_Comps_PCHE_ramp
   // **** IMPORTANT ****
   // For static state simulation SSInit = false and system.Init = noInit / fixedState
   // For transient simulation, SSInit = true and system.Init = steady/State
-  parameter Boolean SSInit = false "Steady-state initialization";
-  inner ThermoPower.System system(allowFlowReversal = false, initOpt=ThermoPower.Choices.Init.Options.noInit) annotation(
+  parameter Boolean SSInit = true "Steady-state initialization";
+  inner ThermoPower.System system(allowFlowReversal = false, initOpt=ThermoPower.Choices.Init.Options.steadyState) annotation(
     Placement(transformation(extent = {{80, 80}, {100, 100}})));
-  
+
   ThermoPower.Water.SourceMassFlow source_heater_hot(
     redeclare package Medium = medium_heater,
     w0 = cfg_heater.cfg_hot.st_in.mdot,
@@ -108,39 +130,29 @@ model TestDyn_Comps_PCHE_ramp
     redeclare package Medium = medium_heater, 
     p0    = cfg_heater.cfg_hot.st_out.p,
     T     = cfg_heater.cfg_hot.st_out.T,
-    use_T = true)
+    use_T = false)
     annotation(
     Placement(transformation(origin = {0, -80}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
 
   Steps.TPComponents.HE heater(
     redeclare package FluidMedium = medium_heater, 
     redeclare package FlueGasMedium = medium_main, 
+    redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer,    
+    redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer, 
     fluidFlow(
-      heatTransfer(heating=true), 
       fixedMassFlowSimplified = true,
-      hstartin                = cfg_heater.cfg_cold.st_in.h,
-      hstartout               = cfg_heater.cfg_cold.st_out.h),   // set the fluid flow as fixed mdot for simplarity
+      hstartin                = cfg_heater.cfg_hot.st_in.h,
+      hstartout               = cfg_heater.cfg_hot.st_out.h),   // set the fluid flow as fixed mdot for simplarity
     gasFlow(
-      heatTransfer(heating=false), 
-      Tstartin  = cfg_heater.cfg_hot.st_in.T,
-      Tstartout = cfg_heater.cfg_hot.st_out.T),
+      QuasiStatic = true,
+      Tstartin  = cfg_heater.cfg_cold.st_in.T,
+      Tstartout = cfg_heater.cfg_cold.st_out.T),    
     cfg            = cfg_heater,
     N_G            = N_seg_heater,
     N_F            = N_seg_heater,
     SSInit         = true,
     gasQuasiStatic = false,
-    FluidPhaseStart=ThermoPower.Choices.FluidPhase.FluidPhases.Liquid,    
-    
-    // redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer,    
-    // redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer, 
-    
-    /*
-    redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficientTwoGrids(gamma = thermo_hot.gamma_he),          
-    redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficient(gamma =  thermo_cold.gamma_he),  
-    */
-    
-    redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.DittusBoelter,    
-    redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.DittusBoelter,
+    FluidPhaseStart=ThermoPower.Choices.FluidPhase.FluidPhases.Liquid,       
    
     redeclare model HeatExchangerTopology = ThermoPower.Thermal.HeatExchangerTopologies.CounterCurrentFlow,
     metalTube(WallRes=false)) annotation(
@@ -237,7 +249,7 @@ model TestDyn_Comps_PCHE_ramp
 
   // use FlowJoin to mix flow
   Gas.FlowJoin mixer(redeclare package Medium = medium_main);  
-/*
+
   ThermoPower.Gas.SensT T_waterOut(
     redeclare package Medium = medium_main) 
   annotation(
@@ -247,7 +259,7 @@ model TestDyn_Comps_PCHE_ramp
     redeclare package Medium = medium_main) 
   annotation(
     Placement(transformation(extent = {{30, -6}, {50, 14}}, rotation = 0)));
-*/
+
   Steps.TPComponents.PCHE LTR(
     redeclare package FluidMedium = medium_main, 
     redeclare package FlueGasMedium = medium_main, 
@@ -257,7 +269,7 @@ model TestDyn_Comps_PCHE_ramp
     redeclare replaceable model HeatTransfer_F = Steps.TPComponents.MarchionniPCHEHeatTransferFV(),
     redeclare replaceable model HeatTransfer_G = Steps.TPComponents.MarchionniPCHEHeatTransferFV(),
     gasFlow(
-      avoidInletEnthalpyDerivative=true,
+      // avoidInletEnthalpyDerivative=true,
       heatTransfer(
         pitch = cfg_LTR.cfg_hot.l_pitch,
         phi   = cfg_LTR.cfg_hot.a_phi,
@@ -265,7 +277,7 @@ model TestDyn_Comps_PCHE_ramp
         Cf_C2 = Cf_C2,
         Cf_C3 = Cf_C3)),
     fluidFlow(
-      avoidInletEnthalpyDerivative=true,
+      // avoidInletEnthalpyDerivative=true,
       heatTransfer(
         pitch = cfg_LTR.cfg_cold.l_pitch,
         phi   = cfg_LTR.cfg_cold.a_phi,
@@ -279,8 +291,8 @@ model TestDyn_Comps_PCHE_ramp
     N_G              = N_seg_LTR,
     N_F              = N_seg_LTR,
     SSInit           = SSInit,
-    gasQuasiStatic   = true,
-    fluidQuasiStatic = true
+    gasQuasiStatic   = false,
+    fluidQuasiStatic = false
     // metalQuasiStatic = true
     // override the values of Am and L of metaltubeFV
     // to make them agree with semi-circular tube of PCHE
@@ -290,7 +302,7 @@ model TestDyn_Comps_PCHE_ramp
   annotation(
     Placement(transformation(extent = {{-20, -20}, {20, 20}}, rotation = 0)));
 
-   
+  
   Steps.TPComponents.PCHE HTR(
     redeclare package FluidMedium = medium_main, 
     redeclare package FlueGasMedium = medium_main,      
@@ -299,7 +311,7 @@ model TestDyn_Comps_PCHE_ramp
     redeclare replaceable model HeatTransfer_F = Steps.TPComponents.MarchionniPCHEHeatTransferFV(),
     redeclare replaceable model HeatTransfer_G = Steps.TPComponents.MarchionniPCHEHeatTransferFV(),
     gasFlow(
-      avoidInletEnthalpyDerivative=false,
+      // avoidInletEnthalpyDerivative=false,
       heatTransfer(
         pitch = cfg_HTR.cfg_hot.l_pitch,
         phi   = cfg_HTR.cfg_hot.a_phi,
@@ -307,19 +319,19 @@ model TestDyn_Comps_PCHE_ramp
         Cf_C2 = Cf_C2,
         Cf_C3 = Cf_C3)),
     fluidFlow(
-      avoidInletEnthalpyDerivative=true,
+      // avoidInletEnthalpyDerivative=true,
       heatTransfer(        
         pitch = cfg_HTR.cfg_cold.l_pitch,
         phi   = cfg_HTR.cfg_cold.a_phi,
         Cf_C1 = Cf_C1,
         Cf_C2 = Cf_C2,
         Cf_C3 = Cf_C3)),
-    /*
-    redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.DittusBoelter,    
-    redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.DittusBoelter,
-    gasFlow(heatTransfer(heating=true)),
-    fluidFlow(heatTransfer(heating=false)),    
-    */
+    
+    // redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.DittusBoelter,    
+    // redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.DittusBoelter,
+    // gasFlow(heatTransfer(heating=true)),
+    // fluidFlow(heatTransfer(heating=false)),    
+    
     
     // fast and works fine for now. Error occurs when mass flow rate is zero, i.e. one flow is shut down. 
     // redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer,      
@@ -328,8 +340,8 @@ model TestDyn_Comps_PCHE_ramp
     N_G              = N_seg_HTR,
     N_F              = N_seg_HTR,
     SSInit           = SSInit,
-    gasQuasiStatic   = true,
-    fluidQuasiStatic = true
+    gasQuasiStatic   = false,
+    fluidQuasiStatic = false
     // metalQuasiStatic = true
     // override the values of Am and L of metaltubeFV
     // to make them agree with semi-circular tube of PCHE
@@ -370,7 +382,7 @@ model TestDyn_Comps_PCHE_ramp
   ThermoPower.Gas.SensT sens_turbine(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {20, 44}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
 */
-/*
+
   // Input signals for transient simulation
   // hot/gas side
   Modelica.Blocks.Sources.IntegerConstant const_T_step_h(k = T_step) annotation(
@@ -407,7 +419,7 @@ model TestDyn_Comps_PCHE_ramp
     Placement(visible = true, transformation(origin = {-48, 124}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
   Modelica.Blocks.Sources.IntegerConstant const_T_step_c(k = T_step) annotation(
     Placement(visible = true, transformation(origin = {-194, 126}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
-*/
+
 protected
   parameter Real tablePhic[5, 4] = [1, 37, 80, 100; 1.5, 7.10E-05, 7.10E-05, 7.10E-05; 2, 8.40E-05, 8.40E-05, 8.40E-05; 2.5, 8.70E-05, 8.70E-05, 8.70E-05; 3, 1.04E-04, 1.04E-04, 1.04E-04];
   parameter Real tableEta[5, 4]  = [1, 37, 80, 100; 1.5, 0.57, 0.89, 0.81; 2, 0.46, 0.82, 0.88; 2.5, 0.41, 0.76, 0.85; 3, 0.38, 0.72, 0.82];
@@ -528,8 +540,8 @@ equation
   
   connect(T_gasOut.outlet, sink_hot.flange) annotation(
     Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));
-
 */
+
 
   //HTR + mixer + LTR + Heater
   // main stream, water/cold side  
@@ -538,30 +550,22 @@ equation
   connect(LTR.waterOut, mixer.inlet2);  
   connect(mixer.outlet, HTR.waterIn);
   connect(HTR.waterOut, heater.gasIn);  
-  /*
-  connect(heater.gasOut, T_gasOut.inlet);  
-  connect(T_gasOut.outlet, sink_cold.flange) annotation(
-    Line(points = {{1.83697e-015, -70}, {1.83697e-015, -56}, {-8.88178e-016, -56}}, thickness = 0.5, color = {0, 0, 255}));
-  */
-  connect(heater.gasOut, sink_cold.flange);
+  connect(heater.gasOut, T_gasOut.inlet);
+  connect(T_gasOut.outlet, sink_cold.flange);
     
   // main stream, gas/hot side
   connect(source_hot.flange, HTR.gasIn) annotation(
    Line(points = {{-50, 0}, {-20, 0}}, color = {159, 159, 223}, thickness = 0.5, smooth = Smooth.None));
   connect(HTR.gasOut, LTR.gasIn);  
   
-  /*
   connect(LTR.gasOut, T_waterOut.inlet);
-  connect(T_waterOut.outlet, sink_hot.flange) annotation(
-    Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));
-  */
-  
-  connect(LTR.gasOut, sink_hot.flange);
+  connect(T_waterOut.outlet, sink_hot.flange);
   
   // hot stream for heater
   connect(source_heater_hot.flange, heater.waterIn);
   connect(heater.waterOut, sink_heater_hot.flange);
-/*
+
+
   // temperature input
   // hot / gas side
   connect(const_T_step_h.y, triadd_T_h.u) annotation(
@@ -598,7 +602,7 @@ equation
     Line(points = {{-117, 72}, {-104, 72}, {-104, 126}}, color = {255, 127, 0}));
   connect(I2R_T_c.y, source_cold.in_T) annotation(
     Line(points = {{-37, 124}, {6, 124}, {6, 64}}, color = {0, 0, 127}));
-*/
+
 
 annotation(
     Diagram(graphics),

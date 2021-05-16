@@ -26,6 +26,12 @@ model TestTP_PCHE
   // package medium_cold = Modelica.Media.IdealGases.SingleGases.CO2;    
   parameter Real table_k_metalwall[:,:] = [293.15, 12.1; 373.15, 16.3; 773.15, 21.5];    
   
+  parameter Real Cf_C1 = 1.626, Cf_C2 = 1, Cf_C3 = 1;
+  // parameter Real Cf_C1_cold = 1, Cf_C2_cold = 1, Cf_C3_cold = 1;
+  parameter Real use_rho_bar = -1.0;  
+  parameter Real rho_bar_hot = 1.0;
+  parameter Real rho_bar_cold = 1.0;    
+  
   parameter Model.RCBCycleConfig cfg(
     N_ch_HTR = 30000,
     L_HTR    = 2.5, 
@@ -45,13 +51,13 @@ model TestTP_PCHE
   */
   
   // set the values of parameters accordingly - For HTR test.
-  // modify it to cfg_heater = cfg.cfg_LTR for LTR test
-  parameter Model.HeatExchangerConfig cfg_heater = cfg.cfg_LTR;
-  parameter Model.ThermoState st_source_hot      = cfg_heater.cfg_hot.st_in;
-  parameter Model.ThermoState st_sink_hot        = cfg_heater.cfg_hot.st_out;
-  parameter Model.ThermoState st_source_cold     = cfg_heater.cfg_cold.st_in;
-  parameter Model.ThermoState st_sink_cold       = cfg_heater.cfg_cold.st_out;
-  parameter Integer N_seg_HE                     = cfg.cfg_LTR.cfg_hot.geo_path.N_seg;
+  // modify it to cfg_HE = cfg.cfg_LTR for LTR test
+  parameter Model.HeatExchangerConfig cfg_HE     = cfg.cfg_HTR;
+  parameter Model.ThermoState st_source_hot      = cfg_HE.cfg_hot.st_in;
+  parameter Model.ThermoState st_sink_hot        = cfg_HE.cfg_hot.st_out;
+  parameter Model.ThermoState st_source_cold     = cfg_HE.cfg_cold.st_in;
+  parameter Model.ThermoState st_sink_cold       = cfg_HE.cfg_cold.st_out;
+  parameter Integer N_seg_HE                     = cfg.cfg_HTR.cfg_hot.geo_path.N_seg;
 
   //Components
   inner ThermoPower.System system(allowFlowReversal = false, initOpt=ThermoPower.Choices.Init.Options.fixedState) annotation(
@@ -109,24 +115,52 @@ model TestTP_PCHE
   Steps.TPComponents.PCHE HE(
     redeclare package FluidMedium = medium_cold, 
     redeclare package FlueGasMedium = medium_hot,     
+    /*
+    // with Kim Correlation
     redeclare replaceable model HeatTransfer_F = Steps.TPComponents.KimPCHEHeatTransferFV(),    
     // ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficient(gamma = thermo_LTR_cold.gamma_he),
     // redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer, 
     redeclare replaceable model HeatTransfer_G = Steps.TPComponents.KimPCHEHeatTransferFV(),
     fluidFlow(
       heatTransfer(
-        pitch = cfg_heater.cfg_cold.l_pitch,
-        phi   = cfg_heater.cfg_cold.a_phi
+        pitch = cfg_HE.cfg_cold.l_pitch,
+        phi   = cfg_HE.cfg_cold.a_phi
       )
     ),
     gasFlow(
       heatTransfer(
-        pitch = cfg_heater.cfg_hot.l_pitch,
-        phi   = cfg_heater.cfg_hot.a_phi
+        pitch = cfg_HE.cfg_hot.l_pitch,
+        phi   = cfg_HE.cfg_hot.a_phi
       )
     ),
+    */
+    
+    // with Marchionni Correlation    
+    redeclare replaceable model HeatTransfer_F = Steps.TPComponents.MarchionniPCHEHeatTransferFV(),
+    redeclare replaceable model HeatTransfer_G = Steps.TPComponents.MarchionniPCHEHeatTransferFV(),
+    gasFlow(
+      heatTransfer(
+        pitch       = cfg_HE.cfg_hot.l_pitch,
+        phi         = cfg_HE.cfg_hot.a_phi,         
+        Cf_C1       = Cf_C1, 
+        Cf_C2       = Cf_C2, 
+        Cf_C3       = Cf_C3, 
+        use_rho_bar = use_rho_bar,
+        rho_bar     = rho_bar_hot,
+        useAverageTemperature = false)),
+    fluidFlow(
+      heatTransfer(
+        pitch       = cfg_HE.cfg_cold.l_pitch, 
+        phi         = cfg_HE.cfg_cold.a_phi,         
+        Cf_C1       = Cf_C1, 
+        Cf_C2       = Cf_C2, 
+        Cf_C3       = Cf_C3, 
+        use_rho_bar = use_rho_bar, 
+        rho_bar     = rho_bar_cold,
+        useAverageTemperature = false)
+    ),  
     redeclare model HeatExchangerTopology = ThermoPower.Thermal.HeatExchangerTopologies.CounterCurrentFlow, 
-    cfg               = cfg_heater,
+    cfg               = cfg_HE,
     N_G               = N_seg_HE,
     N_F               = N_seg_HE,
     SSInit            = SSInit,
