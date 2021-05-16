@@ -29,7 +29,7 @@ model PCHE "PCHE model based on Thermo Power"
   parameter   Boolean gasQuasiStatic                         = false "Quasi-static model of the flue gas (mass, energy and momentum static balances";
   parameter   Boolean fluidQuasiStatic                       = false "Quasi-static model of the fluid (mass, energy and momentum static balances";
   constant    Real pi                                        = Modelica.Constants.pi;
-  parameter   SI.Distance L                                  = 1 "Tube length";
+  // parameter   SI.Distance L                                  = 1 "Tube length";
   parameter   Choices.FluidPhase.FluidPhases FluidPhaseStart = Choices.FluidPhase.FluidPhases.Liquid "Fluid phase (only for initialization!)" annotation(Dialog(tab = "Initialization"));
   parameter   Boolean SSInit                                 = false "Steady State initialization";
   
@@ -53,9 +53,9 @@ model PCHE "PCHE model based on Thermo Power"
   initOpt     = if SSInit then Options.steadyState else Options.noInit,
   QuasiStatic = fluidQuasiStatic,
   pstart      = pstart_F,
-  L           = L,                                                        // Should be L = exchSurface_F ^ 2 / (fluidVol * pi * 4), instead of fixed L = 1 
-  A           = fluidVol / L,                                             // fluidVol is account for single tube
-  omega       = exchSurface_F / L,                                        // exchSurface_F is account for single tube
+  L           = fluidLength,                                              // Should be L = exchSurface_F ^ 2 / (fluidVol * pi * 4), instead of fixed L = 1 
+  A           = fluidVol / fluidLength,                                   // fluidVol is account for single tube
+  omega       = exchSurface_F / fluidLength,                              // exchSurface_F is account for single tube
   Dhyd        = fluidVol*4 / exchSurface_F,
   FFtype      = FFtype_F,
   Kfnom       = Kfnom_F,
@@ -85,9 +85,9 @@ model PCHE "PCHE model based on Thermo Power"
   initOpt     = if SSInit then Options.steadyState else Options.noInit,
   QuasiStatic = gasQuasiStatic,
   pstart      = pstart_G,
-  L           = L,                                                        // Should be L = exchSurface_G ^ 2 / (gasVol * pi * 4), instead of fixed L = 1
-  A           = gasVol / L,                                               // gasVol is account for single tube, 
-  omega       = exchSurface_G / L,                                        // exchSurface_G is account for single tube, 
+  L           = gasLength,                                                // Should be L = exchSurface_G ^ 2 / (gasVol * pi * 4), instead of fixed L = 1
+  A           = gasVol / gasLength,                                       // gasVol is account for single tube, 
+  omega       = exchSurface_G / gasLength,                                // exchSurface_G is account for single tube, 
   Dhyd        = gasVol*4 / exchSurface_G,
   FFtype      = FFtype_G,
   Kfnom       = Kfnom_G,

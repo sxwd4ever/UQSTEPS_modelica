@@ -31,6 +31,9 @@ partial model HeatExchangerG2G "Base class for heat exchanger gas - gas (derived
   parameter SI.Volume gasVol              = cfg_hot.geo_path.V "Gas volume";
   parameter SI.Volume fluidVol            = cfg_cold.geo_path.V "Fluid volume";
   parameter SI.Volume metalVol            = cfg_wall.geo_wall.V "Volume of the metal part in the tubes";
+  parameter SI.Length gasLength           = cfg_hot.geo_path.l "length of the hot side tube, signle tube";
+  parameter SI.Length fluidLength         = cfg_cold.geo_path.l "length of the cold side tube, signle tube";
+  parameter SI.Length metalLength         = cfg_wall.geo_wall.l "length of the wall, signle one between two channels";
   parameter Real rhomcm                   = cfg_wall.rho_mcm "Metal heat capacity per unit volume [J/m^3.K]";
   parameter SI.ThermalConductivity lambda = cfg_wall.lambda "Thermal conductivity of the metal (density by specific heat capacity)";
    

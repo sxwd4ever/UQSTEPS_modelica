@@ -121,74 +121,104 @@ package Model "Data model definition for consistent parameter configuration"
     Real gamma "split ratio";
   end SplitterConfig;
 
-  partial function SetAreaGeometry
-    input Real r;
-    input Real L;
+  partial function SetAreaGeometry    
+    input Real p1 = 0;
+    input Real p2 = 0; 
     output AreaGeometry geo;
     constant Real pi = Modelica.Constants.pi;
   end SetAreaGeometry;
 
+  
   function SetAreaGeometry_Circle
+    input Real r;
     extends SetAreaGeometry;
-  protected 
-    Real peri_in;    
   algorithm
-    peri_in := (pi + 2) * r;
     geo := AreaGeometry(
       d        = r * 2,
-      peri     = peri_in,
-      peri_wet = peri_in,
-      A        = peri_in * L,
+      peri     = 2 * pi * r,
+      peri_wet = 2 * pi * r,
+      A        = pi * r^2,
       w        = 0,
       h        = 0,
       d_hyd    = r * 2,
-      p1       = 0,
-      p2       = 0
+      p1       = p1,
+      p2       = p2
     );
   end SetAreaGeometry_Circle;
 
-  function SetAreaGeometry_Wall
-    "Specific function to set the wall geometry of a PCHE"
-    input Real w;
-    input Real h;
-    input Real p1 = 0;
-    input Real p2 = 0;    
+  function SetAreaGeometry_SemiCircle
+    input Real r;
     extends SetAreaGeometry;
-  protected 
-    Real peri_in;    
-  algorithm
-    peri_in := (pi + 2) * r;
+  algorithm  
     geo := AreaGeometry(
       d        = r * 2,
-      peri     = peri_in,
-      peri_wet = peri_in,
-      A        = peri_in * L,
+      peri     = (pi + 2) * r,
+      peri_wet = (pi + 2) * r,
+      A        = pi * r^2 / 2,
+      w        = 0,
+      h        = 0,
+      d_hyd    = 4 * pi * r / ( pi + 2),
+      p1       = p1,
+      p2       = p2
+    );
+  end SetAreaGeometry_SemiCircle;
+
+  function SetAreaGeometry_Tube
+    input Real r_int;
+    input Real r_ext;
+    extends SetAreaGeometry;
+  algorithm  
+    geo := AreaGeometry(
+      d        = r_ext * 2,
+      peri     = 2 * pi * r_ext,
+      peri_wet = 2 * pi * r_ext,
+      A        = pi * (r_ext ^ 2- r_int^2),
+      w        = 0,
+      h        = 0,
+      d_hyd    = r_ext,
+      p1       = p1,
+      p2       = p2
+    );
+  end SetAreaGeometry_Tube;
+
+
+  function SetAreaGeometry_Wall
+    "Specific function to set the wall geometry of a PCHE" 
+    extends SetAreaGeometry;
+    input Real r;
+    input Real w;
+    input Real h;
+  algorithm
+    geo := AreaGeometry(
+      d        = 2 * r,
+      peri     = w * h,
+      peri_wet = w * h,
+      A        = w * h - pi * r * r,
       w        = w,
       h        = h,
-      d_hyd    = r * 2,
+      d_hyd    = 2 * r,
       p1       = p1,
       p2       = p2
     );
   end SetAreaGeometry_Wall;
 
-  function SetPathGeometry
-    input Real r;
+  function SetPathGeometry    
     input Real L;
     input Integer N_seg;
     input Real e_rel = 0;
     input Real p1    = 0;
     input Real p2    = 0;
+    input AreaGeometry geo_area;
     output PathGeometry geo;
     constant Real pi = Modelica.Constants.pi;
   protected
     Real peri_in;
-  algorithm
-    peri_in := (pi + 2) * r;
+  algorithm    
     geo := PathGeometry(
       l      = L,
-      V      = r ^ 2 * pi * L / 2,
-      A_cr   = r ^ 2 * pi,
-      A_surf = r * 2 * pi * L,
+      V      = geo_area.A * L,
+      A_cr   = geo_area.A, 
+      A_surf = geo_area.peri * L, // for semi circle only
       e_rel  = e_rel,
       N_seg  = N_seg,
       p1     = p1,

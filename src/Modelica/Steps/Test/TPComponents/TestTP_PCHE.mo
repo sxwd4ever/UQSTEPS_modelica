@@ -19,7 +19,7 @@ model TestTP_PCHE
   // package medium_hot = Steps.Media.CO2;
   // package medium_cold = Steps.Media.CO2;
   // package medium_hot = ExternalMedia.Examples.CO2CoolProp;
-  // package medium_cold = ExternalMedia.Examples.CO2CoolProp;  
+  // package medium_cold = ExternalMedia.Examples.CO2CoolProp;    
   package medium_hot = Steps.Media.SCO2;
   package medium_cold = Steps.Media.SCO2; 
   // package medium_hot = Modelica.Media.IdealGases.SingleGases.CO2;
@@ -27,8 +27,14 @@ model TestTP_PCHE
   parameter Real table_k_metalwall[:,:] = [293.15, 12.1; 373.15, 16.3; 773.15, 21.5];    
   
   parameter Model.RCBCycleConfig cfg(
-    N_ch_HTR = 10000,
-    N_ch_LTR = 10000
+    N_ch_HTR = 30000,
+    L_HTR    = 2.5, 
+    r_i_HTR  = 1.5e-3,   
+    r_o_HTR  = 1.5e-3,    
+    N_ch_LTR = 30000,
+    L_LTR    = 2.5,
+    r_i_LTR  = 1.5e-3,   
+    r_o_LTR  = 1.5e-3         
   );
   /*
   (
@@ -48,7 +54,7 @@ model TestTP_PCHE
   parameter Integer N_seg_HE                     = cfg.cfg_LTR.cfg_hot.geo_path.N_seg;
 
   //Components
-  inner ThermoPower.System system(allowFlowReversal = false, initOpt=ThermoPower.Choices.Init.Options.noInit) annotation(
+  inner ThermoPower.System system(allowFlowReversal = false, initOpt=ThermoPower.Choices.Init.Options.fixedState) annotation(
     Placement(transformation(extent = {{80, 80}, {100, 100}})));  
   
   parameter Boolean SSInit = false "Steady-state initialization";
@@ -91,29 +97,34 @@ model TestTP_PCHE
   annotation(
     Placement(transformation(extent = {{-70, -10}, {-50, 10}}, rotation = 0))); 
   
-  ThermoPower.Gas.SensT T_waterIn(redeclare package Medium = medium_cold) annotation(
-    Placement(transformation(origin = {4, -50}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
-  ThermoPower.Gas.SensT T_waterOut(redeclare package Medium = medium_cold) annotation(
-    Placement(transformation(origin = {4, -50}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
-  
-  ThermoPower.Gas.SensT T_gasIn(redeclare package Medium = medium_hot);
-  ThermoPower.Gas.SensT T_gasOut(redeclare package Medium = medium_hot);
+  Steps.TPComponents.GasStateReader r_HE_hin(redeclare package Medium = medium_hot) annotation(
+    Placement(visible = true, transformation(origin = {66, -56}, extent = {{-6, -6}, {6, 6}}, rotation = 0)));
+  Steps.TPComponents.GasStateReader r_HE_hout(redeclare package Medium = medium_hot) annotation(
+    Placement(visible = true, transformation(origin = {96, 44}, extent = {{-6, -6}, {6, 6}}, rotation = 180)));
+  Steps.TPComponents.GasStateReader r_HE_cin(redeclare package Medium = medium_cold) annotation(
+    Placement(visible = true, transformation(origin = {-22, 50}, extent = {{-6, -6}, {6, 6}}, rotation = -90)));
+  Steps.TPComponents.GasStateReader r_HE_cout(redeclare package Medium = medium_cold) annotation(
+    Placement(visible = true, transformation(origin = {-32, 20}, extent = {{-6, -6}, {6, 6}}, rotation = 180)));
 
-  //Real kim_cor_coe[4] = {kim.a, kim.b, kim.c, kim.d};
-  parameter SI.Length pitch = 12.3e-3 "pitch length";
-  parameter Real phi        = 35 "pitch angle °";
-    
   Steps.TPComponents.PCHE HE(
     redeclare package FluidMedium = medium_cold, 
     redeclare package FlueGasMedium = medium_hot,     
-    redeclare replaceable model HeatTransfer_F = Steps.TPComponents.KimPCHEHeatTransferFV(
-    pitch = pitch,
-    phi   = phi),
+    redeclare replaceable model HeatTransfer_F = Steps.TPComponents.KimPCHEHeatTransferFV(),    
     // ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficient(gamma = thermo_LTR_cold.gamma_he),
     // redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer, 
-    redeclare replaceable model HeatTransfer_G = Steps.TPComponents.KimPCHEHeatTransferFV(
-    pitch = pitch,
-    phi   = phi),
+    redeclare replaceable model HeatTransfer_G = Steps.TPComponents.KimPCHEHeatTransferFV(),
+    fluidFlow(
+      heatTransfer(
+        pitch = cfg_heater.cfg_cold.l_pitch,
+        phi   = cfg_heater.cfg_cold.a_phi
+      )
+    ),
+    gasFlow(
+      heatTransfer(
+        pitch = cfg_heater.cfg_hot.l_pitch,
+        phi   = cfg_heater.cfg_hot.a_phi
+      )
+    ),
     redeclare model HeatExchangerTopology = ThermoPower.Thermal.HeatExchangerTopologies.CounterCurrentFlow, 
     cfg               = cfg_heater,
     N_G               = N_seg_HE,
@@ -121,6 +132,7 @@ model TestTP_PCHE
     SSInit            = SSInit,
     gasQuasiStatic    = true,
     fluidQuasiStatic  = true
+    //metalWall(WallRes=false) 
     //table_k_metalwall = table_k_metalwall
     // override the values of Am and L of metaltubeFV
     // to make them agree with semi-circular tube of PCHE
@@ -149,20 +161,20 @@ equation
     Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));    
 */   
   
-  connect(source_cold.flange, T_waterIn.inlet);
-  connect(T_waterIn.outlet, HE.waterIn) annotation(
+  connect(source_cold.flange, r_HE_cin.inlet);
+  connect(r_HE_cin.outlet, HE.waterIn) annotation(
     Line(points = {{-1.83697e-015, 50}, {-1.83697e-015, 20}, {0, 20}}, color = {0, 0, 255}, thickness = 0.5, smooth = Smooth.None));
-  connect(HE.waterOut, T_waterOut.inlet) annotation(
+  connect(HE.waterOut, r_HE_cout.inlet) annotation(
     Line(points = {{8.88178e-016, -44}, {8.88178e-016, -20}, {0, -20}}, thickness = 0.5, color = {0, 0, 255}));      
-  connect(T_waterOut.outlet, sink_cold.flange) annotation(
+  connect(r_HE_cout.outlet, sink_cold.flange) annotation(
     Line(points = {{1.83697e-015, -70}, {1.83697e-015, -56}, {-8.88178e-016, -56}}, thickness = 0.5, color = {0, 0, 255}));
   
-  connect(source_hot.flange, T_gasIn.inlet);
-  connect(T_gasIn.outlet, HE.gasIn) annotation(
+  connect(source_hot.flange, r_HE_hin.inlet);
+  connect(r_HE_hin.outlet, HE.gasIn) annotation(
         Line(points = {{-50, 0}, {-20, 0}}, color = {159, 159, 223}, thickness = 0.5, smooth = Smooth.None)); 
-  connect(HE.gasOut, T_gasOut.inlet) annotation(
+  connect(HE.gasOut, r_HE_hout.inlet) annotation(
     Line(points = {{34, 0}, {34, 0}, {20, 0}}, color = {159, 159, 223}, thickness = 0.5));
-  connect(T_gasOut.outlet, sink_hot.flange) annotation(
+  connect(r_HE_hout.outlet, sink_hot.flange) annotation(
     Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));    
   
 annotation(

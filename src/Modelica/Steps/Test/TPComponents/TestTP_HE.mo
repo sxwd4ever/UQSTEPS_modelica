@@ -47,10 +47,17 @@ model TestTP_HE
     L_heater    = 1
   );    
   parameter Model.HeatExchangerConfig cfg_HE  = cfg.cfg_heater;
+  /*
   parameter Model.ThermoState st_source_main  = cfg_HE.cfg_hot.st_in;
   parameter Model.ThermoState st_sink_main    = cfg_HE.cfg_hot.st_out;
   parameter Model.ThermoState st_source_HE    = cfg_HE.cfg_cold.st_in;
   parameter Model.ThermoState st_sink_HE      = cfg_HE.cfg_cold.st_out;
+  */
+  parameter Model.ThermoState st_source_main  = cfg_HE.cfg_cold.st_in;
+  parameter Model.ThermoState st_sink_main    = cfg_HE.cfg_cold.st_out;
+  parameter Model.ThermoState st_source_HE    = cfg_HE.cfg_hot.st_in;
+  parameter Model.ThermoState st_sink_HE      = cfg_HE.cfg_hot.st_out;
+  
   parameter Integer N_seg_HE                  = cfg.cfg_heater.cfg_hot.geo_path.N_seg;  
  
   /*  
@@ -77,46 +84,46 @@ model TestTP_HE
   parameter Integer N_seg_HE                 = cfg.cfg_cooler.cfg_hot.geo_path.N_seg;
   */ 
     
-  ThermoPower.Water.SourceMassFlow source_main(
+  ThermoPower.Water.SourceMassFlow source_HE(
   redeclare package Medium = medium_main, //medium_HE,
-    w0 = st_source_main.mdot,
-    p0 = st_source_main.p,
-    h  = st_source_main.h,
-    T  = st_source_main.T
+    w0 = st_source_HE.mdot,
+    p0 = st_source_HE.p,
+    h  = st_source_HE.h,
+    T  = st_source_HE.T
     // use_T = true,
     // use_in_T = false 
   ) 
   annotation(
     Placement(transformation(origin = {0, 60}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
     
-  ThermoPower.Water.SinkPressure sink_main(
+  ThermoPower.Water.SinkPressure sink_HE(
   redeclare package Medium = medium_main, //medium_HE,
-    p0    = st_sink_main.p,
-    T     = st_sink_main.T,
-    h     = st_sink_main.h,
-    use_T = true
+    p0    = st_sink_HE.p,
+    T     = st_sink_HE.T,
+    h     = st_sink_HE.h,
+    use_T = false
   ) 
   annotation(
     Placement(transformation(origin = {0, -80}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
     
-  ThermoPower.Gas.SourceMassFlow source_HE(
-  redeclare package Medium = medium_HE, //medium_main,
-    T        = st_source_HE.T,
-    p0       = st_source_HE.p,
+  ThermoPower.Gas.SourceMassFlow source_main(
+  redeclare package Medium = medium_main, //medium_main,
+    T        = st_source_main.T,
+    p0       = st_source_main.p,
     use_in_T = false,
-    w0       = st_source_HE.mdot,
+    w0       = st_source_main.mdot,
     gas(
-      p(nominal = st_source_HE.p),
-      T(nominal = st_source_HE.T)
+      p(nominal = st_source_main.p),
+      T(nominal = st_source_main.T)
     )
   )
   annotation(
     Placement(transformation(origin = {0, 60}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));      
   
-  ThermoPower.Gas.SinkPressure sink_HE(
-  redeclare package Medium = medium_HE, //medium_main,
-    p0 = st_sink_HE.p,
-    T  = st_sink_HE.T
+  ThermoPower.Gas.SinkPressure sink_main(
+  redeclare package Medium = medium_main, //medium_main,
+    p0 = st_sink_main.p,
+    T  = st_sink_main.T
   )
   annotation(
     Placement(transformation(origin = {0, -80}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));  

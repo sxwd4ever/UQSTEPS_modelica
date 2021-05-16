@@ -130,7 +130,7 @@ model RCBCycleConfig
   parameter Model.ThermoState st_HTR_hot_in(
     p    = p_comp_in,
     T    = T_HTR_hot_in,
-    h    = medium_main.specificEnthalpy_pT(p = st_HTR_hot_in.p, T = st_HTR_hot_in.T),
+    h    =  medium_main.specificEnthalpy_pT(p = p_comp_in, T = T_HTR_hot_in),
     mdot = mdot_main  
   );
 
@@ -180,7 +180,7 @@ model RCBCycleConfig
   parameter Model.ThermoState st_heater_cold_out(
     p    = p_comp_out,
     T    = T_heater_cold_out,
-    h    = medium_main.specificEnthalpy_pT(p = st_heater_cold_out.p, T = st_heater_cold_out.T),
+    h    = medium_main.specificEnthalpy_pT(p = p_comp_out, T = T_heater_cold_out),
     mdot = mdot_main    
   );
 
@@ -208,16 +208,16 @@ model RCBCycleConfig
   parameter Modelica.SIunits.Radius r_t_cooler = 15e-3 "tube's external radius(single tube)";
   parameter Modelica.SIunits.Radius r_o_cooler = 500e-3 "radius of external side of heat exchanger";
   parameter Modelica.SIunits.Length L_cooler   = 1 "m length of the tube/cooler";
-  parameter Integer N_ch_cooler                = 100;
+  parameter Integer N_ch_cooler                = 10000;
   parameter Integer N_seg_cooler               = N_seg;
 
   // cfg for cooler's cold/fluid side
-  parameter AreaGeometry ga_cooler_hot  = SetAreaGeometry_Circle(r = r_i_cooler, L = L_cooler);
-  parameter AreaGeometry ga_cooler_cold = SetAreaGeometry_Circle(r = r_o_cooler, L = L_cooler);
-  parameter AreaGeometry ga_cooler_wall = SetAreaGeometry_Circle(r = r_t_cooler, L = L_cooler);
-  parameter PathGeometry gp_cooler_hot  = SetPathGeometry(r = r_i_cooler, L = L_cooler, N_seg = N_seg_cooler);
-  parameter PathGeometry gp_cooler_cold = SetPathGeometry(r = r_o_cooler, L = L_cooler, N_seg = N_seg_cooler);
-  parameter PathGeometry gp_cooler_wall = SetPathGeometry(r = r_t_cooler, L = L_cooler, N_seg = N_seg_cooler);
+  parameter AreaGeometry ga_cooler_hot  = SetAreaGeometry_Circle(r = r_i_cooler);
+  parameter AreaGeometry ga_cooler_cold = SetAreaGeometry_Circle(r = r_o_cooler);
+  parameter AreaGeometry ga_cooler_wall = SetAreaGeometry_Tube(r_int = r_i_cooler, r_ext = r_o_cooler);
+  parameter PathGeometry gp_cooler_hot  = SetPathGeometry(geo_area = ga_cooler_hot, L = L_cooler, N_seg = N_seg_cooler);
+  parameter PathGeometry gp_cooler_cold = SetPathGeometry(geo_area = ga_cooler_cold, L = L_cooler, N_seg = N_seg_cooler);
+  parameter PathGeometry gp_cooler_wall = SetPathGeometry(geo_area = ga_cooler_wall, L = L_cooler, N_seg = N_seg_cooler);
   
   
   parameter Model.HeatExchangerConfig cfg_cooler(
@@ -256,19 +256,21 @@ model RCBCycleConfig
   parameter Modelica.SIunits.Radius w_sd_LTR = 2.3e-3 "Width of the solid domain";
   parameter Modelica.SIunits.Radius h_sd_LTR = 4.17e-3 "Height of the solid domain, containing one cold tube and one hot tube";
   parameter Modelica.SIunits.Length t_ch_LTR = 0.51e-3 "thinckness between two channels";
+  parameter Modelica.SIunits.Length l_pitch_LTR = 12.3e-3 "pitch length";
+  parameter Modelica.SIunits.Length a_phi_LTR = 35 "pitch angle";
 
   parameter Modelica.SIunits.Length L_LTR   = 1 "m";
   parameter Modelica.SIunits.Length l_wall_LTR  = 420e-3 "Length of wall, not necessarily equals to length of flow path";  
   parameter Integer N_seg_LTR               = N_seg;
-  parameter Integer N_ch_LTR                = 400;
+  parameter Integer N_ch_LTR                = 20000;
 
   // cfg for LTR's cold/fluid side
-  parameter AreaGeometry ga_LTR_hot  = SetAreaGeometry_Circle(r = r_i_LTR, L = L_LTR);
-  parameter AreaGeometry ga_LTR_cold = SetAreaGeometry_Circle(r = r_o_LTR, L = L_LTR);
-  parameter AreaGeometry ga_LTR_wall = SetAreaGeometry_Wall(r = r_t_LTR, L = L_LTR, w = w_sd_LTR, h = h_sd_LTR, p1 = t_ch_LTR);
-  parameter PathGeometry gp_LTR_hot  = SetPathGeometry(r = r_i_LTR, L = L_LTR, N_seg = N_seg_LTR);
-  parameter PathGeometry gp_LTR_cold = SetPathGeometry(r = r_o_LTR, L = L_LTR, N_seg = N_seg_LTR);
-  parameter PathGeometry gp_LTR_wall = SetPathGeometry(r = r_t_LTR, L = L_LTR, N_seg = N_seg_LTR, p1 = l_wall_LTR);
+  parameter AreaGeometry ga_LTR_hot  = SetAreaGeometry_SemiCircle(r = r_i_LTR);
+  parameter AreaGeometry ga_LTR_cold = SetAreaGeometry_SemiCircle(r = r_o_LTR);
+  parameter AreaGeometry ga_LTR_wall = SetAreaGeometry_Wall(r = r_i_LTR, w = w_sd_LTR, h = h_sd_LTR, p1 = t_ch_LTR);
+  parameter PathGeometry gp_LTR_hot  = SetPathGeometry(geo_area = ga_LTR_hot, L = L_LTR, N_seg = N_seg_LTR);
+  parameter PathGeometry gp_LTR_cold = SetPathGeometry(geo_area = ga_LTR_cold, L = L_LTR, N_seg = N_seg_LTR);
+  parameter PathGeometry gp_LTR_wall = SetPathGeometry(geo_area = ga_LTR_wall, L = L_LTR, N_seg = N_seg_LTR, p1 = l_wall_LTR);
   
   parameter Model.HeatExchangerConfig cfg_LTR(
     cfg_hot(
@@ -277,7 +279,9 @@ model RCBCycleConfig
       geo_area = ga_LTR_hot,
       geo_path = gp_LTR_hot,
       N_ch     = N_ch_LTR,
-      u        = 0
+      u        = 0,
+      l_pitch  = l_pitch_LTR,
+      a_phi    = a_phi_LTR
     ),
     cfg_cold(
       st_in    = st_LTR_cold_in,
@@ -285,7 +289,9 @@ model RCBCycleConfig
       geo_area = ga_LTR_cold,
       geo_path = gp_LTR_cold,
       N_ch     = N_ch_LTR,
-      u        = 0
+      u        = 0,
+      l_pitch  = l_pitch_LTR,
+      a_phi    = a_phi_LTR
     ),
     cfg_wall(
       st_init  = st_LTR_hot_in,
@@ -306,19 +312,21 @@ model RCBCycleConfig
   parameter Modelica.SIunits.Radius w_sd_HTR = 2.3e-3 "Width of the solid domain";
   parameter Modelica.SIunits.Radius h_sd_HTR = 4.17e-3 "Height of the solid domain, containing one cold tube and one hot tube";
   parameter Modelica.SIunits.Length t_ch_HTR = 0.51e-3 "thinckness between two channels";
+  parameter Modelica.SIunits.Length l_pitch_HTR = 12.3e-3 "pitch length";
+  parameter Modelica.SIunits.Length a_phi_HTR = 35 "pitch angle";  
 
   parameter Modelica.SIunits.Length L_HTR      = 1 "m";
   parameter Modelica.SIunits.Length l_wall_HTR = 420e-3 "Length of wall, not necessarily equals to length of flow path";
   parameter Integer N_seg_HTR                  = N_seg;
-  parameter Integer N_ch_HTR                   = 400;
+  parameter Integer N_ch_HTR                   = 20000;
 
   // cfg for HTR's cold/fluid side
-  parameter AreaGeometry ga_HTR_hot  = SetAreaGeometry_Circle(r = r_i_HTR, L = L_HTR);
-  parameter AreaGeometry ga_HTR_cold = SetAreaGeometry_Circle(r = r_o_HTR, L = L_HTR);
-  parameter AreaGeometry ga_HTR_wall = SetAreaGeometry_Wall(r = r_t_HTR, L = L_HTR, w = w_sd_HTR, h = h_sd_HTR, p1 = t_ch_HTR);
-  parameter PathGeometry gp_HTR_hot  = SetPathGeometry(r = r_i_HTR, L = L_HTR, N_seg = N_seg_HTR);
-  parameter PathGeometry gp_HTR_cold = SetPathGeometry(r = r_o_HTR, L = L_HTR, N_seg = N_seg_HTR);
-  parameter PathGeometry gp_HTR_wall = SetPathGeometry(r = r_t_HTR, L = L_HTR, N_seg = N_seg_HTR, p1 = l_wall_HTR);
+  parameter AreaGeometry ga_HTR_hot  = SetAreaGeometry_SemiCircle(r = r_i_HTR);
+  parameter AreaGeometry ga_HTR_cold = SetAreaGeometry_SemiCircle(r = r_o_HTR);
+  parameter AreaGeometry ga_HTR_wall = SetAreaGeometry_Wall(r = r_i_HTR, w = w_sd_HTR, h = h_sd_HTR, p1 = t_ch_HTR);
+  parameter PathGeometry gp_HTR_hot  = SetPathGeometry(geo_area = ga_HTR_hot, L = L_HTR, N_seg = N_seg_HTR);
+  parameter PathGeometry gp_HTR_cold = SetPathGeometry(geo_area = ga_HTR_cold, L = L_HTR, N_seg = N_seg_HTR);
+  parameter PathGeometry gp_HTR_wall = SetPathGeometry(geo_area = ga_HTR_wall, L = L_HTR, N_seg = N_seg_HTR, p1 = l_wall_HTR);
   
   parameter Model.HeatExchangerConfig cfg_HTR(
     cfg_hot(
@@ -327,7 +335,9 @@ model RCBCycleConfig
       geo_area = ga_HTR_hot,
       geo_path = gp_HTR_hot,
       N_ch     = N_ch_HTR,
-      u        = 0
+      u        = 0,
+      l_pitch  = l_pitch_HTR,
+      a_phi    = a_phi_HTR
     ),
     cfg_cold(
       st_in    = st_HTR_cold_in,
@@ -335,7 +345,9 @@ model RCBCycleConfig
       geo_area = ga_HTR_cold,
       geo_path = gp_HTR_cold,
       N_ch     = N_ch_HTR,
-      u        = 0
+      u        = 0,
+      l_pitch  = l_pitch_HTR,
+      a_phi    = a_phi_HTR
     ),
     cfg_wall(
       st_init  = st_HTR_hot_in,
@@ -355,16 +367,15 @@ model RCBCycleConfig
   parameter Modelica.SIunits.Radius r_o_heater = 170e-3 "radius of external side of one group";
   parameter Modelica.SIunits.Length L_heater   = 1 "m";
   parameter Integer N_seg_heater               = N_seg;
-  parameter Integer N_ch_heater                = 400;
+  parameter Integer N_ch_heater                = 20000;
 
   // cfg for heater's cold/fluid side  
-  parameter AreaGeometry ga_heater_hot  = SetAreaGeometry_Circle(r = r_i_heater, L = L_heater);
-  parameter AreaGeometry ga_heater_cold = SetAreaGeometry_Circle(r = r_o_heater, L = L_heater);
-  parameter AreaGeometry ga_heater_wall = SetAreaGeometry_Circle(r = r_t_heater, L = L_heater);
-  parameter PathGeometry gp_heater_hot  = SetPathGeometry(r = r_i_heater, L = L_heater, N_seg = N_seg_heater);
-  parameter PathGeometry gp_heater_cold = SetPathGeometry(r = r_o_heater, L = L_heater, N_seg = N_seg_heater);
-  parameter PathGeometry gp_heater_wall = SetPathGeometry(r = r_t_heater, L = L_heater, N_seg = N_seg_heater);
-  
+  parameter AreaGeometry ga_heater_hot  = SetAreaGeometry_Circle(r = r_i_heater);
+  parameter AreaGeometry ga_heater_cold = SetAreaGeometry_Circle(r = r_o_heater);
+  parameter AreaGeometry ga_heater_wall = SetAreaGeometry_Tube(r_int = r_i_heater, r_ext = r_o_heater);
+  parameter PathGeometry gp_heater_hot  = SetPathGeometry(geo_area = ga_heater_hot, L = L_heater, N_seg = N_seg_heater);
+  parameter PathGeometry gp_heater_cold = SetPathGeometry(geo_area = ga_heater_cold, L = L_heater, N_seg = N_seg_heater);
+  parameter PathGeometry gp_heater_wall = SetPathGeometry(geo_area = ga_heater_wall, L = L_heater, N_seg = N_seg_heater);  
   
   parameter Model.HeatExchangerConfig cfg_heater(
     cfg_hot(

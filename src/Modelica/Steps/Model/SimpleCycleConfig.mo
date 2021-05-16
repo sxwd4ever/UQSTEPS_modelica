@@ -95,6 +95,8 @@ model SimpleCycleConfig
   parameter Modelica.SIunits.Length L_h = 1 "m";
   parameter Integer N_ch                = 10000;
   parameter Integer N_seg               = 10 "default number of discretized segments in one tube";
+  parameter Real l_pitch_h              = 12.3e-3;
+  parameter Real a_phi_h                = 0;
 
   // Thermal-hydraulic properties
   // default cp and rho for alloy X-750
@@ -106,15 +108,10 @@ model SimpleCycleConfig
   parameter Real rho_mcm                   = rho_wall * cp_wall "Metal heat capacity per unit volume [J/m^3.K]";
 
  
-  // ga : geometry of area
-  parameter Model.AreaGeometry ga_heater_flow = SetAreaGeometry_Circle(r = r_h, L = L_h);
-
-  // gp : geometry of path
-  parameter Model.PathGeometry gp_heater_flow = SetPathGeometry_Circle(r = r_h, L = L_h, N_seg = N_seg);
-
-  parameter Model.AreaGeometry ga_heater_wall = SetAreaGeometry_Wall(r = r_h, L = L_h);
-
-  parameter Model.PathGeometry gp_heater_wall = SetPathGeometry(r = r_h, L = L_h, N_seg = N_seg);
+  parameter Model.AreaGeometry ga_heater_flow = SetAreaGeometry_Circle(r = r_h);
+  parameter Model.PathGeometry gp_heater_flow = SetPathGeometry(geo_area = ga_heater_flow, L = L_h, N_seg = N_seg);
+  parameter Model.AreaGeometry ga_heater_wall = SetAreaGeometry_Wall(r = r_h, w = r_h, h = 2 * r_h);
+  parameter Model.PathGeometry gp_heater_wall = SetPathGeometry(geo_area = ga_heater_wall, L = L_h, N_seg = N_seg);
 
   parameter Model.HeatExchangerConfig cfg_heater(
     // identical geometry for both sides
@@ -124,7 +121,9 @@ model SimpleCycleConfig
       geo_area = ga_heater_flow,
       geo_path = gp_heater_flow,
       N_ch     = N_ch,
-      u        = 0
+      u        = 0,
+      l_pitch  = l_pitch_h,
+      a_phi    = a_phi_h
     ),     
     cfg_cold(
       st_in    = st_heater_cin,
@@ -132,7 +131,9 @@ model SimpleCycleConfig
       geo_area = ga_heater_flow,
       geo_path = gp_heater_flow,
       N_ch     = N_ch,
-      u        = 0
+      u        = 0,
+      l_pitch  = l_pitch_h,
+      a_phi    = a_phi_h
     ),
     cfg_wall(
       st_init  = st_heater_hin,

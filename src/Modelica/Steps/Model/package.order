@@ -11,6 +11,8 @@ HeatExchangerConfig
 SplitterConfig
 SetAreaGeometry
 SetAreaGeometry_Circle
+SetAreaGeometry_SemiCircle
+SetAreaGeometry_Tube
 SetAreaGeometry_Wall
 SetPathGeometry
 HEBoundaryCondition

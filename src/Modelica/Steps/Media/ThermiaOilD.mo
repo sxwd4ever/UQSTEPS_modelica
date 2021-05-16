@@ -8,7 +8,9 @@ package ThermiaOilD "Shell Thermia Oil D the heat transfer fluid"
   extends Incompressible.TableBased(
     mediumName="Thermia Oil D",
     T_min = from_degC(0), T_max = from_degC(340),
-    TinK = false, T0=273.15,
+    TinK = false, 
+    T0 = 273.15,
+    h0 = 1.59717e+006, // a little bit lower than the minimum value, to make the T_ph function (OneNonLinearEquation.solve) feasible 
     tableDensity=
       [0, 894; 20, 882; 40, 870; 100, 834; 150, 803; 200, 773; 250, 743; 300, 712; 340, 688
 ],
@@ -62,14 +64,15 @@ package ThermiaOilD "Shell Thermia Oil D the heat transfer fluid"
     // CP.PropsSI("d(DMASS)/d(P)|Hmass", "P", state.p, "Hmass", specificEnthalpy_pT(state.p, state.T), mediumName);
     annotation (Inline=true);
   end density_derp_T; 
-  /* 
+
   redeclare replaceable function extends density_derh_p
       "Return density derivative w.r.t. specific enthalpy at constant pressure"
-      algorithm
-        ddhp := Poly.derivativeValue(poly_rho, h_T(state.T));
-        //ddhp:= drho_dT_T(state.T) * dT_dh_h(h_T(state.T));
-    end density_derh_p;    
-  */
+  algorithm
+    ddhp := Poly.derivativeValue(poly_rho, specificEnthalpy(state));
+    //ddhp:= drho_dT_T(state.T) * dT_dh_h(h_T(state.T));
+  annotation (Inline=true);
+  end density_derh_p;    
+
     annotation (Documentation(info="<html>
 
 </html>"));
