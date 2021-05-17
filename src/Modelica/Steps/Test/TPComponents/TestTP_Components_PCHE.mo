@@ -122,7 +122,6 @@ model TestTP_Components_PCHE
       hstartin                = cfg_heater.cfg_hot.st_in.h,
       hstartout               = cfg_heater.cfg_hot.st_out.h),   // set the fluid flow as fixed mdot for simplarity
     gasFlow(
-      QuasiStatic = true,
       Tstartin    = cfg_heater.cfg_cold.st_in.T,
       Tstartout   = cfg_heater.cfg_cold.st_out.T),
     

@@ -16,7 +16,7 @@ model PCHEMetalWallFV "simplified PCHE's fin-like metal wall between parallel mi
   parameter Real rhomcm "Metal heat capacity per unit volume [J/m^3.K]";
   parameter SI.ThermalConductivity lambda "Thermal conductivity";
   parameter Boolean WallRes = true "Wall thermal resistance accounted for";
-  parameter SI.Temperature Tstartbar = 300 "Avarage temperature" annotation(
+  parameter SI.Temperature Tstartbar = 400 "Avarage temperature" annotation(
     Dialog(tab = "Initialisation"));
   parameter SI.Temperature Tstart1           = Tstartbar "Temperature start value - first volume" annotation(Dialog(tab = "Initialisation"));
   parameter SI.Temperature TstartN           = Tstartbar "Temperature start value - last volume" annotation(Dialog(tab = "Initialisation"));

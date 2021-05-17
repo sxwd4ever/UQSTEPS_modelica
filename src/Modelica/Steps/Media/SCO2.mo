@@ -101,7 +101,7 @@ package SCO2 "supercritical CO2"
   external "C" TwoPhaseMedium_setState_pT_C_impl(p, T, state, mediumName, libraryName, substanceName)
     annotation(Include="#include \"externalmedialib.h\"", Library="ExternalMediaLib", IncludeDirectory="modelica://ExternalMedia/Resources/Include", LibraryDirectory="modelica://ExternalMedia/Resources/Library");
   end setState_pT;
-  
+/*  
   redeclare replaceable function setState_ph
     input AbsolutePressure p "pressure";
     input SpecificEnthalpy h "specific enthalpy";
@@ -111,8 +111,8 @@ package SCO2 "supercritical CO2"
   external "C" TwoPhaseMedium_setState_ph_C_impl(p, h, phase, state, mediumName, libraryName, substanceName)
     annotation(Include="#include \"externalmedialib.h\"", Library="ExternalMediaLib", IncludeDirectory="modelica://ExternalMedia/Resources/Include", LibraryDirectory="modelica://ExternalMedia/Resources/Library");
   end setState_ph; 
-    
-/*
+*/    
+
   // To locate the error source during initialization, use this wrapper function to add assert()
   redeclare replaceable function setState_ph
     input AbsolutePressure p "pressure";
@@ -125,7 +125,6 @@ package SCO2 "supercritical CO2"
     state := setState_ph_lib(p, h, phase);
   end setState_ph;
     
-    
   function setState_ph_lib
     "Return thermodynamic state record from p and h"
     extends Modelica.Icons.Function;
@@ -137,7 +136,7 @@ package SCO2 "supercritical CO2"
   external "C" TwoPhaseMedium_setState_ph_C_impl(p, h, phase, state, mediumName, libraryName, substanceName)
     annotation(Include="#include \"externalmedialib.h\"", Library="ExternalMediaLib", IncludeDirectory="modelica://ExternalMedia/Resources/Include", LibraryDirectory="modelica://ExternalMedia/Resources/Library");
   end setState_ph_lib;  
-*/
+
 /*  
   redeclare function extends specificEnthalpy "Return specific enthalpy as a function of the thermodynamic state record"
       algorithm

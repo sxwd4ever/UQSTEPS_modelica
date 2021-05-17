@@ -43,9 +43,9 @@ model RCBCycleConfig
   parameter Modelica.SIunits.Temperature T_cooler_cold_out = from_degC(61.7479462700001);
   parameter Modelica.SIunits.Temperature T_cooler_hot_out  = from_degC(45);
 
-  parameter Modelica.SIunits.MassFlowRate mdot_main   = 125;
+  parameter Modelica.SIunits.MassFlowRate mdot_main   = 128.774;
   parameter Modelica.SIunits.MassFlowRate mdot_comp   = 84.375;
-  parameter Modelica.SIunits.MassFlowRate mdot_heater = 55;
+  parameter Modelica.SIunits.MassFlowRate mdot_heater = 40;
   parameter Modelica.SIunits.MassFlowRate mdot_cooler = 40;
 
   parameter Integer N_seg = 10 "default number of discretized segments in one tube";
@@ -250,19 +250,19 @@ model RCBCycleConfig
   // LTR
   // LTR's's size of heat exchanger gas - gas
   // N_ch_LTR groups of fluid(cold, inner)-tube-gas(hot, outter) tubes 
-  parameter Modelica.SIunits.Radius r_i_LTR  = 1e-3 "mm tube's internal radius";
-  parameter Modelica.SIunits.Radius r_t_LTR  = 1e-3 "tube's external radius";
-  parameter Modelica.SIunits.Radius r_o_LTR  = 1e-3 "radius of external side of one group";
+  parameter Modelica.SIunits.Radius r_i_LTR  = 1.5e-3 "mm tube's internal radius";
+  parameter Modelica.SIunits.Radius r_t_LTR  = 1.5e-3 "tube's external radius";
+  parameter Modelica.SIunits.Radius r_o_LTR  = 1.5e-3 "radius of external side of one group";
   parameter Modelica.SIunits.Radius w_sd_LTR = 2.3e-3 "Width of the solid domain";
   parameter Modelica.SIunits.Radius h_sd_LTR = 4.17e-3 "Height of the solid domain, containing one cold tube and one hot tube";
   parameter Modelica.SIunits.Length t_ch_LTR = 0.51e-3 "thinckness between two channels";
   parameter Modelica.SIunits.Length l_pitch_LTR = 12.3e-3 "pitch length";
   parameter Modelica.SIunits.Length a_phi_LTR = 35 "pitch angle";
 
-  parameter Modelica.SIunits.Length L_LTR   = 1 "m";
+  parameter Modelica.SIunits.Length L_LTR   = 2.5 "m";
   parameter Modelica.SIunits.Length l_wall_LTR  = 420e-3 "Length of wall, not necessarily equals to length of flow path";  
   parameter Integer N_seg_LTR               = N_seg;
-  parameter Integer N_ch_LTR                = 20000;
+  parameter Integer N_ch_LTR                = 30000;
 
   // cfg for LTR's cold/fluid side
   parameter AreaGeometry ga_LTR_hot  = SetAreaGeometry_SemiCircle(r = r_i_LTR);
@@ -306,19 +306,19 @@ model RCBCycleConfig
   // HTR
   // HTR's's size of heat exchanger gas - gas
   // N_ch_HTR groups of fluid(cold, inner)-tube-gas(hot, outter) tubes 
-  parameter Modelica.SIunits.Radius r_i_HTR  = 1e-3 "mm tube's internal radius";
-  parameter Modelica.SIunits.Radius r_t_HTR  = 1e-3 "tube's external radius";
-  parameter Modelica.SIunits.Radius r_o_HTR  = 1e-3 "radius of external side of one group";
+  parameter Modelica.SIunits.Radius r_i_HTR  = 1.5e-3 "mm tube's internal radius";
+  parameter Modelica.SIunits.Radius r_t_HTR  = 1.5e-3 "tube's external radius";
+  parameter Modelica.SIunits.Radius r_o_HTR  = 1.5e-3 "radius of external side of one group";
   parameter Modelica.SIunits.Radius w_sd_HTR = 2.3e-3 "Width of the solid domain";
   parameter Modelica.SIunits.Radius h_sd_HTR = 4.17e-3 "Height of the solid domain, containing one cold tube and one hot tube";
   parameter Modelica.SIunits.Length t_ch_HTR = 0.51e-3 "thinckness between two channels";
   parameter Modelica.SIunits.Length l_pitch_HTR = 12.3e-3 "pitch length";
   parameter Modelica.SIunits.Length a_phi_HTR = 35 "pitch angle";  
 
-  parameter Modelica.SIunits.Length L_HTR      = 1 "m";
+  parameter Modelica.SIunits.Length L_HTR      = 2.5 "m";
   parameter Modelica.SIunits.Length l_wall_HTR = 420e-3 "Length of wall, not necessarily equals to length of flow path";
   parameter Integer N_seg_HTR                  = N_seg;
-  parameter Integer N_ch_HTR                   = 20000;
+  parameter Integer N_ch_HTR                   = 30000;
 
   // cfg for HTR's cold/fluid side
   parameter AreaGeometry ga_HTR_hot  = SetAreaGeometry_SemiCircle(r = r_i_HTR);
@@ -362,12 +362,12 @@ model RCBCycleConfig
   // heater
   // heater's's size of heat exchanger gas - gas
   // N_ch_heater groups of fluid(cold, inner)-tube-gas(hot, outter) tubes 
-  parameter Modelica.SIunits.Radius r_i_heater = 100e-3 "mm tube's internal radius";
-  parameter Modelica.SIunits.Radius r_t_heater = 110e-3 "tube's external radius";
-  parameter Modelica.SIunits.Radius r_o_heater = 170e-3 "radius of external side of one group";
+  parameter Modelica.SIunits.Radius r_i_heater = 20e-3 "mm tube's internal radius";
+  parameter Modelica.SIunits.Radius r_t_heater = 30e-3 "tube's external radius";
+  parameter Modelica.SIunits.Radius r_o_heater = 1/2 "radius of external side of one group";
   parameter Modelica.SIunits.Length L_heater   = 1 "m";
   parameter Integer N_seg_heater               = N_seg;
-  parameter Integer N_ch_heater                = 20000;
+  parameter Integer N_ch_heater                = 100;
 
   // cfg for heater's cold/fluid side  
   parameter AreaGeometry ga_heater_hot  = SetAreaGeometry_Circle(r = r_i_heater);
