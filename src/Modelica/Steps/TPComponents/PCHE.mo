@@ -111,8 +111,8 @@ model PCHE "PCHE model based on Thermo Power"
     Nw                    = Nw_F,
     Nt                    = Nt * 2,
     Tstartbar             = (Tstartbar_G + Tstartbar_F) / 2,
-    Tstart1               = Tstartbar_G,                       //bc.st_hot_out.T, 
-    TstartN               = Tstartbar_F,                       //bc.st_hot_in.T,   
+    Tstart1               = cfg_hot.st_out.T,   //Tstartbar_F,                       //bc.st_hot_out.T, 
+    TstartN               = cfg_hot.st_in.T,    //Tstartbar_G,                       //bc.st_hot_in.T,   
     WallRes               = false,
     table_th_conductivity = cfg_wall.table_k,
     rhomcm                = rhomcm
