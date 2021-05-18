@@ -130,7 +130,7 @@ model RCBCycleConfig
   parameter Model.ThermoState st_HTR_hot_in(
     p    = p_comp_in,
     T    = T_HTR_hot_in,
-    h    =  medium_main.specificEnthalpy_pT(p = p_comp_in, T = T_HTR_hot_in),
+    h    = medium_main.specificEnthalpy_pT(p = st_HTR_hot_in.p, T = st_HTR_hot_in.T),
     mdot = mdot_main  
   );
 
@@ -138,21 +138,28 @@ model RCBCycleConfig
     p    = p_comp_in,
     T    = T_HTR_hot_out,
     h    = medium_main.specificEnthalpy_pT(p = st_HTR_hot_out.p, T = st_HTR_hot_out.T),
-    mdot = mdot_main 
+    mdot = mdot_main
   );
 
   parameter Model.ThermoState st_HTR_cold_in(
     p    = p_comp_out,
     T    = T_HTR_cold_in,
     h    = medium_main.specificEnthalpy_pT(p = st_HTR_cold_in.p, T = st_HTR_cold_in.T),
-    mdot = mdot_main  
+    mdot = mdot_main
   );
 
   parameter Model.ThermoState st_HTR_cold_out(
     p    = p_comp_out,
     T    = T_HTR_cold_out,
     h    = medium_main.specificEnthalpy_pT(p = st_HTR_cold_out.p, T = st_HTR_cold_out.T),
-    mdot = mdot_main 
+    mdot = mdot_main
+  );
+
+  parameter Model.ThermoState st_HTR_wall(
+    p = p_comp_out,
+    T = (T_HTR_cold_in + T_HTR_hot_in) / 2,
+    h = medium_main.specificEnthalpy_pT(p = st_HTR_wall.p, T = st_HTR_wall.T),
+    mdot = mdot_main
   );
 
   // points around heater
@@ -350,7 +357,7 @@ model RCBCycleConfig
       a_phi    = a_phi_HTR
     ),
     cfg_wall(
-      st_init  = st_HTR_hot_in,
+      st_init  = st_HTR_wall,
       geo_area = ga_HTR_wall,
       geo_wall = gp_HTR_wall,
       table_k  = table_k_HTR_wall,
@@ -377,6 +384,8 @@ model RCBCycleConfig
   parameter PathGeometry gp_heater_cold = SetPathGeometry(geo_area = ga_heater_cold, L = L_heater, N_seg = N_seg_heater);
   parameter PathGeometry gp_heater_wall = SetPathGeometry(geo_area = ga_heater_wall, L = L_heater, N_seg = N_seg_heater);  
   
+  parameter Real UA_nom_heater = 1.938761018e6;  
+
   parameter Model.HeatExchangerConfig cfg_heater(
     cfg_hot(
       st_in    = st_heater_hot_in,
@@ -384,7 +393,9 @@ model RCBCycleConfig
       geo_area = ga_heater_hot,
       geo_path = gp_heater_hot,
       N_ch     = N_ch_heater,
-      u        = 0
+      u        = 0,
+      UA_nom   = UA_nom_heater,
+      gamma_HE = UA_nom_heater / gp_heater_hot.A_surf
     ),
     cfg_cold(
       st_in    = st_heater_cold_in,
@@ -392,7 +403,9 @@ model RCBCycleConfig
       geo_area = ga_heater_cold,
       geo_path = gp_heater_cold,
       N_ch     = N_ch_heater,
-      u        = 0
+      u        = 0,
+      UA_nom   = UA_nom_heater,
+      gamma_HE = UA_nom_heater / gp_heater_cold.A_surf
     ),
     cfg_wall(
       st_init  = st_heater_hot_in,

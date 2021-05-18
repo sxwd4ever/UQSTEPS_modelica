@@ -76,9 +76,9 @@ model MarchionniPCHEHeatTransferFV "Marchionni [2019] heat transfer Correlation"
   parameter Real use_rho_bar "> 0, use rho_bar for dp calculation. error in passing a boolean from OMPython so Real type variable is used here";
   parameter Real rho_bar "Averaged rho, >0: valid rho and will be used for dp calculation";   
   
-  parameter Correlations.NuCorrType NuCorr_z = Correlations.NuCorrType.Gnielinski; //Ngo;//Xin "flag of Nusselt Number correlation for zigzag channel PCHE";
+  parameter Correlations.NuCorrType NuCorr_z = Correlations.NuCorrType.Ngo; //Gnielinski; //Ngo;//Xin "flag of Nusselt Number correlation for zigzag channel PCHE";
   parameter Correlations.NuCorrType NuCorr_s = Correlations.NuCorrType.Gnielinski "flag of Nusselt number correlation for straight channel PCHE";
-  parameter Correlations.FFCorrType FFCorr_z = Correlations.FFCorrType.Gnielinski; //Ngo "flag of Friction factor correlation for zigzag channel";
+  parameter Correlations.FFCorrType FFCorr_z = Correlations.FFCorrType.Ngo;//Gnielinski; //Ngo "flag of Friction factor correlation for zigzag channel";
   parameter Correlations.FFCorrType FFCorr_s = Correlations.FFCorrType.Gnielinski "flag of Friction factor correlation for straight channel";
 
   parameter Real Cf_C1 = 1.0;

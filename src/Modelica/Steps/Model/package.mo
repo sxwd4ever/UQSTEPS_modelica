@@ -88,6 +88,8 @@ package Model "Data model definition for consistent parameter configuration"
     Modelica.SIunits.Velocity u "flow velocity";
     Real l_pitch "pitch length";
     Real a_phi "pitch angle";
+    Real UA_nom "Constant heat transfer coefficient";
+    Real gamma_HE "predefined Universal/Total heat transfer coefficient";
   end FlowConfig;
 
   record WallConfig

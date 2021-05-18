@@ -110,9 +110,9 @@ model PCHE "PCHE model based on Thermo Power"
     //L_wall                = cfg_wall.geo_wall.p1,
     Nw                    = Nw_F,
     Nt                    = Nt * 2,
-    Tstartbar             = (Tstartbar_G + Tstartbar_F) / 2,
-    Tstart1               = cfg_hot.st_out.T,   //Tstartbar_F,                       //bc.st_hot_out.T, 
-    TstartN               = cfg_hot.st_in.T,    //Tstartbar_G,                       //bc.st_hot_in.T,   
+    Tstartbar             = cfg_wall.st_init.T, //(Tstartbar_G + Tstartbar_F) / 2,
+    Tstart1               = cfg_wall.st_init.T, //cfg_hot.st_out.T,   //Tstartbar_F,                       //bc.st_hot_out.T, 
+    TstartN               = cfg_wall.st_init.T, //cfg_hot.st_in.T,    //Tstartbar_G,                       //bc.st_hot_in.T,   
     WallRes               = false,
     table_th_conductivity = cfg_wall.table_k,
     rhomcm                = rhomcm

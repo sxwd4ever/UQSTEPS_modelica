@@ -398,74 +398,6 @@ equation
   connect(r_heater_hout.outlet, sink_heater_hot.flange);
 
 /*
-  // HTR + Heater + turbine
-  
-  connect(source_cold.flange, r_HTR_cin.inlet);
-  connect(r_HTR_cin.outlet, HTR.waterIn);
-  connect(HTR.waterOut, r_HTR_cout.inlet);
-  connect(r_HTR_cout.outlet, r_heater_cin.inlet);
-  connect(r_heater_cin.outlet, heater.gasIn);    
-  connect(heater.gasOut, r_heater_cout.inlet);
-  connect(r_heater_cout.outlet, Turbine1.inlet);
-  
-  connect(Turbine1.outlet, sens_turbine.inlet) annotation(
-   Line(points = {{-50, 0}, {-20, 0}}, color = {159, 159, 223}, thickness = 0.5, smooth = Smooth.None));   
-  connect(sens_turbine.outlet, r_HTR_hin.inlet);
-  connect(r_HTR_hin.outlet, HTR.gasIn);  
-  connect(HTR.gasOut, r_HTR_hout.inlet);
-  connect(r_HTR_hout.outlet, sink_hot.flange) annotation(
-    Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));
-   
-  connect(Turbine1.shaft_b, const_speed_comp.flange) annotation(
-    Line(points = {{30, 0}, {74, 0}, {74, 0}, {74, 0}}));
-  
-  // connect(sens_turbine.outlet, sink_cold.flange);  
-  // connect(source_hot.flange, HTR.gasIn);    
-
-  // hot stream for heater
-  connect(source_heater_hot.flange, r_heater_hin.inlet);
-  connect(r_heater_hin.outlet, heater.waterIn);
-  connect(heater.waterOut, r_heater_hout.inlet);
-  connect(r_heater_hout.outlet, sink_heater_hot.flange);
-*/
-  /*
-  // Heater + turbine
-  
-  connect(source_cold.flange, r_heater_cin.inlet);
-  connect(r_heater_cin.outlet, heater.gasIn);    
-  connect(heater.gasOut, r_heater_cout.inlet);
-  connect(r_heater_cout.outlet, Turbine1.inlet);
-  
-  connect(Turbine1.outlet, sens_turbine.inlet) annotation(
-   Line(points = {{-50, 0}, {-20, 0}}, color = {159, 159, 223}, thickness = 0.5, smooth = Smooth.None));   
-  connect(sens_turbine.outlet, sink_hot.flange) annotation(
-    Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));
-   
-  connect(Turbine1.shaft_b, const_speed_comp.flange) annotation(
-    Line(points = {{30, 0}, {74, 0}, {74, 0}, {74, 0}}));
-  
-  // connect(sens_turbine.outlet, sink_cold.flange);  
-  // connect(source_hot.flange, HTR.gasIn);    
-
-  // hot stream for heater
-  connect(source_heater_hot.flange, r_heater_hin.inlet);
-  connect(r_heater_hin.outlet, heater.waterIn);
-  connect(heater.waterOut, r_heater_hout.inlet);
-  connect(r_heater_hout.outlet, sink_heater_hot.flange);
-*/
-
-/*
-  // turbine alone
-  connect(source_cold.flange, Turbine1.inlet);  
-  connect(Turbine1.outlet, sens_turbine.inlet) annotation(
-   Line(points = {{-50, 0}, {-20, 0}}, color = {159, 159, 223}, thickness = 0.5, smooth = Smooth.None));   
-  connect(sens_turbine.outlet, sink_hot.flange) annotation(
-    Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));   
-  connect(Turbine1.shaft_b, const_speed_comp.flange) annotation(
-    Line(points = {{30, 0}, {74, 0}, {74, 0}, {74, 0}}));
-*/  
-
-/*
   //HTR + mixer + LTR + Heater
   // main stream, water/cold side  
   connect(source_mixer_in.flange, mixer.inlet1);  
@@ -499,6 +431,145 @@ equation
   connect(heater.waterOut, r_heater_hout.inlet);
   connect(r_heater_hout.outlet, sink_heater_hot.flange);
 */
+
+/*
+  // HTR + Heater + turbine
+  
+  connect(source_cold.flange, r_HTR_cin.inlet);
+  connect(r_HTR_cin.outlet, HTR.waterIn);
+  connect(HTR.waterOut, r_HTR_cout.inlet);
+  connect(r_HTR_cout.outlet, r_heater_cin.inlet);
+  connect(r_heater_cin.outlet, heater.gasIn);    
+  connect(heater.gasOut, r_heater_cout.inlet);
+  connect(r_heater_cout.outlet, Turbine1.inlet);
+  
+  connect(Turbine1.outlet, sens_turbine.inlet) annotation(
+   Line(points = {{-50, 0}, {-20, 0}}, color = {159, 159, 223}, thickness = 0.5, smooth = Smooth.None));   
+  connect(sens_turbine.outlet, r_HTR_hin.inlet);
+  connect(r_HTR_hin.outlet, HTR.gasIn);  
+  connect(HTR.gasOut, r_HTR_hout.inlet);
+  connect(r_HTR_hout.outlet, sink_hot.flange) annotation(
+    Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));
+   
+  connect(Turbine1.shaft_b, const_speed_comp.flange) annotation(
+    Line(points = {{30, 0}, {74, 0}, {74, 0}, {74, 0}}));
+  
+  // connect(sens_turbine.outlet, sink_cold.flange);  
+  // connect(source_hot.flange, HTR.gasIn);    
+
+  // hot stream for heater
+  connect(source_heater_hot.flange, r_heater_hin.inlet);
+  connect(r_heater_hin.outlet, heater.waterIn);
+  connect(heater.waterOut, r_heater_hout.inlet);
+  connect(r_heater_hout.outlet, sink_heater_hot.flange);
+*/
+
+/*
+  //HTR + mixer + LTR 
+  // water/cold side  
+  connect(source_mixer_in.flange, mixer.inlet1);  
+  connect(source_cold.flange, r_LTR_cin.inlet);
+  connect(r_LTR_cin.outlet, LTR.waterIn);  
+  connect(LTR.waterOut, r_LTR_cout.inlet);
+  connect(r_LTR_cout.outlet, mixer.inlet2);  
+  connect(mixer.outlet, r_HTR_cin.inlet);
+  connect(r_HTR_cin.outlet, HTR.waterIn);
+  connect(HTR.waterOut, r_HTR_cout.inlet);
+  connect(r_HTR_cout.outlet, sink_cold.flange) 
+  annotation(
+    Line(points = {{1.83697e-015, -70}, {1.83697e-015, -56}, {-8.88178e-016, -56}}, thickness = 0.5, color = {0, 0, 255}));
+  
+  // gas/hot side
+  connect(source_hot.flange, r_HTR_hin.inlet);
+  connect(r_HTR_hin.outlet, HTR.gasIn) 
+  annotation(
+   Line(points = {{-50, 0}, {-20, 0}}, color = {159, 159, 223}, thickness = 0.5, smooth = Smooth.None));
+  connect(HTR.gasOut, r_HTR_hout.inlet);
+  connect(r_HTR_hout.outlet, r_LTR_hin.inlet);
+  connect(r_LTR_hin.outlet, LTR.gasIn);  
+  connect(LTR.gasOut, r_LTR_hout.inlet);
+  connect(r_LTR_hout.outlet, sink_hot.flange) annotation(
+    Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));
+*/
+
+/*
+  // Heater + turbine
+  
+  connect(source_cold.flange, r_heater_cin.inlet);
+  connect(r_heater_cin.outlet, heater.gasIn);    
+  connect(heater.gasOut, r_heater_cout.inlet);
+  connect(r_heater_cout.outlet, Turbine1.inlet);
+  
+  connect(Turbine1.outlet, sens_turbine.inlet) annotation(
+   Line(points = {{-50, 0}, {-20, 0}}, color = {159, 159, 223}, thickness = 0.5, smooth = Smooth.None));   
+  connect(sens_turbine.outlet, sink_hot.flange) annotation(
+    Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));
+   
+  connect(Turbine1.shaft_b, const_speed_comp.flange) annotation(
+    Line(points = {{30, 0}, {74, 0}, {74, 0}, {74, 0}}));
+  
+  // connect(sens_turbine.outlet, sink_cold.flange);  
+  // connect(source_hot.flange, HTR.gasIn);    
+
+  // hot stream for heater
+  connect(source_heater_hot.flange, r_heater_hin.inlet);
+  connect(r_heater_hin.outlet, heater.waterIn);
+  connect(heater.waterOut, r_heater_hout.inlet);
+  connect(r_heater_hout.outlet, sink_heater_hot.flange);
+*/
+
+/*
+  //HTR + mixer
+
+  connect(source_mixer_in.flange, mixer.in1);  
+  connect(source_cold.flange, mixer.in2);  
+  connect(mixer.out, HTR.waterIn);
+
+  connect(source_cold.flange, HTR.waterIn);
+  connect(HTR.waterOut, T_waterOut.inlet) annotation(
+    Line(points = {{8.88178e-016, -44}, {8.88178e-016, -20}, {0, -20}}, thickness = 0.5, color = {0, 0, 255}));
+  connect(sink_cold.flange, T_waterOut.outlet) annotation(
+    Line(points = {{1.83697e-015, -70}, {1.83697e-015, -56}, {-8.88178e-016, -56}}, thickness = 0.5, color = {0, 0, 255}));
+    
+  connect(source_hot.flange, HTR.gasIn) annotation(
+   Line(points = {{-50, 0}, {-20, 0}}, color = {159, 159, 223}, thickness = 0.5, smooth = Smooth.None));   
+  connect(HTR.gasOut, T_gasOut.inlet ) annotation(
+    Line(points = {{34, 0}, {34, 0}, {20, 0}}, color = {159, 159, 223}, thickness = 0.5));
+  connect(T_gasOut.outlet, sink_hot.flange) annotation(
+    Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));
+*/
+
+/*
+  // mixer + LTR
+  // water/cold side  
+  connect(source_mixer_in.flange, mixer.inlet1);
+  
+  connect(source_cold.flange, LTR.waterIn);
+  
+  connect(LTR.waterOut, mixer.inlet2);
+  
+  connect(mixer.outlet, sink_cold.flange) annotation(
+    Line(points = {{1.83697e-015, -70}, {1.83697e-015, -56}, {-8.88178e-016, -56}}, thickness = 0.5, color = {0, 0, 255}));
+  
+  // gas/hot side
+  connect(source_hot.flange, LTR.gasIn);
+  
+  connect(LTR.gasOut, sink_hot.flange) annotation(
+    Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));
+*/
+
+
+/*
+  // turbine alone
+  connect(source_cold.flange, Turbine1.inlet);  
+  connect(Turbine1.outlet, sens_turbine.inlet) annotation(
+   Line(points = {{-50, 0}, {-20, 0}}, color = {159, 159, 223}, thickness = 0.5, smooth = Smooth.None));   
+  connect(sens_turbine.outlet, sink_hot.flange) annotation(
+    Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));   
+  connect(Turbine1.shaft_b, const_speed_comp.flange) annotation(
+    Line(points = {{30, 0}, {74, 0}, {74, 0}, {74, 0}}));
+*/  
+
 /*
   // mixer alone
   connect(source_mixer_in.flange, mixer.in1);
@@ -551,72 +622,6 @@ equation
   connect(heater.gasOut, T_gasOut.inlet);
   connect(T_gasOut.outlet, sink_cold.flange);
  */  
-/*
-  //HTR + mixer
-
-  connect(source_mixer_in.flange, mixer.in1);  
-  connect(source_cold.flange, mixer.in2);  
-  connect(mixer.out, HTR.waterIn);
-
-  connect(source_cold.flange, HTR.waterIn);
-  connect(HTR.waterOut, T_waterOut.inlet) annotation(
-    Line(points = {{8.88178e-016, -44}, {8.88178e-016, -20}, {0, -20}}, thickness = 0.5, color = {0, 0, 255}));
-  connect(sink_cold.flange, T_waterOut.outlet) annotation(
-    Line(points = {{1.83697e-015, -70}, {1.83697e-015, -56}, {-8.88178e-016, -56}}, thickness = 0.5, color = {0, 0, 255}));
-    
-  connect(source_hot.flange, HTR.gasIn) annotation(
-   Line(points = {{-50, 0}, {-20, 0}}, color = {159, 159, 223}, thickness = 0.5, smooth = Smooth.None));   
-  connect(HTR.gasOut, T_gasOut.inlet ) annotation(
-    Line(points = {{34, 0}, {34, 0}, {20, 0}}, color = {159, 159, 223}, thickness = 0.5));
-  connect(T_gasOut.outlet, sink_hot.flange) annotation(
-    Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));
-*/
-/*
-  // mixer + LTR
-  // water/cold side  
-  connect(source_mixer_in.flange, mixer.inlet1);
-  
-  connect(source_cold.flange, LTR.waterIn);
-  
-  connect(LTR.waterOut, mixer.inlet2);
-  
-  connect(mixer.outlet, sink_cold.flange) annotation(
-    Line(points = {{1.83697e-015, -70}, {1.83697e-015, -56}, {-8.88178e-016, -56}}, thickness = 0.5, color = {0, 0, 255}));
-  
-  // gas/hot side
-  connect(source_hot.flange, LTR.gasIn);
-  
-  connect(LTR.gasOut, sink_hot.flange) annotation(
-    Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));
-*/
-/*
-  //HTR + mixer + LTR 
-  // water/cold side  
-  connect(source_mixer_in.flange, mixer.inlet1);  
-  connect(source_cold.flange, r_LTR_cin.inlet);
-  connect(r_LTR_cin.outlet, LTR.waterIn);  
-  connect(LTR.waterOut, r_LTR_cout.inlet);
-  connect(r_LTR_cout.outlet, mixer.inlet2);  
-  connect(mixer.outlet, r_HTR_cin.inlet);
-  connect(r_HTR_cin.outlet, HTR.waterIn);
-  connect(HTR.waterOut, r_HTR_cout.inlet);
-  connect(r_HTR_cout.outlet, sink_cold.flange) 
-  annotation(
-    Line(points = {{1.83697e-015, -70}, {1.83697e-015, -56}, {-8.88178e-016, -56}}, thickness = 0.5, color = {0, 0, 255}));
-  
-  // gas/hot side
-  connect(source_hot.flange, r_HTR_hin.inlet);
-  connect(r_HTR_hin.outlet, HTR.gasIn) 
-  annotation(
-   Line(points = {{-50, 0}, {-20, 0}}, color = {159, 159, 223}, thickness = 0.5, smooth = Smooth.None));
-  connect(HTR.gasOut, r_HTR_hout.inlet);
-  connect(r_HTR_hout.outlet, r_LTR_hin.inlet);
-  connect(r_LTR_hin.outlet, LTR.gasIn);  
-  connect(LTR.gasOut, r_LTR_hout.inlet);
-  connect(r_LTR_hout.outlet, sink_hot.flange) annotation(
-    Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));
-*/
-
 
 annotation(
     Diagram(graphics),
