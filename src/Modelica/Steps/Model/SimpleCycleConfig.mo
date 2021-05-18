@@ -139,7 +139,7 @@ model SimpleCycleConfig
       st_init  = st_heater_hin,
       geo_area = ga_heater_wall,
       geo_wall = gp_heater_wall,
-      table_k  = table_k_heater_wall,
+      // table_k  = table_k_heater_wall,
       rho_mcm  = rho_wall * cp_wall,
       lambda   = 200
     )

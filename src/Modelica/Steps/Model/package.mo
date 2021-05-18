@@ -96,8 +96,7 @@ package Model "Data model definition for consistent parameter configuration"
     ThermoState st_init "global averaged config for wall initialization";
     AreaGeometry geo_area "Wall cross section geometry";
     PathGeometry geo_wall "Wall geometry along the length";
-    // material inconel_750
-    Real table_k[:, :] = [149, 16.9; 316, 20.5; 538, 26.5; 649, 28.7; 760, 31.4; 871, 35.3] "Thermal conductivity of metal wall";
+    // parameter Real table_k[:, :] = fill(0, 0, 2); // this variable is removed due record can not have varied dimension arrays.
     Real rho_mcm = 7900 * 578.05;
     Real lambda;
   end WallConfig;

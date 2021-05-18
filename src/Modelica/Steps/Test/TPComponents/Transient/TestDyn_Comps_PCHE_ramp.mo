@@ -277,7 +277,8 @@ model TestDyn_Comps_PCHE_ramp
     N_F              = N_seg_LTR,
     SSInit           = true,
     gasQuasiStatic   = false,
-    fluidQuasiStatic = false
+    fluidQuasiStatic = false,
+    table_k_metalwall = cfg.table_k_LTR_wall
     // metalWall(L = L_wall, w_ch = W_ch, h_ch = H_ch, dx = T_wall),
     // metalQuasiStatic = true
     // override the values of Am and L of metaltubeFV
@@ -340,7 +341,8 @@ model TestDyn_Comps_PCHE_ramp
     N_F              = N_seg_HTR,
     SSInit           = true,
     gasQuasiStatic   = false,
-    fluidQuasiStatic = false   
+    fluidQuasiStatic = false,
+    table_k_metalwall = cfg.table_k_HTR_wall  
     // metalWall(L = L_wall, w_ch = W_ch, h_ch = H_ch, dx = T_wall),
     // table_k_metalwall = table_k_metalwall
     // metalQuasiStatic = true

@@ -62,7 +62,7 @@ model RCBCycleConfig
   // Thermal conductivity of LTR's metal wall 
   // material inconel_750
   parameter Real table_k_LTR_wall[:, :]  = [149, 16.9; 316, 20.5; 538, 26.5; 649, 28.7; 760, 31.4; 871, 35.3];
-  parameter Real table_k_HTR_wall [:, :] = table_k_LTR_wall;
+  parameter Real table_k_HTR_wall[:, :]  = [149, 16.9; 316, 20.5; 538, 26.5; 649, 28.7; 760, 31.4; 871, 35.3];
 
 
   // **** START -  Definition of Key Point's state *****
@@ -248,7 +248,7 @@ model RCBCycleConfig
       st_init  = st_cooler_hot_in,
       geo_area = ga_cooler_wall,
       geo_wall = gp_cooler_wall,
-      table_k  = table_k_LTR_wall,
+      // table_k  = table_k_LTR_wall,
       rho_mcm  = rho_wall * cp_wall,
       lambda   = 200
     )
@@ -257,14 +257,14 @@ model RCBCycleConfig
   // LTR
   // LTR's's size of heat exchanger gas - gas
   // N_ch_LTR groups of fluid(cold, inner)-tube-gas(hot, outter) tubes 
-  parameter Modelica.SIunits.Radius r_i_LTR  = 1.5e-3 "mm tube's internal radius";
-  parameter Modelica.SIunits.Radius r_t_LTR  = 1.5e-3 "tube's external radius";
-  parameter Modelica.SIunits.Radius r_o_LTR  = 1.5e-3 "radius of external side of one group";
-  parameter Modelica.SIunits.Radius w_sd_LTR = 2.3e-3 "Width of the solid domain";
-  parameter Modelica.SIunits.Radius h_sd_LTR = 4.17e-3 "Height of the solid domain, containing one cold tube and one hot tube";
-  parameter Modelica.SIunits.Length t_ch_LTR = 0.51e-3 "thinckness between two channels";
+  parameter Modelica.SIunits.Radius r_i_LTR     = 1.5e-3 "mm tube's internal radius";
+  parameter Modelica.SIunits.Radius r_t_LTR     = 1.5e-3 "tube's external radius";
+  parameter Modelica.SIunits.Radius r_o_LTR     = 1.5e-3 "radius of external side of one group";
+  parameter Modelica.SIunits.Radius w_sd_LTR    = 2.3e-3 "Width of the solid domain";
+  parameter Modelica.SIunits.Radius h_sd_LTR    = 4.17e-3 "Height of the solid domain, containing one cold tube and one hot tube";
+  parameter Modelica.SIunits.Length t_ch_LTR    = 0.51e-3 "thinckness between two channels";
   parameter Modelica.SIunits.Length l_pitch_LTR = 12.3e-3 "pitch length";
-  parameter Modelica.SIunits.Length a_phi_LTR = 35 "pitch angle";
+  parameter Modelica.SIunits.Length a_phi_LTR   = 35 "pitch angle";
 
   parameter Modelica.SIunits.Length L_LTR   = 2.5 "m";
   parameter Modelica.SIunits.Length l_wall_LTR  = 420e-3 "Length of wall, not necessarily equals to length of flow path";  
@@ -304,7 +304,7 @@ model RCBCycleConfig
       st_init  = st_LTR_hot_in,
       geo_area = ga_LTR_wall,
       geo_wall = gp_LTR_wall,
-      table_k  = table_k_LTR_wall,
+      // table_k  = table_k_LTR_wall,
       rho_mcm  = rho_wall * cp_wall,
       lambda   = 200
     )
@@ -313,14 +313,14 @@ model RCBCycleConfig
   // HTR
   // HTR's's size of heat exchanger gas - gas
   // N_ch_HTR groups of fluid(cold, inner)-tube-gas(hot, outter) tubes 
-  parameter Modelica.SIunits.Radius r_i_HTR  = 1.5e-3 "mm tube's internal radius";
-  parameter Modelica.SIunits.Radius r_t_HTR  = 1.5e-3 "tube's external radius";
-  parameter Modelica.SIunits.Radius r_o_HTR  = 1.5e-3 "radius of external side of one group";
-  parameter Modelica.SIunits.Radius w_sd_HTR = 2.3e-3 "Width of the solid domain";
-  parameter Modelica.SIunits.Radius h_sd_HTR = 4.17e-3 "Height of the solid domain, containing one cold tube and one hot tube";
-  parameter Modelica.SIunits.Length t_ch_HTR = 0.51e-3 "thinckness between two channels";
+  parameter Modelica.SIunits.Radius r_i_HTR     = 1.5e-3 "mm tube's internal radius";
+  parameter Modelica.SIunits.Radius r_t_HTR     = 1.5e-3 "tube's external radius";
+  parameter Modelica.SIunits.Radius r_o_HTR     = 1.5e-3 "radius of external side of one group";
+  parameter Modelica.SIunits.Radius w_sd_HTR    = 2.3e-3 "Width of the solid domain";
+  parameter Modelica.SIunits.Radius h_sd_HTR    = 4.17e-3 "Height of the solid domain, containing one cold tube and one hot tube";
+  parameter Modelica.SIunits.Length t_ch_HTR    = 0.51e-3 "thinckness between two channels";
   parameter Modelica.SIunits.Length l_pitch_HTR = 12.3e-3 "pitch length";
-  parameter Modelica.SIunits.Length a_phi_HTR = 35 "pitch angle";  
+  parameter Modelica.SIunits.Length a_phi_HTR   = 35 "pitch angle";
 
   parameter Modelica.SIunits.Length L_HTR      = 2.5 "m";
   parameter Modelica.SIunits.Length l_wall_HTR = 420e-3 "Length of wall, not necessarily equals to length of flow path";
@@ -360,7 +360,7 @@ model RCBCycleConfig
       st_init  = st_HTR_wall,
       geo_area = ga_HTR_wall,
       geo_wall = gp_HTR_wall,
-      table_k  = table_k_HTR_wall,
+      // table_k  = table_k_HTR_wall,
       rho_mcm  = rho_wall * cp_wall,
       lambda   = 200
     )
@@ -411,7 +411,7 @@ model RCBCycleConfig
       st_init  = st_heater_hot_in,
       geo_area = ga_heater_wall,
       geo_wall = gp_heater_wall,
-      table_k  = table_k_LTR_wall,
+      // table_k  = table_k_LTR_wall,
       rho_mcm  = rho_wall * cp_wall,
       lambda   = 200
     )

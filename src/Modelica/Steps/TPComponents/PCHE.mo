@@ -35,7 +35,7 @@ model PCHE "PCHE model based on Thermo Power"
   
   // Thermal conductivity of LTR's metal wall 
   // material inconel_750
-  // parameter Real table_k_metalwall[:, :] = [149, 16.9; 316, 20.5; 538, 26.5; 649, 28.7; 760, 31.4; 871, 35.3];  
+  parameter Real table_k_metalwall[:, :] = [149, 16.9; 316, 20.5; 538, 26.5; 649, 28.7; 760, 31.4; 871, 35.3];  
   
   //IMPORTANT:
   // To date, (because of a bug in Gas.Flow1DFV
@@ -114,7 +114,7 @@ model PCHE "PCHE model based on Thermo Power"
     Tstart1               = cfg_wall.st_init.T, //cfg_hot.st_out.T,   //Tstartbar_F,                       //bc.st_hot_out.T, 
     TstartN               = cfg_wall.st_init.T, //cfg_hot.st_in.T,    //Tstartbar_G,                       //bc.st_hot_in.T,   
     WallRes               = false,
-    table_th_conductivity = cfg_wall.table_k,
+    table_th_conductivity = table_k_metalwall,
     rhomcm                = rhomcm
   ) annotation(
     Placement(transformation(extent = {{-10, -24}, {10, -4}})));

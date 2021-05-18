@@ -54,7 +54,9 @@ model TestTP_Components_PCHE
     Ns_turb     = 30000,
     // mdot_main = 100,
     mdot_main   = 128.774,   // this value is a simulation result with sourcePressure.p = 200 bar
-    mdot_heater = 40
+    mdot_heater = 40,
+    table_k_LTR_wall = table_k_metalwall,
+    table_k_HTR_wall = table_k_metalwall
   );
   
   parameter Model.HeatExchangerConfig cfg_heater = cfg.cfg_heater;
@@ -261,9 +263,10 @@ model TestTP_Components_PCHE
     SSInit           = SSInit,
     gasQuasiStatic   = true,
     fluidQuasiStatic = true,
+    table_k_metalwall =  table_k_metalwall,
     //metalQuasiStatic = false,   
-    metalWall(WallRes=false))
-    //table_k_metalwall =   table_k_metalwall) 
+    metalWall(WallRes=false)
+  ) 
   annotation(
     Placement(transformation(extent = {{-20, -20}, {20, 20}}, rotation = 0)));
   
@@ -309,8 +312,10 @@ model TestTP_Components_PCHE
     SSInit           = SSInit,
     gasQuasiStatic   = true,
     fluidQuasiStatic = true,
+    table_k_metalwall =   cfg.table_k_LTR_wall,
     //metalQuasiStatic = false,   
     metalWall(WallRes=false))
+    
   annotation(
     Placement(transformation(extent = {{-20, -20}, {20, 20}}, rotation = 0)));
 
