@@ -1,7 +1,7 @@
-within Steps.Test.TPComponents;
+within Steps.Test.TPComponents.Transient;
 
-model TestTP_Components_Comp_Path
-  "Test for combination of components (Cooler + Spliter + Main/Re compressor) in ThermoPower"  
+model TestDyn_Comps_Comp_Path
+  "Test for combination of components (Cooler + Spliter + Main/Re compressor) in ThermoPower in transient simulation"  
     
 import Modelica.SIunits.Conversions.{from_degC, from_deg};
   import Modelica.SIunits.{Temperature, Pressure, SpecificEnthalpy};
@@ -16,6 +16,8 @@ import Modelica.SIunits.Conversions.{from_degC, from_deg};
   
   package medium_main = Steps.Media.CO2;
   package medium_cooler = ThermoPower.Water.StandardWater;//Modelica.Media.IdealGases.SingleGases.CO2;  
+  
+  parameter Integer T_step = 3;
   
   parameter Model.RCBCycleConfig cfg(
     redeclare package medium_cooler = medium_cooler,
@@ -37,15 +39,29 @@ import Modelica.SIunits.Conversions.{from_degC, from_deg};
   inner ThermoPower.System system(allowFlowReversal = false, initOpt=ThermoPower.Choices.Init.Options.noInit) annotation(
     Placement(transformation(extent = {{80, 80}, {100, 100}})));
   
-  
+ /* 
   ThermoPower.Gas.SourceMassFlow source(
-  redeclare package Medium = medium_main,
-    w0 = st_source.mdot,
-    p0 = st_source.p,
-    T  = st_source.T)
+    redeclare package Medium = medium_main, 
+    T        = st_source.T,
+    p0       = st_source.p,
+    use_in_T = true,
+    gas(
+      p(start = st_source.p, nominal = st_source.p), 
+      T(start = st_source.T, nominal = st_source.T))) 
     annotation(
     Placement(transformation(origin = {0, 60}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
-    
+  */
+  
+  ThermoPower.Gas.SourcePressure source(
+    redeclare package Medium = medium_main, 
+    T        = st_source.T,
+    p0       = st_source.p,
+    use_in_T = true,
+    gas(
+      p(start = st_source.p, nominal = st_source.p), 
+      T(start = st_source.T, nominal = st_source.T))); 
+
+     
   ThermoPower.Gas.SinkPressure sink(
   redeclare package Medium = medium_main,
     p0 = st_sink.p,
@@ -93,7 +109,7 @@ import Modelica.SIunits.Conversions.{from_degC, from_deg};
     //   heatTransfer(heating=false), 
     //   Tstartin  = cfg_cooler.cfg_cold.st_in.T,
     //   Tstartout = cfg_cooler.cfg_cold.st_out.T),
-    
+    /*
     redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer,    
     redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer, 
     fluidFlow(
@@ -103,7 +119,20 @@ import Modelica.SIunits.Conversions.{from_degC, from_deg};
     gasFlow(
       Tstartin    = cfg_cooler.cfg_hot.st_in.T,
       Tstartout   = cfg_cooler.cfg_hot.st_out.T),
+    */
+    fluidFlow(
+      heatTransfer(gamma = cfg_cooler.cfg_cold.gamma_HE),
+      fixedMassFlowSimplified = true,
+      hstartin                = cfg_cooler.cfg_cold.st_in.h,
+      hstartout               = cfg_cooler.cfg_cold.st_out.h),   // set the fluid flow as fixed mdot for simplarity
+    gasFlow(
+      heatTransfer(gamma = cfg_cooler.cfg_hot.gamma_HE),
+      Tstartin    = cfg_cooler.cfg_hot.st_in.T,
+      Tstartout   = cfg_cooler.cfg_hot.st_out.T),
     
+    redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficientTwoGrids(),     
+    // redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer,      
+    redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficient(),      
     // redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficientTwoGrids(gamma = thermo_hot.gamma_he),          
     // redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficient(gamma =  thermo_cold.gamma_he),           
     redeclare model HeatExchangerTopology = ThermoPower.Thermal.HeatExchangerTopologies.CounterCurrentFlow,
@@ -169,6 +198,25 @@ import Modelica.SIunits.Conversions.{from_degC, from_deg};
       extent={{-50,-10},{-30,10}}, rotation=0)));
   
   ThermoPower.Gas.FlowSplit splitter(redeclare package Medium = medium_main);
+ 
+  // hot/gas side
+  Modelica.Blocks.Sources.IntegerConstant const_T_offset_h(k = integer(st_source.T)) annotation(
+    Placement(visible = true, transformation(origin = {-128, 72}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
+  Modelica.Blocks.Interaction.Show.IntegerValue disp_T_h annotation(
+    Placement(visible = true, transformation(origin = {-144, 158}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
+  Modelica.Blocks.MathInteger.TriggeredAdd triadd_T_h annotation(
+    Placement(visible = true, transformation(origin = {-128, 126}, extent = {{-6, -6}, {6, 6}}, rotation = 0)));
+  Modelica.Blocks.Sources.BooleanPulse en_triadd_T_h(period = 10, startTime = 3, width = 10) annotation(
+    Placement(visible = true, transformation(origin = {-156, 102}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
+  Modelica.Blocks.MathInteger.Sum sum_T_h(nu = 2) annotation(
+    Placement(visible = true, transformation(origin = {-94, 126}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
+  Modelica.Blocks.Interaction.Show.IntegerValue disp_T_step_h annotation(
+    Placement(visible = true, transformation(origin = {-56, 158}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
+  Modelica.Blocks.Math.IntegerToReal I2R_T_h annotation(
+    Placement(visible = true, transformation(origin = {-48, 124}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
+  Modelica.Blocks.Sources.IntegerConstant const_T_step_h(k = T_step) annotation(
+    Placement(visible = true, transformation(origin = {-194, 126}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
+ 
   
 protected
 
@@ -253,10 +301,28 @@ equation
   connect(r_cooler_cin.outlet, cooler.waterIn);
   connect(cooler.waterOut, r_cooler_cout.inlet);
   connect(r_cooler_cout.outlet, sink_cooler.flange);
+  
+  // hot / gas side 
+  connect(en_triadd_T_h.y, triadd_T_h.trigger) annotation(
+    Line(points = {{-145, 102}, {-132, 102}, {-132, 119}}, color = {255, 0, 255}));
+  connect(triadd_T_h.y, sum_T_h.u[1]) annotation(
+    Line(points = {{-121, 126}, {-104, 126}}, color = {255, 127, 0}));
+  connect(triadd_T_h.y, disp_T_h.numberPort) annotation(
+    Line(points = {{-121, 126}, {-160.5, 126}, {-160.5, 158}, {-155.5, 158}}, color = {255, 127, 0}));
+  connect(sum_T_h.y, I2R_T_h.u) annotation(
+    Line(points = {{-82.5, 126}, {-71.25, 126}, {-71.25, 124}, {-60, 124}}, color = {255, 127, 0}));
+  connect(sum_T_h.y, disp_T_step_h.numberPort) annotation(
+    Line(points = {{-82.5, 126}, {-71, 126}, {-71, 158}, {-67.5, 158}}, color = {255, 127, 0}));
+  connect(const_T_step_h.y, triadd_T_h.u) annotation(
+    Line(points = {{-183, 126}, {-136, 126}}, color = {255, 127, 0}));
+  connect(const_T_offset_h.y, sum_T_h.u[2]) annotation(
+    Line(points = {{-117, 72}, {-104, 72}, {-104, 126}}, color = {255, 127, 0}));
+  connect(I2R_T_h.y, source.in_T) annotation(
+    Line(points = {{-37, 124}, {6, 124}, {6, 64}}, color = {0, 0, 127}));  
 
 annotation(
     Diagram(graphics),
-    experiment(StartTime = 0, StopTime = 1, Tolerance = 1e-3, Interval = 1),
+    experiment(StartTime = 0, StopTime = 20, Tolerance = 1e-3, Interval = 2),
     __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts,bltdump",    
     __OpenModelica_simulationFlags(lv = "LOG_DEBUG,LOG_NLS,LOG_NLS_V,LOG_STATS,LOG_INIT,LOG_STDOUT, -w", outputFormat = "mat", s = "dassl", nls = "homotopy"));
-end TestTP_Components_Comp_Path;
+end TestDyn_Comps_Comp_Path;

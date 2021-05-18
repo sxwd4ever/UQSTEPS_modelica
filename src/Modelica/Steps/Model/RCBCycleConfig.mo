@@ -218,6 +218,8 @@ model RCBCycleConfig
   parameter Integer N_ch_cooler                = 10000;
   parameter Integer N_seg_cooler               = N_seg;
 
+  parameter Real UA_nom_cooler = 1.938761018e6;  // Arbitrary UA value, works for off-design RCBC sim
+
   // cfg for cooler's cold/fluid side
   parameter AreaGeometry ga_cooler_hot  = SetAreaGeometry_Circle(r = r_i_cooler);
   parameter AreaGeometry ga_cooler_cold = SetAreaGeometry_Circle(r = r_o_cooler);
@@ -234,7 +236,9 @@ model RCBCycleConfig
       geo_area = ga_cooler_hot,
       geo_path = gp_cooler_hot,
       N_ch     = N_ch_cooler,
-      u        = 0
+      u        = 0,
+      UA_nom   = UA_nom_cooler,
+      gamma_HE = UA_nom_cooler / gp_cooler_hot.A_surf      
     ),
     cfg_cold(
       st_in    = st_cooler_cold_in,
@@ -242,7 +246,9 @@ model RCBCycleConfig
       geo_area = ga_cooler_cold,
       geo_path = gp_cooler_cold,
       N_ch     = N_ch_cooler,
-      u        = 0
+      u        = 0,
+      UA_nom   = UA_nom_cooler,
+      gamma_HE = UA_nom_cooler / gp_cooler_cold.A_surf      
     ),
     cfg_wall(
       st_init  = st_cooler_hot_in,

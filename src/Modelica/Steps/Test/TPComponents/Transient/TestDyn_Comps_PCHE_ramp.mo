@@ -151,12 +151,12 @@ model TestDyn_Comps_PCHE_ramp
     // redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer,    
     // redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFVH.IdealHeatTransfer, 
     fluidFlow(
-      heatTransfer(gamma = cfg_heater.cfg_cold.gamma_HE),
+      heatTransfer(gamma = cfg_heater.cfg_hot.gamma_HE),
       fixedMassFlowSimplified = true,
       hstartin                = cfg_heater.cfg_hot.st_in.h,
       hstartout               = cfg_heater.cfg_hot.st_out.h),   // set the fluid flow as fixed mdot for simplarity
     gasFlow(
-      heatTransfer(gamma = cfg_heater.cfg_hot.gamma_HE),
+      heatTransfer(gamma = cfg_heater.cfg_cold.gamma_HE),
       Tstartin    = cfg_heater.cfg_cold.st_in.T,
       Tstartout   = cfg_heater.cfg_cold.st_out.T),
     
