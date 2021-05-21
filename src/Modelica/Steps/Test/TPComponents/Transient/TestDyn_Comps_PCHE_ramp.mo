@@ -15,7 +15,8 @@ model TestDyn_Comps_PCHE_ramp
   
   // package medium_main = Modelica.Media.IdealGases.SingleGases.CO2; //Steps.Media.CO2;
   package medium_main = Steps.Media.SCO2(
-    //substanceNames = {"CO2|debug=40"}
+    // inputChoice = ExternalMedia.Common.InputChoice.pT,
+    substanceNames = {"CO2|debug=40"}
   );  
   // package medium_main = ExternalMedia.Examples.CO2CoolProp;
   // package medium_heater = Steps.Media.ThermiaOilD; // out of working range of this 10Mw high T loop
@@ -250,7 +251,7 @@ model TestDyn_Comps_PCHE_ramp
     // slow but can have a result - set a_phi = 0 to use Gnielinski's correlation 
     redeclare replaceable model HeatTransfer_F = Steps.TPComponents.MarchionniPCHEHeatTransferFV(),
     redeclare replaceable model HeatTransfer_G = Steps.TPComponents.MarchionniPCHEHeatTransferFV(),
-    gasFlow(
+    gasFlow(      
       heatTransfer(
         pitch = cfg_LTR.cfg_hot.l_pitch,
         phi   = cfg_LTR.cfg_hot.a_phi,
@@ -259,7 +260,7 @@ model TestDyn_Comps_PCHE_ramp
         Cf_C3 = Cf_C3
       )
     ),
-    fluidFlow(
+    fluidFlow(      
       heatTransfer(
         pitch = cfg_LTR.cfg_cold.l_pitch,
         phi   = cfg_LTR.cfg_cold.a_phi,
@@ -307,7 +308,7 @@ model TestDyn_Comps_PCHE_ramp
     
     redeclare replaceable model HeatTransfer_F = Steps.TPComponents.MarchionniPCHEHeatTransferFV(),
     redeclare replaceable model HeatTransfer_G = Steps.TPComponents.MarchionniPCHEHeatTransferFV(),
-    gasFlow(
+    gasFlow(      
       heatTransfer(
         pitch = cfg_HTR.cfg_hot.l_pitch,
         phi   = cfg_HTR.cfg_hot.a_phi,
@@ -316,7 +317,7 @@ model TestDyn_Comps_PCHE_ramp
         Cf_C3 = Cf_C3
       )
     ),
-    fluidFlow(
+    fluidFlow(      
       heatTransfer(
         pitch = cfg_HTR.cfg_cold.l_pitch,
         phi   = cfg_HTR.cfg_cold.a_phi,
