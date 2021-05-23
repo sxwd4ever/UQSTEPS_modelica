@@ -86,7 +86,7 @@ model TP_RCBCycle
     table_k_HTR_wall = table_k_metalwall,
     // latest boundary conditions, following values are simulation results with sourcePressure.p = 200 bar and above geometry params
     p_comp_in  = 109.59e5,
-    p_comp_out = 20e6,    
+    p_comp_out = 20e6,        
     p_heater   = 20e6,    
     T_HTR_hot_in      = from_degC(636.95057734),
     T_HTR_cold_out    = from_degC(569.003),
@@ -942,10 +942,14 @@ equation
   connect(LTR.gasOut, r_LTR_hout.inlet);
   connect(r_LTR_hout.outlet, splitter.inlet); 
   
-  connect(splitter.outlet2, r_cooler_hin.inlet) annotation(
+  connect(splitter.outlet1, r_cooler_hin.inlet) annotation(
     Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));
     
-    connect(splitter.outlet1, sink_temp.flange);
+    connect(splitter.outlet2, recompressor.inlet);
+    
+      connect(recompressor.shaft_a, const_speed_rc.flange);
+    
+    connect(recompressor.outlet, mixer.inlet2);    
     
   connect(r_cooler_hin.outlet, cooler.gasIn);  
   connect(cooler.gasOut, r_cooler_hout.inlet);  
@@ -966,7 +970,7 @@ equation
   connect(r_heater_cout.outlet, sink.flange) annotation(
     Line(points = {{1.83697e-015, -70}, {1.83697e-015, -56}, {-8.88178e-016, -56}}, thickness = 0.5, color = {0, 0, 255}));   
     
-  connect(source_temp.flange, mixer.inlet2);
+  // connect(source_temp.flange, mixer.inlet2);
    
   // hot stream for heater
   connect(source_heater_hot.flange, r_heater_hin.inlet);

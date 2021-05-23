@@ -27,7 +27,7 @@ model RCBCycleConfig
   // following values are calculated by sscar for 10 MW power block( mdot_main = 125, T_amb = 35oC, split_ratio = 0.675)
   parameter Modelica.SIunits.Pressure p_comp_in  = 9e6;
   parameter Modelica.SIunits.Pressure p_comp_out = 20e6;
-  parameter Modelica.SIunits.Pressure p_amb      = 101325;
+  parameter Modelica.SIunits.Pressure p_amb      = 1.01325e6;
   parameter Modelica.SIunits.Pressure p_heater   = 20e6;
   
   parameter Modelica.SIunits.Temperature T_amb             = from_degC(35);
