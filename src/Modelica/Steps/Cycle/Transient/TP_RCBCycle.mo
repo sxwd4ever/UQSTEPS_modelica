@@ -21,7 +21,8 @@ model TP_RCBCycle
   // package medium_main = ExternalMedia.Examples.CO2CoolProp;
   // package medium_heater = Steps.Media.ThermiaOilD; // out of working range of this 10Mw high T loop
   package medium_heater = SolarTherm.Media.Sodium.Sodium_pT;
-
+  package medium_cooler = ThermoPower.Water.StandardWater;//Modelica.Media.IdealGases.SingleGases.CO2;  
+ 
   
   // geometry parameters
   constant  Real pi           = Modelica.Constants.pi;
@@ -81,12 +82,9 @@ model TP_RCBCycle
     r_i_LTR     = 1.5e-3,
     r_o_LTR     = 1.5e-3,
     Ns_turb     = 30000,
-    // mdot_main = 100,
-    mdot_main   = 128.774,   // this value is a simulation result with sourcePressure.p = 200 bar
-    mdot_heater = 40,
     table_k_LTR_wall = table_k_metalwall,
     table_k_HTR_wall = table_k_metalwall,
-    // latest boundary conditions
+    // latest boundary conditions, following values are simulation results with sourcePressure.p = 200 bar and above geometry params
     p_comp_in  = 109.59e5,
     p_comp_out = 20e6,    
     p_heater   = 20e6,    
@@ -350,7 +348,7 @@ model TP_RCBCycle
     T  = st_sink.T)
   annotation(
     Placement(transformation(origin = {0, -80}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
-
+  /*
   ThermoPower.Gas.SourceMassFlow source_temp(
     redeclare package Medium = medium_main, 
     T        = st_source_temp.T,
@@ -359,6 +357,7 @@ model TP_RCBCycle
     w0       = st_source_temp.mdot)
   annotation(
     Placement(transformation(origin = {0, 60}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
+    */
   /*
   ThermoPower.Gas.SinkPressure sink_temp(
     redeclare package Medium = medium_main,
@@ -367,7 +366,7 @@ model TP_RCBCycle
   annotation(
     Placement(transformation(extent = {{60, -10}, {80, 10}}, rotation = 0)));
   */
-  
+  /*
   ThermoPower.Gas.SinkMassFlow sink_temp(
     redeclare package Medium = medium_main, 
     T        = st_sink_temp.T,
@@ -375,6 +374,7 @@ model TP_RCBCycle
     use_in_T = false,
     w0       = st_sink_temp.mdot
   );
+  */
 
   // use FlowJoin to mix flow
   Gas.FlowJoin mixer(redeclare package Medium = medium_main);  
@@ -530,7 +530,7 @@ model TP_RCBCycle
   ThermoPower.Gas.SensT sens_turbine(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {20, 44}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
     
-/*
+
   ThermoPower.Water.SourceMassFlow source_cooler(
     redeclare package Medium = medium_cooler,
     w0 = cfg_cooler.cfg_cold.st_in.mdot,
@@ -593,8 +593,8 @@ model TP_RCBCycle
     cfg             = cfg_cooler,
     N_G             = N_seg_cooler,
     N_F             = N_seg_cooler,
-    SSInit          = SSInit,
-    gasQuasiStatic  = false,
+    SSInit          = false,
+    gasQuasiStatic  = true,
     FluidPhaseStart = ThermoPower.Choices.FluidPhase.FluidPhases.Liquid,
     metalTube(WallRes=false))
   annotation(
@@ -634,7 +634,7 @@ model TP_RCBCycle
     useSupport = false)
   annotation (Placement(transformation(
         extent={{-50,-10},{-30,10}}, rotation=0)));
-*/
+
 
   ThermoPower.Gas.Compressor recompressor(
     redeclare package Medium = medium_main,
@@ -660,6 +660,7 @@ model TP_RCBCycle
     useSupport = false)
   annotation (Placement(transformation(
       extent={{-50,-10},{-30,10}}, rotation=0)));
+
   
   ThermoPower.Gas.FlowSplit splitter(redeclare package Medium = medium_main); 
 
@@ -939,17 +940,20 @@ equation
   connect(r_HTR_hout.outlet, r_LTR_hin.inlet);
   connect(r_LTR_hin.outlet,LTR.gasIn);  
   connect(LTR.gasOut, r_LTR_hout.inlet);
-  connect(r_LTR_hout.outlet, splitter.inlet);
-  connect(splitter.outlet1, recompressor.inlet);
+  connect(r_LTR_hout.outlet, splitter.inlet); 
   
-    connect(splitter.outlet2, sink_temp.flange) annotation(
-      Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));
+  connect(splitter.outlet2, r_cooler_hin.inlet) annotation(
+    Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));
+    
+    connect(splitter.outlet1, sink_temp.flange);
+    
+  connect(r_cooler_hin.outlet, cooler.gasIn);  
+  connect(cooler.gasOut, r_cooler_hout.inlet);  
+  connect(r_cooler_hout.outlet, compressor.inlet);
   
-  connect(recompressor.outlet, mixer.inlet2);
+    connect(compressor.shaft_a, const_speed_mc.flange);     
   
-    connect(recompressor.shaft_a, const_speed_rc.flange);     
-  
-  connect(source_temp.flange, r_LTR_cin.inlet);
+  connect(compressor.outlet, r_LTR_cin.inlet);
   connect(r_LTR_cin.outlet, LTR.waterIn);  
   connect(LTR.waterOut, r_LTR_cout.inlet);
   connect(r_LTR_cout.outlet, mixer.inlet1);  
@@ -961,12 +965,21 @@ equation
   connect(heater.gasOut, r_heater_cout.inlet);
   connect(r_heater_cout.outlet, sink.flange) annotation(
     Line(points = {{1.83697e-015, -70}, {1.83697e-015, -56}, {-8.88178e-016, -56}}, thickness = 0.5, color = {0, 0, 255}));   
+    
+  connect(source_temp.flange, mixer.inlet2);
    
   // hot stream for heater
   connect(source_heater_hot.flange, r_heater_hin.inlet);
   connect(r_heater_hin.outlet, heater.waterIn);
   connect(heater.waterOut, r_heater_hout.inlet);
   connect(r_heater_hout.outlet, sink_heater_hot.flange);
+  
+  // cold side
+  connect(source_cooler.flange, r_cooler_cin.inlet);
+  connect(r_cooler_cin.outlet, cooler.waterIn);
+  connect(cooler.waterOut, r_cooler_cout.inlet);
+  connect(r_cooler_cout.outlet, sink_cooler.flange);
+    
 
 
 /*
