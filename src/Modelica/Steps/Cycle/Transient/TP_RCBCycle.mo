@@ -85,24 +85,50 @@ model TP_RCBCycle
     mdot_main   = 128.774,   // this value is a simulation result with sourcePressure.p = 200 bar
     mdot_heater = 40,
     table_k_LTR_wall = table_k_metalwall,
-    table_k_HTR_wall = table_k_metalwall
+    table_k_HTR_wall = table_k_metalwall,
+    // latest boundary conditions
+    p_comp_in  = 109.59e5,
+    p_comp_out = 20e6,    
+    p_heater   = 20e6,    
+    T_HTR_hot_in      = from_degC(636.95057734),
+    T_HTR_cold_out    = from_degC(569.003),
+    T_HTR_hot_out     = from_degC(271.388),
+    T_HTR_cold_in     = from_degC(231.695),
+    T_LTR_cold_in     = from_degC(85.84344872),
+    T_LTR_hot_out     = from_degC(119.043),
+    T_heater_hot_in   = from_degC(800),
+    T_heater_hot_out  = from_degC(707.918),
+    T_heater_cold_out = from_degC(637.551),
+    T_cooler_cold_out = from_degC(61.7479462700001),
+    T_cooler_hot_out  = from_degC(45),
+    
+    mdot_main   = 128.774,
+    mdot_comp   = 84.375,
+    mdot_heater = 40,
+    mdot_cooler = 40
   );
   
+  // set the values of parameters accordingly
   parameter Model.HeatExchangerConfig cfg_heater = cfg.cfg_heater;
   parameter Model.HeatExchangerConfig cfg_LTR    = cfg.cfg_LTR;
   parameter Model.HeatExchangerConfig cfg_HTR    = cfg.cfg_HTR;
   parameter Model.TurbomachineryConfig cfg_turb  = cfg.cfg_turb;
+  parameter Model.TurbomachineryConfig cfg_comp   = cfg.cfg_comp;
+  parameter Model.TurbomachineryConfig cfg_recomp = cfg.cfg_recomp;
+  parameter Model.HeatExchangerConfig cfg_cooler  = cfg.cfg_cooler;
+  parameter Model.SplitterConfig cfg_splitter     = cfg.cfg_splitter;
   parameter Model.SplitterConfig cfg_merger      = cfg.cfg_merger;
   
   parameter Model.ThermoState st_bypass      = cfg.st_recomp_out;
-  parameter Model.ThermoState st_source_temp = cfg_LTR.cfg_cold.st_in;  
-  parameter Model.ThermoState st_sink_temp    = cfg_LTR.cfg_hot.st_out;
+  parameter Model.ThermoState st_source_temp = cfg_recomp.st_out;
+  parameter Model.ThermoState st_sink_temp    = cfg_recomp.st_in;
   parameter Model.ThermoState st_source  = cfg_heater.cfg_cold.st_out;
   parameter Model.ThermoState st_sink   = cfg_heater.cfg_cold.st_out;  
 
   parameter Integer N_seg_heater = cfg.cfg_heater.cfg_hot.geo_path.N_seg; 
   parameter Integer N_seg_LTR    = cfg.cfg_LTR.cfg_hot.geo_path.N_seg; 
   parameter Integer N_seg_HTR    = cfg.cfg_HTR.cfg_hot.geo_path.N_seg;   
+  parameter Integer N_seg_cooler = cfg.cfg_cooler.cfg_hot.geo_path.N_seg; 
 
   //Components
   // global init opition (system.initOpt) leads to order reduction error
@@ -294,8 +320,8 @@ model TP_RCBCycle
       T(start = st_source.T, nominal = st_source.T))) 
   annotation(
     Placement(transformation(origin = {0, 60}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
-*/
-/*
+
+
   ThermoPower.Gas.SourcePressure source_temp(
     redeclare package Medium = medium_main, 
     T        = st_source_temp.T,
@@ -307,6 +333,8 @@ model TP_RCBCycle
   annotation(
     Placement(transformation(origin = {0, 60}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
 */
+
+/*
   ThermoPower.Gas.SourceMassFlow source_mixer_in(
     redeclare package Medium = medium_main,
     T        = st_bypass.T,
@@ -314,7 +342,7 @@ model TP_RCBCycle
     use_in_T = false,
     w0       = st_bypass.mdot
   );  
-
+*/
  
   ThermoPower.Gas.SinkPressure sink(
     redeclare package Medium = medium_main, 
@@ -331,14 +359,22 @@ model TP_RCBCycle
     w0       = st_source_temp.mdot)
   annotation(
     Placement(transformation(origin = {0, 60}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
-
+  /*
   ThermoPower.Gas.SinkPressure sink_temp(
     redeclare package Medium = medium_main,
     T  = st_sink_temp.T,
     p0 = st_sink_temp.p)
   annotation(
     Placement(transformation(extent = {{60, -10}, {80, 10}}, rotation = 0)));
-
+  */
+  
+  ThermoPower.Gas.SinkMassFlow sink_temp(
+    redeclare package Medium = medium_main, 
+    T        = st_sink_temp.T,
+    p0       = st_sink_temp.p,
+    use_in_T = false,
+    w0       = st_sink_temp.mdot
+  );
 
   // use FlowJoin to mix flow
   Gas.FlowJoin mixer(redeclare package Medium = medium_main);  
@@ -599,7 +635,7 @@ model TP_RCBCycle
   annotation (Placement(transformation(
         extent={{-50,-10},{-30,10}}, rotation=0)));
 */
-/*
+
   ThermoPower.Gas.Compressor recompressor(
     redeclare package Medium = medium_main,
     pstart_in  = cfg_recomp.st_in.p,
@@ -626,7 +662,7 @@ model TP_RCBCycle
       extent={{-50,-10},{-30,10}}, rotation=0)));
   
   ThermoPower.Gas.FlowSplit splitter(redeclare package Medium = medium_main); 
-*/
+
   /*
   ThermoPower.Gas.Utility.ClosedSystemInit sys_init(
     redeclare package Medium = medium_main,
@@ -886,19 +922,6 @@ equation
 
   // HTR + mixer + LTR + Heater + Turbine - OPEN LOOP version 2, different with one more pair of source and sink, same layout as RCBC's left part. 
   // main stream, water/cold side  
-  connect(source_mixer_in.flange, mixer.inlet1);  
-  connect(source_temp.flange, r_LTR_cin.inlet);
-  connect(r_LTR_cin.outlet, LTR.waterIn);  
-  connect(LTR.waterOut, r_LTR_cout.inlet);
-  connect(r_LTR_cout.outlet, mixer.inlet2);  
-  connect(mixer.outlet, r_HTR_cin.inlet);
-  connect(r_HTR_cin.outlet, HTR.waterIn);
-  connect(HTR.waterOut, r_HTR_cout.inlet);
-  connect(r_HTR_cout.outlet, r_heater_cin.inlet);
-  connect(r_heater_cin.outlet, heater.gasIn);  
-  connect(heater.gasOut, r_heater_cout.inlet);
-  connect(r_heater_cout.outlet, sink.flange) annotation(
-    Line(points = {{1.83697e-015, -70}, {1.83697e-015, -56}, {-8.88178e-016, -56}}, thickness = 0.5, color = {0, 0, 255}));
   
   // main stream, gas/hot side
   connect(source.flange, turbine.inlet);
@@ -916,54 +939,36 @@ equation
   connect(r_HTR_hout.outlet, r_LTR_hin.inlet);
   connect(r_LTR_hin.outlet,LTR.gasIn);  
   connect(LTR.gasOut, r_LTR_hout.inlet);
-  connect(r_LTR_hout.outlet, sink_temp.flange) annotation(
-    Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));
-   
-  // hot stream for heater
-  connect(source_heater_hot.flange, r_heater_hin.inlet);
-  connect(r_heater_hin.outlet, heater.waterIn);
-  connect(heater.waterOut, r_heater_hout.inlet);
-  connect(r_heater_hout.outlet, sink_heater_hot.flange);
-
-/*
-  // HTR + mixer + LTR + Heater + Turbine - OPEN LOOP
-  // main stream, water/cold side  
-  connect(source_mixer_in.flange, mixer.inlet1);  
+  connect(r_LTR_hout.outlet, splitter.inlet);
+  connect(splitter.outlet1, recompressor.inlet);
+  
+    connect(splitter.outlet2, sink_temp.flange) annotation(
+      Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));
+  
+  connect(recompressor.outlet, mixer.inlet2);
+  
+    connect(recompressor.shaft_a, const_speed_rc.flange);     
+  
   connect(source_temp.flange, r_LTR_cin.inlet);
   connect(r_LTR_cin.outlet, LTR.waterIn);  
   connect(LTR.waterOut, r_LTR_cout.inlet);
-  connect(r_LTR_cout.outlet, mixer.inlet2);  
+  connect(r_LTR_cout.outlet, mixer.inlet1);  
   connect(mixer.outlet, r_HTR_cin.inlet);
   connect(r_HTR_cin.outlet, HTR.waterIn);
   connect(HTR.waterOut, r_HTR_cout.inlet);
   connect(r_HTR_cout.outlet, r_heater_cin.inlet);
-  connect(r_heater_cin.outlet, heater.gasIn);    
+  connect(r_heater_cin.outlet, heater.gasIn);  
   connect(heater.gasOut, r_heater_cout.inlet);
-  connect(r_heater_cout.outlet, turbine.inlet);
-  
-  connect(turbine.outlet, sens_turbine.inlet) annotation(
-   Line(points = {{-50, 0}, {-20, 0}}, color = {159, 159, 223}, thickness = 0.5, smooth = Smooth.None));   
-  connect(sens_turbine.outlet, r_HTR_hin.inlet);
-  connect(r_HTR_hin.outlet, HTR.gasIn);  
-  connect(HTR.gasOut, r_HTR_hout.inlet);
-  connect(r_HTR_hout.outlet, r_LTR_hin.inlet);
-  connect(r_LTR_hin.outlet, LTR.gasIn);
-  connect(LTR.gasOut, r_LTR_hout.inlet);
-  connect(r_LTR_hout.outlet, sink_temp.flange) annotation(
-    Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));
+  connect(r_heater_cout.outlet, sink.flange) annotation(
+    Line(points = {{1.83697e-015, -70}, {1.83697e-015, -56}, {-8.88178e-016, -56}}, thickness = 0.5, color = {0, 0, 255}));   
    
-  connect(turbine.shaft_b, const_speed_turb.flange) annotation(
-    Line(points = {{30, 0}, {74, 0}, {74, 0}, {74, 0}}));
-  
-  // connect(sens_turbine.outlet, sink.flange);  
-  // connect(source.flange, HTR.gasIn);    
-
   // hot stream for heater
   connect(source_heater_hot.flange, r_heater_hin.inlet);
   connect(r_heater_hin.outlet, heater.waterIn);
   connect(heater.waterOut, r_heater_hout.inlet);
   connect(r_heater_hout.outlet, sink_heater_hot.flange);
-*/ 
+
+
 /*
   // temperature input
   // hot / gas side
