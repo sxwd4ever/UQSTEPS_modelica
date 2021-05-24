@@ -211,6 +211,8 @@ model RCBCycleConfig
   // cooler
   // cooler's size of heat exchanger  
   // N_ch groups of fluid(cold, inner)-tube vs 1 gas(hot, outter) tube  
+
+  // for ThermoPower.HeatExchanger
   parameter Modelica.SIunits.Radius r_i_cooler = 10e-3 "mm, tube's internal radius(single tube)";
   parameter Modelica.SIunits.Radius r_t_cooler = 15e-3 "tube's external radius(single tube)";
   parameter Modelica.SIunits.Radius r_o_cooler = 500e-3 "radius of external side of heat exchanger";
@@ -218,17 +220,20 @@ model RCBCycleConfig
   parameter Integer N_ch_cooler                = 10000;
   parameter Integer N_seg_cooler               = N_seg;
 
-  parameter Real UA_nom_cooler = 1.938761018e6;  // Arbitrary UA value, works for off-design RCBC sim
+  parameter Real gamma_cold_cooler = (36.4297 + 36.3466) / 2; // calculuated with Test.Transient.TestDyn_cooler on 10MWe point
+  parameter Real gamma_hot_cooler = (11683.5 + 11679.4) / 2; 
+  
+  //parameter Real UA_nom_cooler = 1.938761018e6;  // Arbitrary UA value, works for off-design RCBC sim
 
   // cfg for cooler's cold/fluid side
-  parameter AreaGeometry ga_cooler_hot  = SetAreaGeometry_Circle(r = r_i_cooler);
-  parameter AreaGeometry ga_cooler_cold = SetAreaGeometry_Circle(r = r_o_cooler);
-  parameter AreaGeometry ga_cooler_wall = SetAreaGeometry_Tube(r_int = r_i_cooler, r_ext = r_o_cooler);
+  parameter AreaGeometry ga_cooler_hot  = SetAreaGeometry_Circle(r = r_o_cooler);
+  parameter AreaGeometry ga_cooler_cold = SetAreaGeometry_Circle(r = r_i_cooler);
+  parameter AreaGeometry ga_cooler_wall = SetAreaGeometry_Tube(r_int = r_i_cooler, r_ext = r_t_cooler);
   parameter PathGeometry gp_cooler_hot  = SetPathGeometry(geo_area = ga_cooler_hot, L = L_cooler, N_seg = N_seg_cooler);
   parameter PathGeometry gp_cooler_cold = SetPathGeometry(geo_area = ga_cooler_cold, L = L_cooler, N_seg = N_seg_cooler);
   parameter PathGeometry gp_cooler_wall = SetPathGeometry(geo_area = ga_cooler_wall, L = L_cooler, N_seg = N_seg_cooler);
   
-  
+  // works for shell-tube heater, one fluid tube only
   parameter Model.HeatExchangerConfig cfg_cooler(
     cfg_hot(
       st_in    = st_cooler_hot_in,
@@ -237,8 +242,8 @@ model RCBCycleConfig
       geo_path = gp_cooler_hot,
       N_ch     = N_ch_cooler,
       u        = 0,
-      UA_nom   = UA_nom_cooler,
-      gamma_HE = UA_nom_cooler / gp_cooler_hot.A_surf      
+      UA_nom   = gamma_hot_cooler * gp_cooler_hot.A_surf,
+      gamma_HE = gamma_hot_cooler 
     ),
     cfg_cold(
       st_in    = st_cooler_cold_in,
@@ -247,8 +252,8 @@ model RCBCycleConfig
       geo_path = gp_cooler_cold,
       N_ch     = N_ch_cooler,
       u        = 0,
-      UA_nom   = UA_nom_cooler,
-      gamma_HE = UA_nom_cooler / gp_cooler_cold.A_surf      
+      UA_nom   = gamma_cold_cooler * gp_cooler_cold.A_surf,
+      gamma_HE = gamma_cold_cooler       
     ),
     cfg_wall(
       st_init  = st_cooler_hot_in,
@@ -259,7 +264,61 @@ model RCBCycleConfig
       lambda   = 200
     )
   );
+  /*
+  // for SCOPE.PCHE
+  parameter Modelica.SIunits.Radius r_i_cooler     = 1.5e-3 "mm tube's internal radius";
+  parameter Modelica.SIunits.Radius r_t_cooler     = 1.5e-3 "tube's external radius";
+  parameter Modelica.SIunits.Radius r_o_cooler     = 1.5e-3 "radius of external side of one group";
+  parameter Modelica.SIunits.Radius w_sd_cooler    = 2.3e-3 "Width of the solid domain";
+  parameter Modelica.SIunits.Radius h_sd_cooler    = 4.17e-3 "Height of the solid domain, containing one cold tube and one hot tube";
+  parameter Modelica.SIunits.Length t_ch_cooler    = 0.51e-3 "thinckness between two channels";
+  parameter Modelica.SIunits.Length l_pitch_cooler = 12.3e-3 "pitch length";
+  parameter Modelica.SIunits.Length a_phi_cooler   = 35 "pitch angle";
 
+  parameter Modelica.SIunits.Length L_cooler   = 2.5 "m";
+  parameter Modelica.SIunits.Length l_wall_cooler  = 420e-3 "Length of wall, not necessarily equals to length of flow path";  
+  parameter Integer N_seg_cooler               = N_seg;
+  parameter Integer N_ch_cooler                = 30000;
+
+  // cfg for cooler's cold/fluid side
+  parameter AreaGeometry ga_cooler_hot  = SetAreaGeometry_SemiCircle(r = r_i_cooler);
+  parameter AreaGeometry ga_cooler_cold = SetAreaGeometry_SemiCircle(r = r_o_cooler);
+  parameter AreaGeometry ga_cooler_wall = SetAreaGeometry_Wall(r = r_i_cooler, w = w_sd_cooler, h = h_sd_cooler, p1 = t_ch_cooler);
+  parameter PathGeometry gp_cooler_hot  = SetPathGeometry(geo_area = ga_cooler_hot, L = L_cooler, N_seg = N_seg_cooler);
+  parameter PathGeometry gp_cooler_cold = SetPathGeometry(geo_area = ga_cooler_cold, L = L_cooler, N_seg = N_seg_cooler);
+  parameter PathGeometry gp_cooler_wall = SetPathGeometry(geo_area = ga_cooler_wall, L = L_cooler, N_seg = N_seg_cooler, p1 = l_wall_cooler);
+  
+  parameter Model.HeatExchangerConfig cfg_cooler(
+    cfg_hot(
+      st_in    = st_cooler_hot_in,
+      st_out   = st_cooler_hot_out,
+      geo_area = ga_cooler_hot,
+      geo_path = gp_cooler_hot,
+      N_ch     = N_ch_cooler,
+      u        = 0,
+      l_pitch  = l_pitch_cooler,
+      a_phi    = a_phi_cooler
+    ),
+    cfg_cold(
+      st_in    = st_cooler_cold_in,
+      st_out   = st_cooler_cold_out,
+      geo_area = ga_cooler_cold,
+      geo_path = gp_cooler_cold,
+      N_ch     = N_ch_cooler,
+      u        = 0,
+      l_pitch  = l_pitch_cooler,
+      a_phi    = a_phi_cooler
+    ),
+    cfg_wall(
+      st_init  = st_cooler_hot_in,
+      geo_area = ga_cooler_wall,
+      geo_wall = gp_cooler_wall,
+      // table_k  = table_k_cooler_wall,
+      rho_mcm  = rho_wall * cp_wall,
+      lambda   = 200
+    )
+  );
+    */
   // LTR
   // LTR's's size of heat exchanger gas - gas
   // N_ch_LTR groups of fluid(cold, inner)-tube-gas(hot, outter) tubes 
@@ -390,7 +449,8 @@ model RCBCycleConfig
   parameter PathGeometry gp_heater_cold = SetPathGeometry(geo_area = ga_heater_cold, L = L_heater, N_seg = N_seg_heater);
   parameter PathGeometry gp_heater_wall = SetPathGeometry(geo_area = ga_heater_wall, L = L_heater, N_seg = N_seg_heater);  
   
-  parameter Real UA_nom_heater = 1.938761018e6;  
+  parameter Real gamma_cold_heater = (20407.3 + 20514.8) / 2; // calculuated with Test.Transient.TestDyn_heater on 10MWe point
+  parameter Real gamma_hot_heater = (1633.5 + 1650.54) / 2;  
 
   parameter Model.HeatExchangerConfig cfg_heater(
     cfg_hot(
@@ -400,8 +460,8 @@ model RCBCycleConfig
       geo_path = gp_heater_hot,
       N_ch     = N_ch_heater,
       u        = 0,
-      UA_nom   = UA_nom_heater,
-      gamma_HE = UA_nom_heater / gp_heater_hot.A_surf
+      UA_nom   = gamma_hot_heater * gp_heater_hot.A_surf,
+      gamma_HE = gamma_hot_heater
     ),
     cfg_cold(
       st_in    = st_heater_cold_in,
@@ -410,8 +470,8 @@ model RCBCycleConfig
       geo_path = gp_heater_cold,
       N_ch     = N_ch_heater,
       u        = 0,
-      UA_nom   = UA_nom_heater,
-      gamma_HE = UA_nom_heater / gp_heater_cold.A_surf
+      UA_nom   = gamma_cold_heater * gp_heater_cold.A_surf,
+      gamma_HE = gamma_cold_heater
     ),
     cfg_wall(
       st_init  = st_heater_hot_in,

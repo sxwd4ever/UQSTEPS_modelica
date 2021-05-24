@@ -1,6 +1,6 @@
 within Steps.Test.TPComponents.Transient;
 
-model TestDyn_HE
+model TestDyn_Cooler
   "Test against HE as a Heater in ThermoPower"  
   import Modelica.SIunits.Conversions.{from_degC, from_deg};
   import Modelica.SIunits.{Temperature, Pressure, SpecificEnthalpy};
@@ -23,12 +23,6 @@ model TestDyn_HE
   // package medium_heater = Steps.Media.ThermiaOilD; // out of working range of this 10Mw high T loop
   package medium_heater = SolarTherm.Media.Sodium.Sodium_pT;
   package medium_cooler = ThermoPower.Water.StandardWater;//Modelica.Media.IdealGases.SingleGases.CO2;  
- 
-  // package medium_hot = ExternalMedia.Examples.CO2CoolProp;
-  // package medium_cold = ExternalMedia.Examples.CO2CoolProp;    
-  
-  // package medium_hot = Modelica.Media.IdealGases.SingleGases.CO2;
-  // package medium_cold = Modelica.Media.IdealGases.SingleGases.CO2;
   
   // geometry parameters
   constant  Real pi           = Modelica.Constants.pi;
@@ -66,7 +60,7 @@ model TestDyn_HE
   parameter Modelica.SIunits.Temperature T_heater_hot = from_degC(800) "K, Temperature of heater's hot fluid";  
   parameter Modelica.SIunits.Temperature T_cooler_cold = from_degC(45) "K, Temperature of cooler's cold fluid";
   parameter Integer T_step = 3;
-  
+ 
   // select the configuration of parameters
   parameter Model.RCBCycleConfig cfg(
     redeclare package medium_heater = medium_heater,
@@ -88,6 +82,10 @@ model TestDyn_HE
     r_i_LTR     = 1.5e-3,
     r_o_LTR     = 1.5e-3,
     Ns_turb     = 30000,
+    N_ch_cooler = 50000,
+    r_i_cooler  = 0.5e-3,
+    r_t_cooler  = 0.7e-3,
+    r_o_cooler  = 1e-3,
     table_k_LTR_wall = table_k_metalwall,
     table_k_HTR_wall = table_k_metalwall,
     // latest boundary conditions, following values are simulation results with sourcePressure.p = 200 bar and above geometry params
@@ -113,13 +111,13 @@ model TestDyn_HE
   );
   
   // set the values of parameters accordingly
-  parameter Model.HeatExchangerConfig cfg_heater = cfg.cfg_heater;
-  
-  parameter Model.ThermoState st_source  = cfg_heater.cfg_cold.st_in;
-  parameter Model.ThermoState st_sink   = cfg_heater.cfg_cold.st_out;  
+  parameter Model.HeatExchangerConfig cfg_cooler  = cfg.cfg_cooler;
 
-  parameter Integer N_seg_heater = cfg.cfg_heater.cfg_hot.geo_path.N_seg; 
-  
+  parameter Model.ThermoState st_source = cfg_cooler.cfg_hot.st_in;
+  parameter Model.ThermoState st_sink   = cfg_cooler.cfg_hot.st_out;
+ 
+  parameter Integer N_seg_cooler = cfg.cfg_cooler.cfg_hot.geo_path.N_seg; 
+
   //Components
   // global init opition (system.initOpt) leads to order reduction error
   // use this flag to control the initialization of all components instead. 
@@ -130,75 +128,85 @@ model TestDyn_HE
     annotation(
     Placement(transformation(extent = {{80, 80}, {100, 100}})));  
   
-  ThermoPower.Water.SourceMassFlow source_heater_hot(
-    redeclare package Medium = medium_heater,
-    w0 = cfg_heater.cfg_hot.st_in.mdot,
-    p0 = cfg_heater.cfg_hot.st_in.p,
-    h  = cfg_heater.cfg_hot.st_in.h,
-    T  = cfg_heater.cfg_hot.st_in.T) 
-  annotation(
+  ThermoPower.Water.SourceMassFlow source_cooler(
+    redeclare package Medium = medium_cooler,
+    w0 = cfg_cooler.cfg_cold.st_in.mdot,
+    p0 = cfg_cooler.cfg_cold.st_in.p,
+    h  = cfg_cooler.cfg_cold.st_in.h,
+    T  = cfg_cooler.cfg_cold.st_in.T) 
+    annotation(
     Placement(transformation(origin = {0, 60}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
     
-  ThermoPower.Water.SinkPressure sink_heater_hot(
-    redeclare package Medium = medium_heater, 
-    p0    = cfg_heater.cfg_hot.st_out.p,
-    T     = cfg_heater.cfg_hot.st_out.T,
+  ThermoPower.Water.SinkPressure sink_cooler(
+    redeclare package Medium = medium_cooler, 
+    p0    = cfg_cooler.cfg_cold.st_out.p,
+    T     = cfg_cooler.cfg_cold.st_out.T,
     use_T = false) 
-  annotation(
+    annotation(
     Placement(transformation(origin = {0, -80}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
 
-  Steps.TPComponents.HE heater(
-    redeclare package FluidMedium = medium_heater, 
+  Steps.TPComponents.HE cooler(
+    redeclare package FluidMedium = medium_cooler, 
     redeclare package FlueGasMedium = medium_main, 
-    
+       
     // DittusBoelter
     redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.DittusBoelter,    
     redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.DittusBoelter,
     fluidFlow(
-      heatTransfer(heating=true), 
+      heatTransfer(heating=false, Re_min = 200), 
       fixedMassFlowSimplified = true,
-      hstartin                = cfg_heater.cfg_hot.st_in.h,
-      hstartout               = cfg_heater.cfg_hot.st_out.h),   // set the fluid flow as fixed mdot for simplarity
+      hstartin                = cfg_cooler.cfg_cold.st_in.h,
+      hstartout               = cfg_cooler.cfg_cold.st_out.h),   // set the fluid flow as fixed mdot for simplarity
     gasFlow(
-      heatTransfer(heating=false), 
-      Tstartin  = cfg_heater.cfg_cold.st_in.T,
-      Tstartout = cfg_heater.cfg_cold.st_out.T),
-    
+      heatTransfer(heating=true, Re_min = 2300), 
+      Tstartin  = cfg_cooler.cfg_hot.st_in.T,
+      Tstartout = cfg_cooler.cfg_hot.st_out.T,
+      Nt = cfg_cooler.cfg_hot.N_ch,
+      Dhyd = cfg_cooler.cfg_hot.geo_area.d_hyd),    
     
     // redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer,    
-    // redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFVH.IdealHeatTransfer, 
+    // redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer, 
     // fluidFlow(
-    //   heatTransfer(gamma = cfg_heater.cfg_hot.gamma_HE),
     //   fixedMassFlowSimplified = true,
-    //   hstartin                = cfg_heater.cfg_hot.st_in.h,
-    //   hstartout               = cfg_heater.cfg_hot.st_out.h),   // set the fluid flow as fixed mdot for simplarity
+    //   hstartin                = cfg_cooler.cfg_cold.st_in.h,
+    //   hstartout               = cfg_cooler.cfg_cold.st_out.h),   // set the fluid flow as fixed mdot for simplarity
     // gasFlow(
-    //   heatTransfer(gamma = cfg_heater.cfg_cold.gamma_HE),
-    //   Tstartin    = cfg_heater.cfg_cold.st_in.T,
-    //   Tstartout   = cfg_heater.cfg_cold.st_out.T),
+    //   Tstartin    = cfg_cooler.cfg_hot.st_in.T,
+    //   Tstartout   = cfg_cooler.cfg_hot.st_out.T),
     
-    // redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficient(),     
-    // // redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer,      
-    // redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficient(),       
-
+    // redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficient(),      
+    // redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficient(), 
+        
+    // fluidFlow(
+    //   heatTransfer(gamma = cfg_cooler.cfg_cold.gamma_HE),
+    //   fixedMassFlowSimplified = true,
+    //   hstartin                = cfg_cooler.cfg_cold.st_in.h,
+    //   hstartout               = cfg_cooler.cfg_cold.st_out.h),   // set the fluid flow as fixed mdot for simplarity
+    // gasFlow(
+    //   heatTransfer(gamma = cfg_cooler.cfg_hot.gamma_HE),
+    //   Tstartin    = cfg_cooler.cfg_hot.st_in.T,
+    //   Tstartout   = cfg_cooler.cfg_hot.st_out.T),   
+           
     redeclare model HeatExchangerTopology = ThermoPower.Thermal.HeatExchangerTopologies.CounterCurrentFlow,
-    cfg             = cfg_heater,
-    N_G             = N_seg_heater,
-    N_F             = N_seg_heater,
-    SSInit          = false,
-    gasQuasiStatic  = true,
-    FluidPhaseStart = ThermoPower.Choices.FluidPhase.FluidPhases.Liquid
-  )
+    cfg             = cfg_cooler,
+    N_G             = N_seg_cooler,
+    N_F             = N_seg_cooler,
+    Nt = cfg_cooler.cfg_cold.N_ch,
+    SSInit          = true,
+    gasQuasiStatic  = false,
+    FluidPhaseStart = ThermoPower.Choices.FluidPhase.FluidPhases.Liquid,
+    metalTube(WallRes=false))
   annotation(
     Placement(transformation(extent = {{-20, -20}, {20, 20}}, rotation = 0)));
-  
-  Steps.TPComponents.WaterStateReader r_heater_hin(redeclare package Medium = medium_heater) annotation(
+
+
+  Steps.TPComponents.GasStateReader r_cooler_hin(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {66, -56}, extent = {{-6, -6}, {6, 6}}, rotation = 0)));
-  Steps.TPComponents.WaterStateReader r_heater_hout(redeclare package Medium = medium_heater) annotation(
+  Steps.TPComponents.GasStateReader r_cooler_hout(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {96, 44}, extent = {{-6, -6}, {6, 6}}, rotation = 180)));
-  Steps.TPComponents.GasStateReader r_heater_cin(redeclare package Medium = medium_main) annotation(
+  Steps.TPComponents.WaterStateReader r_cooler_cin(redeclare package Medium = medium_cooler) annotation(
     Placement(visible = true, transformation(origin = {-22, 50}, extent = {{-6, -6}, {6, 6}}, rotation = -90)));
-  Steps.TPComponents.GasStateReader r_heater_cout(redeclare package Medium = medium_main) annotation(
+  Steps.TPComponents.WaterStateReader r_cooler_cout(redeclare package Medium = medium_cooler) annotation(
     Placement(visible = true, transformation(origin = {-32, 20}, extent = {{-6, -6}, {6, 6}}, rotation = 180)));
 
   ThermoPower.Gas.SourceMassFlow source(
@@ -229,18 +237,18 @@ model TestDyn_HE
 initial equation
 //hstart_F_Out = hE.waterOut.h_outflow;
 equation
-  connect(source_heater_hot.flange, r_heater_hin.inlet);
-  connect(r_heater_hin.outlet, heater.waterIn) annotation(
+  connect(source_cooler.flange, r_cooler_cin.inlet);
+  connect(r_cooler_cin.outlet, cooler.waterIn) annotation(
     Line(points = {{-1.83697e-015, 50}, {-1.83697e-015, 20}, {0, 20}}, color = {0, 0, 255}, thickness = 0.5, smooth = Smooth.None));
-  connect(heater.waterOut, r_heater_hout.inlet);
-  connect(r_heater_hout.outlet, sink_heater_hot.flange) annotation(
+  connect(cooler.waterOut, r_cooler_cout.inlet);
+  connect(r_cooler_cout.outlet, sink_cooler.flange) annotation(
     Line(points = {{1.83697e-015, -70}, {1.83697e-015, -56}, {-8.88178e-016, -56}}, thickness = 0.5, color = {0, 0, 255}));
    
-  connect(source.flange, r_heater_cin.inlet);
-  connect(r_heater_cin.outlet, heater.gasIn) annotation(
+  connect(source.flange, r_cooler_hin.inlet);
+  connect(r_cooler_hin.outlet, cooler.gasIn) annotation(
     Line(points = {{-50, 0}, {-20, 0}}, color = {159, 159, 223}, thickness = 0.5, smooth = Smooth.None));
-  connect(heater.gasOut, r_heater_cout.inlet);
-  connect(r_heater_cout.outlet, sink.flange) annotation(
+  connect(cooler.gasOut, r_cooler_hout.inlet);
+  connect(r_cooler_hout.outlet, sink.flange) annotation(
     Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));
 
 annotation(
@@ -248,4 +256,4 @@ annotation(
     experiment(StartTime = 0, StopTime = 20, Tolerance = 1e-2, Interval = 2),
     __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts",    
     __OpenModelica_simulationFlags(lv = "LOG_DEBUG,LOG_NLS,LOG_NLS_V,LOG_STATS,LOG_INIT,LOG_STDOUT, -w", outputFormat = "mat", s = "dassl", nls = "homotopy"));
-end TestDyn_HE;
+end TestDyn_Cooler;
