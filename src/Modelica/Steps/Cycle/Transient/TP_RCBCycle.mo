@@ -16,7 +16,7 @@ model TP_RCBCycle
   // package medium_main = Modelica.Media.IdealGases.SingleGases.CO2; //Steps.Media.CO2;
   package medium_main = Steps.Media.SCO2(
     // inputChoice = ExternalMedia.Common.InputChoice.pT,
-    substanceNames = {"CO2|debug=40"}
+    // substanceNames = {"CO2|debug=40"}
   );  
   // package medium_main = ExternalMedia.Examples.CO2CoolProp;
   // package medium_heater = Steps.Media.ThermiaOilD; // out of working range of this 10Mw high T loop
@@ -86,24 +86,24 @@ model TP_RCBCycle
     table_k_HTR_wall = table_k_metalwall,
     // latest boundary conditions, following values are simulation results with sourcePressure.p = 200 bar and above geometry params
     p_comp_in  = 109.59e5,
-    p_comp_out = 20e6,        
+    p_comp_out = 20e6,    
     p_heater   = 20e6,    
-    T_HTR_hot_in      = from_degC(636.95057734),
-    T_HTR_cold_out    = from_degC(569.003),
-    T_HTR_hot_out     = from_degC(271.388),
-    T_HTR_cold_in     = from_degC(231.695),
-    T_LTR_cold_in     = from_degC(85.84344872),
-    T_LTR_hot_out     = from_degC(119.043),
+    T_HTR_hot_in      = from_degC(556.322),
+    T_HTR_cold_out    = from_degC(515.234),
+    T_HTR_hot_out     = from_degC(296.146),
+    T_HTR_cold_in     = from_degC(266.181),
+    T_LTR_cold_in     = from_degC(118.13),
+    T_LTR_hot_out     = from_degC(154.909),
     T_heater_hot_in   = from_degC(800),
     T_heater_hot_out  = from_degC(707.918),
     T_heater_cold_out = from_degC(637.551),
     T_cooler_cold_out = from_degC(61.7479462700001),
-    T_cooler_hot_out  = from_degC(45),
+    T_cooler_hot_out  = from_degC(68.494),
     
     mdot_main   = 128.774,
-    mdot_comp   = 84.375,
+    mdot_comp   = 88.0661,
     mdot_heater = 40,
-    mdot_cooler = 40
+    mdot_cooler = 40.7188
   );
   
   // set the values of parameters accordingly
@@ -159,35 +159,35 @@ model TP_RCBCycle
     redeclare package FluidMedium = medium_heater, 
     redeclare package FlueGasMedium = medium_main, 
     
-    // // DittusBoelter
-    // redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.DittusBoelter,    
-    // redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.DittusBoelter,
-    // fluidFlow(
-    //   heatTransfer(heating=true), 
-    //   fixedMassFlowSimplified = true,
-    //   hstartin                = cfg_heater.cfg_hot.st_in.h,
-    //   hstartout               = cfg_heater.cfg_hot.st_out.h),   // set the fluid flow as fixed mdot for simplarity
-    // gasFlow(
-    //   heatTransfer(heating=false), 
-    //   Tstartin  = cfg_heater.cfg_cold.st_in.T,
-    //   Tstartout = cfg_heater.cfg_cold.st_out.T),
-    
-    
-    // redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer,    
-    // redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFVH.IdealHeatTransfer, 
+    // DittusBoelter
+    redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.DittusBoelter,    
+    redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.DittusBoelter,
     fluidFlow(
-      heatTransfer(gamma = cfg_heater.cfg_hot.gamma_HE),
+      heatTransfer(heating=true), 
       fixedMassFlowSimplified = true,
       hstartin                = cfg_heater.cfg_hot.st_in.h,
       hstartout               = cfg_heater.cfg_hot.st_out.h),   // set the fluid flow as fixed mdot for simplarity
     gasFlow(
-      heatTransfer(gamma = cfg_heater.cfg_cold.gamma_HE),
-      Tstartin    = cfg_heater.cfg_cold.st_in.T,
-      Tstartout   = cfg_heater.cfg_cold.st_out.T),
+      heatTransfer(heating=false), 
+      Tstartin  = cfg_heater.cfg_cold.st_in.T,
+      Tstartout = cfg_heater.cfg_cold.st_out.T),
     
-    redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficientTwoGrids(),     
-    // redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer,      
-    redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficient(),       
+    
+    // redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer,    
+    // redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFVH.IdealHeatTransfer, 
+    // fluidFlow(
+    //   heatTransfer(gamma = cfg_heater.cfg_hot.gamma_HE),
+    //   fixedMassFlowSimplified = true,
+    //   hstartin                = cfg_heater.cfg_hot.st_in.h,
+    //   hstartout               = cfg_heater.cfg_hot.st_out.h),   // set the fluid flow as fixed mdot for simplarity
+    // gasFlow(
+    //   heatTransfer(gamma = cfg_heater.cfg_cold.gamma_HE),
+    //   Tstartin    = cfg_heater.cfg_cold.st_in.T,
+    //   Tstartout   = cfg_heater.cfg_cold.st_out.T),
+    
+    // redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficient(),     
+    // // redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer,      
+    // redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficient(),       
 
     redeclare model HeatExchangerTopology = ThermoPower.Thermal.HeatExchangerTopologies.CounterCurrentFlow,
     cfg             = cfg_heater,
@@ -294,13 +294,12 @@ model TP_RCBCycle
     Placement(visible = true, transformation(origin = {-32, 20}, extent = {{-6, -6}, {6, 6}}, rotation = 180)));
 */
 
-
   ThermoPower.Gas.SourceMassFlow source(
     redeclare package Medium = medium_main, 
     T        = st_source.T,
     p0       = st_source.p,
     w0       = st_source.mdot,
-    use_in_T = true,
+    use_in_T = false,
     gas(
       p(start = st_source.p, nominal = st_source.p), 
       T(start = st_source.T, nominal = st_source.T)))
@@ -552,18 +551,18 @@ model TP_RCBCycle
     redeclare package FluidMedium = medium_cooler, 
     redeclare package FlueGasMedium = medium_main, 
     
-    // // DittusBoelter
-    // redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.DittusBoelter,    
-    // redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.DittusBoelter,
-    // fluidFlow(
-    //   heatTransfer(heating=true), 
-    //   fixedMassFlowSimplified = true,
-    //   hstartin                = cfg_cooler.cfg_hot.st_in.h,
-    //   hstartout               = cfg_cooler.cfg_hot.st_out.h),   // set the fluid flow as fixed mdot for simplarity
-    // gasFlow(
-    //   heatTransfer(heating=false), 
-    //   Tstartin  = cfg_cooler.cfg_cold.st_in.T,
-    //   Tstartout = cfg_cooler.cfg_cold.st_out.T),
+    // DittusBoelter
+    redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.DittusBoelter,    
+    redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.DittusBoelter,
+    fluidFlow(
+      heatTransfer(heating=false), 
+      fixedMassFlowSimplified = true,
+      hstartin                = cfg_cooler.cfg_cold.st_in.h,
+      hstartout               = cfg_cooler.cfg_cold.st_out.h),   // set the fluid flow as fixed mdot for simplarity
+    gasFlow(
+      heatTransfer(heating=true), 
+      Tstartin  = cfg_cooler.cfg_hot.st_in.T,
+      Tstartout = cfg_cooler.cfg_hot.st_out.T),
     
     // redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer,    
     // redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer, 
@@ -575,19 +574,19 @@ model TP_RCBCycle
     //   Tstartin    = cfg_cooler.cfg_hot.st_in.T,
     //   Tstartout   = cfg_cooler.cfg_hot.st_out.T),
     
-    redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficientTwoGrids(),     
-    // redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer,      
-    redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficient(), 
+    // redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficient(),     
+    // // redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer,      
+    // redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficient(), 
         
-    fluidFlow(
-      heatTransfer(gamma = cfg_cooler.cfg_cold.gamma_HE),
-      fixedMassFlowSimplified = true,
-      hstartin                = cfg_cooler.cfg_cold.st_in.h,
-      hstartout               = cfg_cooler.cfg_cold.st_out.h),   // set the fluid flow as fixed mdot for simplarity
-    gasFlow(
-      heatTransfer(gamma = cfg_cooler.cfg_hot.gamma_HE),
-      Tstartin    = cfg_cooler.cfg_hot.st_in.T,
-      Tstartout   = cfg_cooler.cfg_hot.st_out.T),    
+    // fluidFlow(
+    //   heatTransfer(gamma = cfg_cooler.cfg_cold.gamma_HE),
+    //   fixedMassFlowSimplified = true,
+    //   hstartin                = cfg_cooler.cfg_cold.st_in.h,
+    //   hstartout               = cfg_cooler.cfg_cold.st_out.h),   // set the fluid flow as fixed mdot for simplarity
+    // gasFlow(
+    //   heatTransfer(gamma = cfg_cooler.cfg_hot.gamma_HE),
+    //   Tstartin    = cfg_cooler.cfg_hot.st_in.T,
+    //   Tstartout   = cfg_cooler.cfg_hot.st_out.T),  
            
     redeclare model HeatExchangerTopology = ThermoPower.Thermal.HeatExchangerTopologies.CounterCurrentFlow,
     cfg             = cfg_cooler,
