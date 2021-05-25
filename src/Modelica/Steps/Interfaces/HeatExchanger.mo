@@ -10,7 +10,7 @@ partial model HeatExchanger "Base class for heat exchanger fluid-gas (derived fr
   
   parameter Model.HeatExchangerConfig cfg;
 
-  parameter Model.FlowConfig cfg_hot = cfg.cfg_hot;
+  parameter Model.FlowConfig cfg_hot  = cfg.cfg_hot;
   parameter Model.FlowConfig cfg_cold = cfg.cfg_cold;
   parameter Model.WallConfig cfg_wall = cfg.cfg_wall;   
 

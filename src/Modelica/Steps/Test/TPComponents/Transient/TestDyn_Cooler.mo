@@ -191,7 +191,7 @@ model TestDyn_Cooler
     cfg             = cfg_cooler,
     N_G             = N_seg_cooler,
     N_F             = N_seg_cooler,
-    Nt = cfg_cooler.cfg_cold.N_ch,
+    // Nt = cfg_cooler.cfg_cold.N_ch,
     SSInit          = true,
     gasQuasiStatic  = false,
     FluidPhaseStart = ThermoPower.Choices.FluidPhase.FluidPhases.Liquid,

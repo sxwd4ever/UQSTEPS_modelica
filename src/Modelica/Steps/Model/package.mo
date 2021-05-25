@@ -112,6 +112,8 @@ package Model "Data model definition for consistent parameter configuration"
   record HeatExchangerConfig
     FlowConfig cfg_hot "hot side config";
     FlowConfig cfg_cold "cold side config";
+    FlowConfig cfg_gas "gas side config, a copy of the hot or cold side's config to align with naming convention in TP";
+    FlowConfig cfg_fluid "fluid side config, a copy of the hot or cold side's config to align with naming convention in TP";
     WallConfig cfg_wall "wall configuration";
   end HeatExchangerConfig;
 

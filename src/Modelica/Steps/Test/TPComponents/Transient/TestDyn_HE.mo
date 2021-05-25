@@ -74,10 +74,10 @@ model TestDyn_HE
     // mdot_heater      = 40,
     // T_heater_hot_in  = from_degC(800),
     // T_heater_hot_out = from_degC(600),
-    r_i_heater  = 20e-3,
-    r_t_heater  = cfg.r_i_heater + 10e-3,
-    r_o_heater  = 1/2,                      // agree with the final parameter Dhyd = 1 in HE, should be checked to see if it is capable of containing all fluid-metal tubes
-    N_ch_heater = 100,
+    r_i_heater  = 0.5e-3,
+    r_t_heater  = 0.7e-3, //cfg.r_i_heater + 10e-3,
+    r_o_heater  = 1e-3,                      // agree with the final parameter Dhyd = 1 in HE, should be checked to see if it is capable of containing all fluid-metal tubes
+    N_ch_heater = 50000,
     L_heater    = 1,
     N_ch_HTR    = 30000,
     L_HTR       = 2.5,
@@ -157,12 +157,14 @@ model TestDyn_HE
     fluidFlow(
       heatTransfer(heating=true), 
       fixedMassFlowSimplified = true,
-      hstartin                = cfg_heater.cfg_hot.st_in.h,
-      hstartout               = cfg_heater.cfg_hot.st_out.h),   // set the fluid flow as fixed mdot for simplarity
+      hstartin                = cfg_heater.cfg_cold.st_in.h,
+      hstartout               = cfg_heater.cfg_cold.st_out.h),   // set the fluid flow as fixed mdot for simplarity
     gasFlow(
       heatTransfer(heating=false), 
-      Tstartin  = cfg_heater.cfg_cold.st_in.T,
-      Tstartout = cfg_heater.cfg_cold.st_out.T),
+      Tstartin  = cfg_heater.cfg_hot.st_in.T,
+      Tstartout = cfg_heater.cfg_hot.st_out.T,
+      Nt        = cfg_heater.cfg_hot.N_ch,
+      Dhyd      = cfg_heater.cfg_hot.geo_area.d_hyd),
     
     
     // redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer,    
@@ -185,8 +187,8 @@ model TestDyn_HE
     cfg             = cfg_heater,
     N_G             = N_seg_heater,
     N_F             = N_seg_heater,
-    SSInit          = false,
-    gasQuasiStatic  = true,
+    SSInit          = true,
+    gasQuasiStatic  = false,
     FluidPhaseStart = ThermoPower.Choices.FluidPhase.FluidPhases.Liquid
   )
   annotation(

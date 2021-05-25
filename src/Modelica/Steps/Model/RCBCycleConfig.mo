@@ -220,8 +220,8 @@ model RCBCycleConfig
   parameter Integer N_ch_cooler                = 10000;
   parameter Integer N_seg_cooler               = N_seg;
 
-  parameter Real gamma_cold_cooler = (36.4297 + 36.3466) / 2; // calculuated with Test.Transient.TestDyn_cooler on 10MWe point
-  parameter Real gamma_hot_cooler = (11683.5 + 11679.4) / 2; 
+  parameter Real gamma_cold_cooler = (7728.47 + 14290.1) / 2; // calculuated with Test.Transient.TestDyn_cooler on 10MWe point
+  parameter Real gamma_hot_cooler = (2046.73 + 3388) / 2; 
   
   //parameter Real UA_nom_cooler = 1.938761018e6;  // Arbitrary UA value, works for off-design RCBC sim
 
@@ -255,6 +255,8 @@ model RCBCycleConfig
       UA_nom   = gamma_cold_cooler * gp_cooler_cold.A_surf,
       gamma_HE = gamma_cold_cooler       
     ),
+    cfg_fluid = cfg_cooler.cfg_cold,
+    cfg_gas   = cfg_cooler.cfg_hot,
     cfg_wall(
       st_init  = st_cooler_hot_in,
       geo_area = ga_cooler_wall,
@@ -442,11 +444,11 @@ model RCBCycleConfig
   parameter Integer N_ch_heater                = 100;
 
   // cfg for heater's cold/fluid side  
-  parameter AreaGeometry ga_heater_hot  = SetAreaGeometry_Circle(r = r_i_heater);
-  parameter AreaGeometry ga_heater_cold = SetAreaGeometry_Circle(r = r_o_heater);
+  parameter AreaGeometry ga_heater_F  = SetAreaGeometry_Circle(r = r_i_heater);
+  parameter AreaGeometry ga_heater_G = SetAreaGeometry_Circle(r = r_o_heater);
   parameter AreaGeometry ga_heater_wall = SetAreaGeometry_Tube(r_int = r_i_heater, r_ext = r_o_heater);
-  parameter PathGeometry gp_heater_hot  = SetPathGeometry(geo_area = ga_heater_hot, L = L_heater, N_seg = N_seg_heater);
-  parameter PathGeometry gp_heater_cold = SetPathGeometry(geo_area = ga_heater_cold, L = L_heater, N_seg = N_seg_heater);
+  parameter PathGeometry gp_heater_F  = SetPathGeometry(geo_area = ga_heater_F, L = L_heater, N_seg = N_seg_heater);
+  parameter PathGeometry gp_heater_G = SetPathGeometry(geo_area = ga_heater_G, L = L_heater, N_seg = N_seg_heater);
   parameter PathGeometry gp_heater_wall = SetPathGeometry(geo_area = ga_heater_wall, L = L_heater, N_seg = N_seg_heater);  
   
   parameter Real gamma_cold_heater = (20407.3 + 20514.8) / 2; // calculuated with Test.Transient.TestDyn_heater on 10MWe point
@@ -456,21 +458,21 @@ model RCBCycleConfig
     cfg_hot(
       st_in    = st_heater_hot_in,
       st_out   = st_heater_hot_out,
-      geo_area = ga_heater_hot,
-      geo_path = gp_heater_hot,
+      geo_area = ga_heater_G,
+      geo_path = gp_heater_G,
       N_ch     = N_ch_heater,
       u        = 0,
-      UA_nom   = gamma_hot_heater * gp_heater_hot.A_surf,
+      UA_nom   = gamma_hot_heater * gp_heater_G.A_surf,
       gamma_HE = gamma_hot_heater
     ),
     cfg_cold(
       st_in    = st_heater_cold_in,
       st_out   = st_heater_cold_out,
-      geo_area = ga_heater_cold,
-      geo_path = gp_heater_cold,
+      geo_area = ga_heater_F,
+      geo_path = gp_heater_F,
       N_ch     = N_ch_heater,
       u        = 0,
-      UA_nom   = gamma_cold_heater * gp_heater_cold.A_surf,
+      UA_nom   = gamma_cold_heater * gp_heater_F.A_surf,
       gamma_HE = gamma_cold_heater
     ),
     cfg_wall(
