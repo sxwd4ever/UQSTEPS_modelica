@@ -67,10 +67,10 @@ model TestDyn_Comps_PCHE_ramp
     // mdot_heater      = 40,
     // T_heater_hot_in  = from_degC(800),
     // T_heater_hot_out = from_degC(600),
-    r_i_heater  = 20e-3,
-    r_t_heater  = cfg.r_i_heater + 10e-3,
-    r_o_heater  = 1/2,                      // agree with the final parameter Dhyd = 1 in HE, should be checked to see if it is capable of containing all fluid-metal tubes
-    N_ch_heater = 100,
+    r_i_heater  = 0.5e-3,
+    r_t_heater  = 0.7e-3, //cfg.r_i_heater + 10e-3,
+    r_o_heater  = 1e-3,                      // agree with the final parameter Dhyd = 1 in HE, should be checked to see if it is capable of containing all fluid-metal tubes
+    N_ch_heater = 50000,
     L_heater    = 1,
     N_ch_HTR    = 30000,
     L_HTR       = 2.5,
@@ -81,11 +81,28 @@ model TestDyn_Comps_PCHE_ramp
     r_i_LTR     = 1.5e-3,
     r_o_LTR     = 1.5e-3,
     Ns_turb     = 30000,
-    // mdot_main = 100,
-    mdot_main   = 128.774,   // this value is a simulation result with sourcePressure.p = 200 bar
-    mdot_heater = 40
-    // T_HTR_cold_in = from_degC(216.593),
-    // T_HTR_hot_out = from_degC(263.249)
+    table_k_LTR_wall = table_k_metalwall,
+    table_k_HTR_wall = table_k_metalwall,
+    // latest boundary conditions, following values are simulation results with sourcePressure.p = 200 bar and above geometry params
+    p_comp_in  = 109.59e5,
+    p_comp_out = 20e6,    
+    p_heater   = 20e6,    
+    T_HTR_hot_in      = from_degC(556.322),
+    T_HTR_cold_out    = from_degC(515.234),
+    T_HTR_hot_out     = from_degC(296.146),
+    T_HTR_cold_in     = from_degC(266.181),
+    T_LTR_cold_in     = from_degC(118.13),
+    T_LTR_hot_out     = from_degC(154.909),
+    T_heater_hot_in   = from_degC(800),
+    T_heater_hot_out  = from_degC(707.918),
+    T_heater_cold_out = from_degC(637.551),
+    T_cooler_cold_out = from_degC(61.7479462700001),
+    T_cooler_hot_out  = from_degC(68.494),
+    
+    mdot_main   = 128.774,
+    mdot_comp   = 88.0661,
+    mdot_heater = 40,
+    mdot_cooler = 40.7188
   );
   
   parameter Model.HeatExchangerConfig cfg_heater = cfg.cfg_heater;

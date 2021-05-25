@@ -155,14 +155,14 @@ model TestDyn_Cooler
     fluidFlow(
       heatTransfer(heating=false, Re_min = 200), 
       fixedMassFlowSimplified = true,
-      hstartin                = cfg_cooler.cfg_cold.st_in.h,
-      hstartout               = cfg_cooler.cfg_cold.st_out.h),   // set the fluid flow as fixed mdot for simplarity
+      hstartin                = cfg_cooler.cfg_fluid.st_in.h,
+      hstartout               = cfg_cooler.cfg_fluid.st_out.h),   // set the fluid flow as fixed mdot for simplarity
     gasFlow(
       heatTransfer(heating=true, Re_min = 2300), 
-      Tstartin  = cfg_cooler.cfg_hot.st_in.T,
-      Tstartout = cfg_cooler.cfg_hot.st_out.T,
-      Nt = cfg_cooler.cfg_hot.N_ch,
-      Dhyd = cfg_cooler.cfg_hot.geo_area.d_hyd),    
+      Tstartin  = cfg_cooler.cfg_gas.st_in.T,
+      Tstartout = cfg_cooler.cfg_gas.st_out.T,
+      Nt        = cfg_cooler.cfg_gas.N_ch,
+      Dhyd      = cfg_cooler.cfg_gas.geo_area.d_hyd),    
     
     // redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer,    
     // redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer, 
