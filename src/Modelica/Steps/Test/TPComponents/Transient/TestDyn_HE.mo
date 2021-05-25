@@ -74,10 +74,10 @@ model TestDyn_HE
     // mdot_heater      = 40,
     // T_heater_hot_in  = from_degC(800),
     // T_heater_hot_out = from_degC(600),
-    r_i_heater  = 0.5e-3,
-    r_t_heater  = 0.7e-3, //cfg.r_i_heater + 10e-3,
-    r_o_heater  = 1e-3,                      // agree with the final parameter Dhyd = 1 in HE, should be checked to see if it is capable of containing all fluid-metal tubes
-    N_ch_heater = 50000,
+    r_i_heater  = 1e-3,
+    r_t_heater  = 2e-3, //cfg.r_i_heater + 10e-3,
+    r_o_heater  = 3e-3,                      // agree with the final parameter Dhyd = 1 in HE, should be checked to see if it is capable of containing all fluid-metal tubes
+    N_ch_heater = 10000,
     L_heater    = 1,
     N_ch_HTR    = 30000,
     L_HTR       = 2.5,
