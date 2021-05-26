@@ -64,13 +64,10 @@ model TestDyn_Comps_PCHE_ramp
   parameter Model.RCBCycleConfig cfg(
     redeclare package medium_heater = medium_heater,
     redeclare package medium_main   = medium_main,
-    // mdot_heater      = 40,
-    // T_heater_hot_in  = from_degC(800),
-    // T_heater_hot_out = from_degC(600),
-    r_i_heater  = 0.5e-3,
-    r_t_heater  = 0.7e-3, //cfg.r_i_heater + 10e-3,
-    r_o_heater  = 1e-3,                      // agree with the final parameter Dhyd = 1 in HE, should be checked to see if it is capable of containing all fluid-metal tubes
-    N_ch_heater = 50000,
+    r_i_heater  = 1e-3,
+    r_t_heater  = 2e-3, //cfg.r_i_heater + 10e-3,
+    r_o_heater  = 3e-3,                      // agree with the final parameter Dhyd = 1 in HE, should be checked to see if it is capable of containing all fluid-metal tubes
+    N_ch_heater = 10000,
     L_heater    = 1,
     N_ch_HTR    = 30000,
     L_HTR       = 2.5,
@@ -86,7 +83,7 @@ model TestDyn_Comps_PCHE_ramp
     r_t_cooler  = 0.7e-3,
     r_o_cooler  = 1e-3,    
     table_k_LTR_wall = table_k_metalwall,
-    table_k_HTR_wall = table_k_metalwall,
+    table_k_HTR_wall = table_k_metalwall,    
     // latest boundary conditions, following values are simulation results with sourcePressure.p = 200 bar and above geometry params
     p_comp_in  = 109.59e5,
     p_comp_out = 20e6,    

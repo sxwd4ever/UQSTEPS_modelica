@@ -233,8 +233,8 @@ model TestTP_Components_PCHE
     redeclare package FluidMedium   = medium_main,
     redeclare package FlueGasMedium = medium_main,
     // with Marchionni Correlation    
-    redeclare replaceable model HeatTransfer_F = Steps.TPComponents.MarchionniPCHEHeatTransferFV(),
-    redeclare replaceable model HeatTransfer_G = Steps.TPComponents.MarchionniPCHEHeatTransferFV(),
+    redeclare replaceable model HeatTransfer_F = Steps.TPComponents.GnielinskiHeatTransferFV(),
+    redeclare replaceable model HeatTransfer_G = Steps.TPComponents.GnielinskiHeatTransferFV(),
     gasFlow(
       heatTransfer(
         pitch                 = cfg_HTR.cfg_hot.l_pitch,
@@ -283,8 +283,8 @@ model TestTP_Components_PCHE
     redeclare package FluidMedium   = medium_main,
     redeclare package FlueGasMedium = medium_main,
     // with Marchionni Correlation    
-    redeclare replaceable model HeatTransfer_F = Steps.TPComponents.MarchionniPCHEHeatTransferFV(),
-    redeclare replaceable model HeatTransfer_G = Steps.TPComponents.MarchionniPCHEHeatTransferFV(),
+    redeclare replaceable model HeatTransfer_F = Steps.TPComponents.GnielinskiHeatTransferFV(),
+    redeclare replaceable model HeatTransfer_G = Steps.TPComponents.GnielinskiHeatTransferFV(),
     gasFlow(
       heatTransfer(
         pitch                 = cfg_LTR.cfg_hot.l_pitch,
