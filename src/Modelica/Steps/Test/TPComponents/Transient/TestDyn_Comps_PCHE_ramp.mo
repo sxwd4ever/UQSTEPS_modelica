@@ -46,6 +46,7 @@ model TestDyn_Comps_PCHE_ramp
   // parameter Real table_k_metalwall[:,:] = [20, 12.1; 100, 16.3; 500, 21.5];
   parameter Real table_k_metalwall[:,:] = [293.15, 12.1; 373.15, 16.3; 773.15, 21.5];
   parameter Real Cf_C1                  = 1.626, Cf_C2 = 1, Cf_C3 = 1;
+  // parameter Real Cf_C1                  = 1, Cf_C2 = 1, Cf_C3 = 1;
   // parameter Real Cf_C1_cold = 1, Cf_C2_cold = 1, Cf_C3_cold = 1;
   parameter Real use_rho_bar  = -1.0;
   parameter Real rho_bar_hot  = 1.0;
@@ -275,8 +276,8 @@ model TestDyn_Comps_PCHE_ramp
      
     // use Marchionni PCHE HeatTransfer
     // slow but can have a result - set a_phi = 0 to use Gnielinski's correlation 
-    redeclare replaceable model HeatTransfer_F = Steps.TPComponents.MarchionniPCHEHeatTransferFV(),
-    redeclare replaceable model HeatTransfer_G = Steps.TPComponents.MarchionniPCHEHeatTransferFV(),
+    redeclare replaceable model HeatTransfer_F = Steps.TPComponents.NgoHeatTransferFV(),
+    redeclare replaceable model HeatTransfer_G = Steps.TPComponents.NgoHeatTransferFV(),
     gasFlow(      
       heatTransfer(
         pitch = cfg_LTR.cfg_hot.l_pitch,
@@ -332,8 +333,8 @@ model TestDyn_Comps_PCHE_ramp
     // use Marchionni PCHE HeatTransfer
     // slow but can have a result - set a_phi = 0 to use Gnielinski's correlation 
     
-    redeclare replaceable model HeatTransfer_F = Steps.TPComponents.MarchionniPCHEHeatTransferFV(),
-    redeclare replaceable model HeatTransfer_G = Steps.TPComponents.MarchionniPCHEHeatTransferFV(),
+    redeclare replaceable model HeatTransfer_F = Steps.TPComponents.GnielinskiHeatTransferFV(),
+    redeclare replaceable model HeatTransfer_G = Steps.TPComponents.GnielinskiHeatTransferFV(),
     gasFlow(      
       heatTransfer(
         pitch = cfg_HTR.cfg_hot.l_pitch,

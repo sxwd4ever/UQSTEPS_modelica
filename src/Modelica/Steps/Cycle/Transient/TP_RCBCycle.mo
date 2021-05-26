@@ -329,8 +329,8 @@ model TP_RCBCycle
     // use Marchionni PCHE HeatTransfer
     // slow but can have a result - set a_phi = 0 to use Gnielinski's correlation 
     
-    redeclare replaceable model HeatTransfer_F = Steps.TPComponents.MarchionniPCHEHeatTransferFV(),
-    redeclare replaceable model HeatTransfer_G = Steps.TPComponents.MarchionniPCHEHeatTransferFV(),
+    redeclare replaceable model HeatTransfer_F = Steps.TPComponents.GnielinskiHeatTransferFV(),
+    redeclare replaceable model HeatTransfer_G = Steps.TPComponents.GnielinskiHeatTransferFV(),
     gasFlow(      
       heatTransfer(
         pitch = cfg_HTR.cfg_hot.l_pitch,
@@ -393,8 +393,8 @@ model TP_RCBCycle
      
     // use Marchionni PCHE HeatTransfer
     // slow but can have a result - set a_phi = 0 to use Gnielinski's correlation 
-    redeclare replaceable model HeatTransfer_F = Steps.TPComponents.MarchionniPCHEHeatTransferFV(),
-    redeclare replaceable model HeatTransfer_G = Steps.TPComponents.MarchionniPCHEHeatTransferFV(),
+    redeclare replaceable model HeatTransfer_F = Steps.TPComponents.NgoHeatTransferFV(),
+    redeclare replaceable model HeatTransfer_G = Steps.TPComponents.NgoHeatTransferFV(),
     gasFlow(      
       heatTransfer(
         pitch = cfg_LTR.cfg_hot.l_pitch,
@@ -982,7 +982,7 @@ equation
 
   annotation(
     Diagram(coordinateSystem(extent = {{-100, -100}, {120, 100}})),
-    experiment(StartTime = 0, StopTime = 3, Tolerance = 1e-3, Interval = 1),
+    experiment(StartTime = 0, StopTime = 3.8, Tolerance = 1e-3, Interval = 1),
     __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian",
     __OpenModelica_simulationFlags(lv = "LOG_DEBUG,LOG_NLS,LOG_NLS_V,LOG_STATS,LOG_INIT,LOG_STDOUT, -w", outputFormat = "mat", s = "dassl", nls = "homotopy"));
 end TP_RCBCycle;

@@ -1,6 +1,6 @@
 within Steps.TPComponents;
 
-model GnielinskiHeatTransferFV "Gnielinski heat transfer Correlation"
+model NgoHeatTransferFV "Ngo heat transfer Correlation"
   extends BaseClasses.DistributedHeatTransferFV;
   import SI = Modelica.SIunits;
   import MyUtil = Steps.Utilities.Util;
@@ -44,7 +44,7 @@ model GnielinskiHeatTransferFV "Gnielinski heat transfer Correlation"
   SI.PerUnit Re_l[Nw] "Reynolds number limited to validity range";
   SI.CoefficientOfHeatTransfer gamma[Nw] "Heat transfer coefficients at the volumes";  
 
- 
+
   // node properties    
   SI.Velocity u[Nf] "Local velocity of fluid";
   Real G[Nf] "mass flow flux";
@@ -125,8 +125,8 @@ equation
       k_vol[j] = noEvent(k[j]);
       rho_vol[j] = noEvent(rho[j]);
       cp_vol[j] = noEvent(cp[j]);
-    end if;    
-    
+    end if;        
+   
     // calculate Re and Pr  
     Re[j] =  noEvent(G_vol[j] * Dhyd / mu_vol[j]);    
     Pr[j] = noEvent(cp_vol[j] * mu_vol[j] / k_vol[j]);      
@@ -158,12 +158,10 @@ equation
       co_A[j] = noEvent(-2.0 * Modelica.Math.log10( 12 / Re_l[j])) "neglect roughness";
       co_B[j] = noEvent(-2.0 * Modelica.Math.log10( 2.51 * co_A[j] / Re_l[j]));         
   
-      //C1[j] = exp(Cf_C1 +  Cf_C2  * log(Re_l[j] / 1e4)  + Cf_C3 * log(Pr[j]));
-      f[j] = noEvent(Cf_C1 * (0.25 * (( 4.781 - (co_A[j] - 4.781) ^ 2 / (co_B[j] - 2 * co_A[j] + 4.781)) ^(-2))));
-      Nu[j] = noEvent((1 / Cf_C1) * ((f[j]/2 * (Re_l[j] - 1000) * Pr[j]) / (1 + 12.7 * ( Pr[j] ^(2/3) - 1) * (f[j]/2)^0.5)));
-      
-      // co_A[j] = 1.0;
-      //  co_B[j] = 1.0;      
+      // use Ngo correlation as default
+      Nu[j] = noEvent(0.1696 * (Re_l[j] ^ 0.629) * (Pr[j] ^ 0.317));  
+      f[j] = noEvent(0.1924 * (Re_l[j] ^ (-0.091)));
+         
       
       if use_rho_bar > 0 then    
         // dp[j] = noEvent(kc_dp * f[j] * l * rho_bar * u_vol[j] ^ 2 / Dhyd);
@@ -190,8 +188,8 @@ equation
     else
       gamma[j] = noEvent(1 / (1 / hc[j] + t_wall / k_wall[j]));
     end if;
-    */
-     /*    
+    
+    
     MyUtil.myAssert(
     debug = false, 
     val_test = Tw[j], min = 0, max = 1e6,
@@ -205,8 +203,8 @@ equation
     name_val = "T_vol[j]", 
     val_ref = {kc, gamma[j], hc[j], k_vol[j]}, 
     name_val_ref = {"kc", "gamma[j]", "hc[j]", "k_vol[j]"});        
-    
-        
+    */
+    /*         
     MyUtil.myAssert(
     debug = false, 
     val_test = gamma[j], min = 0, max = 1e6,
@@ -249,4 +247,4 @@ algorithm
       name_val_ref = {"kc", "gamma[j]", "hc[j]", "k_wall[j]", "k_vol[j]"});    
     end for;
 */
-end GnielinskiHeatTransferFV;
+end NgoHeatTransferFV;

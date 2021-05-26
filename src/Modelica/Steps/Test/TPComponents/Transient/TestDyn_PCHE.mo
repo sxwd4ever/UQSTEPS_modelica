@@ -86,7 +86,7 @@ model TestDyn_PCHE
   
   // set the values of parameters accordingly - For HTR test.
   // modify it to cfg_HE = cfg.cfg_LTR for LTR test
-  parameter Model.HeatExchangerConfig cfg_HE     = cfg.cfg_HTR;
+  parameter Model.HeatExchangerConfig cfg_HE     = cfg.cfg_LTR;
   parameter Model.ThermoState st_source_hot      = cfg_HE.cfg_hot.st_in;
   parameter Model.ThermoState st_sink_hot        = cfg_HE.cfg_hot.st_out;
   parameter Model.ThermoState st_source_cold     = cfg_HE.cfg_cold.st_in;
