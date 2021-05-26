@@ -170,8 +170,8 @@ model TestDyn_PCHE
     */
     
     // with Marchionni Correlation    
-    redeclare replaceable model HeatTransfer_F = Steps.TPComponents.MarchionniPCHEHeatTransferFV(),
-    redeclare replaceable model HeatTransfer_G = Steps.TPComponents.MarchionniPCHEHeatTransferFV(),
+    redeclare replaceable model HeatTransfer_F = Steps.TPComponents.GnielinskiHeatTransferFV(),
+    redeclare replaceable model HeatTransfer_G = Steps.TPComponents.GnielinskiHeatTransferFV(),
     gasFlow(
       heatTransfer(
         pitch       = cfg_HE.cfg_hot.l_pitch,

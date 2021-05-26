@@ -44,6 +44,19 @@ model GnielinskiHeatTransferFV "Gnielinski heat transfer Correlation"
   SI.PerUnit Re_l[Nw] "Reynolds number limited to validity range";
   SI.CoefficientOfHeatTransfer gamma[Nw] "Heat transfer coefficients at the volumes";  
 
+  // Real kc_T[Nw];    
+  Medium.AbsolutePressure p_vol[Nw] "volume averaged pressure";
+  SI.SpecificEnthalpy h_vol[Nw];
+  
+  // quantities evaluated at corresponding wall volume temperature
+  Medium.ThermodynamicState state_w[Nw] "ThermoDynamicState";
+  SI.Density rho_w[Nw] "density";
+  SI.SpecificEnthalpy h_w[Nw];
+  SI.SpecificHeatCapacityAtConstantPressure cp_bar[Nw] "mean specific heat in Eq. 12 in Liao's paper";
+  Real Gr[Nw] "Grasholf number";
+  
+  Real q1[Nw], q2[Nw], q3[Nw] "intermediate values for debug/correlation modelling purpose";
+  
   // node properties    
   SI.Velocity u[Nf] "Local velocity of fluid";
   Real G[Nf] "mass flow flux";
@@ -63,6 +76,11 @@ model GnielinskiHeatTransferFV "Gnielinski heat transfer Correlation"
   parameter Real use_rho_bar "> 0, use rho_bar for dp calculation. error in passing a boolean from OMPython so Real type variable is used here";
   parameter Real rho_bar "Averaged rho, >0: valid rho and will be used for dp calculation";   
   
+  parameter Correlations.NuCorrType NuCorr_z = Correlations.NuCorrType.Ngo; //Gnielinski; //Ngo;//Xin "flag of Nusselt Number correlation for zigzag channel PCHE";
+  parameter Correlations.NuCorrType NuCorr_s = Correlations.NuCorrType.Gnielinski "flag of Nusselt number correlation for straight channel PCHE";
+  parameter Correlations.FFCorrType FFCorr_z = Correlations.FFCorrType.Ngo;//Gnielinski; //Ngo "flag of Friction factor correlation for zigzag channel";
+  parameter Correlations.FFCorrType FFCorr_s = Correlations.FFCorrType.Gnielinski "flag of Friction factor correlation for straight channel";
+
   parameter Real Cf_C1 = 1.0;
   parameter Real Cf_C2 = 1.0;
   parameter Real Cf_C3 = 1.0;
@@ -79,7 +97,7 @@ model GnielinskiHeatTransferFV "Gnielinski heat transfer Correlation"
 equation
   assert(Nw == Nf - 1, "Number of volumes Nw on wall side should be equal to number of volumes fluid side Nf - 1");
    
-  // Fluid properties at the nodes    
+// Fluid properties at the nodes    
   for j in 1:Nf loop
     G[j] = noEvent(abs(w[j])/ A); 
     u[j] = noEvent(abs(w[j]) / A / rho[j]);
@@ -102,7 +120,9 @@ equation
       mu_vol[j] = noEvent((mu[j] + mu[j+1]) / 2);
       k_vol[j] = noEvent((k[j] + k[j+1]) / 2);
       rho_vol[j] = noEvent((rho[j] + rho[j+1]) / 2);
-      cp_vol[j] = noEvent((cp[j] + cp[j+1]) / 2);
+      cp_vol[j] = noEvent((cp[j] + cp[j+1]) / 2); 
+      p_vol[j] = noEvent((fluidState[j].p + fluidState[j+1].p) / 2);
+      h_vol[j] = noEvent((h[j] + h[j+1]) / 2);
     else
     /*
       // downstream
@@ -124,8 +144,35 @@ equation
       k_vol[j] = noEvent(k[j]);
       rho_vol[j] = noEvent(rho[j]);
       cp_vol[j] = noEvent(cp[j]);
-    end if;  
-
+      p_vol[j] = noEvent(fluidState[j].p);
+      h_vol[j] = noEvent(h[j]);
+    end if;    
+    
+    // kc_T[j] = if T_vol[j] < 600 then 2.0 else 1.0;  
+    
+    // calculate thermaldynamic state and relative quantities on wall temperature       
+    // Only for Liao's correlation and its update since the calculation is time consuming
+    if NuCorr_z == Correlations.NuCorrType.Liao or NuCorr_z == Correlations.NuCorrType.Xin then 
+      state_w[j] = Medium.setState_pT(p_vol[j], Tw[j]);
+      rho_w[j] = Medium.density(state_w[j]);
+      h_w[j] = Medium.specificEnthalpy(state_w[j]);    
+      // use abs() to prevent negetive Gr
+      Gr[j] = abs((rho_w[j] - rho_vol[j]) * rho_vol[j] * g * (d_c ^ 3) / (mu_vol[j]^2));   
+    else
+      // dummy variables
+      state_w[j] = fluidState[j];
+      rho_w[j] = 0.0;
+      h_w[j] = 0.0;
+      // use abs() to prevent negetive Gr
+      Gr[j] = 0.0;
+    end if;
+    
+    if abs(Tw[j] - T_vol[j]) < 1e-3 then
+      cp_bar[j] = cp_vol[j]; 
+    else
+      cp_bar[j] = (h_w[j] - h_vol[j]) / (Tw[j] - T_vol[j]);  
+    end if;
+    
     // calculate Re and Pr  
     Re[j] =  noEvent(G_vol[j] * Dhyd / mu_vol[j]);    
     Pr[j] = noEvent(cp_vol[j] * mu_vol[j] / k_vol[j]);      
@@ -150,18 +197,73 @@ equation
       co_A[j] = 0;
       co_B[j] = 0;      
       f[j] = 0;
-
+      
+      q1[j] = 0;
+      q2[j] = 0;
+      q3[j] = 0; 
       dp[j] = 0;  
     else      
       Re_l[j] = noEvent(Functions.smoothSat(Re[j], Re_min, 1e9, Re_min / 2));       
       co_A[j] = noEvent(-2.0 * Modelica.Math.log10( 12 / Re_l[j])) "neglect roughness";
       co_B[j] = noEvent(-2.0 * Modelica.Math.log10( 2.51 * co_A[j] / Re_l[j]));         
   
-      // Nusselt number correlation      
-      Nu[j] = noEvent((1 / Cf_C1) * ((f[j]/2 * (Re_l[j] - 1000) * Pr[j]) / (1 + 12.7 * ( Pr[j] ^(2/3) - 1) * (f[j]/2)^0.5)));
-      // Friction factor correlation
-      f[j] = noEvent(Cf_C1 * (0.25 * (( 4.781 - (co_A[j] - 4.781) ^ 2 / (co_B[j] - 2 * co_A[j] + 4.781)) ^(-2))));     
-    
+      //C1[j] = exp(Cf_C1 +  Cf_C2  * log(Re_l[j] / 1e4)  + Cf_C3 * log(Pr[j]));
+      if phi <= 0 then 
+        // for straight channel, use Gnieliski Correlation 
+        // pressure drop calculation in Marchionni 2019 
+  
+        f[j] = noEvent(Cf_C1 * (0.25 * (( 4.781 - (co_A[j] - 4.781) ^ 2 / (co_B[j] - 2 * co_A[j] + 4.781)) ^(-2))));
+        Nu[j] = noEvent((1 / Cf_C1) * ((f[j]/2 * (Re_l[j] - 1000) * Pr[j]) / (1 + 12.7 * ( Pr[j] ^(2/3) - 1) * (f[j]/2)^0.5)));
+        
+        // dummy variables      
+        q1[j] = 0;
+        q2[j] = 0;
+        q3[j] = 0;      
+        
+      else // for zigzag channel
+      
+        // Nusselt number correlation        
+        if NuCorr_z == Correlations.NuCorrType.Liao or NuCorr_z == Correlations.NuCorrType.Xin then
+          
+          q1[j] = noEvent(Gr[j] / (Re_l[j] ^ 2));      
+          q2[j] = noEvent(rho_w[j] / rho_vol[j]);      
+          q3[j] = noEvent(cp_bar[j] / cp_vol[j]);  
+          
+          if NuCorr_z == Correlations.NuCorrType.Liao then 
+            // Nusselt number by Liao-Zhao correlation
+            Nu[j] = noEvent(0.124 * (Re_l[j] ^ 0.8) * (Pr[j] ^ 0.4) * q1[j] ^ 0.203 * q2[j] ^ 0.842 * q3[j] ^ 0.384);   
+          else //NuCorr_z == Correlations.NuCorrType.Xin
+            // My update of Liao-zhao Nusselt number correlation,
+            // introducing Cf_C1, which is predicted by boundary condition with pre-trained coefficients          
+            Nu[j] = noEvent(Cf_C1 * (Re_l[j] ^ 0.8) * (Pr[j] ^ 0.4) * q1[j]^ 0.203 * q2[j] ^ 0.842 * q3[j] ^ 0.384);     
+          end if;
+          
+        else
+          q1[j] = 0;
+          q2[j] = 0;
+          q3[j] = 0;         
+          
+          if NuCorr_z == Correlations.NuCorrType.Gnielinski then
+            Nu[j] = noEvent((1 / Cf_C1) * ((f[j]/2 * (Re_l[j] - 1000) * Pr[j]) / (1 + 12.7 * ( Pr[j] ^(2/3) - 1) * (f[j]/2)^0.5)));
+          else 
+            // use Ngo correlation as default
+            Nu[j] = noEvent(0.1696 * (Re_l[j] ^ 0.629) * (Pr[j] ^ 0.317));      
+          end if; 
+        end if;            
+  
+        // Friction factor correlation
+        if FFCorr_z == Correlations.FFCorrType.Xin then
+          f[j] = noEvent(Cf_C2 * (Re_l[j] ^ (-0.091)));
+        elseif FFCorr_z == Correlations.FFCorrType.Gnielinski then
+          f[j] = noEvent(Cf_C1 * (0.25 * (( 4.781 - (co_A[j] - 4.781) ^ 2 / (co_B[j] - 2 * co_A[j] + 4.781)) ^(-2))));          
+        else // use Ngo's correlation as default
+          f[j] = noEvent(0.1924 * (Re_l[j] ^ (-0.091)));
+        end if;
+        
+        // co_A[j] = 1.0;
+        //  co_B[j] = 1.0;
+      end if;      
+      
       if use_rho_bar > 0 then    
         // dp[j] = noEvent(kc_dp * f[j] * l * rho_bar * u_vol[j] ^ 2 / Dhyd);
         dp[j] = noEvent(f[j] * l * rho_bar * u_vol[j] ^ 2 / Dhyd);
@@ -187,7 +289,7 @@ equation
     else
       gamma[j] = noEvent(1 / (1 / hc[j] + t_wall / k_wall[j]));
     end if;
-    
+    */
     
     MyUtil.myAssert(
     debug = false, 
@@ -202,7 +304,7 @@ equation
     name_val = "T_vol[j]", 
     val_ref = {kc, gamma[j], hc[j], k_vol[j]}, 
     name_val_ref = {"kc", "gamma[j]", "hc[j]", "k_vol[j]"});        
-    */
+    
     /*         
     MyUtil.myAssert(
     debug = false, 
