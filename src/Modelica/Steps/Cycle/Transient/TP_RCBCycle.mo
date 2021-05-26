@@ -982,7 +982,7 @@ equation
 
   annotation(
     Diagram(coordinateSystem(extent = {{-100, -100}, {120, 100}})),
-    experiment(StartTime = 0, StopTime = 3.8, Tolerance = 1e-3, Interval = 1),
+    experiment(StartTime = 0, StopTime = 50, Tolerance = 1e-3, Interval = 5),
     __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian",
     __OpenModelica_simulationFlags(lv = "LOG_DEBUG,LOG_NLS,LOG_NLS_V,LOG_STATS,LOG_INIT,LOG_STDOUT, -w", outputFormat = "mat", s = "dassl", nls = "homotopy"));
 end TP_RCBCycle;
