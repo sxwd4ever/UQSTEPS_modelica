@@ -46,7 +46,8 @@ model TP_RCBCycle
   // thermal conductivity (T in K) https://www.theworldmaterial.com/aisi-316-ss316-stainless-steel-properties-composition/
   // parameter Real table_k_metalwall[:,:] = [20, 12.1; 100, 16.3; 500, 21.5];
   parameter Real table_k_metalwall[:,:] = [293.15, 12.1; 373.15, 16.3; 773.15, 21.5];
-  parameter Real Cf_C1                  = 1.626, Cf_C2 = 1, Cf_C3 = 1;
+  // parameter Real Cf_C1                  = 1.626, Cf_C2 = 1, Cf_C3 = 1;
+  parameter Real Cf_C1                  = 1, Cf_C2 = 1, Cf_C3 = 1;
   // parameter Real Cf_C1_cold = 1, Cf_C2_cold = 1, Cf_C3_cold = 1;
   parameter Real use_rho_bar  = -1.0;
   parameter Real rho_bar_hot  = 1.0;
@@ -145,7 +146,7 @@ model TP_RCBCycle
   parameter Model.SplitterConfig cfg_merger      = cfg.cfg_merger;
   
   parameter Model.ThermoState st_bypass      = cfg_recomp.st_in;
-  parameter Model.ThermoState st_source_temp = cfg_cooler.cfg_hot.st_in; //.cfg_cold.st_in;  
+  parameter Model.ThermoState st_source_temp = cfg_LTR.cfg_hot.st_out; //.cfg_cold.st_in;  
   parameter Model.ThermoState st_sink_temp   = cfg_LTR.cfg_hot.st_out; //.cfg_hot.st_in;
   parameter Model.ThermoState st_source      = cfg_heater.cfg_cold.st_out;
   parameter Model.ThermoState st_sink        = cfg_heater.cfg_cold.st_out;  
@@ -186,7 +187,36 @@ model TP_RCBCycle
     redeclare package FluidMedium = medium_heater, 
     redeclare package FlueGasMedium = medium_main, 
     
-    // DittusBoelter
+    // Ngo 
+    redeclare replaceable model HeatTransfer_F = Steps.TPComponents.NgoHeatTransferFV(),
+    redeclare replaceable model HeatTransfer_G = Steps.TPComponents.NgoHeatTransferFV(),
+    gasFlow(      
+      heatTransfer(
+        Cf_C1 = Cf_C1,
+        Cf_C2 = Cf_C2,
+        Cf_C3 = Cf_C3,
+        gamma_min = 1500,
+        gamma_max = 5000        
+      ),
+      Tstartin  = cfg_heater.cfg_gas.st_in.T,
+      Tstartout = cfg_heater.cfg_gas.st_out.T,
+      Nt        = cfg_heater.cfg_gas.N_ch,
+      Dhyd      = cfg_heater.cfg_gas.geo_area.d_hyd
+    ),
+    fluidFlow(      
+      heatTransfer(
+        Cf_C1 = Cf_C1,
+        Cf_C2 = Cf_C2,
+        Cf_C3 = Cf_C3,
+        gamma_min = 2000,
+        gamma_max = 1.5e6
+      ), 
+      fixedMassFlowSimplified = true,
+      hstartin                = cfg_heater.cfg_fluid.st_in.h,
+      hstartout               = cfg_heater.cfg_fluid.st_out.h
+    ),  
+    /*
+    // Dittus Boelter
     redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.DittusBoelter,    
     redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.DittusBoelter,
     fluidFlow(
@@ -200,7 +230,7 @@ model TP_RCBCycle
       Tstartout = cfg_heater.cfg_gas.st_out.T,
       Nt        = cfg_heater.cfg_gas.N_ch,
       Dhyd      = cfg_heater.cfg_gas.geo_area.d_hyd),
-    
+    */
     
     // redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer,    
     // redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFVH.IdealHeatTransfer, 
@@ -243,9 +273,9 @@ model TP_RCBCycle
     T        = st_source.T,
     p0       = st_source.p,
     w0       = st_source.mdot,
-    use_in_T = true,
+    use_in_T = false,
     gas(
-      p(start = st_source.p, nominal = st_source.p), 
+      p(start = st_source.p, nominal = st_source.p, max = st_source.p * 1.2), 
       T(start = st_source.T, nominal = st_source.T)))
   annotation(
     Placement(transformation(extent = {{-70, -10}, {-50, 10}}, rotation = 0))); 
@@ -275,7 +305,7 @@ model TP_RCBCycle
     Placement(transformation(origin = {0, 60}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
 */
 
-
+/*
   ThermoPower.Gas.SourceMassFlow source_mixer_in(
     redeclare package Medium = medium_main,
     T        = st_bypass.T,
@@ -283,7 +313,7 @@ model TP_RCBCycle
     use_in_T = false,
     w0       = st_bypass.mdot
   );  
-
+*/
  
   ThermoPower.Gas.SinkPressure sink(
     redeclare package Medium = medium_main, 
@@ -296,8 +326,11 @@ model TP_RCBCycle
     redeclare package Medium = medium_main, 
     T        = st_source_temp.T,
     p0       = st_source_temp.p,
-    use_in_T = false,
-    w0       = st_source_temp.mdot)
+    w0       = st_source_temp.mdot,
+    use_in_T = false,    
+    gas(
+      p(start = st_source_temp.p, nominal = st_source_temp.p), 
+      T(start = st_source_temp.T, nominal = st_source_temp.T)))
   annotation(
     Placement(transformation(origin = {0, 60}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
 
@@ -329,15 +362,17 @@ model TP_RCBCycle
     // use Marchionni PCHE HeatTransfer
     // slow but can have a result - set a_phi = 0 to use Gnielinski's correlation 
     
-    redeclare replaceable model HeatTransfer_F = Steps.TPComponents.GnielinskiHeatTransferFV(),
-    redeclare replaceable model HeatTransfer_G = Steps.TPComponents.GnielinskiHeatTransferFV(),
+    redeclare replaceable model HeatTransfer_F = Steps.TPComponents.NgoHeatTransferFV(),
+    redeclare replaceable model HeatTransfer_G = Steps.TPComponents.NgoHeatTransferFV(),
     gasFlow(      
       heatTransfer(
         pitch = cfg_HTR.cfg_hot.l_pitch,
         phi   = cfg_HTR.cfg_hot.a_phi,
         Cf_C1 = Cf_C1,
         Cf_C2 = Cf_C2,
-        Cf_C3 = Cf_C3
+        Cf_C3 = Cf_C3,
+        gamma_min = 2000,
+        gamma_max = 5000        
       )
     ),
     fluidFlow(      
@@ -346,7 +381,9 @@ model TP_RCBCycle
         phi   = cfg_HTR.cfg_cold.a_phi,
         Cf_C1 = Cf_C1,
         Cf_C2 = Cf_C2,
-        Cf_C3 = Cf_C3
+        Cf_C3 = Cf_C3,
+        gamma_min = 2000,
+        gamma_max = 5000
       )
     ),    
     
@@ -401,7 +438,9 @@ model TP_RCBCycle
         phi   = cfg_LTR.cfg_hot.a_phi,
         Cf_C1 = Cf_C1,
         Cf_C2 = Cf_C2,
-        Cf_C3 = Cf_C3
+        Cf_C3 = Cf_C3,
+        gamma_min = 2000,
+        gamma_max = 5000        
       )
     ),
     fluidFlow(      
@@ -410,7 +449,9 @@ model TP_RCBCycle
         phi   = cfg_LTR.cfg_cold.a_phi,
         Cf_C1 = Cf_C1,
         Cf_C2 = Cf_C2,
-        Cf_C3 = Cf_C3
+        Cf_C3 = Cf_C3,
+        gamma_min = 2000,
+        gamma_max = 5000        
       )
     ),    
     
@@ -458,7 +499,8 @@ model TP_RCBCycle
     //explicitIsentropicEnthalpy = false,
     gas_in(
       p(nominal = turbine.pstart_in), 
-      T(nominal = turbine.Tstart_in)),
+      T(nominal = turbine.Tstart_in),
+      h(start   = cfg_turb.st_out.h, nominal=cfg_turb.st_out.h)),
     gas_iso(
       p(nominal = turbine.pstart_out), 
       T(nominal = turbine.Tstart_out),
@@ -606,9 +648,9 @@ model TP_RCBCycle
   annotation (Placement(transformation(
       extent={{-50,-10},{-30,10}}, rotation=0)));
 
-/* 
+
   ThermoPower.Gas.FlowSplit splitter(redeclare package Medium = medium_main); 
-*/
+
   /*
   ThermoPower.Gas.Utility.ClosedSystemInit sys_init(
     redeclare package Medium = medium_main,
@@ -887,13 +929,17 @@ equation
   connect(LTR.gasOut, r_LTR_hout.inlet);
   connect(r_LTR_hout.outlet, sink_temp.flange);
   
-  // connect(source_mixer_in.flange, mixer.inlet2);  
-
-  connect(source_mixer_in.flange, recompressor.inlet);
+  connect(source_temp.flange, splitter.inlet);
+  connect(splitter.outlet1, r_cooler_hin.inlet);
+    
+    connect(splitter.outlet2, recompressor.inlet);
   
-  connect(recompressor.outlet, mixer.inlet2); 
-     
-    connect(recompressor.shaft_a, const_speed_rc.flange);
+  // connect(source_mixer_in.flange, mixer.inlet2);  
+  // connect(source_mixer_in.flange, recompressor.inlet);
+  
+    connect(recompressor.outlet, mixer.inlet2); 
+       
+      connect(recompressor.shaft_a, const_speed_rc.flange);
   
   /*  
   connect(splitter.outlet1, r_cooler_hin.inlet);
@@ -901,7 +947,7 @@ equation
     connect(splitter.outlet2, sink_temp.flange);
   */   
      
-  connect(source_temp.flange, r_cooler_hin.inlet);  
+  // connect(source_temp.flange, r_cooler_hin.inlet);  
   connect(r_cooler_hin.outlet, cooler.gasIn);  
   connect(cooler.gasOut, r_cooler_hout.inlet);  
   connect(r_cooler_hout.outlet, compressor.inlet);  
@@ -984,5 +1030,5 @@ equation
     Diagram(coordinateSystem(extent = {{-100, -100}, {120, 100}})),
     experiment(StartTime = 0, StopTime = 50, Tolerance = 1e-3, Interval = 5),
     __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian",
-    __OpenModelica_simulationFlags(lv = "LOG_DEBUG,LOG_NLS,LOG_NLS_V,LOG_STATS,LOG_INIT,LOG_STDOUT, -w", outputFormat = "mat", s = "dassl", nls = "homotopy"));
+    __OpenModelica_simulationFlags(lv = "LOG_DEBUG,LOG_NLS,LOG_NLS_V,LOG_STATS,LOG_INIT,LOG_STDOUT,LOG_DSS_JAC -w", outputFormat = "mat", s = "dassl", nls = "homotopy"));
 end TP_RCBCycle;

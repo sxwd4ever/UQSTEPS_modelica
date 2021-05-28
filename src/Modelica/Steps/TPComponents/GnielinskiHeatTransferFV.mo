@@ -12,6 +12,7 @@ model GnielinskiHeatTransferFV "Gnielinski heat transfer Correlation"
   //parameter Modelica.SIunits.Length pitch = 24.6 * 1e-3;
   //parameter Modelica.SIunits.Angle phi = 0.0 "unit rad";
   parameter Real Re_min = 2300 "Minimum Reynolds number";
+  parameter Real gamma_max = 15000, gamma_min = 1500 "max and min valid gamma, to prevent unfeasible gamma";
   
   SI.Length d_c = (8 * A / Modelica.Constants.pi) ^ 0.5 "Diameter of semi_circular";
   /*
@@ -31,6 +32,7 @@ model GnielinskiHeatTransferFV "Gnielinski heat transfer Correlation"
   Medium.ThermalConductivity k_vol[Nw] "Thermal conductivity";
   Medium.Density rho_vol[Nw] "Averaged Density of fluid";  
   SI.SpecificHeatCapacityAtConstantPressure cp_vol[Nw] "HeatCapacityAtConstantPressure";  
+  Medium.AbsolutePressure p_vol[Nw];  
   
   // calculated by local averaged properties
   Real Pr[Nw];
@@ -53,6 +55,7 @@ model GnielinskiHeatTransferFV "Gnielinski heat transfer Correlation"
   Medium.Density rho[Nf] "Density of fluid";  
   SI.SpecificHeatCapacityAtConstantPressure cp[Nf] "HeatCapacityAtConstantPressure";  
   SI.SpecificEnthalpy h[Nf] ;
+  Medium.AbsolutePressure p[Nf];
 
   Modelica.SIunits.Length t_wall = (2 - Modelica.Constants.pi / 4) * (d_c / 2) "thickness of wall between two neighboring hot and cold";
   parameter SI.Length pitch "pitch length";
@@ -182,6 +185,11 @@ equation
     k_wall[j] =  MyUtil.metal_conductivity(th_conductivity.tableID, Tw[j]);
     
     gamma[j] = noEvent(1 / (1 / hc[j] + t_wall / k_wall[j]));
+    
+    assert(
+      gamma[j] > gamma_min and gamma[j] < gamma_max, 
+      "invalid gamma=" + String(gamma[j]) + " out of range: (min, max)=(" + String(gamma_min) + ", " + String(gamma_max) + ").");    
+      
     //gamma[j] = noEvent(hc[j]);
     
     /*
@@ -191,14 +199,14 @@ equation
       gamma[j] = noEvent(1 / (1 / hc[j] + t_wall / k_wall[j]));
     end if;
     */
-     /*    
     MyUtil.myAssert(
     debug = false, 
-    val_test = Tw[j], min = 0, max = 1e6,
-    name_val = "Tw[j]", 
-    val_ref = {kc, gamma[j], hc[j], k_vol[j]}, 
-    name_val_ref = {"kc", "gamma[j]", "hc[j]", "k_vol[j]"});  
-    
+    val_test = gamma[j], min = gamma_min, max = gamma_max,
+    name_val = "gamma[j]", 
+    val_ref = {j, T_vol[j], p[j], Re[j], G_vol[j], Dhyd, mu_vol[j], Pr[j], cp_vol[j], hc[j], t_wall, k_wall[j]}, 
+    name_val_ref = {"j", "T_vol[j]", "p[j]", "Re[j]", "G_vol[j]", "Dhyd", "mu_vol[j]", "Pr[j]", "cp_vol[j]", "hc[j]", "t_wall", "k_wall[j]"});  
+
+/*    
     MyUtil.myAssert(
     debug = false, 
     val_test = T_vol[j], min = 0, max = 1e6,

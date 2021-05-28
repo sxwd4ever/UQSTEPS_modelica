@@ -12,9 +12,11 @@ model NgoHeatTransferFV "Ngo heat transfer Correlation"
   //parameter Modelica.SIunits.Length pitch = 24.6 * 1e-3;
   //parameter Modelica.SIunits.Angle phi = 0.0 "unit rad";
   parameter Real Re_min = 2300 "Minimum Reynolds number";
+  parameter Real gamma_max = 15000, gamma_min = 1500 "max and min valid gamma, to prevent unfeasible gamma";
   
-  SI.Length d_c = (8 * A / Modelica.Constants.pi) ^ 0.5 "Diameter of semi_circular";
   /*
+  SI.Length d_c = (8 * A / Modelica.Constants.pi) ^ 0.5 "Diameter of semi_circular";
+  
   inner Modelica.SIunits.Diameter d_h = 4 * A_c / peri_c "Hydraulic Diameter";  
   inner Modelica.SIunits.Area A_c = Modelica.Constants.pi * d_c * d_c / 8 "Area of semi-circular tube"; 
   inner Modelica.SIunits.Length peri_c = d_c * Modelica.Constants.pi / 2 + d_c "perimeter of semi-circular";   
@@ -42,8 +44,8 @@ model NgoHeatTransferFV "Ngo heat transfer Correlation"
   SI.PerUnit Re[Nw] "Reynolds number";
   SI.PerUnit Nu[Nw] "Nussult numbers";
   SI.PerUnit Re_l[Nw] "Reynolds number limited to validity range";
-  SI.CoefficientOfHeatTransfer gamma[Nw] "Heat transfer coefficients at the volumes";  
-
+  SI.CoefficientOfHeatTransfer gamma[Nw] "Heat transfer coefficients at the volumes";
+  Medium.AbsolutePressure p_vol[Nw];  
 
   // node properties    
   SI.Velocity u[Nf] "Local velocity of fluid";
@@ -52,9 +54,11 @@ model NgoHeatTransferFV "Ngo heat transfer Correlation"
   Medium.ThermalConductivity k[Nf] "Thermal conductivity";
   Medium.Density rho[Nf] "Density of fluid";  
   SI.SpecificHeatCapacityAtConstantPressure cp[Nf] "HeatCapacityAtConstantPressure";  
-  SI.SpecificEnthalpy h[Nf] ;
+  SI.SpecificEnthalpy h[Nf];
+  Medium.AbsolutePressure p[Nf];
 
-  Modelica.SIunits.Length t_wall = (2 - Modelica.Constants.pi / 4) * (d_c / 2) "thickness of wall between two neighboring hot and cold";
+  //Modelica.SIunits.Length t_wall = (2 - Modelica.Constants.pi / 4) * (d_c / 2) "thickness of wall between two neighboring hot and cold";
+  parameter Modelica.SIunits.Length t_wall = Dhyd / 2 "thickness of wall between two neighboring hot and cold";
   parameter SI.Length pitch "pitch length";
   parameter Real phi "pitch angle, degree";
   parameter String name_material = "inconel 750";
@@ -89,6 +93,7 @@ equation
     rho[j] = noEvent(Medium.density(fluidState[j]));
     cp[j] = noEvent(Medium.specificHeatCapacityCp(fluidState[j]));   
     h[j] = noEvent(Medium.specificEnthalpy(fluidState[j])); 
+    p[j] = fluidState[j].p;
   end for;   
   
   // required for table initialization and equation balance
@@ -104,6 +109,7 @@ equation
       k_vol[j] = noEvent((k[j] + k[j+1]) / 2);
       rho_vol[j] = noEvent((rho[j] + rho[j+1]) / 2);
       cp_vol[j] = noEvent((cp[j] + cp[j+1]) / 2); 
+      p_vol[j] = noEvent((p[j] + p[j+1]) / 2); 
     else
     /*
       // downstream
@@ -125,6 +131,7 @@ equation
       k_vol[j] = noEvent(k[j]);
       rho_vol[j] = noEvent(rho[j]);
       cp_vol[j] = noEvent(cp[j]);
+      p_vol[j] = noEvent((p[j])); 
     end if;        
    
     // calculate Re and Pr  
@@ -180,6 +187,11 @@ equation
     k_wall[j] =  MyUtil.metal_conductivity(th_conductivity.tableID, Tw[j]);
     
     gamma[j] = noEvent(1 / (1 / hc[j] + t_wall / k_wall[j]));
+    /*
+    assert(
+      gamma[j] > gamma_min and gamma[j] < gamma_max, 
+      "invalid gamma=" + String(gamma[j]) + " out of range: (min, max)=(" + String(gamma_min) + ", " + String(gamma_max) + ").");
+    */
     //gamma[j] = noEvent(hc[j]);
     
     /*
@@ -188,15 +200,15 @@ equation
     else
       gamma[j] = noEvent(1 / (1 / hc[j] + t_wall / k_wall[j]));
     end if;
-    
-    
+*/    
+
     MyUtil.myAssert(
     debug = false, 
-    val_test = Tw[j], min = 0, max = 1e6,
-    name_val = "Tw[j]", 
-    val_ref = {kc, gamma[j], hc[j], k_vol[j]}, 
-    name_val_ref = {"kc", "gamma[j]", "hc[j]", "k_vol[j]"});  
-    
+    val_test = gamma[j], min = gamma_min, max = gamma_max,
+    name_val = "gamma[j]", 
+    val_ref = {j, T_vol[j], p[j], Re[j], G_vol[j], Dhyd, mu_vol[j], Pr[j], cp_vol[j], hc[j], t_wall, k_wall[j]}, 
+    name_val_ref = {"j", "T_vol[j]", "p[j]", "Re[j]", "G_vol[j]", "Dhyd", "mu_vol[j]", "Pr[j]", "cp_vol[j]", "hc[j]", "t_wall", "k_wall[j]"});  
+/*    
     MyUtil.myAssert(
     debug = false, 
     val_test = T_vol[j], min = 0, max = 1e6,
