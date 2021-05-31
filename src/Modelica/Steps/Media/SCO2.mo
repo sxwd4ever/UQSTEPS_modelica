@@ -121,7 +121,7 @@ package SCO2 "supercritical CO2"
       "2 for two-phase, 1 for one-phase, 0 if not known";
     output ThermodynamicState state;    
   algorithm    
-    assert((p > 1000 and p < 2.5e7) and h > 0, "Invalid Pressure or Specific Enthalpy (p, h)=(" + String(p) + "," + String(h) + ")");  
+    assert((p > 1000 and p < 2.5e7) and (h > 0 and h < 2e8), "Invalid Pressure or Specific Enthalpy (p, h)=(" + String(p) + "," + String(h) + ")");  
     state := setState_ph_lib(p, h, phase);
   end setState_ph;
     

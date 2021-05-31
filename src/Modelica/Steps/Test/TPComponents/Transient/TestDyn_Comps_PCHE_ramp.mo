@@ -211,7 +211,8 @@ model TestDyn_Comps_PCHE_ramp
     redeclare package Medium = medium_main, 
     T        = st_source.T,
     p0       = st_source.p,
-    use_in_T = true,
+    use_in_T = false,
+    use_in_w0 = true,
     w0       = st_source.mdot,
     gas(
       p(start = st_source.p, nominal = st_source.p), 
@@ -269,7 +270,7 @@ model TestDyn_Comps_PCHE_ramp
 
   // use FlowJoin to mix flow
   Gas.FlowJoin mixer(redeclare package Medium = medium_main);  
-
+  
   Steps.TPComponents.PCHE LTR(
     redeclare package FluidMedium = medium_main, 
     redeclare package FlueGasMedium = medium_main, 
@@ -391,6 +392,7 @@ model TestDyn_Comps_PCHE_ramp
   Steps.TPComponents.GasStateReader r_HTR_cout(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {-32, 20}, extent = {{-6, -6}, {6, 6}}, rotation = 180)));
 
+
   ThermoPower.Gas.Turbine Turbine1(
     redeclare package Medium = medium_main, 
     fileName   = Modelica.Utilities.Files.loadResource("modelica://Steps/Resources/Data/turbine_map.txt"),
@@ -441,6 +443,8 @@ model TestDyn_Comps_PCHE_ramp
   Modelica.Blocks.Math.IntegerToReal I2R_T_h annotation(
     Placement(visible = true, transformation(origin = {-102, 8}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
 */
+
+/*
   // cold/fluid side
   Modelica.Blocks.Sources.IntegerConstant const_T_offset_c(k = integer(st_source.T)) annotation(
     Placement(visible = true, transformation(origin = {-128, 72}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
@@ -458,6 +462,15 @@ model TestDyn_Comps_PCHE_ramp
     Placement(visible = true, transformation(origin = {-48, 124}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
   Modelica.Blocks.Sources.IntegerConstant const_T_step_c(k = T_step) annotation(
     Placement(visible = true, transformation(origin = {-194, 126}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
+*/
+
+  // ramp component for transient test
+  Modelica.Blocks.Sources.Ramp ramp1(
+  final height    = st_source.mdot * 0.1,
+  final duration  = 9 * 60, // 9 mins
+  final startTime = 3,
+  final offset    = st_source.mdot);
+  
 
 protected
   parameter Real tablePhic[5, 4] = [1, 37, 80, 100; 1.5, 7.10E-05, 7.10E-05, 7.10E-05; 2, 8.40E-05, 8.40E-05, 8.40E-05; 2.5, 8.70E-05, 8.70E-05, 8.70E-05; 3, 1.04E-04, 1.04E-04, 1.04E-04];
@@ -684,6 +697,7 @@ equation
     Line(points = {{-91, 8}, {-90, 8}, {-90, 9}, {-80, 9}, {-80, 7.75}, {-78, 7.75}, {-78, 6}}, color = {0, 0, 127}));
 */
 
+/*
   // cold / fluid side 
   connect(en_triadd_T_c.y, triadd_T_c.trigger) annotation(
     Line(points = {{-145, 102}, {-132, 102}, {-132, 119}}, color = {255, 0, 255}));
@@ -701,11 +715,13 @@ equation
     Line(points = {{-117, 72}, {-104, 72}, {-104, 126}}, color = {255, 127, 0}));
   connect(I2R_T_c.y, source.in_T) annotation(
     Line(points = {{-37, 124}, {6, 124}, {6, 64}}, color = {0, 0, 127}));
+*/
 
+  connect(ramp1.y, source.in_w0);
 
 annotation(
     Diagram(graphics),
-    experiment(StartTime = 0, StopTime = 20, Tolerance = 1e-2, Interval = 2),    
+    experiment(StartTime = 0, StopTime = 600, Tolerance = 1e-2, Interval = 6),    
     // options = "-showErrorMessages -demoMode",
     __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts,dumpCSE",    
     __OpenModelica_simulationFlags(lv = "LOG_DEBUG,LOG_NLS,LOG_NLS_V,LOG_STATS,LOG_INIT,LOG_STDOUT, -w", outputFormat = "mat", s = "dassl", nls = "homotopy"));

@@ -14,7 +14,7 @@ import Modelica.SIunits.Conversions.{from_degC, from_deg};
   import ThermoPower.System;
   import ThermoPower.Gas;
   
-  package medium_main = Steps.Media.CO2;
+  package medium_main = Steps.Media.SCO2;
   package medium_cooler = ThermoPower.Water.StandardWater;//Modelica.Media.IdealGases.SingleGases.CO2;  
   
   // geometry parameters
@@ -57,13 +57,10 @@ import Modelica.SIunits.Conversions.{from_degC, from_deg};
   parameter Model.RCBCycleConfig cfg(
     redeclare package medium_cooler = medium_cooler,
     redeclare package medium_main   = medium_main,
-    // mdot_heater      = 40,
-    // T_heater_hot_in  = from_degC(800),
-    // T_heater_hot_out = from_degC(600),
-    r_i_heater  = 0.5e-3,
-    r_t_heater  = 0.7e-3, //cfg.r_i_heater + 10e-3,
-    r_o_heater  = 1e-3,                      // agree with the final parameter Dhyd = 1 in HE, should be checked to see if it is capable of containing all fluid-metal tubes
-    N_ch_heater = 50000,
+    r_i_heater  = 1e-3,
+    r_t_heater  = 2e-3, //cfg.r_i_heater + 10e-3,
+    r_o_heater  = 3e-3,                      // agree with the final parameter Dhyd = 1 in HE, should be checked to see if it is capable of containing all fluid-metal tubes
+    N_ch_heater = 10000,
     L_heater    = 1,
     N_ch_HTR    = 30000,
     L_HTR       = 2.5,
@@ -79,7 +76,7 @@ import Modelica.SIunits.Conversions.{from_degC, from_deg};
     r_t_cooler  = 0.7e-3,
     r_o_cooler  = 1e-3,    
     table_k_LTR_wall = table_k_metalwall,
-    table_k_HTR_wall = table_k_metalwall,
+    table_k_HTR_wall = table_k_metalwall,    
     // latest boundary conditions, following values are simulation results with sourcePressure.p = 200 bar and above geometry params
     p_comp_in  = 109.59e5,
     p_comp_out = 20e6,    
@@ -127,7 +124,8 @@ import Modelica.SIunits.Conversions.{from_degC, from_deg};
     T        = st_source.T,
     p0       = st_source.p,
     w0       = st_source.mdot,
-    use_in_T = true,
+    use_in_T = false,
+    use_in_w0 = true,
     gas(
       p(start = st_source.p, nominal = st_source.p), 
       T(start = st_source.T, nominal = st_source.T))) 
@@ -250,7 +248,11 @@ import Modelica.SIunits.Conversions.{from_degC, from_deg};
     tablePR    = tablePR_comp_mc,
     Table      = ThermoPower.Choices.TurboMachinery.TableTypes.matrix,
     Ndesign    = cfg_comp.N,
-    Tdes_in    = cfg_comp.st_in.T)
+    Tdes_in    = cfg_comp.st_in.T,
+    gas_iso(
+      p(nominal = cfg_comp.st_in.p), 
+      T(nominal = cfg_comp.st_in.T),
+      h(start   = cfg_comp.st_out.h)))
   annotation (Placement(transformation(extent={{-20,-20},{
             20,20}}, rotation=0)));
             
@@ -271,7 +273,11 @@ import Modelica.SIunits.Conversions.{from_degC, from_deg};
     tablePR    = tablePR_comp_rc,
     Table      = ThermoPower.Choices.TurboMachinery.TableTypes.matrix,
     Ndesign    = cfg_recomp.N,
-    Tdes_in    = cfg_recomp.st_in.T)
+    Tdes_in    = cfg_recomp.st_in.T,
+    gas_iso(
+      p(nominal = cfg_recomp.st_in.p), 
+      T(nominal = cfg_recomp.st_in.T),
+      h(start   = cfg_recomp.st_out.h)))
   annotation (Placement(transformation(extent={{-20,-20},{
             20,20}}, rotation=0)));
             
@@ -283,6 +289,14 @@ import Modelica.SIunits.Conversions.{from_degC, from_deg};
   
   ThermoPower.Gas.FlowSplit splitter(redeclare package Medium = medium_main);
 
+  // ramp component for transient test
+  Modelica.Blocks.Sources.Ramp ramp1(
+  final height    = st_source.mdot * 0.1,
+  final duration  = 9 * 60, // 9 mins
+  final startTime = 3,
+  final offset    = st_source.mdot);
+  
+  /*
   // hot/gas side
   Modelica.Blocks.Sources.IntegerConstant const_T_offset_h(k = integer(st_source.T)) annotation(
     Placement(visible = true, transformation(origin = {-128, 72}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
@@ -300,7 +314,7 @@ import Modelica.SIunits.Conversions.{from_degC, from_deg};
     Placement(visible = true, transformation(origin = {-48, 124}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
   Modelica.Blocks.Sources.IntegerConstant const_T_step_h(k = T_step) annotation(
     Placement(visible = true, transformation(origin = {-194, 126}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
- 
+  */
   
 protected
 
@@ -372,20 +386,20 @@ equation
   connect(cooler.gasOut, r_cooler_hout.inlet);
   connect(r_cooler_hout.outlet, compressor.inlet);
   connect(compressor.outlet, sink.flange);  
-  
+    connect(compressor.shaft_a, ConstantSpeed_mc.flange);    
+    
   // bypass path
   connect(splitter.outlet2, recompressor.inlet);
   connect(recompressor.outlet, sink_bypass.flange);
-  
-  connect(compressor.shaft_a, ConstantSpeed_mc.flange);
-  connect(recompressor.shaft_a, ConstantSpeed_rc.flange);
+    connect(recompressor.shaft_a, ConstantSpeed_rc.flange);
   
   // cold side
   connect(source_cooler.flange, r_cooler_cin.inlet);
   connect(r_cooler_cin.outlet, cooler.waterIn);
   connect(cooler.waterOut, r_cooler_cout.inlet);
   connect(r_cooler_cout.outlet, sink_cooler.flange);
- 
+  
+  /*
   // hot / gas side 
   connect(en_triadd_T_h.y, triadd_T_h.trigger) annotation(
     Line(points = {{-145, 102}, {-132, 102}, {-132, 119}}, color = {255, 0, 255}));
@@ -403,10 +417,12 @@ equation
     Line(points = {{-117, 72}, {-104, 72}, {-104, 126}}, color = {255, 127, 0}));
   connect(I2R_T_h.y, source.in_T) annotation(
     Line(points = {{-37, 124}, {6, 124}, {6, 64}}, color = {0, 0, 127}));  
-
+  */
+  
+  connect(ramp1.y, source.in_w0);
 annotation(
     Diagram(graphics),
-    experiment(StartTime = 0, StopTime = 20, Tolerance = 1e-3, Interval = 2),
+    experiment(StartTime = 0, StopTime = 600, Tolerance = 1e-3, Interval = 6),
     __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts,bltdump",    
     __OpenModelica_simulationFlags(lv = "LOG_DEBUG,LOG_NLS,LOG_NLS_V,LOG_STATS,LOG_INIT,LOG_STDOUT, -w", outputFormat = "mat", s = "dassl", nls = "homotopy"));
 end TestDyn_Comps_Comp_Path;

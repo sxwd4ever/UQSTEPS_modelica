@@ -42,6 +42,7 @@ model RCBCycleConfig
   parameter Modelica.SIunits.Temperature T_heater_cold_out = from_degC(710);
   parameter Modelica.SIunits.Temperature T_cooler_cold_out = from_degC(61.7479462700001);
   parameter Modelica.SIunits.Temperature T_cooler_hot_out  = from_degC(45);
+  parameter Modelica.SIunits.Temperature T_recom_out       = from_degC(227.7022889);
 
   parameter Modelica.SIunits.MassFlowRate mdot_main   = 128.774;
   parameter Modelica.SIunits.MassFlowRate mdot_comp   = 84.375;
@@ -201,7 +202,7 @@ model RCBCycleConfig
   parameter ThermoState st_recomp_out(
     p    = p_comp_out,
     T    = T_HTR_cold_in,
-    h    = medium_main.specificEnthalpy_pT(p = p_comp_out, T = T_HTR_cold_in),
+    h    = medium_main.specificEnthalpy_pT(p = p_comp_out, T = T_recom_out),
     mdot = mdot_bypass
     );      
   // **** END   -  Definition of Key Point's state *****

@@ -92,6 +92,7 @@ equation
     rho[j] = noEvent(Medium.density(fluidState[j]));
     cp[j] = noEvent(Medium.specificHeatCapacityCp(fluidState[j]));   
     h[j] = noEvent(Medium.specificEnthalpy(fluidState[j])); 
+    p[j] = fluidState[j].p;
   end for;   
   
   // required for table initialization and equation balance
@@ -107,6 +108,7 @@ equation
       k_vol[j] = noEvent((k[j] + k[j+1]) / 2);
       rho_vol[j] = noEvent((rho[j] + rho[j+1]) / 2);
       cp_vol[j] = noEvent((cp[j] + cp[j+1]) / 2); 
+      p_vol[j] = noEvent((p[j] + p[j+1]) / 2);
     else
     /*
       // downstream
@@ -128,6 +130,7 @@ equation
       k_vol[j] = noEvent(k[j]);
       rho_vol[j] = noEvent(rho[j]);
       cp_vol[j] = noEvent(cp[j]);
+      p_vol[j] = noEvent((p[j])); 
     end if;    
     
     // calculate Re and Pr  
