@@ -53,8 +53,8 @@ model HE "Heat Exchanger fluid - gas"
     annotation(
     Placement(transformation(extent = {{-10, -66}, {10, -46}}, rotation = 0)));
   
-  Gas.Flow1DFV gasFlow(  
-  // Steps.TPComponents.GasFlow1DFV gasFlow(
+  // Gas.Flow1DFV gasFlow(  
+  Steps.TPComponents.Flow1DFV gasFlow(
     Nt = 1, 
     N = N_G, 
     Nw = Nw_G, 
@@ -73,6 +73,10 @@ model HE "Heat Exchanger fluid - gas"
     rhonom = rhonom_G, 
     Cfnom = Cfnom_G, 
     Tstartbar = Tstartbar_G, 
+    Tstartin    = cfg_G.st_in.T,                                              
+    Tstartout   = cfg_G.st_out.T,
+    hstartin    = cfg_F.st_in.h,
+    hstartout   = cfg_F.st_out.h,
     redeclare model HeatTransfer = HeatTransfer_G) 
     annotation(
     Placement(transformation(extent = {{-12, 66}, {12, 46}}, rotation = 0)));

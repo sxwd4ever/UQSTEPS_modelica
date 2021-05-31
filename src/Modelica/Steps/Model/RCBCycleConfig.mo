@@ -368,6 +368,8 @@ model RCBCycleConfig
       l_pitch  = l_pitch_LTR,
       a_phi    = a_phi_LTR
     ),
+    cfg_fluid = cfg_LTR.cfg_cold,
+    cfg_gas   = cfg_LTR.cfg_hot,
     cfg_wall(
       st_init  = st_LTR_hot_in,
       geo_area = ga_LTR_wall,
@@ -424,6 +426,8 @@ model RCBCycleConfig
       l_pitch  = l_pitch_HTR,
       a_phi    = a_phi_HTR
     ),
+    cfg_fluid = cfg_HTR.cfg_cold,
+    cfg_gas   = cfg_HTR.cfg_hot,
     cfg_wall(
       st_init  = st_HTR_wall,
       geo_area = ga_HTR_wall,

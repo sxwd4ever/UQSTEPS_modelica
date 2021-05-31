@@ -47,8 +47,8 @@ model Flow1DFV
     //   "Enthalpy state variables";
     Medium.Temperature Ttilde[N - 1](start=linspace(Tstartin, Tstartout, N-1), each stateSelect=StateSelect.prefer)
     "Temperature state variables";      
-    Medium.Temperature T[N] "Node temperatures";
-    Medium.SpecificEnthalpy h[N] "Node specific enthalpies";
+    Medium.Temperature T[N](start=Tstart, each stateSelect= StateSelect.prefer) "Node temperatures";
+    Medium.SpecificEnthalpy h[N](start=hstart) "Node specific enthalpies";
     // Medium.MassFraction Xi[if UniformComposition or Medium.fixedX then 1 else N, nXi] "Node mass fraction";
     // Medium.Temperature Tin(start=Tstartin);    
     // Medium.MassFraction Xtilde[if UniformComposition or Medium.fixedX then 1 else N - 1, nX](start = ones(size(Xtilde, 1), size(Xtilde, 2)) * diagonal(Xstart[1:nX]), each stateSelect = StateSelect.prefer) "Composition state variables";    

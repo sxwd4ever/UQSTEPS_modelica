@@ -39,11 +39,12 @@ model PCHE "PCHE model based on Thermo Power"
   
   //IMPORTANT:
   // To date, (because of a bug in Gas.Flow1DFV
-  // use TPComponents.GasFlow1DFV for transient simulation when two PCHEs connected (LTR and HTR),
-  // use GasFlow1DFV otherwise, which is much quicker due to the property calculation
+  // use TPComponents.Flow1DFV for transient simulation when two PCHEs connected (LTR and HTR),
+  // use Gas.Flow1DFV otherwise, which is much quicker due to the property calculation
   
   // Gas.Flow1DFV fluidFlow(
-  TPComponents.GasFlow1DFV fluidFlow(
+  // TPComponents.GasFlow1DFV fluidFlow(
+  TPComponents.Flow1DFV fluidFlow(
     redeclare package Medium     = FluidMedium,
     redeclare model HeatTransfer = HeatTransfer_F,
     Nt          = Nt,                                                       //1, 
@@ -63,8 +64,10 @@ model PCHE "PCHE model based on Thermo Power"
     rhonom      = rhonom_F,
     Cfnom       = Cfnom_F,
     Tstartbar   = Tstartbar_F,
-    Tstartin    = Tstartbar_F,                                              //bc.st_cold_in.T, 
-    Tstartout   = Tstartbar_F) 
+    Tstartin    = cfg_F.st_in.T,                                              //bc.st_cold_in.T, 
+    Tstartout   = cfg_F.st_out.T,
+    hstartin    = cfg_F.st_in.h,
+    hstartout   = cfg_F.st_out.h) 
   annotation(
     Placement(transformation(extent = {{-10, -66}, {10, -46}}, rotation = 0)));
     
@@ -72,10 +75,11 @@ model PCHE "PCHE model based on Thermo Power"
   
   //IMPORTANT:
   // To date, (because of a bug in Gas.Flow1DFV
-  // use TPComponents.GasFlow1DFV for transient simulation when two PCHEs connected (LTR and HTR),
-  // use GasFlow1DFV otherwise, which is much quicker due to the property calculation  
+  // use TPComponents.Flow1DFV for transient simulation when two PCHEs connected (LTR and HTR),
+  // use Gas.Flow1DFV otherwise, which is much quicker due to the property calculation  
   
-  TPComponents.GasFlow1DFV gasFlow(
+  //TPComponents.GasFlow1DFV gasFlow(
+  TPComponents.Flow1DFV gasFlow(
   // Gas.Flow1DFV gasFlow(
     redeclare package Medium = FlueGasMedium, 
     redeclare model HeatTransfer = HeatTransfer_G,
@@ -96,8 +100,10 @@ model PCHE "PCHE model based on Thermo Power"
     rhonom      = rhonom_G,
     Cfnom       = Cfnom_G,
     Tstartbar   = Tstartbar_G,
-    Tstartin    = Tstartbar_G,                                              //bc.st_hot_in.T, 
-    Tstartout   = Tstartbar_G)
+    Tstartin    = cfg_G.st_in.T,                                              //bc.st_hot_in.T, 
+    Tstartout   = cfg_G.st_out.T,
+    hstartin    = cfg_G.st_in.h,
+    hstartout   = cfg_G.st_out.h)
    annotation(
     Placement(transformation(extent = {{-12, 66}, {12, 46}}, rotation = 0)));
   

@@ -116,8 +116,8 @@ model TestDyn_Comps_PCHE_ramp
   parameter Model.ThermoState st_bypass      = cfg.st_recomp_out;
   parameter Model.ThermoState st_source_temp = cfg_LTR.cfg_cold.st_in;
   parameter Model.ThermoState st_sink_temp   = cfg_LTR.cfg_hot.st_out;
-  parameter Model.ThermoState st_source      = cfg_heater.cfg_cold.st_out;
-  parameter Model.ThermoState st_sink        = cfg_heater.cfg_cold.st_out;
+  parameter Model.ThermoState st_source      = cfg_HTR.cfg_cold.st_in;
+  parameter Model.ThermoState st_sink        = cfg_HTR.cfg_hot.st_out; 
 
   parameter Integer N_seg_heater = cfg.cfg_heater.cfg_hot.geo_path.N_seg; 
   parameter Integer N_seg_LTR    = cfg.cfg_LTR.cfg_hot.geo_path.N_seg; 
@@ -235,30 +235,22 @@ model TestDyn_Comps_PCHE_ramp
   annotation(
     Placement(transformation(origin = {0, 60}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
 */
-
+/*
   ThermoPower.Gas.SourceMassFlow source_mixer_in(
     redeclare package Medium = medium_main,
     T        = st_bypass.T,
     p0       = st_bypass.p,
     use_in_T = false,
     w0       = st_bypass.mdot
-  );  
-
- 
-  ThermoPower.Gas.SinkPressure sink_temp(
-    redeclare package Medium = medium_main, 
-    p0 = st_sink_temp.p,
-    T  = st_sink_temp.T)
-  annotation(
-    Placement(transformation(origin = {0, -80}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
-
+  );   
+*/
   ThermoPower.Gas.SinkPressure sink(
     redeclare package Medium = medium_main,
     T  = st_sink.T,
     p0 = st_sink.p)
   annotation(
     Placement(transformation(extent = {{60, -10}, {80, 10}}, rotation = 0)));
-
+/*
   ThermoPower.Gas.SourceMassFlow source_temp(
     redeclare package Medium = medium_main, 
     T        = st_source_temp.T,
@@ -268,6 +260,14 @@ model TestDyn_Comps_PCHE_ramp
   annotation(
     Placement(transformation(extent = {{-70, -10}, {-50, 10}}, rotation = 0))); 
 
+  ThermoPower.Gas.SinkPressure sink_temp(
+    redeclare package Medium = medium_main, 
+    p0 = st_sink_temp.p,
+    T  = st_sink_temp.T)
+  annotation(
+    Placement(transformation(origin = {0, -80}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
+*/
+/*
   // use FlowJoin to mix flow
   Gas.FlowJoin mixer(redeclare package Medium = medium_main);  
   
@@ -326,7 +326,7 @@ model TestDyn_Comps_PCHE_ramp
     Placement(visible = true, transformation(origin = {-22, 50}, extent = {{-6, -6}, {6, 6}}, rotation = -90)));
   Steps.TPComponents.GasStateReader r_LTR_cout(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {-32, 20}, extent = {{-6, -6}, {6, 6}}, rotation = 180)));
-   
+  */ 
   Steps.TPComponents.PCHE HTR(
     redeclare package FluidMedium = medium_main, 
     redeclare package FlueGasMedium = medium_main, 
@@ -633,7 +633,35 @@ equation
   connect(heater.waterOut, r_heater_hout.inlet);
   connect(r_heater_hout.outlet, sink_heater_hot.flange);
 */
+  // HTR + heater + Turbine1
+  connect(source.flange, r_HTR_cin.inlet);
+  connect(r_HTR_cin.outlet, HTR.waterIn);  
+  connect(HTR.waterOut, r_HTR_cout.inlet);
+  connect(r_HTR_cout.outlet, r_heater_cin.inlet);
+  connect(r_heater_cin.outlet, heater.gasIn);    
+  connect(heater.gasOut, r_heater_cout.inlet);
+  connect(r_heater_cout.outlet, Turbine1.inlet);  
+  connect(Turbine1.outlet, sens_turbine.inlet) annotation(
+   Line(points = {{-50, 0}, {-20, 0}}, color = {159, 159, 223}, thickness = 0.5, smooth = Smooth.None));   
 
+    connect(Turbine1.shaft_b, const_speed_comp.flange) annotation(
+      Line(points = {{30, 0}, {74, 0}, {74, 0}, {74, 0}}));
+
+  connect(sens_turbine.outlet, r_HTR_hin.inlet);
+  connect(r_HTR_hin.outlet, HTR.gasIn);  
+  connect(HTR.gasOut, r_HTR_hout.inlet);
+  connect(r_HTR_hout.outlet, sink.flange);   
+ 
+  // connect(sens_turbine.outlet, sink_temp.flange);  
+  // connect(source_temp.flange, HTR.gasIn);    
+
+  // hot stream for heater
+  connect(source_heater_hot.flange, r_heater_hin.inlet);
+  connect(r_heater_hin.outlet, heater.waterIn);
+  connect(heater.waterOut, r_heater_hout.inlet);
+  connect(r_heater_hout.outlet, sink_heater_hot.flange);
+
+/*
   // HTR + mixer + LTR + Heater + Turbine - OPEN LOOP, two streams
   // main stream, water/cold side  
   connect(source_mixer_in.flange, mixer.inlet1);  
@@ -666,7 +694,7 @@ equation
   connect(r_LTR_hout.outlet, sink_temp.flange) annotation(
     Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));
    
-  
+ 
   // connect(sens_turbine.outlet, sink_temp.flange);  
   // connect(source_temp.flange, HTR.gasIn);    
 
@@ -675,7 +703,7 @@ equation
   connect(r_heater_hin.outlet, heater.waterIn);
   connect(heater.waterOut, r_heater_hout.inlet);
   connect(r_heater_hout.outlet, sink_heater_hot.flange);
- 
+ */ 
 /*
   // temperature input
   // hot / gas side
@@ -721,7 +749,7 @@ equation
 
 annotation(
     Diagram(graphics),
-    experiment(StartTime = 0, StopTime = 600, Tolerance = 1e-2, Interval = 6),    
+    experiment(StartTime = 0, StopTime = 50, Tolerance = 1e-2, Interval = 1),    
     // options = "-showErrorMessages -demoMode",
     __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts,dumpCSE",    
     __OpenModelica_simulationFlags(lv = "LOG_DEBUG,LOG_NLS,LOG_NLS_V,LOG_STATS,LOG_INIT,LOG_STDOUT, -w", outputFormat = "mat", s = "dassl", nls = "homotopy"));
