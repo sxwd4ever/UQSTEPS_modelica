@@ -1,4 +1,4 @@
-within Steps.Test.Common;
+within Steps.TPComponents;
 
 model MultiRamp "Multiple ramp change as input of transient simulation"
   extends Modelica.Blocks.Interfaces.SO;

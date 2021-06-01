@@ -16,8 +16,8 @@ model TP_RCBCycle
   // package medium_main = Modelica.Media.IdealGases.SingleGases.CO2; //Steps.Media.CO2;
 
   package medium_main = Steps.Media.SCO2(
-    //inputChoice = ExternalMedia.Common.InputChoice.pT,
-    substanceNames = {"CO2|debug=40"}
+    // inputChoice = ExternalMedia.Common.InputChoice.pT,
+    // substanceNames = {"CO2|debug=40"}
   );
   
   // package medium_main = ExternalMedia.Examples.CO2CoolProp;
@@ -69,11 +69,8 @@ model TP_RCBCycle
     redeclare package medium_heater = medium_heater,
     redeclare package medium_main   = medium_main,
     redeclare package medium_cooler = medium_cooler,
-    // mdot_heater      = 40,
-    // T_heater_hot_in  = from_degC(800),
-    // T_heater_hot_out = from_degC(600),
     r_i_heater  = 1e-3,
-    r_t_heater  = 2e-3, //cfg.r_i_heater + 10e-3,
+    r_t_heater  = 2e-3, 
     r_o_heater  = 3e-3,                      // agree with the final parameter Dhyd = 1 in HE, should be checked to see if it is capable of containing all fluid-metal tubes
     N_ch_heater = 10000,
     L_heater    = 1,
@@ -94,28 +91,7 @@ model TP_RCBCycle
     r_o_cooler  = 1e-3,    
     table_k_LTR_wall = table_k_metalwall,
     table_k_HTR_wall = table_k_metalwall,
-    /*
-    // latest boundary conditions, following values are simulation results with sourcePressure.p = 200 bar and above geometry params
-    p_comp_in  = 109.59e5,
-    p_comp_out = 20e6,    
-    p_heater   = 20e6,    
-    T_HTR_hot_in      = from_degC(556.322),
-    T_HTR_cold_out    = from_degC(515.234),
-    T_HTR_hot_out     = from_degC(296.146),
-    T_HTR_cold_in     = from_degC(266.181),
-    T_LTR_cold_in     = from_degC(118.13),
-    T_LTR_hot_out     = from_degC(154.909),
-    T_heater_hot_in   = from_degC(800),
-    T_heater_hot_out  = from_degC(707.918),
-    T_heater_cold_out = from_degC(637.551),
-    T_cooler_cold_out = from_degC(61.7479462700001),
-    T_cooler_hot_out  = from_degC(68.494),
     
-    mdot_main   = 128.774,
-    mdot_comp   = 88.0661,
-    mdot_heater = 40,
-    mdot_cooler = 40.7188
-    */
     // results calculated at 2021-05-21 20:07, RCBC without recompressor, Open LOOP
     p_comp_in  = 109.59e5,
     p_comp_out = 20e6,    
@@ -152,8 +128,8 @@ model TP_RCBCycle
   parameter Model.ThermoState st_bypass      = cfg_recomp.st_in;
   parameter Model.ThermoState st_source_temp = cfg_cooler.cfg_hot.st_out; //.cfg_hot.st_out;
   parameter Model.ThermoState st_sink_temp   = cfg_cooler.cfg_hot.st_out; //.cfg_hot.st_out;
-  parameter Model.ThermoState st_source      = cfg_HTR.cfg_cold.st_in;
-  parameter Model.ThermoState st_sink        = cfg_HTR.cfg_cold.st_in;
+  parameter Model.ThermoState st_source      = cfg_heater.cfg_cold.st_out;
+  parameter Model.ThermoState st_sink        = cfg_heater.cfg_cold.st_out;
 
   parameter Integer N_seg_heater = cfg.cfg_heater.cfg_hot.geo_path.N_seg; 
   parameter Integer N_seg_LTR    = cfg.cfg_LTR.cfg_hot.geo_path.N_seg; 
@@ -199,7 +175,7 @@ model TP_RCBCycle
         Cf_C1 = Cf_C1,
         Cf_C2 = Cf_C2,
         Cf_C3 = Cf_C3,
-        gamma_min = 1500,
+        gamma_min = 1000,
         gamma_max = 5000        
       ),
       Tstartin  = cfg_heater.cfg_gas.st_in.T,
@@ -329,7 +305,7 @@ model TP_RCBCycle
   annotation(
     Placement(transformation(origin = {0, -80}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
 
-
+/*
   ThermoPower.Gas.SourceMassFlow source_temp(
     redeclare package Medium = medium_main, 
     T        = st_source_temp.T,
@@ -343,7 +319,7 @@ model TP_RCBCycle
       // h(start = st_source_temp.h, nominal = st_source_temp.h)))
   annotation(
     Placement(transformation(origin = {0, 60}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
-
+*/
 /*
   ThermoPower.Gas.SourcePressure source_temp(
     redeclare package Medium = medium_main, 
@@ -357,14 +333,14 @@ model TP_RCBCycle
   annotation(
     Placement(transformation(origin = {0, 60}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
 */
-
+/*
   ThermoPower.Gas.SinkPressure sink_temp(
     redeclare package Medium = medium_main,
     T  = st_sink_temp.T,
     p0 = st_sink_temp.p)
   annotation(
     Placement(transformation(extent = {{60, -10}, {80, 10}}, rotation = 0)));
-
+*/
 /*
   ThermoPower.Gas.SinkMassFlow sink_temp(
     redeclare package Medium = medium_main, 
@@ -419,12 +395,6 @@ model TP_RCBCycle
     gasQuasiStatic   = false,
     fluidQuasiStatic = false,
     table_k_metalwall = cfg.table_k_LTR_wall
-    // metalWall(L = L_wall, w_ch = W_ch, h_ch = H_ch, dx = T_wall),
-    // metalQuasiStatic = true
-    // override the values of Am and L of metaltubeFV
-    // to make them agree with semi-circular tube of PCHE
-    // ('final' modifier of Am in metalTubeFv was removed as well)
-    //metalTube(WallRes=false, L = 1, rhomcm=200, Am = HE.metalVol / 1) 
   )
   annotation(
     Placement(transformation(extent = {{-20, -20}, {20, 20}}, rotation = 0)));
@@ -484,14 +454,7 @@ model TP_RCBCycle
     SSInit           = true,
     gasQuasiStatic   = false,
     fluidQuasiStatic = false,
-    table_k_metalwall = cfg.table_k_HTR_wall  
-    // metalWall(L = L_wall, w_ch = W_ch, h_ch = H_ch, dx = T_wall),
-    // table_k_metalwall = table_k_metalwall
-    // metalQuasiStatic = true
-    // override the values of Am and L of metaltubeFV
-    // to make them agree with semi-circular tube of PCHE
-    // ('final' modifier of Am in metalTubeFv was removed as well)
-    //metalTube(WallRes=false, L = 1, rhomcm=200, Am = HE.metalVol / 1) 
+    table_k_metalwall = cfg.table_k_HTR_wall      
   )
   annotation(
     Placement(transformation(extent = {{-20, -20}, {20, 20}}, rotation = 0)));
@@ -534,10 +497,11 @@ model TP_RCBCycle
       w_fixed=cfg_turb.N, useSupport=false) annotation(
     Placement(visible = true, transformation(origin = {81, -7}, extent = {{-5, -5}, {5, 5}}, rotation = 0)));  
  
-  ThermoPower.Gas.SensT sens_turbine(redeclare package Medium = medium_main) annotation(
-    Placement(visible = true, transformation(origin = {20, 44}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
-
-
+  Steps.TPComponents.GasStateReader r_turb_in(redeclare package Medium = medium_main) annotation(
+    Placement(visible = true, transformation(origin = {66, -56}, extent = {{-6, -6}, {6, 6}}, rotation = 0)));
+  Steps.TPComponents.GasStateReader r_turb_out(redeclare package Medium = medium_main) annotation(
+    Placement(visible = true, transformation(origin = {96, 44}, extent = {{-6, -6}, {6, 6}}, rotation = 180)));
+ 
   ThermoPower.Water.SourceMassFlow source_cooler(
     redeclare package Medium = medium_cooler,
     w0 = cfg_cooler.cfg_cold.st_in.mdot,
@@ -672,6 +636,11 @@ model TP_RCBCycle
   annotation (Placement(transformation(
         extent={{-50,-10},{-30,10}}, rotation=0)));
 
+  Steps.TPComponents.GasStateReader r_comp_in(redeclare package Medium = medium_main) annotation(
+    Placement(visible = true, transformation(origin = {66, -56}, extent = {{-6, -6}, {6, 6}}, rotation = 0)));
+  Steps.TPComponents.GasStateReader r_comp_out(redeclare package Medium = medium_main) annotation(
+    Placement(visible = true, transformation(origin = {96, 44}, extent = {{-6, -6}, {6, 6}}, rotation = 180)));
+ 
   ThermoPower.Gas.Compressor recompressor(
     redeclare package Medium = medium_main,
     pstart_in  = cfg_recomp.st_in.p,
@@ -697,84 +666,49 @@ model TP_RCBCycle
   annotation (Placement(transformation(
       extent={{-50,-10},{-30,10}}, rotation=0)));
 
+  Steps.TPComponents.GasStateReader r_recomp_in(redeclare package Medium = medium_main) annotation(
+    Placement(visible = true, transformation(origin = {66, -56}, extent = {{-6, -6}, {6, 6}}, rotation = 0)));
+  Steps.TPComponents.GasStateReader r_recomp_out(redeclare package Medium = medium_main) annotation(
+    Placement(visible = true, transformation(origin = {96, 44}, extent = {{-6, -6}, {6, 6}}, rotation = 180)));
+ 
+
   ThermoPower.Gas.FlowSplit splitter(redeclare package Medium = medium_main); 
 
   // calculated variables
-  /*
+  
   // for turbine
-  Modelica.SIunits.Power W_turb = (r05.h - r06.h) * r05.w / 1e6 "W->MW, net power for turbine";
+  Modelica.SIunits.Power W_turb = (r_turb_in.h - r_turb_out.h) * r_turb_in.w / 1e6 "W->MW, net power for turbine";
   Modelica.SIunits.Efficiency eta_turb = turbine.eta * 100;
   // main compressor
-  Modelica.SIunits.Power W_MC = (r02.h - r01.h) * r01.w / 1e6 "W->MW, net power for main compressor";
+  Modelica.SIunits.Power W_MC = (r_comp_out.h - r_comp_in.h) * r_comp_in.w / 1e6 "W->MW, net power for main compressor";
   Modelica.SIunits.Efficiency eta_MC = compressor.eta * 100;
   // re compressor
-  Modelica.SIunits.Power W_RC = (r09.h - r08b.h) * r08b.w / 1e6 "W->MW, net power for recompressor";
+  Modelica.SIunits.Power W_RC = (r_recomp_out.h - r_recomp_in.h) * r_recomp_in.w / 1e6 "W->MW, net power for recompressor";
   Modelica.SIunits.Efficiency eta_RC = recompressor.eta * 100;
   
   // power block
   Modelica.SIunits.Power W_net = W_turb - W_MC - W_RC "net power generated";
-  Modelica.SIunits.Power Q_heater = (rh1.h - rh2.h) * rh1.w / 1e6 "heat input for the power block";
-  Modelica.SIunits.Power Q_cooler = (rc2.h - rc1.h) * rc1.w / 1e6 "heat input for the power block";
+  Modelica.SIunits.Power Q_heater = (r_heater_hin.h - r_heater_hout.h) * r_heater_hin.w / 1e6 "heat input for the power block";
+  Modelica.SIunits.Power Q_cooler = (r_cooler_cout.h - r_cooler_cin.h) * r_cooler_cin.w / 1e6 "heat input for the power block";
   Modelica.SIunits.Efficiency eta_pb = W_net / Q_heater * 100 "power block efficiency";
-  Real SR = r08b.w / r08.w * 100 "split ratio";
+  Real SR = r_recomp_in.w / r_comp_in.w * 100 "split ratio";
 
   // heat transfer coefficient for HTR and LTR
   // HTR
-  Modelica.SIunits.Power Q_HTR = (r04.h - r03.h) * r03.w / 1e6 "W->MW, heat input for HTR";
-  Modelica.SIunits.TemperatureDifference dT1_HTR = (r06.T - r04.T);
-  Modelica.SIunits.TemperatureDifference dT2_HTR = (r07.T - r03.T);
+  Modelica.SIunits.Power Q_HTR = (r_HTR_cout.h - r_HTR_cin.h) * r_HTR_cin.w / 1e6 "W->MW, heat input for HTR";
+  Modelica.SIunits.TemperatureDifference dT1_HTR = (r_HTR_hin.T - r_HTR_cout.T);
+  Modelica.SIunits.TemperatureDifference dT2_HTR = (r_HTR_hout.T - r_HTR_cin.T);
   Real T_ltmd_HTR = if dT1_HTR  > 0 and dT2_HTR > 0 then (dT2_HTR - dT1_HTR) / Modelica.Math.log(abs(dT2_HTR / dT1_HTR)) else -1;
   Real UA_HTR = if T_ltmd_HTR > 0 then Q_HTR / T_ltmd_HTR else 0.0;
   // LTR
-  Modelica.SIunits.Power Q_LTR = (r10.h - r02.h) * r02.w / 1e6 "W->MW";
-  Modelica.SIunits.TemperatureDifference dT1_LTR = (r07.T - r10.T);
-  Modelica.SIunits.TemperatureDifference dT2_LTR = (r08.T - r02.T);
+  Modelica.SIunits.Power Q_LTR = (r_LTR_cout.h - r_LTR_cin.h) * r_LTR_cin.w / 1e6 "W->MW";
+  Modelica.SIunits.TemperatureDifference dT1_LTR = (r_LTR_hin.T - r_LTR_cout.T);
+  Modelica.SIunits.TemperatureDifference dT2_LTR = (r_LTR_hout.T - r_LTR_cin.T);
   Real T_ltmd_LTR = if dT1_LTR > 0 and dT2_LTR > 0 then (dT2_LTR - dT1_LTR) / Modelica.Math.log(abs(dT2_LTR / dT1_LTR)) else -1;
   Real UA_LTR = if T_ltmd_LTR > 0 then Q_LTR / T_ltmd_LTR else 0.0;  
   
   // Liquid Na exit temperature
-  Modelica.SIunits.Temperature T_heater_hot_out = rh2.T;
-  */
-  
-/*
-  // Input signals for transient simulation
-  // hot/gas side
-  Modelica.Blocks.Sources.IntegerConstant const_T_step_h(k = 20) annotation(
-    Placement(visible = true, transformation(origin = {-230, 10}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
-  Modelica.Blocks.Interaction.Show.IntegerValue disp_T_h annotation(
-    Placement(visible = true, transformation(origin = {-108, 44}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
-  Modelica.Blocks.Sources.IntegerConstant const_T_offset_h(k = 630) annotation(
-    Placement(visible = true, transformation(origin = {-180, -54}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
-  Modelica.Blocks.MathInteger.TriggeredAdd triadd_T_h annotation(
-    Placement(visible = true, transformation(origin = {-182, 8}, extent = {{-6, -6}, {6, 6}}, rotation = 0)));
-  Modelica.Blocks.MathInteger.Sum sum_T_h(nu = 2) annotation(
-    Placement(visible = true, transformation(origin = {-144, 8}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
-  Modelica.Blocks.Sources.BooleanPulse en_triadd_T_h(period = 10, width = 10) annotation(
-    Placement(visible = true, transformation(origin = {-224, -24}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
-  Modelica.Blocks.Interaction.Show.IntegerValue disp_T_step_h annotation(
-    Placement(visible = true, transformation(origin = {-140, 42}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
-  Modelica.Blocks.Math.IntegerToReal I2R_T_h annotation(
-    Placement(visible = true, transformation(origin = {-102, 8}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
-*/
-  /*
-  // cold/fluid side
-  Modelica.Blocks.Sources.IntegerConstant const_T_offset_c(k = integer(st_source.T)) annotation(
-    Placement(visible = true, transformation(origin = {-128, 72}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
-  Modelica.Blocks.Interaction.Show.IntegerValue disp_T_c annotation(
-    Placement(visible = true, transformation(origin = {-144, 158}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
-  Modelica.Blocks.MathInteger.TriggeredAdd triadd_T_c annotation(
-    Placement(visible = true, transformation(origin = {-128, 126}, extent = {{-6, -6}, {6, 6}}, rotation = 0)));
-  Modelica.Blocks.Sources.BooleanPulse en_triadd_T_c(period = 10, startTime = 3, width = 10) annotation(
-    Placement(visible = true, transformation(origin = {-156, 102}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
-  Modelica.Blocks.MathInteger.Sum sum_T_c(nu = 2) annotation(
-    Placement(visible = true, transformation(origin = {-94, 126}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
-  Modelica.Blocks.Interaction.Show.IntegerValue disp_T_step_c annotation(
-    Placement(visible = true, transformation(origin = {-56, 158}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
-  Modelica.Blocks.Math.IntegerToReal I2R_T_c annotation(
-    Placement(visible = true, transformation(origin = {-48, 124}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
-  Modelica.Blocks.Sources.IntegerConstant const_T_step_c(k = T_step) annotation(
-    Placement(visible = true, transformation(origin = {-194, 126}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
-  */
+  Modelica.SIunits.Temperature T_heater_hot_out = r_HTR_hout.T;  
   
   // ramp component for transient test
   Modelica.Blocks.Sources.Ramp ramp1(
@@ -782,14 +716,7 @@ model TP_RCBCycle
   final duration  = 9 * 60, // 9 mins
   final startTime = 3,
   final offset    = st_source.mdot);
- /* 
-  // ramp component for transient test
-  Modelica.Blocks.Sources.Ramp ramp2(
-  final height    = st_bypass.mdot * 0.1,
-  final duration  = 9 * 60, // 9 mins
-  final startTime = 3,
-  final offset    = st_bypass.mdot);  
-  */
+
 protected
 
   // performance map for main compressor
@@ -801,188 +728,16 @@ protected
   parameter Real tableEta_comp_rc[5, 4]  = [0, 95, 100, 105; 1, 0.85310219, 0.837591241, 0.832420925; 2, 0.868613139, 0.857238443, 0.851034063; 3, 0.860340633, 0.85, 0.842761557; 4, 0.85310219, 0.839659367, 0.816909976];
   parameter Real tablePhic_comp_rc[5, 4] = [0, 95, 100, 105; 1, 7.17663E-05, 8.05731E-05, 8.76935E-05; 2, 7.36401E-05, 8.20721E-05, 8.97547E-05; 3, 7.6076E-05, 8.46954E-05, 9.06916E-05; 4, 7.79498E-05, 8.63819E-05, 9.16285E-05];
   parameter Real tablePR_comp_rc[5, 4]   = [0, 95, 100, 105; 1, 1.967529638, 2.350588505, 2.785882673; 2, 1.915294338, 2.315764972, 2.681412073; 3, 1.810823737, 2.220000255, 2.524706172; 4, 1.654117837, 2.115529655, 2.359294389];
-
   
-equation
-/*
-  // HTR alone
-  connect(source_temp.flange, HTR.waterIn);
-
-  connect(HTR.waterOut, T_waterOut.inlet) annotation(
-    Line(points = {{8.88178e-016, -44}, {8.88178e-016, -20}, {0, -20}}, thickness = 0.5, color = {0, 0, 255}));
-  connect(T_waterOut.outlet, sink.flange) annotation(
-    Line(points = {{1.83697e-015, -70}, {1.83697e-015, -56}, {-8.88178e-016, -56}}, thickness = 0.5, color = {0, 0, 255}));
-
-  // connect(HTR.waterOut, sink.flange) 
-   //annotation(Line(points = {{1.83697e-015, -70}, {1.83697e-015, -56}, {-8.88178e-016, -56}}, thickness = 0.5, color = {0, 0, 255}));   
-  
-  connect(source.flange, HTR.gasIn) annotation(
-    Line(points = {{-50, 0}, {-20, 0}}, color = {159, 159, 223}, thickness = 0.5, smooth = Smooth.None));   
-    
-  connect(HTR.gasOut, T_gasOut.inlet ) annotation(
-    Line(points = {{34, 0}, {34, 0}, {20, 0}}, color = {159, 159, 223}, thickness = 0.5));
-  connect(T_gasOut.outlet, sink_temp.flange) annotation(
-    Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));  
-
-  // LTR alone
-  connect(source_temp.flange, LTR.waterIn);
-
-  connect(LTR.waterOut, T_waterOut.inlet) annotation(
-    Line(points = {{8.88178e-016, -44}, {8.88178e-016, -20}, {0, -20}}, thickness = 0.5, color = {0, 0, 255}));
-  connect(T_waterOut.outlet, sink.flange) annotation(
-    Line(points = {{1.83697e-015, -70}, {1.83697e-015, -56}, {-8.88178e-016, -56}}, thickness = 0.5, color = {0, 0, 255}));
-
-  // connect(HTR.waterOut, sink.flange) 
-   //annotation(Line(points = {{1.83697e-015, -70}, {1.83697e-015, -56}, {-8.88178e-016, -56}}, thickness = 0.5, color = {0, 0, 255}));   
-  
-  connect(source.flange, LTR.gasIn) annotation(
-    Line(points = {{-50, 0}, {-20, 0}}, color = {159, 159, 223}, thickness = 0.5, smooth = Smooth.None));   
-    
-  connect(LTR.gasOut, T_gasOut.inlet ) annotation(
-    Line(points = {{34, 0}, {34, 0}, {20, 0}}, color = {159, 159, 223}, thickness = 0.5));
-  connect(T_gasOut.outlet, sink_temp.flange) annotation(
-    Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));  
-*/
-   
+equation  
  
-/*
-  //HTR + mixer
-
-  connect(source_mixer_in.flange, mixer.inlet1);  
-  connect(source_temp.flange, mixer.inlet2);  
-  connect(mixer.outlet, HTR.waterIn);
-
-  connect(HTR.waterOut, T_waterOut.inlet) annotation(
-    Line(points = {{8.88178e-016, -44}, {8.88178e-016, -20}, {0, -20}}, thickness = 0.5, color = {0, 0, 255}));
-  connect(sink.flange, T_waterOut.outlet) annotation(
-    Line(points = {{1.83697e-015, -70}, {1.83697e-015, -56}, {-8.88178e-016, -56}}, thickness = 0.5, color = {0, 0, 255}));
-
-  // connect(HTR.waterOut, sink.flange) 
-   //annotation(Line(points = {{1.83697e-015, -70}, {1.83697e-015, -56}, {-8.88178e-016, -56}}, thickness = 0.5, color = {0, 0, 255}));   
+  connect(source.flange, r_turb_in.inlet);
+  connect(r_turb_in.outlet, turbine.inlet);
+  connect(turbine.outlet, r_turb_out.inlet);  
   
-  connect(source.flange, HTR.gasIn) annotation(
-    Line(points = {{-50, 0}, {-20, 0}}, color = {159, 159, 223}, thickness = 0.5, smooth = Smooth.None));   
-    
-  connect(HTR.gasOut, T_gasOut.inlet ) annotation(
-    Line(points = {{34, 0}, {34, 0}, {20, 0}}, color = {159, 159, 223}, thickness = 0.5));
-  connect(T_gasOut.outlet, sink_temp.flange) annotation(
-    Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));
+    connect(turbine.shaft_a, const_speed_turb.flange);    
   
-  // connect(HTR.gasOut, sink_temp.flange) annotation(
-  //   Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));
-*/  
-/*
-  // mixer + LTR
-  // water/cold side  
-  connect(source_mixer_in.flange, mixer.inlet1);
-  
-  connect(source_temp.flange, LTR.waterIn);
-  
-  connect(LTR.waterOut, mixer.inlet2);
-  
-  connect(mixer.outlet, T_waterOut.inlet);
-  
-  connect(T_waterOut.outlet, sink.flange) annotation(
-    Line(points = {{1.83697e-015, -70}, {1.83697e-015, -56}, {-8.88178e-016, -56}}, thickness = 0.5, color = {0, 0, 255}));
-  
-  // gas/hot side
-  connect(source.flange, LTR.gasIn);
-  
-  connect(LTR.gasOut, T_gasOut.inlet);
-  connect(T_gasOut.outlet, sink_temp.flange) annotation(
-    Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));
-*/
-
-/*
-  //HTR + mixer + LTR 
-  // water/cold side    
-  connect(source_temp.flange, r_LTR_cin.inlet);  
-  connect(r_LTR_cin.outlet, LTR.waterIn);  
-  connect(source_mixer_in.flange, mixer.inlet1);  
-  connect(LTR.waterOut, r_LTR_cout.inlet);
-  connect(r_LTR_cout.outlet, mixer.inlet2);  
-  connect(mixer.outlet, r_HTR_cin.inlet);
-  connect(r_HTR_cin.outlet, HTR.waterIn);
-  connect(HTR.waterOut, r_HTR_cout.inlet);  
-  connect(r_HTR_cout.outlet, sink.flange) annotation(
-    Line(points = {{1.83697e-015, -70}, {1.83697e-015, -56}, {-8.88178e-016, -56}}, thickness = 0.5, color = {0, 0, 255}));
-  
-  // gas/hot side
-  connect(source.flange, r_HTR_hin.inlet);
-  connect(r_HTR_hin.outlet, HTR.gasIn) annotation(
-   Line(points = {{-50, 0}, {-20, 0}}, color = {159, 159, 223}, thickness = 0.5, smooth = Smooth.None));
-  connect(HTR.gasOut, r_HTR_hout.inlet);
-  connect(r_HTR_hout.outlet, r_LTR_hin.inlet);
-  connect(r_LTR_hin.outlet, LTR.gasIn);  
-  connect(LTR.gasOut, r_LTR_hout.inlet);  
-  connect(r_LTR_hout.outlet, sink_temp.flange) annotation(
-    Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));
-*/
-
-/*
-  //HTR + mixer + LTR + Heater
-  // main stream, water/cold side  
-  connect(source_mixer_in.flange, mixer.inlet1);  
-  connect(source_temp.flange, r_LTR_cin.inlet);
-  connect(r_LTR_cin.outlet, LTR.waterIn);  
-  connect(LTR.waterOut, r_LTR_cout.inlet);
-  connect(r_LTR_cout.outlet, mixer.inlet2);  
-  connect(mixer.outlet, r_HTR_cin.inlet);
-  connect(r_HTR_cin.outlet, HTR.waterIn);
-  connect(HTR.waterOut, r_HTR_cout.inlet);
-  connect(r_HTR_cout.outlet, r_heater_cin.inlet);
-  connect(r_heater_cin.outlet, heater.gasIn);  
-  connect(heater.gasOut, r_heater_cout.inlet);
-  connect(r_heater_cout.outlet, sink.flange) annotation(
-    Line(points = {{1.83697e-015, -70}, {1.83697e-015, -56}, {-8.88178e-016, -56}}, thickness = 0.5, color = {0, 0, 255}));
-  
-  // main stream, gas/hot side
-  connect(source.flange, r_HTR_hin.inlet);
-  connect(r_HTR_hin.outlet, HTR.gasIn) annotation(
-   Line(points = {{-50, 0}, {-20, 0}}, color = {159, 159, 223}, thickness = 0.5, smooth = Smooth.None));
-  connect(HTR.gasOut, r_HTR_hout.inlet);
-  connect(r_HTR_hout.outlet, r_LTR_hin.inlet);
-  connect(r_LTR_hin.outlet,LTR.gasIn);  
-  connect(LTR.gasOut, r_LTR_hout.inlet);
-  connect(r_LTR_hout.outlet, sink_temp.flange) annotation(
-    Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));
-   
-  // hot stream for heater
-  connect(source_heater_hot.flange, r_heater_hin.inlet);
-  connect(r_heater_hin.outlet, heater.waterIn);
-  connect(heater.waterOut, r_heater_hout.inlet);
-  connect(r_heater_hout.outlet, sink_heater_hot.flange);
-*/
-
-
-  // HTR + mixer + LTR + Heater + Turbine - OPEN LOOP version 2, different with one more pair of source and sink, same layout as RCBC's left part. 
-  // main stream, water/cold side  
-  
-  // main stream, gas/hot side
-  /* 
-  connect(r_heater_cout.outlet, turbine.inlet);
-  
-    connect(turbine.shaft_b, const_speed_turb.flange) annotation(
-      Line(points = {{30, 0}, {74, 0}, {74, 0}, {74, 0}}));
-      
-  connect(turbine.outlet, sens_turbine.inlet) 
-  annotation(
-   Line(points = {{-50, 0}, {-20, 0}}, color = {159, 159, 223}, thickness = 0.5, smooth = Smooth.None));   
-  connect(sens_turbine.outlet, r_HTR_hin.inlet); 
-  */ 
-  
-  connect(source.flange, r_HTR_cin.inlet);
-  connect(r_HTR_cin.outlet, HTR.waterIn);
-  connect(HTR.waterOut, r_HTR_cout.inlet);
-  connect(r_HTR_cout.outlet, r_heater_cin.inlet);
-  connect(r_heater_cin.outlet, heater.gasIn);
-  connect(heater.gasOut, r_heater_cout.inlet);
-  connect(r_heater_cout.outlet, turbine.inlet);
-  
-    connect(turbine.shaft_a, const_speed_turb.flange);
-    
-  connect(turbine.outlet, sens_turbine.inlet);
-  connect(sens_turbine.outlet, r_HTR_hin.inlet);    
+  connect(r_turb_out.outlet, r_HTR_hin.inlet);    
     
   connect(r_HTR_hin.outlet, HTR.gasIn) annotation(
    Line(points = {{-50, 0}, {-20, 0}}, color = {159, 159, 223}, thickness = 0.5, smooth = Smooth.None));
@@ -995,25 +750,34 @@ equation
   
   connect(splitter.outlet1, r_cooler_hin.inlet);
   
-    connect(splitter.outlet2, recompressor.inlet);
-    connect(recompressor.outlet, mixer.inlet2);
+    connect(splitter.outlet2, r_recomp_in.inlet);
+    connect(r_recomp_in.outlet, recompressor.inlet);
+    connect(recompressor.outlet, r_recomp_out.inlet);    
          
       connect(recompressor.shaft_a, const_speed_rc.flange);  
+      
+    connect(r_recomp_out.outlet, mixer.inlet2);
 
   connect(r_cooler_hin.outlet, cooler.gasIn);
   connect(cooler.gasOut, r_cooler_hout.inlet);
-  connect(r_cooler_hout.outlet, sink_temp.flange);
+  connect(r_cooler_hout.outlet, r_comp_in.inlet);
+  connect(r_comp_in.outlet, compressor.inlet);
   
-  connect(source_temp.flange, compressor.inlet);
-  
-  connect(compressor.outlet, r_LTR_cin.inlet);
+  connect(compressor.outlet, r_comp_out.inlet);
     connect(compressor.shaft_a, const_speed_mc.flange);    
 
+  connect(r_comp_out.outlet, r_LTR_cin.inlet);
   connect(r_LTR_cin.outlet, LTR.waterIn);  
   connect(LTR.waterOut, r_LTR_cout.inlet);
   connect(r_LTR_cout.outlet, mixer.inlet1);
  
-  connect(mixer.outlet, sink.flange);
+  connect(mixer.outlet, r_HTR_cin.inlet);
+  connect(r_HTR_cin.outlet, HTR.waterIn);
+  connect(HTR.waterOut, r_HTR_cout.inlet);
+  connect(r_HTR_cout.outlet, r_heater_cin.inlet);
+  connect(r_heater_cin.outlet, heater.gasIn);
+  connect(heater.gasOut, r_heater_cout.inlet);
+  connect(r_heater_cout.outlet, sink.flange);
 
   // hot stream for heater
   connect(source_heater_hot.flange, r_heater_hin.inlet);
@@ -1027,57 +791,13 @@ equation
   connect(r_cooler_cin.outlet, cooler.waterIn);
   connect(cooler.waterOut, r_cooler_cout.inlet);
   connect(r_cooler_cout.outlet, sink_cooler.flange);
-
-
-/*
-  // temperature input
-  // hot / gas side
-  connect(const_T_step_h.y, triadd_T_h.u) annotation(
-    Line(points = {{-219, 10}, {-202.5, 10}, {-202.5, 8}, {-190, 8}}, color = {255, 127, 0}));
-  connect(const_T_offset_h.y, sum_T_h.u[2]) annotation(
-    Line(points = {{-169, -54}, {-154, -54}, {-154, 8}}, color = {255, 127, 0}));
-  connect(sum_T_h.y, disp_T_h.numberPort) annotation(
-    Line(points = {{-132.5, 8}, {-121, 8}, {-121, 44}, {-119.5, 44}}, color = {255, 127, 0}));
-  connect(triadd_T_h.y, disp_T_step_h.numberPort) annotation(
-    Line(points = {{-175, 8}, {-160.5, 8}, {-160.5, 42}, {-151.5, 42}}, color = {255, 127, 0}));
-  connect(triadd_T_h.y, sum_T_h.u[1]) annotation(
-    Line(points = {{-175, 8}, {-154, 8}}, color = {255, 127, 0}));
-  connect(en_triadd_T_h.y, triadd_T_h.trigger) annotation(
-    Line(points = {{-213, -24}, {-186, -24}, {-186, 1}}, color = {255, 0, 255}));
-  connect(sum_T_h.y, I2R_T_h.u) annotation(
-    Line(points = {{-132.5, 8}, {-114, 8}}, color = {255, 127, 0}));
-  connect(I2R_T_h.y, source.in_T) annotation(
-    Line(points = {{-91, 8}, {-90, 8}, {-90, 9}, {-80, 9}, {-80, 7.75}, {-78, 7.75}, {-78, 6}}, color = {0, 0, 127}));
-*/
-  // transient input
-  
-  /*
-  // cold / fluid side 
-  connect(en_triadd_T_c.y, triadd_T_c.trigger) annotation(
-    Line(points = {{-145, 102}, {-132, 102}, {-132, 119}}, color = {255, 0, 255}));
-  connect(triadd_T_c.y, sum_T_c.u[1]) annotation(
-    Line(points = {{-121, 126}, {-104, 126}}, color = {255, 127, 0}));
-  connect(triadd_T_c.y, disp_T_c.numberPort) annotation(
-    Line(points = {{-121, 126}, {-160.5, 126}, {-160.5, 158}, {-155.5, 158}}, color = {255, 127, 0}));
-  connect(sum_T_c.y, I2R_T_c.u) annotation(
-    Line(points = {{-82.5, 126}, {-71.25, 126}, {-71.25, 124}, {-60, 124}}, color = {255, 127, 0}));
-  connect(sum_T_c.y, disp_T_step_c.numberPort) annotation(
-    Line(points = {{-82.5, 126}, {-71, 126}, {-71, 158}, {-67.5, 158}}, color = {255, 127, 0}));
-  connect(const_T_step_c.y, triadd_T_c.u) annotation(
-    Line(points = {{-183, 126}, {-136, 126}}, color = {255, 127, 0}));
-  connect(const_T_offset_c.y, sum_T_c.u[2]) annotation(
-    Line(points = {{-117, 72}, {-104, 72}, {-104, 126}}, color = {255, 127, 0}));
-  connect(I2R_T_c.y, source.in_T) annotation(
-    Line(points = {{-37, 124}, {6, 124}, {6, 64}}, color = {0, 0, 127}));
-  */
   
   connect(ramp1.y, source.in_w0);
-  // connect(ramp2.y, source_mixer_in.in_w0);
 
   annotation(
     Diagram(coordinateSystem(extent = {{-100, -100}, {120, 100}})),
     experiment(StartTime = 0, StopTime = 50, Tolerance = 1e-3, Interval = 0.5),
     __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian",
     // __OpenModelica_simulationFlags(lv = "LOG_DEBUG,LOG_NLS,LOG_NLS_V,LOG_STATS,LOG_INIT,LOG_STDOUT, -w", outputFormat = "mat", s = "dassl", nls = "homotopy"));
-    __OpenModelica_simulationFlags(lv = "LOG_DEBUG,LOG_NLS,LOG_NLS_V,LOG_STATS,LOG_INIT,LOG_STDOUT,LOG_DSS_JAC -w", newtonFTol = "1e-6", newtonXTol= "1e-6", outputFormat = "mat", s = "dassl", nls = "homotopy"));
+    __OpenModelica_simulationFlags(lv = "LOG_DEBUG,LOG_NLS,LOG_STATS,LOG_INIT,LOG_STDOUT -w", newtonFTol = "1e-6", newtonXTol= "1e-6", outputFormat = "mat", s = "dassl", nls = "homotopy"));
 end TP_RCBCycle;

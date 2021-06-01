@@ -1,7 +1,7 @@
 within Steps.TPComponents;
 
 model CompressorPham "Gas compressor using alternative map methodology based on equivalent conditions."
-  extends BaseClasses.CompressorBase;
+  extends ThermoPower.Gas.BaseClasses.CompressorBase;
   import ThermoPower.Choices.TurboMachinery.TableTypes;
   parameter SI.AngularVelocity Ndesign "Design velocity";
   parameter SI.Pressure Pdes_in "Design inlet pressure";
