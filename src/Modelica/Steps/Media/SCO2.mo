@@ -98,9 +98,33 @@ package SCO2 "supercritical CO2"
     input FixedPhase phase = 1
       "2 for two-phase, 1 for one-phase, 0 if not known";
     output ThermodynamicState state;
-  external "C" TwoPhaseMedium_setState_pT_C_impl(p, T, state, mediumName, libraryName, substanceName)
+  algorithm  
+    // assert((p > 1000 and p < 2.5e8) and (h > 0 and h < 2e8), "Invalid Pressure or Specific Enthalpy (p, h)=(" + String(p) + "," + String(h) + ")");  
+    state := setState_pT_lib(p, T, phase);
+    
+    // external media indicates the computation error by assign negetive values for p, h, T.
+    if(state.p < 0 and state.T < 0 and state.h < 0) then
+      assert(false, "Error in region computation of ExternalMedia" + "(p = " + String(p) + ", T = " + String(T) + ")");    
+    end if;      
+    
+    
     annotation(Include="#include \"externalmedialib.h\"", Library="ExternalMediaLib", IncludeDirectory="modelica://ExternalMedia/Resources/Include", LibraryDirectory="modelica://ExternalMedia/Resources/Library");
   end setState_pT;
+
+
+  function setState_pT_lib
+    "Return thermodynamic state record from p and T"
+    extends Modelica.Icons.Function;
+    input AbsolutePressure p "pressure";
+    input Temperature T "temperature";
+    input FixedPhase phase = 1
+      "2 for two-phase, 1 for one-phase, 0 if not known";
+    output ThermodynamicState state;
+  external "C" TwoPhaseMedium_setState_pT_C_impl(p, T, state, mediumName, libraryName, substanceName)
+    annotation(Include="#include \"externalmedialib.h\"", Library="ExternalMediaLib", IncludeDirectory="modelica://ExternalMedia/Resources/Include", LibraryDirectory="modelica://ExternalMedia/Resources/Library");
+  end setState_pT_lib;
+  
+  
 /*  
   redeclare replaceable function setState_ph
     input AbsolutePressure p "pressure";
@@ -119,10 +143,18 @@ package SCO2 "supercritical CO2"
     input SpecificEnthalpy h "specific enthalpy";
     input FixedPhase phase = 1
       "2 for two-phase, 1 for one-phase, 0 if not known";
-    output ThermodynamicState state;    
+    output ThermodynamicState state;        
+   
   algorithm    
-    assert((p > 1000 and p < 2.5e8) and (h > 0 and h < 2e8), "Invalid Pressure or Specific Enthalpy (p, h)=(" + String(p) + "," + String(h) + ")");  
+  
+    // assert((p > 1000 and p < 2.5e8) and (h > 0 and h < 2e8), "Invalid Pressure or Specific Enthalpy (p, h)=(" + String(p) + "," + String(h) + ")");  
     state := setState_ph_lib(p, h, phase);
+    
+    // external media indicates the computation error by assign negetive values for p, h, T.
+    if(state.p < 0 and state.T < 0 and state.h < 0) then
+      assert(false, "Error in region computation of ExternalMedia" + "(p = " + String(p) + ", h = " + String(h) + ")");    
+    end if;  
+    
   end setState_ph;
     
   function setState_ph_lib

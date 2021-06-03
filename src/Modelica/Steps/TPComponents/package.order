@@ -15,4 +15,5 @@ GasFlow1DFV
 GnielinskiHeatTransferFV
 NgoHeatTransferFV
 CompressorPham
-MultiRamp
+RampSeq_W
+RampSeq_TwoStages

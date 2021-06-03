@@ -248,33 +248,34 @@ model TP_RCBCycle
   Steps.TPComponents.GasStateReader r_heater_cout(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {-32, 20}, extent = {{-6, -6}, {6, 6}}, rotation = 180)));
 
-
+/*
   ThermoPower.Gas.SourceMassFlow source(
     redeclare package Medium = medium_main, 
     T         = st_source.T,
     p0        = st_source.p,
     w0        = st_source.mdot,
     use_in_T  = false,
-    use_in_w0 = true,
+    use_in_w0 = false,
     gas(
       p(start = st_source.p, nominal = st_source.p), 
       T(start = st_source.T, nominal = st_source.T)))
       //h(start = st_source.h, nominal = st_source.h)))
   annotation(
     Placement(transformation(extent = {{-70, -10}, {-50, 10}}, rotation = 0))); 
+*/
 
-/*
   ThermoPower.Gas.SourcePressure source(
     redeclare package Medium = medium_main, 
     T        = st_source.T,
     p0       = st_source.p,
-    use_in_T = true,
+    use_in_T = false,
+    use_in_p0 = true,
     gas(
       p(start = st_source.p, nominal = st_source.p), 
       T(start = st_source.T, nominal = st_source.T))) 
   annotation(
     Placement(transformation(origin = {0, 60}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
-*/
+
 
 /*
   ThermoPower.Gas.SourceMassFlow source_mixer_in(
@@ -298,12 +299,25 @@ model TP_RCBCycle
     Placement(transformation(origin = {0, -80}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
 */
  
+/*
   ThermoPower.Gas.SinkPressure sink(
     redeclare package Medium = medium_main, 
     p0 = st_sink.p,
-    T  = st_sink.T)
+    T  = st_sink.T,
+    use_in_p0 = true)
   annotation(
     Placement(transformation(origin = {0, -80}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
+*/
+
+
+  ThermoPower.Gas.SinkMassFlow sink(
+    redeclare package Medium = medium_main, 
+    T        = st_sink.T,
+    p0       = st_sink.p,
+    use_in_T = false,
+    use_in_w0 = true,
+    w0       = st_sink.mdot
+  );
 
 /*
   ThermoPower.Gas.SourceMassFlow source_temp(
@@ -710,13 +724,56 @@ model TP_RCBCycle
   // Liquid Na exit temperature
   Modelica.SIunits.Temperature T_heater_hot_out = r_HTR_hout.T;  
   
+  // value to accelerate the simulation
+  constant Integer SEC_PER_HOUR = integer(60 * 60 / 60); // 1 min = 1 hour
+  // constant Integer SEC_PER_HOUR = 60 * 60;
+  /*
+  // ramp input to simulate the ramp change in ASPEN+ simulation
+  // ramp change for case I and case II in Guan's report
+  Steps.TPComponents.RampSeq_W ramp_mdot(    
+    time_start = 3 * SEC_PER_HOUR,
+    interval = 1 * SEC_PER_HOUR,
+    duration = 0.15 * SEC_PER_HOUR,       
+    offset = st_source.mdot
+  );
+  */
+  
+  // ramp input for case III in Guan's report
+  
+  Modelica.Blocks.Sources.Ramp ramp_mdot(
+    final duration  = 0.15 * SEC_PER_HOUR,
+    final startTime = 1 * SEC_PER_HOUR,
+    
+    final height    = st_sink.mdot * 0.15,
+    final offset    = st_sink.mdot
+  );
+  
+  Steps.TPComponents.RampSeq_TwoStages ramp_p(
+    final time_start = 2 * SEC_PER_HOUR,
+    final interval   = 1 * SEC_PER_HOUR,
+    final duration_1 = 0.15 * SEC_PER_HOUR,
+    final duration_2 = 0.15 * SEC_PER_HOUR,
+    
+    final height_1 = 10e6,
+    final height_2 = 10e6,
+    final offset   = st_source.p
+  );
+  
+  /*
   // ramp component for transient test
-  Modelica.Blocks.Sources.Ramp ramp1(
+  Modelica.Blocks.Sources.Ramp ramp_mdot(
   final height    = st_source.mdot * 0.1,
   final duration  = 9 * 60, // 9 mins
   final startTime = 3,
   final offset    = st_source.mdot);
 
+  // ramp component for transient test
+  Modelica.Blocks.Sources.Ramp ramp_pressure(
+  final height    = st_sink.p * 0.1,
+  final duration  = 9 * 60, // 9 mins
+  final startTime = 3,
+  final offset    = st_sink.p);
+  */
 protected
 
   // performance map for main compressor
@@ -792,11 +849,12 @@ equation
   connect(cooler.waterOut, r_cooler_cout.inlet);
   connect(r_cooler_cout.outlet, sink_cooler.flange);
   
-  connect(ramp1.y, source.in_w0);
+  connect(ramp_p.y, source.in_p0); 
+  connect(ramp_mdot.y, sink.in_w0);
 
   annotation(
     Diagram(coordinateSystem(extent = {{-100, -100}, {120, 100}})),
-    experiment(StartTime = 0, StopTime = 50, Tolerance = 1e-3, Interval = 0.5),
+    experiment(StartTime = 0, StopTime = 50, Tolerance = 1e-3, Interval = 1),
     __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian",
     // __OpenModelica_simulationFlags(lv = "LOG_DEBUG,LOG_NLS,LOG_NLS_V,LOG_STATS,LOG_INIT,LOG_STDOUT, -w", outputFormat = "mat", s = "dassl", nls = "homotopy"));
     __OpenModelica_simulationFlags(lv = "LOG_DEBUG,LOG_NLS,LOG_STATS,LOG_INIT,LOG_STDOUT -w", newtonFTol = "1e-6", newtonXTol= "1e-6", outputFormat = "mat", s = "dassl", nls = "homotopy"));

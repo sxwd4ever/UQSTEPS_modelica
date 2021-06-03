@@ -1,6 +1,6 @@
 within Steps.TPComponents;
 
-model MultiRamp "Multiple ramp change as input of transient simulation"
+model RampSeq_W "serial ramp sequence which forms a W shape and can be used as input of transient simulation"
   extends Modelica.Blocks.Interfaces.SO;
   // x ticks
   parameter Modelica.SIunits.Time time_start = 3 "StartTime of 1st ramp";
@@ -76,4 +76,4 @@ Block generating the sum of four ramps.
 </HTML>"),
     experiment(StartTime = 0, StopTime = 8, Tolerance = 1e-3, Interval = 1),
     Icon(coordinateSystem(initialScale = 0.1), graphics = {Line(points = {{-80, 68}, {-80, -80}}, color = {192, 192, 192}), Polygon(lineColor = {192, 192, 192}, fillColor = {192, 192, 192}, fillPattern = FillPattern.Solid, points = {{-80, 90}, {-88, 68}, {-72, 68}, {-80, 90}}), Line(points = {{-90, -70}, {82, -70}}, color = {192, 192, 192}), Polygon(lineColor = {192, 192, 192}, fillColor = {192, 192, 192}, fillPattern = FillPattern.Solid, points = {{90, -70}, {68, -62}, {68, -78}, {90, -70}}), Line(points = {{-80, -60}, {-50, -60}, {-30, 60}, {10, 60}, {30, -20}, {70, -20}})}));
-end MultiRamp;
+end RampSeq_W;
