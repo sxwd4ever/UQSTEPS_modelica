@@ -1,7 +1,8 @@
 within Steps.Cycle.Transient;
 
 model TP_RCBCycle
-
+  "Recompressoion Brayton Cycle transient simulation based on ThermoPower"
+  
   import Modelica.SIunits.Conversions.{from_degC, from_deg};
   import Modelica.SIunits.{Temperature, Pressure, SpecificEnthalpy};
   import Util = Utilities.Util;
@@ -725,7 +726,8 @@ model TP_RCBCycle
   Modelica.SIunits.Temperature T_heater_hot_out = r_HTR_hout.T;  
   
   // value to accelerate the simulation
-  constant Integer SEC_PER_HOUR = integer(60 * 60 / 60); // 1 min = 1 hour
+  constant Integer SEC_PER_HOUR = integer(60 * 60 / time_scaling_factor); 
+  constant Real time_scaling_factor = 12; // 5 min = 1 hour
   // constant Integer SEC_PER_HOUR = 60 * 60;
   /*
   // ramp input to simulate the ramp change in ASPEN+ simulation
@@ -744,7 +746,7 @@ model TP_RCBCycle
     final duration  = 0.15 * SEC_PER_HOUR,
     final startTime = 1 * SEC_PER_HOUR,
     
-    final height    = st_sink.mdot * 0.15,
+    final height    = -st_sink.mdot * 0.15,
     final offset    = st_sink.mdot
   );
   
@@ -754,8 +756,8 @@ model TP_RCBCycle
     final duration_1 = 0.15 * SEC_PER_HOUR,
     final duration_2 = 0.15 * SEC_PER_HOUR,
     
-    final height_1 = 10e6,
-    final height_2 = 10e6,
+    final height_1 = -1e6 / time_scaling_factor,
+    final height_2 = -1e6 / time_scaling_factor,
     final offset   = st_source.p
   );
   
