@@ -1,6 +1,6 @@
 within Steps.Cycle.Transient;
 
-model TP_RCBCycleGUI "Replica of Recompressoion Brayton Cycle transient simulation based on ThermoPower. For layout design purpose"
+model TPDyn_RCBCycleGUI "Replica of Recompressoion Brayton Cycle transient simulation based on ThermoPower. For layout design purpose"
   import Modelica.SIunits.Conversions.{from_degC,from_deg};
   import Modelica.SIunits.{Temperature,Pressure,SpecificEnthalpy};
   import Util = Utilities.Util;
@@ -235,7 +235,7 @@ model TP_RCBCycleGUI "Replica of Recompressoion Brayton Cycle transient simulati
   Steps.TPComponents.GasStateReader r_LTR_hin(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {6, 32}, extent = {{-4, -4}, {4, 4}}, rotation = 0)));
   Steps.TPComponents.GasStateReader r_LTR_hout(redeclare package Medium = medium_main) annotation(
-    Placement(visible = true, transformation(origin = {36, 32}, extent = {{-4, -4}, {4, 4}}, rotation = 0)));
+    Placement(visible = true, transformation(origin = {34, 32}, extent = {{-4, -4}, {4, 4}}, rotation = 0)));
   Steps.TPComponents.GasStateReader r_LTR_cin(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {20, 46}, extent = {{-4, -4}, {4, 4}}, rotation = -90)));
   Steps.TPComponents.GasStateReader r_LTR_cout(redeclare package Medium = medium_main) annotation(
@@ -428,9 +428,9 @@ equation
   connect(r_LTR_hin.outlet, LTR.gasIn) annotation(
     Line(points = {{8, 32}, {12, 32}}, color = {170, 170, 255}, thickness = 1));
   connect(LTR.gasOut, r_LTR_hout.inlet) annotation(
-    Line(points = {{28, 32}, {34, 32}}, color = {170, 170, 255}, thickness = 1));
+    Line(points = {{28, 32}, {32, 32}}, color = {170, 170, 255}, thickness = 1));
   connect(r_LTR_hout.outlet, splitter.inlet) annotation(
-    Line(points = {{38, 32}, {37, 32}, {37, 0}}, color = {170, 170, 255}, thickness = 1));
+    Line(points = {{36, 32}, {37, 32}, {37, 0}}, color = {170, 170, 255}, thickness = 1));
   connect(splitter.outlet1, r_cooler_hin.inlet) annotation(
     Line(points = {{35, -6}, {35, -5.5}, {36, -5.5}, {36, -47}}, color = {170, 170, 255}, thickness = 0.5));
   connect(splitter.outlet2, r_recomp_in.inlet) annotation(
@@ -486,13 +486,13 @@ equation
     Line(points = {{-74, 54}, {-74, 62}}, color = {255, 0, 0}, thickness = 0.75));
 // cold side of cooler
   connect(source_cooler.flange, r_cooler_cin.inlet) annotation(
-    Line(points = {{56, -24}, {56, -28}}, color = {0, 0, 255}, thickness = 0.75));
+    Line(points = {{56, -24}, {56, -28}}, color = {0, 255, 0}, thickness = 0.75));
   connect(r_cooler_cin.outlet, cooler.waterIn) annotation(
-    Line(points = {{56, -32}, {56, -38}}, color = {0, 0, 255}, thickness = 0.75));
+    Line(points = {{56, -32}, {56, -38}}, color = {0, 255, 0}, thickness = 0.75));
   connect(cooler.waterOut, r_cooler_cout.inlet) annotation(
-    Line(points = {{56, -54}, {56, -62}}, color = {0, 0, 255}, thickness = 0.75));
+    Line(points = {{56, -54}, {56, -62}}, color = {0, 255, 0}, thickness = 0.75));
   connect(r_cooler_cout.outlet, sink_cooler.flange) annotation(
-    Line(points = {{56, -66}, {56, -72}, {57, -72}}, color = {0, 0, 255}, thickness = 0.75));
+    Line(points = {{56, -66}, {56, -72}, {57, -72}}, color = {0, 255, 0}, thickness = 0.75));
   connect(ramp_p.y, source.in_p0) annotation(
     Line(points = {{-113, -32}, {-107.5, -32}, {-107.5, -36}, {-108, -36}}, color = {0, 0, 127}));
   connect(ramp_mdot.y, sink.in_w0) annotation(
@@ -555,9 +555,9 @@ equation
   connect(r_comp_out.outlet, r_LTR_cin.inlet) annotation(
     Line(points = {{118, 24}, {118, 64}, {20, 64}, {20, 48}}, color = {0, 0, 255}, thickness = 0.5));
   connect(LTR.gasOut, r_LTR_hout.inlet) annotation(
-    Line(points = {{28, 32}, {34, 32}}, color = {170, 170, 255}, thickness = 1));
+    Line(points = {{28, 32}, {32, 32}}, color = {170, 170, 255}, thickness = 1));
   connect(r_LTR_hout.outlet, splitter.inlet) annotation(
-    Line(points = {{38, 32}, {37, 32}, {37, 0}}, color = {170, 170, 255}, thickness = 1));
+    Line(points = {{36, 32}, {37, 32}, {37, 0}}, color = {170, 170, 255}, thickness = 1));
   connect(splitter.outlet1, r_cooler_hin.inlet) annotation(
     Line(points = {{35, -6}, {35, -5.5}, {36, -5.5}, {36, -47}}, color = {170, 170, 255}, thickness = 0.5));
   connect(r_cooler_hin.outlet, cooler.gasIn) annotation(
@@ -575,13 +575,13 @@ equation
   connect(r_recomp_out.outlet, mixer.inlet2) annotation(
     Line(points = {{76, 24}, {76, 56}, {-2, 56}}, color = {0, 0, 255}, thickness = 0.5));
   connect(cooler.waterOut, r_cooler_cout.inlet) annotation(
-    Line(points = {{56, -54}, {56, -62}}, color = {0, 0, 255}, thickness = 0.75));
+    Line(points = {{56, -54}, {56, -62}}, color = {0, 255, 0}, thickness = 0.75));
   connect(r_cooler_cout.outlet, sink_cooler.flange) annotation(
-    Line(points = {{56, -66}, {56, -72}, {57, -72}}, color = {0, 0, 255}, thickness = 0.75));
+    Line(points = {{56, -66}, {56, -72}, {57, -72}}, color = {0, 255, 0}, thickness = 0.75));
   connect(source_cooler.flange, r_cooler_cin.inlet) annotation(
-    Line(points = {{56, -24}, {56, -28}}, color = {0, 0, 255}, thickness = 0.75));
+    Line(points = {{56, -24}, {56, -28}}, color = {0, 255, 0}, thickness = 0.75));
   connect(r_cooler_cin.outlet, cooler.waterIn) annotation(
-    Line(points = {{56, -32}, {56, -38}}, color = {0, 0, 255}, thickness = 0.75));
+    Line(points = {{56, -32}, {56, -38}}, color = {0, 255, 0}, thickness = 0.75));
   connect(cooler.gasOut, r_cooler_hout.inlet) annotation(
     Line(points = {{64, -46}, {68, -46}, {68, -47}, {72, -47}}, color = {170, 170, 255}, thickness = 0.5));
   connect(source.flange, r_turb_in.inlet) annotation(
@@ -591,4 +591,4 @@ equation
     experiment(StartTime = 0, StopTime = 50, Tolerance = 1e-3, Interval = 1),
     __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian",
     __OpenModelica_simulationFlags(lv = "LOG_DEBUG,LOG_NLS,LOG_STATS,LOG_INIT,LOG_STDOUT -w", newtonFTol = "1e-6", newtonXTol = "1e-6", outputFormat = "mat", s = "dassl", nls = "homotopy"));
-end TP_RCBCycleGUI;
+end TPDyn_RCBCycleGUI;

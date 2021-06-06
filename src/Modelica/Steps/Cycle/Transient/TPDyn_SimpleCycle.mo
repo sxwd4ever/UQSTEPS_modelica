@@ -1,6 +1,6 @@
 within Steps.Cycle.Transient;
 
-model TP_SimpleCycle
+model TPDyn_SimpleCycle
   "simple cycle built referring Bone's Study [bone2021] (with an extra cooler) comp-hx-turbine-cooler"
 
   import Modelica.SIunits.Conversions.{from_degC, from_deg};
@@ -460,4 +460,4 @@ annotation(
     // __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts",    
     __OpenModelica_simulationFlags(lv = "LOG_DEBUG,LOG_NLS,LOG_NLS_V,LOG_STATS,LOG_INIT,LOG_STDOUT, -w", outputFormat = "mat", s = "dassl", nls = "homotopy")
     );
-end TP_SimpleCycle;
+end TPDyn_SimpleCycle;
