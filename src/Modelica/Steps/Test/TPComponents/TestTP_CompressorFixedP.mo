@@ -1,6 +1,6 @@
 within Steps.Test.TPComponents;
 
-model TestTP_Compressor
+model TestTP_CompressorFixedP
   "Test for HE in ThermoPower"  
   import Modelica.SIunits.Conversions.{from_degC, from_deg};
   import Modelica.SIunits.{Temperature, Pressure, SpecificEnthalpy};
@@ -87,7 +87,22 @@ model TestTP_Compressor
   
   //configuration for main compressor          
   parameter Modelica.SIunits.Temperature T_comp_des = from_degC(45) "Design temperature for main compressor";
-/*  
+  
+
+  ThermoPower.Gas.SourcePressure SourceP1(
+    redeclare package Medium = Medium, 
+    T        = st_source.T,
+    p0       = st_source.p,
+    use_in_T = false,
+    use_in_p0 = true,
+    gas(
+      p(start = st_source.p, nominal = st_source.p), 
+      T(start = st_source.T, nominal = st_source.T))) 
+  annotation(
+    Placement(visible = true, transformation(origin = {-105, -39}, extent = {{-5, -5}, {5, 5}}, rotation = 0)));
+
+
+  /* 
   ThermoPower.Gas.SourceMassFlow SourceP1(
     redeclare package Medium = Medium,
     p0 = st_source.p,
@@ -97,20 +112,20 @@ model TestTP_Compressor
       p(nominal = st_source.p), 
       T(nominal=st_source.T))) 
       annotation (Placement(transformation(extent={{-80,6},{-60,26}},rotation=0)));
+  */
+  
+/* 
+  ThermoPower.Gas.SinkPressure SinkP1(
+    redeclare package Medium = Medium,
+    p0=st_sink.p,
+    T=st_sink.T,
+    use_in_p0 = true,
+    gas(
+      p(nominal = st_sink.p), 
+      T(nominal = st_sink.T))) 
+      annotation (Placement(transformation(extent={{40,6},{60,26}}, rotation=0)));
 */
 
-  ThermoPower.Gas.SourcePressure SourceP1(
-    redeclare package Medium = Medium, 
-    T        = st_source.T,
-    p0       = st_source.p,
-    use_in_T = false,
-    use_in_p0 = false,
-    gas(
-      p(start = st_source.p, nominal = st_source.p), 
-      T(start = st_source.T, nominal = st_source.T))) 
-  annotation(
-    Placement(visible = true, transformation(origin = {-105, -39}, extent = {{-5, -5}, {5, 5}}, rotation = 0)));
- 
   ThermoPower.Gas.SinkMassFlow SinkP1(
     redeclare package Medium = Medium, 
     T        = st_sink.T,
@@ -122,21 +137,12 @@ model TestTP_Compressor
   annotation(
     Placement(visible = true, transformation(origin = {-105, 33}, extent = {{-5, -5}, {5, 5}}, rotation = 180)));
 
-/*  
-  ThermoPower.Gas.SinkPressure SinkP1(
-    redeclare package Medium = Medium,
-    p0=st_sink.p,
-    T=st_sink.T,
-    gas(
-      p(nominal = st_sink.p), 
-      T(nominal = st_sink.T))) 
-      annotation (Placement(transformation(extent={{40,6},{60,26}}, rotation=0)));
-*/
   
-  ThermoPower.Gas.Compressor Compressor(
+  Steps.TPComponents.CompressorFixedP Compressor(
     redeclare package Medium = Medium,
     pstart_in                  = cfg_comp.st_in.p,
     pstart_out                 = cfg_comp.st_out.p,
+    p_fixed                    = cfg_comp.st_out.p,
     Tstart_in                  = cfg_comp.st_in.T,
     Tstart_out                 = cfg_comp.st_out.T,
     tablePhic                  = tablePhic,
@@ -145,7 +151,7 @@ model TestTP_Compressor
     Table                      = ThermoPower.Choices.TurboMachinery.TableTypes.matrix,
     Ndesign                    = cfg_comp.N,
     Tdes_in                    = cfg_comp.st_in.T,
-    explicitIsentropicEnthalpy = false,
+    explicitIsentropicEnthalpy = false,    
     gas_in(
       p(nominal = cfg_comp.st_in.p), 
       T(nominal = cfg_comp.st_in.T)),
@@ -154,12 +160,30 @@ model TestTP_Compressor
       T(nominal = cfg_comp.st_out.T),
       h(start   = cfg_comp.st_out.h))) annotation (Placement(transformation(extent={{-20,-20},{
               20,20}}, rotation=0)));  
-         
+  
+  /* 
   Modelica.Mechanics.Rotational.Sources.ConstantSpeed ConstantSpeed1(
       w_fixed=cfg_comp.N, useSupport=false) annotation (Placement(transformation(
           extent={{-50,-10},{-30,10}}, rotation=0)));
+  */
   inner ThermoPower.System system
     annotation (Placement(transformation(extent={{80,80},{100,100}})));
+  constant Integer SEC_PER_HOUR = integer(60 * 60 / 120);
+
+  Steps.TPComponents.RampSeq_TwoStages ramp_p(
+    final time_start = 2 * SEC_PER_HOUR,
+    final interval   = 1 * SEC_PER_HOUR,
+    final duration_1 = 0.15 * SEC_PER_HOUR,
+    final duration_2 = 0.15 * SEC_PER_HOUR,
+    
+    final height_1 = -1e6,
+    final height_2 = -1e6,
+    final offset   = st_source.p
+  )
+  annotation(
+    Placement(visible = true, transformation(origin = {-120, -32}, extent = {{-6, -6}, {6, 6}}, rotation = 0)));
+
+
 protected
   // performance map for main compressor
   parameter Real tableEta_mc[5, 4]  = [0, 95, 100, 105; 1, 0.85310219, 0.837591241, 0.832420925; 2, 0.868613139, 0.857238443, 0.851034063; 3, 0.860340633, 0.85, 0.842761557; 4, 0.85310219, 0.839659367, 0.816909976];
@@ -180,13 +204,20 @@ equation
       points={{16,16},{40,16}},
       color={159,159,223},
       thickness=0.5));
+  connect(ramp_p.y, SourceP1.in_p0);
+  
+  connect(Compressor.speed.flange, Compressor.shaft_a);
+ 
+  /*
   connect(ConstantSpeed1.flange, Compressor.shaft_a) annotation (Line(
       points={{-30,0},{-30,0},{-26,-0.2},{-12,0}},
       color={0,0,0},
       thickness=0.5));
+  */
+  
   annotation (
     Diagram(graphics),
-    experiment(StartTime = 0, StopTime = 1, Tolerance = 1e-2, Interval = 1),
-    __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts,bltdump",    
+    experiment(StartTime = 0, StopTime = 210, Tolerance = 1e-2, Interval = 10),
+    __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts",    
     __OpenModelica_simulationFlags(lv = "LOG_DEBUG,LOG_NLS,LOG_NLS_V,LOG_STATS,LOG_INIT,LOG_STDOUT, -w", outputFormat = "mat", s = "dassl", nls = "homotopy"));
-end TestTP_Compressor;
+end TestTP_CompressorFixedP;

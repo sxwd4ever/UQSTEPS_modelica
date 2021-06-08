@@ -10,7 +10,7 @@ model RCBCycleConfig
   import Steps.Components.PCHEGeoParam;  
 
   replaceable package medium_main   = Steps.Media.SCO2 constrainedby Modelica.Media.Interfaces.PartialPureSubstance;
-  replaceable package medium_cooler = Modelica.Media.Water.WaterIF97_pT constrainedby Modelica.Media.Interfaces.PartialPureSubstance;
+  replaceable package medium_cooler = ThermoPower.Water.StandardWater constrainedby Modelica.Media.Interfaces.PartialPureSubstance;
   replaceable package medium_heater = Steps.Media.MoltenSalt.MoltenSalt_pT constrainedby Modelica.Media.Interfaces.PartialPureSubstance;
   
   constant Real pi = Modelica.Constants.pi;
@@ -62,8 +62,9 @@ model RCBCycleConfig
   parameter Modelica.SIunits.SpecificHeatCapacity cp_wall = 431 "cp of wall, J/kg-K";
   // Thermal conductivity of LTR's metal wall 
   // material inconel_750
-  parameter Real table_k_LTR_wall[:, :]  = [149, 16.9; 316, 20.5; 538, 26.5; 649, 28.7; 760, 31.4; 871, 35.3];
-  parameter Real table_k_HTR_wall[:, :]  = [149, 16.9; 316, 20.5; 538, 26.5; 649, 28.7; 760, 31.4; 871, 35.3];
+  //parameter Real table_k_LTR_wall[:, :]  = [149, 16.9; 316, 20.5; 538, 26.5; 649, 28.7; 760, 31.4; 871, 35.3];
+  //parameter Real table_k_HTR_wall[:, :]  = [149, 16.9; 316, 20.5; 538, 26.5; 649, 28.7; 760, 31.4; 871, 35.3];
+  // parameter Real table_k_metalwall[:,:]  = [293.15, 12.1; 373.15, 16.3; 773.15, 21.5];
 
 
   // **** START -  Definition of Key Point's state *****
@@ -214,11 +215,11 @@ model RCBCycleConfig
   // N_ch groups of fluid(cold, inner)-tube vs 1 gas(hot, outter) tube  
 
   // for ThermoPower.HeatExchanger
-  parameter Modelica.SIunits.Radius r_i_cooler = 10e-3 "mm, tube's internal radius(single tube)";
-  parameter Modelica.SIunits.Radius r_t_cooler = 15e-3 "tube's external radius(single tube)";
-  parameter Modelica.SIunits.Radius r_o_cooler = 500e-3 "radius of external side of heat exchanger";
+  parameter Modelica.SIunits.Radius r_i_cooler = 0.5e-3 "mm, tube's internal radius(single tube)";
+  parameter Modelica.SIunits.Radius r_t_cooler = 0.7e-3 "tube's external radius(single tube)";
+  parameter Modelica.SIunits.Radius r_o_cooler = 1e-3 "radius of external side of heat exchanger";
   parameter Modelica.SIunits.Length L_cooler   = 1 "m length of the tube/cooler";
-  parameter Integer N_ch_cooler                = 10000;
+  parameter Integer N_ch_cooler                = 50000;
   parameter Integer N_seg_cooler               = N_seg;
 
   parameter Real gamma_cold_cooler = (7728.47 + 14290.1) / 2; // calculuated with Test.Transient.TestDyn_cooler on 10MWe point
@@ -441,12 +442,12 @@ model RCBCycleConfig
   // heater
   // heater's's size of heat exchanger gas - gas
   // N_ch_heater groups of fluid(cold, inner)-tube-gas(hot, outter) tubes 
-  parameter Modelica.SIunits.Radius r_i_heater = 20e-3 "mm tube's internal radius";
-  parameter Modelica.SIunits.Radius r_t_heater = 30e-3 "tube's external radius";
-  parameter Modelica.SIunits.Radius r_o_heater = 1/2 "radius of external side of one group";
+  parameter Modelica.SIunits.Radius r_i_heater = 1e-3 "mm tube's internal radius";
+  parameter Modelica.SIunits.Radius r_t_heater = 2e-3 "tube's external radius";
+  parameter Modelica.SIunits.Radius r_o_heater = 3e-3 "radius of external side of one group";
   parameter Modelica.SIunits.Length L_heater   = 1 "m";
   parameter Integer N_seg_heater               = N_seg;
-  parameter Integer N_ch_heater                = 100;
+  parameter Integer N_ch_heater                = 10000;
 
   // cfg for heater's cold/fluid side  
   parameter AreaGeometry ga_heater_hot  = SetAreaGeometry_Circle(r = r_i_heater);

@@ -55,7 +55,7 @@ within Steps.TPComponents;
               hstartout,
               N) "Start value of enthalpy vector (initialized by default)"
         annotation (Dialog(tab="Initialisation")); 
-      parameter Medium.Temperature Tstartbar = 300 "Avarage temperature start value" annotation(
+      parameter Medium.Temperature Tstartbar = 400 "Avarage temperature start value" annotation(
         Dialog(tab = "Initialisation"));
       parameter Medium.Temperature Tstartin = Tstartbar "Inlet temperature start value" annotation(
         Dialog(tab = "Initialisation"));

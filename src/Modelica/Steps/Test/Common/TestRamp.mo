@@ -23,35 +23,13 @@ model TestRamp
   package medium_heater = SolarTherm.Media.Sodium.Sodium_pT;
   package medium_cooler = ThermoPower.Water.StandardWater;//Modelica.Media.IdealGases.SingleGases.CO2; 
   
-  parameter Real table_k_metalwall[:,:] = [293.15, 12.1; 373.15, 16.3; 773.15, 21.5]; 
+  // parameter Real table_k_metalwall[:,:] = [293.15, 12.1; 373.15, 16.3; 773.15, 21.5]; 
 
  // select the configuration of parameters
   parameter Model.RCBCycleConfig cfg(
     redeclare package medium_heater = medium_heater,
     redeclare package medium_main   = medium_main,
-    redeclare package medium_cooler = medium_cooler,
-    r_i_heater  = 1e-3,
-    r_t_heater  = 2e-3, 
-    r_o_heater  = 3e-3,                      // agree with the final parameter Dhyd = 1 in HE, should be checked to see if it is capable of containing all fluid-metal tubes
-    N_ch_heater = 10000,
-    L_heater    = 1,
-    N_ch_HTR    = 30000,
-    L_HTR       = 2.5,
-    r_i_HTR     = 1.5e-3,
-    r_o_HTR     = 1.5e-3,
-    N_ch_LTR    = 30000,
-    L_LTR       = 2.5,
-    r_i_LTR     = 1.5e-3,
-    r_o_LTR     = 1.5e-3,
-    Ns_turb     = 30000,
-    Ns_comp     = 30000,
-    Ns_recomp   = 30000,
-    N_ch_cooler = 50000,
-    r_i_cooler  = 0.5e-3,
-    r_t_cooler  = 0.7e-3,
-    r_o_cooler  = 1e-3,    
-    table_k_LTR_wall = table_k_metalwall,
-    table_k_HTR_wall = table_k_metalwall,
+    redeclare package medium_cooler = medium_cooler,   
     
     // results calculated at 2021-05-21 20:07, RCBC without recompressor, Open LOOP
     p_comp_in  = 109.59e5,
@@ -119,10 +97,20 @@ model TestRamp
   )
   annotation(
     Placement(visible = true, transformation(origin = {-120, -32}, extent = {{-6, -6}, {6, 6}}, rotation = 0)));
+
+  Steps.TPComponents.RampSeq_W ramp_p_w(    
+    time_start = 3 * SEC_PER_HOUR,
+    interval = 2 * SEC_PER_HOUR,
+    duration = 0.15 * SEC_PER_HOUR,     
+      
+    offset = st_source.p,
+    ratio_1 = 0.05,
+    ratio_2 = 0.05
+  );
 equation
   
   
   annotation(
-    experiment(StartTime = 0, StopTime = 14400, Interval = 10, Tolerance = 1e-6),
+    experiment(StartTime = 0, StopTime = 36000, Interval = 100, Tolerance = 1e-6),
     __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts");
 end TestRamp;

@@ -90,8 +90,8 @@ model TPDyn_RCBCycle
     r_i_cooler  = 0.5e-3,
     r_t_cooler  = 0.7e-3,
     r_o_cooler  = 1e-3,    
-    table_k_LTR_wall = table_k_metalwall,
-    table_k_HTR_wall = table_k_metalwall,
+    // table_k_LTR_wall = table_k_metalwall,
+    // table_k_HTR_wall = table_k_metalwall,
     
     // results calculated at 2021-05-21 20:07, RCBC without recompressor, Open LOOP
     p_comp_in  = 109.59e5,
@@ -108,9 +108,13 @@ model TPDyn_RCBCycle
     T_heater_cold_out = from_degC(608.148),
     T_cooler_cold_out = from_degC(112.138),
     T_cooler_hot_out  = from_degC(59.279),
+
+    mdot_main   = 128.774, // mdot on 10WMe point
+    mdot_comp   = 88.0661, // mdot on 10WMe point 
+        
+    // mdot_main   = 109.458, // minimum mdot for serial ramp case III in guan's report.    
+    // mdot_comp   = 74.856,  // minimum mdot at above point    
     
-    mdot_main   = 128.774,    
-    mdot_comp   = 88.0661,    
     mdot_heater = 40,
     mdot_cooler = 40.7188
   );
@@ -412,8 +416,8 @@ model TPDyn_RCBCycle
     N_F              = N_seg_LTR,
     SSInit           = true,
     gasQuasiStatic   = false,
-    fluidQuasiStatic = false,
-    table_k_metalwall = cfg.table_k_LTR_wall
+    fluidQuasiStatic = false
+    //table_k_metalwall = cfg.table_k_LTR_wall
   )
   annotation(
     Placement(visible = true, transformation(origin = {20, 32}, extent = {{-8, -8}, {8, 8}}, rotation = 0)));
@@ -438,8 +442,8 @@ model TPDyn_RCBCycle
     redeclare replaceable model HeatTransfer_G = Steps.TPComponents.GnielinskiHeatTransferFV(),
     gasFlow(      
       heatTransfer(
-        pitch = cfg_HTR.cfg_hot.l_pitch,
-        phi   = cfg_HTR.cfg_hot.a_phi,
+        pitch = cfg_HTR.cfg_gas.l_pitch,
+        phi   = cfg_HTR.cfg_gas.a_phi,
         Cf_C1 = Cf_C1,
         Cf_C2 = Cf_C2,
         Cf_C3 = Cf_C3,
@@ -449,8 +453,8 @@ model TPDyn_RCBCycle
     ),
     fluidFlow(      
       heatTransfer(
-        pitch = cfg_HTR.cfg_cold.l_pitch,
-        phi   = cfg_HTR.cfg_cold.a_phi,
+        pitch = cfg_HTR.cfg_fluid.l_pitch,
+        phi   = cfg_HTR.cfg_fluid.a_phi,
         Cf_C1 = Cf_C1,
         Cf_C2 = Cf_C2,
         Cf_C3 = Cf_C3,
@@ -472,8 +476,8 @@ model TPDyn_RCBCycle
     N_F              = N_seg_HTR,
     SSInit           = true,
     gasQuasiStatic   = false,
-    fluidQuasiStatic = false,
-    table_k_metalwall = cfg.table_k_HTR_wall      
+    fluidQuasiStatic = false
+    //table_k_metalwall = cfg.table_k_HTR_wall      
   )
   annotation(
     Placement(visible = true, transformation(origin = {-22, 32}, extent = {{-8, -8}, {8, 8}}, rotation = 0)));
@@ -484,7 +488,11 @@ model TPDyn_RCBCycle
     Placement(visible = true, transformation(origin = {-8, 32}, extent = {{-4, -4}, {4, 4}}, rotation = 0)));
   Steps.TPComponents.GasStateReader r_HTR_cin(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {-22, 46}, extent = {{-4, -4}, {4, 4}}, rotation = -90)));
-  Steps.TPComponents.GasStateReader r_HTR_cout(redeclare package Medium = medium_main) annotation(
+  Steps.TPComponents.GasStateReader r_HTR_cout(
+    redeclare package Medium = medium_main,
+    gas(
+      p(start = cfg_HTR.cfg_cold.st_out.p, nominal = cfg_HTR.cfg_cold.st_out.p),
+      h(start = cfg_HTR.cfg_cold.st_out.h, nominal = cfg_HTR.cfg_cold.st_out.h))) annotation(
     Placement(visible = true, transformation(origin = {-22, 16}, extent = {{-4, -4}, {4, 4}}, rotation = -90)));
 
   ThermoPower.Gas.Turbine turbine(
@@ -534,6 +542,7 @@ model TPDyn_RCBCycle
     redeclare package Medium = medium_cooler, 
     p0    = cfg_cooler.cfg_cold.st_out.p,
     T     = cfg_cooler.cfg_cold.st_out.T,
+    h     = cfg_cooler.cfg_cold.st_out.h,
     use_T = false) 
   annotation(
     Placement(visible = true, transformation(origin = {57, -77}, extent = {{-5, -5}, {5, 5}}, rotation = 270)));
@@ -735,10 +744,10 @@ model TPDyn_RCBCycle
   constant Integer SEC_PER_HOUR = integer(60 * 60 / time_scaling_factor); 
   // constant Real time_scaling_factor = 12; // 5 min = 1 hour
   constant Real time_scaling_factor = 1; // 1 hour = 1 hour
-  // constant Integer SEC_PER_HOUR = 60 * 60;
+  
   /*
   // ramp input to simulate the ramp change in ASPEN+ simulation
-  // ramp change for case I and case II in Guan's report
+  // ramp change for case I in Guan's report
   Steps.TPComponents.RampSeq_W ramp_mdot(    
     time_start = 3 * SEC_PER_HOUR,
     interval = 1 * SEC_PER_HOUR,
@@ -746,12 +755,26 @@ model TPDyn_RCBCycle
     offset = st_source.mdot
   );
   */
-  
-  // ramp input for case III in Guan's report
-  
+  /*
+  // ramp input to simulate the ramp change in ASPEN+ simulation
+  // ramp change for case II in Guan's report
+  Steps.TPComponents.RampSeq_W ramp_p(    
+    time_start = 3 * SEC_PER_HOUR,
+    interval = 2 * SEC_PER_HOUR,
+    duration = 0.15 * SEC_PER_HOUR,     
+      
+    offset = st_source.p,
+    ratio_1 = 0.05,
+    ratio_2 = 0.05
+  )  annotation(
+    Placement(visible = true, transformation(origin = {-120, -32}, extent = {{-6, -6}, {6, 6}}, rotation = 0)));
+  */
+
+  // ramp input for case III in Guan's report  
+
   Modelica.Blocks.Sources.Ramp ramp_mdot(
     final duration  = 0.15 * SEC_PER_HOUR,
-    final startTime = 1 * SEC_PER_HOUR,
+    final startTime = 0.01 * SEC_PER_HOUR, // start after 36s (for test), should be at 1H. 
     
     final height    = -st_sink.mdot * 0.15 / time_scaling_factor,
     final offset    = st_sink.mdot
@@ -759,6 +782,7 @@ model TPDyn_RCBCycle
   annotation(
     Placement(visible = true, transformation(origin = {-119, 21}, extent = {{-5, -5}, {5, 5}}, rotation = 0)));
   
+  /*    
   Steps.TPComponents.RampSeq_TwoStages ramp_p(
     final time_start = 2 * SEC_PER_HOUR,
     final interval   = 1 * SEC_PER_HOUR,
@@ -771,6 +795,7 @@ model TPDyn_RCBCycle
   )
   annotation(
     Placement(visible = true, transformation(origin = {-120, -32}, extent = {{-6, -6}, {6, 6}}, rotation = 0)));
+*/
   
   /*
   // ramp component for transient test
@@ -899,14 +924,20 @@ equation
     Line(points = {{56, -66}, {56, -72}, {57, -72}}, color = {0, 255, 0}, thickness = 0.75));
 
   // ramp input
+  
+  /* 
   connect(ramp_p.y, source.in_p0) annotation(
     Line(points = {{-113, -32}, {-107.5, -32}, {-107.5, -36}, {-108, -36}}, color = {0, 0, 127}));
+  */
+  
+  connect(r_HTR_cout.p, source.in_p0);
+  
   connect(ramp_mdot.y, sink.in_w0) annotation(
     Line(points = {{-113.5, 21}, {-102, 21}, {-102, 30.5}}, color = {0, 0, 127}));
-
+  
   annotation(
     Diagram(coordinateSystem(extent = {{-140, -100}, {140, 100}})),
-    experiment(StartTime = 0, StopTime = 50, Tolerance = 1e-3, Interval = 1),
+    experiment(StartTime = 0, StopTime = 10, Tolerance = 1e-3, Interval = 1),
     __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian",
     // __OpenModelica_simulationFlags(lv = "LOG_DEBUG,LOG_NLS,LOG_NLS_V,LOG_STATS,LOG_INIT,LOG_STDOUT, -w", outputFormat = "mat", s = "dassl", nls = "homotopy"));
     __OpenModelica_simulationFlags(lv = "LOG_DEBUG,LOG_NLS,LOG_STATS,LOG_INIT,LOG_STDOUT -w", newtonFTol = "1e-6", newtonXTol= "1e-6", outputFormat = "mat", s = "dassl", nls = "homotopy"));

@@ -29,60 +29,60 @@ model TestTP_HE
   // HE path -> heater's hot side or cooler's cold side, <-> fluid side of HE
  
     
-  // For Heater test    
-  package medium_HE = Steps.Media.MoltenSalt.MoltenSalt_pT;
-  package medium_main = Steps.Media.SCO2;
+  parameter Real Cf_C1 = 1.626, Cf_C2 = 1, Cf_C3 = 1;
   
   // configs for heater test
-  parameter Model.RCBCycleConfig cfg(
-    redeclare package medium_heater = medium_HE,
-    redeclare package medium_main   = medium_main,
-    // mdot_heater      = 40,
-    // T_heater_hot_in  = from_degC(800),
-    // T_heater_hot_out = from_degC(600),
-    r_i_heater  = 20e-3,
-    r_t_heater  = cfg.r_i_heater + 10e-3,
-    r_o_heater  = 1/2,                      // agree with the final parameter Dhyd = 1 in HE, should be checked to see if it is capable of containing all fluid-metal tubes
-    N_ch_heater = 100,
-    L_heater    = 1
+  parameter Model.RCBCycleConfig cfg(   
+    // results calculated at 2021-05-21 20:07, RCBC without recompressor, Open LOOP
+    p_comp_in  = 109.59e5,
+    p_comp_out = 20e6,    
+    p_heater   = 20e6,    
+    T_HTR_hot_in      = from_degC(556.322),
+    T_HTR_cold_out    = from_degC(521.234),
+    T_HTR_hot_out     = from_degC(330.103),
+    T_HTR_cold_in     = from_degC(303.425),
+    T_LTR_cold_in     = from_degC(119.011),
+    T_LTR_hot_out     = from_degC(164.419),
+    T_heater_hot_in   = from_degC(800),
+    T_heater_hot_out  = from_degC(523.547),
+    T_heater_cold_out = from_degC(608.148),
+    T_cooler_cold_out = from_degC(112.138),
+    T_cooler_hot_out  = from_degC(59.279),
+    
+    mdot_main   = 128.774,    
+    mdot_comp   = 88.0661,    
+    mdot_heater = 40,
+    mdot_cooler = 40.7188  
   );    
-  parameter Model.HeatExchangerConfig cfg_HE  = cfg.cfg_heater;
   /*
-  parameter Model.ThermoState st_source_main  = cfg_HE.cfg_hot.st_in;
-  parameter Model.ThermoState st_sink_main    = cfg_HE.cfg_hot.st_out;
-  parameter Model.ThermoState st_source_HE    = cfg_HE.cfg_cold.st_in;
-  parameter Model.ThermoState st_sink_HE      = cfg_HE.cfg_cold.st_out;
-  */
+  // For Heater test    
+  package medium_HE   = SolarTherm.Media.Sodium.Sodium_pT;
+  package medium_main = Steps.Media.SCO2;
+    
+  parameter Model.HeatExchangerConfig cfg_HE  = cfg.cfg_heater;
+  
   parameter Model.ThermoState st_source_main  = cfg_HE.cfg_cold.st_in;
   parameter Model.ThermoState st_sink_main    = cfg_HE.cfg_cold.st_out;
   parameter Model.ThermoState st_source_HE    = cfg_HE.cfg_hot.st_in;
   parameter Model.ThermoState st_sink_HE      = cfg_HE.cfg_hot.st_out;
   
   parameter Integer N_seg_HE                  = cfg.cfg_heater.cfg_hot.geo_path.N_seg;  
- 
-  /*  
+  */
+  
+  
   // For Cooler test
   package medium_HE = ThermoPower.Water.StandardWater;
-  package medium_main = Steps.Media.SCO2;   
-  
-  parameter Model.RCBCycleConfig cfg(
-    redeclare package medium_cooler = medium_HE,
-    redeclare package medium_main   = medium_main,  
-    mdot_cooler = 30,
-    r_i_cooler  = 10e-3,
-    r_t_cooler  = cfg.r_i_cooler + 5e-3,
-    r_o_cooler  = 1/2,                     // agree with the final parameter Dhyd = 1 in HE, should be checked if it is capable of containing all fluid-metal tubes
-    N_ch_cooler = 100,
-    L_cooler    = 1
-  );        
+  package medium_main = Steps.Media.SCO2;         
 
   parameter Model.HeatExchangerConfig cfg_HE = cfg.cfg_cooler;
+  
   parameter Model.ThermoState st_source_main  = cfg_HE.cfg_hot.st_in;
   parameter Model.ThermoState st_sink_main    = cfg_HE.cfg_hot.st_out;
   parameter Model.ThermoState st_source_HE = cfg_HE.cfg_cold.st_in;
   parameter Model.ThermoState st_sink_HE   = cfg_HE.cfg_cold.st_out;
+  
   parameter Integer N_seg_HE                 = cfg.cfg_cooler.cfg_hot.geo_path.N_seg;
-  */ 
+  
     
   ThermoPower.Water.SourceMassFlow source_HE(
   redeclare package Medium = medium_main, //medium_HE,
@@ -135,6 +135,36 @@ model TestTP_HE
   //Components.HEG2G hE(
     redeclare package FluidMedium              = medium_HE,
     redeclare package FlueGasMedium            = medium_main,
+    
+    // Ngo 
+    redeclare replaceable model HeatTransfer_F = Steps.TPComponents.NgoHeatTransferFV(),
+    redeclare replaceable model HeatTransfer_G = Steps.TPComponents.NgoHeatTransferFV(),
+    gasFlow(      
+      heatTransfer(
+        Cf_C1 = Cf_C1,
+        Cf_C2 = Cf_C2,
+        Cf_C3 = Cf_C3,
+        gamma_min = 1000,
+        gamma_max = 5000        
+      ),
+      Tstartin  = cfg_HE.cfg_gas.st_in.T,
+      Tstartout = cfg_HE.cfg_gas.st_out.T,
+      Nt        = cfg_HE.cfg_gas.N_ch,
+      Dhyd      = cfg_HE.cfg_gas.geo_area.d_hyd
+    ),
+    fluidFlow(      
+      heatTransfer(
+        Cf_C1 = Cf_C1,
+        Cf_C2 = Cf_C2,
+        Cf_C3 = Cf_C3,
+        gamma_min = 2000,
+        gamma_max = 1.5e6
+      ), 
+      fixedMassFlowSimplified = true,
+      hstartin                = cfg_HE.cfg_fluid.st_in.h,
+      hstartout               = cfg_HE.cfg_fluid.st_out.h
+    ),     
+    /*    
     redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer,             //ConstantHeatTransferCoefficientTwoGrids(gamma = thermo_hot.gamma_he),     
     redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer,             //ConstantHeatTransferCoefficient(gamma =  thermo_cold.gamma_he),     
     redeclare model HeatExchangerTopology      = ThermoPower.Thermal.HeatExchangerTopologies.CounterCurrentFlow,
@@ -148,10 +178,11 @@ model TestTP_HE
       Tstartin    = st_source_main.T,
       Tstartout   = st_sink_main.T
     ),
+    */
     cfg             = cfg_HE,
     N_G             = N_seg_HE,                             // N_G and N_F has to be assigned explicitly since they set dimension of Gas and Fluid cells as gasflow.gas[N_G] and fluidflow.gas[N_F]
     N_F             = N_seg_HE,
-    SSInit          = true,
+    SSInit          = false,
     FluidPhaseStart = ThermoPower.Choices.FluidPhase.FluidPhases.Liquid,
     metalTube(
       WallRes   = false,
@@ -222,6 +253,6 @@ equation
 annotation(
     Diagram(graphics),
     experiment(StartTime = 0, StopTime = 1, Tolerance = 1e-2, Interval = 1),
-    __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts,bltdump",    
+    __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts",    
     __OpenModelica_simulationFlags(lv = "LOG_DEBUG,LOG_NLS,LOG_NLS_V,LOG_STATS,LOG_INIT,LOG_STDOUT, -w", outputFormat = "mat", s = "dassl", nls = "homotopy"));
 end TestTP_HE;

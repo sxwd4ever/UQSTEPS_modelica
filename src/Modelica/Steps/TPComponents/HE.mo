@@ -54,11 +54,9 @@ model HE "Heat Exchanger fluid - gas"
     Placement(transformation(extent = {{-10, -66}, {10, -46}}, rotation = 0)));
   
 
-   // works for transient simulation 
-/*   
+   // works for transient simulation  
    Steps.TPComponents.Flow1DFV gasFlow(
-    // Nt = 1, // 1 or Nt ???
-    Nt = Nt,
+    Nt = 1, // should be override for Ngo or GnielinskiHeatTransferFV are used
     N = N_G, 
     Nw = Nw_G, 
     Dhyd = 1, 
@@ -79,41 +77,12 @@ model HE "Heat Exchanger fluid - gas"
     Tstartin    = cfg_G.st_in.T,                                              
     Tstartout   = cfg_G.st_out.T,
     hstartin    = cfg_F.st_in.h,
-    hstartout   = cfg_F.st_out.h,
+    hstartout   = cfg_F.st_out.h,    
     redeclare model HeatTransfer = HeatTransfer_G) 
     annotation(
-      Placement(transformation(extent = {{-12, 66}, {12, 46}}, rotation = 0)));
-*/
+      Placement(transformation(extent = {{-12, 66}, {12, 46}}, rotation = 0))); 
 
-  TPComponents.Flow1DFV gasFlow(
-  // Gas.Flow1DFV gasFlow(
-    redeclare package Medium = FlueGasMedium, 
-    redeclare model HeatTransfer = HeatTransfer_G,
-    Nt          = cfg_G.N_ch,                                               // previously = 1, let config decides  
-    N           = N_G,
-    Nw          = Nw_G,
-    wnom        = gasNomFlowRate,                                           // wnom(total) of gasFlow is different from wnom(for single tube, = gasNomFlowRate /Nt) of HeatTransfer_G  
-    initOpt     = if SSInit then Options.steadyState else Options.noInit,
-    QuasiStatic = gasQuasiStatic,
-    pstart      = pstart_G,
-    L           = gasLength,                                                // Should be L = exchSurface_G ^ 2 / (gasVol * pi * 4), instead of fixed L = 1
-    A           = gasVol / gasLength,                                       // gasVol is account for single tube, 
-    omega       = exchSurface_G / gasLength,                                // exchSurface_G is account for single tube, 
-    Dhyd        = gasVol*4 / exchSurface_G,
-    FFtype      = FFtype_G,
-    Kfnom       = Kfnom_G,
-    dpnom       = dpnom_G,
-    rhonom      = rhonom_G,
-    Cfnom       = Cfnom_G,
-    Tstartbar   = Tstartbar_G,
-    Tstartin    = cfg_G.st_in.T,                                              //bc.st_hot_in.T, 
-    Tstartout   = cfg_G.st_out.T,
-    hstartin    = cfg_G.st_in.h,
-    hstartout   = cfg_G.st_out.h)
-   annotation(
-    Placement(transformation(extent = {{-12, 66}, {12, 46}}, rotation = 0)));
- 
-   /*  
+/* 
   // Shell-and-tube configuration
   
   Gas.Flow1DFV gasFlow(    
@@ -140,7 +109,7 @@ model HE "Heat Exchanger fluid - gas"
     redeclare model HeatTransfer = HeatTransfer_G) 
     annotation(
       Placement(transformation(extent = {{-12, 66}, {12, 46}}, rotation = 0)));  
-   */
+*/
     
   Thermal.MetalTubeFV metalTube(
     Nw = Nw_F, 
