@@ -127,7 +127,8 @@ import Modelica.SIunits.Conversions.{from_degC, from_deg};
       Placement(visible = true, transformation(origin = {-32, 20}, extent = {{-6, -6}, {6, 6}}, rotation = 180)));
  
   ThermoPower.Gas.Compressor compressor(
-    redeclare package Medium = medium_main,
+  // Steps.TPComponents.CompressorFixedP compressor(
+    redeclare package Medium = medium_main,    
     pstart_in  = cfg_comp.st_in.p,
     pstart_out = cfg_comp.st_out.p,
     Tstart_in  = cfg_comp.st_in.T,
@@ -137,18 +138,44 @@ import Modelica.SIunits.Conversions.{from_degC, from_deg};
     tablePR    = tablePR_comp_mc,
     Table      = ThermoPower.Choices.TurboMachinery.TableTypes.matrix,
     Ndesign    = cfg_comp.N,
-    Tdes_in    = cfg_comp.st_in.T)
+    Tdes_in    = cfg_comp.st_in.T,
+    gas_in(
+      p(start = cfg_comp.st_in.p, nominal = cfg_comp.st_in.p), 
+      T(start = cfg_comp.st_in.T, nominal = cfg_comp.st_in.T)),    
+    gas_iso(
+      p(nominal = cfg_comp.st_in.p), 
+      T(nominal = cfg_comp.st_in.T),
+      h(start   = cfg_comp.st_out.h)))
   annotation (Placement(transformation(extent={{-20,-20},{
             20,20}}, rotation=0)));
-            
+  
+  /*          
   Modelica.Mechanics.Rotational.Sources.ConstantSpeed ConstantSpeed_mc(
     w_fixed    = cfg_comp.N,
     useSupport = false)
   annotation (Placement(transformation(
         extent={{-50,-10},{-30,10}}, rotation=0)));
+  */
+  
+  Steps.TPComponents.GasStateReader r_comp_in(redeclare package Medium = Medium); 
+  
+  Steps.TPComponents.FixedPController FPC_mc(
+    redeclare package Medium   = medium_main,
+    tablePhic                  = tablePhic_comp_mc,
+    tablePR                    = tablePR_comp_mc,
+    Table                      = ThermoPower.Choices.TurboMachinery.TableTypes.matrix,
+    Ndesign                    = cfg_comp.N,
+    Tdes_in                    = cfg_comp.st_in.T
+  ) "Fixed pressure controller for main compressor";
+  
+  Modelica.Mechanics.Rotational.Sources.Speed speed_mc(
+    exact = false,
+    w_ref(nominal(cfg_comp.N))
+  );  
 
   ThermoPower.Gas.Compressor recompressor(
-    redeclare package Medium = medium_main,
+  // Steps.TPComponents.CompressorFixedP recompressor(
+    redeclare package Medium = medium_main,    
     pstart_in  = cfg_recomp.st_in.p,
     pstart_out = cfg_recomp.st_out.p,
     Tstart_in  = cfg_recomp.st_in.T,
@@ -158,15 +185,40 @@ import Modelica.SIunits.Conversions.{from_degC, from_deg};
     tablePR    = tablePR_comp_rc,
     Table      = ThermoPower.Choices.TurboMachinery.TableTypes.matrix,
     Ndesign    = cfg_recomp.N,
-    Tdes_in    = cfg_recomp.st_in.T)
+    Tdes_in    = cfg_recomp.st_in.T,
+    gas_in(
+      p(start = cfg_recomp.st_in.p, nominal = cfg_recomp.st_in.p), 
+      T(start = cfg_recomp.st_in.T, nominal = cfg_recomp.st_in.T)),    
+    gas_iso(
+      p(nominal = cfg_recomp.st_in.p), 
+      T(nominal = cfg_recomp.st_in.T),
+      h(start   = cfg_recomp.st_out.h)))
   annotation (Placement(transformation(extent={{-20,-20},{
             20,20}}, rotation=0)));
-            
+  
+  /*          
   Modelica.Mechanics.Rotational.Sources.ConstantSpeed ConstantSpeed_rc(
     w_fixed    = cfg_recomp.N,
     useSupport = false)
   annotation (Placement(transformation(
       extent={{-50,-10},{-30,10}}, rotation=0)));
+  */
+  
+  Steps.TPComponents.GasStateReader r_recomp_in(redeclare package Medium = Medium); 
+  
+  Steps.TPComponents.FixedPController FPC_rc(
+    redeclare package Medium   = medium_main,
+    tablePhic                  = tablePhic_comp_rc,
+    tablePR                    = tablePR_comp_rc,
+    Table                      = ThermoPower.Choices.TurboMachinery.TableTypes.matrix,
+    Ndesign                    = cfg_recomp.N,
+    Tdes_in                    = cfg_recomp.st_in.T
+  ) "Fixed pressure controller for main compressor";
+  
+  Modelica.Mechanics.Rotational.Sources.Speed speed_rc(
+    exact = false,
+    w_ref(nominal(cfg_recomp.N))
+  );    
   
   ThermoPower.Gas.FlowSplit splitter(redeclare package Medium = medium_main);
   
@@ -238,15 +290,35 @@ equation
   connect(splitter.outlet1, r_cooler_hin.inlet);
   connect(r_cooler_hin.outlet, cooler.gasIn);
   connect(cooler.gasOut, r_cooler_hout.inlet);
-  connect(r_cooler_hout.outlet, compressor.inlet);
+  connect(r_cooler_hout.outlet, r_comp_in.inlet);
+  connect(r_comp_in.outlet, compressor.inlet);
+    
+    connect(r_comp_in.p, FPC_mc.p_inlet);
+    connect(r_comp_in.T, FPC_mc.T_inlet);
+    connect(r_comp_in.w, FPC_mc.mdot_inlet);    
+    connect(FPC_mc.omega, speed_mc.w_ref);
+    connect(speed_mc.flange, compressor.shaft_a);
+  
   connect(compressor.outlet, sink.flange);  
   
+    //connect(compressor.shaft_a, ConstantSpeed_mc.flange);
+    // connect(compressor.speed.flange, compressor.shaft_a);    
+    
   // bypass path
-  connect(splitter.outlet2, recompressor.inlet);
+  connect(splitter.outlet2, r_recomp_in.inlet);
+  connect(r_recomp_in.outlet, recompressor.inlet);
+  
+    connect(r_recomp_in.p, FPC_rc.p_inlet);
+    connect(r_recomp_in.T, FPC_rc.T_inlet);
+    connect(r_recomp_in.w, FPC_rc.mdot_inlet);    
+    connect(FPC_rc.omega, speed_rc.w_ref);
+    connect(speed_rc.flange, recompressor.shaft_a);
+    
   connect(recompressor.outlet, sink_bypass.flange);
   
-  connect(compressor.shaft_a, ConstantSpeed_mc.flange);
-  connect(recompressor.shaft_a, ConstantSpeed_rc.flange);
+    //connect(recompressor.speed.flange, recompressor.shaft_a);
+    
+    //connect(recompressor.shaft_a, ConstantSpeed_rc.flange);
   
   // cold side
   connect(source_cooler.flange, r_cooler_cin.inlet);

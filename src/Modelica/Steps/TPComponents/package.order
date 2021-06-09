@@ -18,3 +18,4 @@ CompressorPham
 RampSeq_W
 RampSeq_TwoStages
 CompressorFixedP
+FixedPController

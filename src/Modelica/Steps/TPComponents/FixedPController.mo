@@ -1,17 +1,17 @@
 within Steps.TPComponents;
 
-model CompressorFixedP "Gas compressor using alternative map methodology based on equivalent conditions."
-   extends ThermoPower.Gas.BaseClasses.CompressorBase;
+model FixedPController "A controller to maintain the compressor's outlet pressure by setting the rotational speed"
+   
   import ThermoPower.Choices.TurboMachinery.TableTypes;
+  replaceable package Medium = Modelica.Media.Interfaces.PartialMedium;
+  
+  parameter Medium.Temperature Tdes_in "inlet design temperature";
   parameter SI.AngularVelocity Ndesign "Design velocity";
   parameter Real tablePhic[:, :] = fill(0, 0, 2) "Table for phic(N_T,beta)";
-  parameter Real tableEta[:, :] = fill(0, 0, 2) "Table for eta(N_T,beta)";
   parameter Real tablePR[:, :] = fill(0, 0, 2) "Table for eta(N_T,beta)";
   parameter String fileName = "noName" "File where matrix is stored";
   parameter TableTypes Table = TableTypes.matrix "Selection of the way of definition of table matrix";
   
-  Modelica.Blocks.Tables.CombiTable2D Eta(tableOnFile = if Table == TableTypes.matrix then false else true, table = tableEta, tableName = if Table == TableTypes.matrix then "NoName" else "tabEta", fileName = if Table == TableTypes.matrix then "NoName" else fileName, smoothness = Modelica.Blocks.Types.Smoothness.ContinuousDerivative) annotation(
-    Placement(transformation(extent = {{-12, 60}, {8, 80}}, rotation = 0)));
   Modelica.Blocks.Tables.CombiTable2D PressRatio(tableOnFile = if Table == TableTypes.matrix then false else true, table = tablePR, tableName = if Table == TableTypes.matrix then "NoName" else "tabPR", fileName = if Table == TableTypes.matrix then "NoName" else fileName, smoothness = Modelica.Blocks.Types.Smoothness.ContinuousDerivative) annotation(
     Placement(transformation(extent = {{-12, 0}, {8, 20}}, rotation = 0)));
 
@@ -22,62 +22,38 @@ annotation(
   parameter SI.Pressure p0 = 20e6 "parameter fixed outlet pressure";
   parameter Boolean use_in_p0 = false "Use connector input for the pressure";
   Modelica.Blocks.Interfaces.RealInput in_p0 if use_in_p0;
+
+  Modelica.Blocks.Interfaces.RealInput p_inlet "inlet pressure of the compressor";
+  Modelica.Blocks.Interfaces.RealInput T_inlet "inlet temperature of the compressor";
+  Modelica.Blocks.Interfaces.RealInput mdot_inlet "inlet mass flow";  
   
-  Real N_T "Referred speed ";
+  Real N_T "Referred speed ";  
   Real N_T_design "Referred design velocity";
   Real phic "Flow number ";
   Real beta(start = integer(size(tablePhic, 1) / 2)) "Number of beta line";
-  
-  Modelica.Blocks.Tables.CombiTable2D PressRatio_2(tableOnFile = if Table == TableTypes.matrix then false else true, table = tablePR, tableName = if Table == TableTypes.matrix then "NoName" else "tabPR", fileName = if Table == TableTypes.matrix then "NoName" else fileName, smoothness = Modelica.Blocks.Types.Smoothness.ContinuousDerivative) annotation(
-    Placement(transformation(extent = {{-12, 0}, {8, 20}}, rotation = 0)));
-  
-  Modelica.Blocks.Tables.CombiTable2D Phic_2(tableOnFile = if Table == TableTypes.matrix then false else true, table = tablePhic, tableName = if Table == TableTypes.matrix then "NoName" else "tabPhic", fileName = if Table == TableTypes.matrix then "NoName" else fileName, smoothness = Modelica.Blocks.Types.Smoothness.ContinuousDerivative) 
-annotation(
-    Placement(transformation(extent = {{-12, 30}, {8, 50}}, rotation = 0)));
-
-  Real PR_2 "target pressure ratio";
-  Real beta_2(start = integer(size(tablePhic, 1) / 2));
-  Real N_T_2;
-  Modelica.Blocks.Interfaces.RealOutput omega_2;
-
-  //Modelica.Mechanics.Rotational.Sources.Speed speed;
-
-  Modelica.Mechanics.Rotational.Sources.Speed speed(exact = true);
+  SI.PerUnit PR "pressure ratio";
+  Modelica.Blocks.Interfaces.RealOutput omega "shaft angular velocity - calculated output";
   
 protected
   Modelica.Blocks.Interfaces.RealInput in_p0_internal;  
   
 equation
   N_T_design = Ndesign / sqrt(Tdes_in) "Referred design velocity";
-  N_T = 100 * omega / (sqrt(gas_in.T) * N_T_design) "Referred speed definition, as percentage of design velocity";
-  phic = w * sqrt(gas_in.T) / gas_in.p "Flow number definition";
+  N_T = 100 * omega / (sqrt(T_inlet) * N_T_design) "Referred speed definition, as percentage of design velocity";
+  phic = mdot_inlet * sqrt(T_inlet) / p_inlet "Flow number definition";
+
+// for constant pressure output  
+  PR = in_p0_internal / p_inlet;
+
 // phic = Phic(beta, N_T)
   Phic.u1 = beta;
   Phic.u2 = N_T;
   phic = Phic.y;
-// eta = Eta(beta, N_T)
-  Eta.u1 = beta;
-  Eta.u2 = N_T;
-  eta = Eta.y;
-// PR = PressRatio(beta, N_T)
-  PressRatio.u1 = beta;
-  PressRatio.u2 = N_T;
-  PR = PressRatio.y; 
-
-// for constant pressure output  
-  PR_2 = in_p0_internal / gas_in.p;
-
-// phic = Phic(beta, N_T)
-  Phic_2.u1 = beta_2;
-  Phic_2.u2 = N_T_2;
-  phic = Phic_2.y;
 
 // PR = PressRatio(beta, N_T)  
-  PressRatio_2.u1 = beta_2;
-  PressRatio_2.u2 = N_T_2;
-  PR_2 = PressRatio_2.y;
-  
-  N_T_2 = 100 * omega_2 / (sqrt(gas_in.T) * N_T_design);     
+  PressRatio.u1 = beta;
+  PressRatio.u2 = N_T;
+  PR = PressRatio.y;  
   
   // set the value of speed component
   // need to connect speed.flange with shaft_a/b outside this component to set compressor's speed
@@ -88,7 +64,7 @@ equation
     in_p0_internal = p0 "Pressure set by parameter";
   end if;
     
-  connect(speed.w_ref, omega_2);  
+  // connect(speed.w_ref, omega);  
   // connect(speed.flange, shaft_a);
   
 // Connect protected connectors to public conditional connectors
@@ -126,4 +102,4 @@ This model adds the performance characteristics to the Compressor_Base model, by
      First release.</li>
 </ul>
 </html>"));
-end CompressorFixedP;
+end FixedPController;

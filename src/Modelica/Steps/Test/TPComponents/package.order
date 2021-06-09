@@ -16,3 +16,4 @@ TestTP_ClosedSysInit
 TestTP_PCHE_PHE
 TestTP_Compressor_Torque
 TestTP_CompressorFixedP
+TestTP_CompressorFixedP_w_Controller

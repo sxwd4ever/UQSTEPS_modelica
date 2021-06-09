@@ -1,6 +1,6 @@
 within Steps.Test.TPComponents;
 
-model TestTP_CompressorFixedP
+model TestTP_CompressorFixedP_w_Controller
   "Test for HE in ThermoPower"  
   import Modelica.SIunits.Conversions.{from_degC, from_deg};
   import Modelica.SIunits.{Temperature, Pressure, SpecificEnthalpy};
@@ -138,11 +138,10 @@ model TestTP_CompressorFixedP
     Placement(visible = true, transformation(origin = {-105, 33}, extent = {{-5, -5}, {5, 5}}, rotation = 180)));
 
   
-  Steps.TPComponents.CompressorFixedP Compressor(
-    redeclare package Medium = Medium,
+  ThermoPower.Gas.Compressor Compressor(
+    redeclare package Medium   = Medium,
     pstart_in                  = cfg_comp.st_in.p,
-    pstart_out                 = cfg_comp.st_out.p,
-    p0                         = cfg_comp.st_out.p,
+    pstart_out                 = cfg_comp.st_out.p,    
     Tstart_in                  = cfg_comp.st_in.T,
     Tstart_out                 = cfg_comp.st_out.T,
     tablePhic                  = tablePhic,
@@ -151,22 +150,41 @@ model TestTP_CompressorFixedP
     Table                      = ThermoPower.Choices.TurboMachinery.TableTypes.matrix,
     Ndesign                    = cfg_comp.N,
     Tdes_in                    = cfg_comp.st_in.T,
-    explicitIsentropicEnthalpy = false,    
-    use_in_p0                  = true,
+    explicitIsentropicEnthalpy = false,        
     gas_in(
       p(nominal = cfg_comp.st_in.p), 
       T(nominal = cfg_comp.st_in.T)),
     gas_iso(
-      p(nominal = cfg_comp.st_out.p), 
-      T(nominal = cfg_comp.st_out.T),
+      p(nominal = cfg_comp.st_in.p), 
+      T(nominal = cfg_comp.st_in.T),
       h(start   = cfg_comp.st_out.h))) annotation (Placement(transformation(extent={{-20,-20},{
               20,20}}, rotation=0)));  
   
-  /* 
-  Modelica.Mechanics.Rotational.Sources.ConstantSpeed ConstantSpeed1(
+  Steps.TPComponents.GasStateReader r_comp_in(redeclare package Medium = Medium); 
+  
+
+  Steps.TPComponents.FixedPController controller(
+    redeclare package Medium = Medium,
+    tablePhic                  = tablePhic,
+    tablePR                    = tablePR,
+    Table                      = ThermoPower.Choices.TurboMachinery.TableTypes.matrix,
+    Ndesign                    = cfg_comp.N,
+    Tdes_in                    = cfg_comp.st_in.T
+  );
+
+  
+  /*
+  Modelica.Mechanics.Rotational.Sources.ConstantSpeed speed(
       w_fixed=cfg_comp.N, useSupport=false) annotation (Placement(transformation(
           extent={{-50,-10},{-30,10}}, rotation=0)));
   */
+  
+  Modelica.Mechanics.Rotational.Sources.Speed speed(
+    exact = false,
+    w_ref(nominal(cfg_comp.N))
+  );
+  
+  
   inner ThermoPower.System system
     annotation (Placement(transformation(extent={{80,80},{100,100}})));
   constant Integer SEC_PER_HOUR = integer(60 * 60 / 120);
@@ -203,7 +221,8 @@ protected
   parameter Real tablePR_rc[5, 4]   = [0, 95, 100, 105; 1, 1.967529638, 2.350588505, 2.785882673; 2, 1.915294338, 2.315764972, 2.681412073; 3, 1.810823737, 2.220000255, 2.524706172; 4, 1.654117837, 2.115529655, 2.359294389];
   
 equation
-  connect(SourceP1.flange, Compressor.inlet) annotation (Line(
+  connect(SourceP1.flange, r_comp_in.inlet);
+  connect(r_comp_in.outlet, Compressor.inlet) annotation (Line(
       points={{-60,16},{-16,16}},
       color={159,159,223},
       thickness=0.5));
@@ -211,11 +230,19 @@ equation
       points={{16,16},{40,16}},
       color={159,159,223},
       thickness=0.5));
-  connect(ramp_p.y, SourceP1.in_p0);
   
-  connect(ramp_p_outlet.y, Compressor.in_p0);  
-  connect(Compressor.speed.flange, Compressor.shaft_a);
- 
+  connect(ramp_p.y, SourceP1.in_p0);  
+
+  connect(ramp_p_outlet.y, controller.in_p0);  
+  
+  connect(r_comp_in.p, controller.p_inlet);
+  connect(r_comp_in.T, controller.T_inlet);
+  connect(r_comp_in.w, controller.mdot_inlet);
+
+  connect(controller.omega, speed.w_ref);
+  
+  connect(speed.flange, Compressor.shaft_a);  
+  
   /*
   connect(ConstantSpeed1.flange, Compressor.shaft_a) annotation (Line(
       points={{-30,0},{-30,0},{-26,-0.2},{-12,0}},
@@ -228,4 +255,4 @@ equation
     experiment(StartTime = 0, StopTime = 210, Tolerance = 1e-2, Interval = 10),
     __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts",    
     __OpenModelica_simulationFlags(lv = "LOG_DEBUG,LOG_NLS,LOG_NLS_V,LOG_STATS,LOG_INIT,LOG_STDOUT, -w", outputFormat = "mat", s = "dassl", nls = "homotopy"));
-end TestTP_CompressorFixedP;
+end TestTP_CompressorFixedP_w_Controller;
