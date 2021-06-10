@@ -639,11 +639,9 @@ model TPDyn_RCBCycle
   Steps.TPComponents.WaterStateReader r_cooler_cout(redeclare package Medium = medium_cooler) annotation(
     Placement(visible = true, transformation(origin = {56, -64}, extent = {{-4, -4}, {4, 4}}, rotation = -90)));
 
-  //ThermoPower.Gas.Compressor compressor(
-  TPComponents.CompressorFixedP compressor(
-    redeclare package Medium = medium_main,
-    use_in_p0  = true, // for CompressorFixedP only
-    speed(w_ref(start = cfg_comp.N, nominal=cfg_comp.N)),
+  ThermoPower.Gas.Compressor compressor(
+  // TPComponents.CompressorFixedP compressor(
+    redeclare package Medium = medium_main,        
     pstart_in  = cfg_comp.st_in.p,
     pstart_out = cfg_comp.st_out.p,
     Tstart_in  = cfg_comp.st_in.T,
@@ -673,15 +671,29 @@ model TPDyn_RCBCycle
   
   Steps.TPComponents.GasStateReader r_comp_in(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {101, 3}, extent = {{-5, -5}, {5, 5}}, rotation = 90)));
-
   Steps.TPComponents.GasStateReader r_comp_out(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {118, 22}, extent = {{-4, -4}, {4, 4}}, rotation = 90)));
+  Steps.TPComponents.FixedPController FPC_mc(
+    redeclare package Medium   = medium_main,
+    tablePhic                  = tablePhic_comp_mc,
+    tablePR                    = tablePR_comp_mc,
+    Table                      = ThermoPower.Choices.TurboMachinery.TableTypes.matrix,
+    Ndesign                    = cfg_comp.N,
+    Tdes_in                    = cfg_comp.st_in.T,
+    T_inlet(start = cfg_comp.st_in.T, nominal = cfg_comp.st_in.T),
+    p_inlet(start = cfg_comp.st_in.p, nominal = cfg_comp.st_in.p),
+    mdot_inlet(start = cfg_comp.st_in.mdot, nominal = cfg_comp.st_in.mdot)
+  ) "Fixed pressure controller for main compressor";
+  
+  Modelica.Mechanics.Rotational.Sources.Speed speed_mc(
+    exact = false,
+    w_ref(start = cfg_comp.N, nominal= cfg_comp.N),
+    w(start = cfg_comp.N, nominal = cfg_comp.N)
+  );   
  
   //ThermoPower.Gas.Compressor recompressor(
   TPComponents.CompressorFixedP recompressor(
     redeclare package Medium = medium_main,
-    use_in_p0  = true, // for CompressorFixedP only
-    speed(w_ref(start = cfg_recomp.N, nominal=cfg_recomp.N)),
     pstart_in  = cfg_recomp.st_in.p,
     pstart_out = cfg_recomp.st_out.p,
     Tstart_in  = cfg_recomp.st_in.T,
@@ -712,9 +724,26 @@ model TPDyn_RCBCycle
   
   Steps.TPComponents.GasStateReader r_recomp_in(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {53, 3}, extent = {{5, 5}, {-5, -5}}, rotation = -90)));
-
   Steps.TPComponents.GasStateReader r_recomp_out(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {76, 22}, extent = {{-4, -4}, {4, 4}}, rotation = 90))); 
+
+  Steps.TPComponents.FixedPController FPC_rc(
+    redeclare package Medium   = medium_main,
+    tablePhic                  = tablePhic_comp_rc,
+    tablePR                    = tablePR_comp_rc,
+    Table                      = ThermoPower.Choices.TurboMachinery.TableTypes.matrix,
+    Ndesign                    = cfg_recomp.N,
+    Tdes_in                    = cfg_recomp.st_in.T,
+    T_inlet(start = cfg_recomp.st_in.T, nominal = cfg_recomp.st_in.T),
+    p_inlet(start = cfg_recomp.st_in.p, nominal = cfg_recomp.st_in.p),
+    mdot_inlet(start = cfg_recomp.st_in.mdot, nominal = cfg_recomp.st_in.mdot)
+  ) "Fixed pressure controller for recompressor";
+  
+  Modelica.Mechanics.Rotational.Sources.Speed speed_rc(
+    exact = false,
+    w_ref(start = cfg_recomp.N, nominal= cfg_recomp.N),
+    w(start = cfg_recomp.N, nominal = cfg_recomp.N)
+  ); 
 
   ThermoPower.Gas.FlowSplit splitter(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {37, -3}, extent = {{-5, 5}, {5, -5}}, rotation = -90)));
@@ -870,13 +899,24 @@ equation
 
     connect(splitter.outlet2, r_recomp_in.inlet) annotation(
       Line(points = {{39, -6}, {52, -6}, {52, 0}, {53, 0}}, color = {170, 170, 255}, thickness = 0.5));
+    
+    
     connect(r_recomp_in.outlet, recompressor.inlet) annotation(
       Line(points = {{53, 6}, {52, 6}, {52, 14}, {62, 14}}, color = {170, 170, 255}, thickness = 0.5));
+
+      connect(r_recomp_in.outlet, recompressor.inlet);
+    
+      connect(r_recomp_in.p, FPC_rc.p_inlet);
+      connect(r_recomp_in.T, FPC_rc.T_inlet);
+      connect(r_recomp_in.w, FPC_rc.mdot_inlet);    
+      connect(FPC_rc.omega, speed_rc.w_ref);
+      connect(speed_rc.flange, recompressor.shaft_a);   
+    
     connect(recompressor.outlet, r_recomp_out.inlet) annotation(
       Line(points = {{76, 14}, {76, 20}}, color = {0, 0, 255}, thickness = 0.5));
-      
-      connect(recompressor.speed.flange, recompressor.shaft_a);
+     
       /*
+      connect(recompressor.speed.flange, recompressor.shaft_a);
       connect(recompressor.shaft_b, const_speed_rc.flange) annotation(
         Line(points = {{86, 7}, {74, 7}}));
       */
@@ -892,8 +932,15 @@ equation
     Line(points = {{78, -47}, {101, -47}, {101, 0}}, color = {170, 170, 255}, thickness = 0.5));
   connect(r_comp_in.outlet, compressor.inlet) annotation(
     Line(points = {{101, 6}, {100, 6}, {100, 12}, {106, 12}}, color = {170, 170, 255}, thickness = 0.5));
+   
+    connect(r_comp_in.p, FPC_mc.p_inlet);
+    connect(r_comp_in.T, FPC_mc.T_inlet);
+    connect(r_comp_in.w, FPC_mc.mdot_inlet);    
+    connect(FPC_mc.omega, speed_mc.w_ref);
+
+    connect(speed_mc.flange, compressor.shaft_a);  
     
-    connect(compressor.speed.flange, compressor.shaft_a);
+    // connect(compressor.speed.flange, compressor.shaft_a);
     /*
     connect(compressor.shaft_b, const_speed_mc.flange) annotation(
       Line(points = {{128, 7}, {122.5, 7}, {122.5, 6}, {117, 6}}));
@@ -950,8 +997,8 @@ equation
   connect(ramp_p.y, source.in_p0) annotation(
     Line(points = {{-113, -32}, {-107.5, -32}, {-107.5, -36}, {-108, -36}}, color = {0, 0, 127}));
   
-  connect(ramp_p.y, compressor.in_p0);
-  connect(ramp_p.y, recompressor.in_p0);
+  connect(ramp_p.y, FPC_mc.in_p0);
+  connect(ramp_p.y, FPC_rc.in_p0);
   
   //connect(r_HTR_cout.p, source.in_p0);
   
