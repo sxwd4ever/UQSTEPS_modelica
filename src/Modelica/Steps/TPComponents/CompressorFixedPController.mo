@@ -1,6 +1,6 @@
 within Steps.TPComponents;
 
-model FixedPController "A controller to maintain the compressor's outlet pressure by setting the rotational speed"
+model CompressorFixedPController "A controller to maintain the compressor's outlet pressure by setting the rotational speed"
    
   import ThermoPower.Choices.TurboMachinery.TableTypes;
   replaceable package Medium = Modelica.Media.Interfaces.PartialMedium;
@@ -102,4 +102,4 @@ This model adds the performance characteristics to the Compressor_Base model, by
      First release.</li>
 </ul>
 </html>"));
-end FixedPController;
+end CompressorFixedPController;

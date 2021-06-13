@@ -253,22 +253,22 @@ model TPDyn_RCBCycle
   Steps.TPComponents.GasStateReader r_heater_cout(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {-90, 32}, extent = {{-4, -4}, {4, 4}}, rotation = 180)));
 
-/*
+
   ThermoPower.Gas.SourceMassFlow source(
     redeclare package Medium = medium_main, 
     T         = st_source.T,
     p0        = st_source.p,
     w0        = st_source.mdot,
     use_in_T  = false,
-    use_in_w0 = false,
+    use_in_w0 = true,
     gas(
       p(start = st_source.p, nominal = st_source.p), 
       T(start = st_source.T, nominal = st_source.T)))
       //h(start = st_source.h, nominal = st_source.h)))
   annotation(
     Placement(visible = true, transformation(origin = {-105, -39}, extent = {{-5, -5}, {5, 5}}, rotation = 0)));
-*/
 
+/*
   ThermoPower.Gas.SourcePressure source(
     redeclare package Medium = medium_main, 
     T        = st_source.T,
@@ -280,7 +280,7 @@ model TPDyn_RCBCycle
       T(start = st_source.T, nominal = st_source.T))) 
   annotation(
     Placement(visible = true, transformation(origin = {-105, -39}, extent = {{-5, -5}, {5, 5}}, rotation = 0)));
-
+*/
 
 /*
   ThermoPower.Gas.SourceMassFlow source_mixer_in(
@@ -304,27 +304,30 @@ model TPDyn_RCBCycle
     Placement(transformation(origin = {0, -80}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
 */
  
-/*
+
   ThermoPower.Gas.SinkPressure sink(
     redeclare package Medium = medium_main, 
     p0 = st_sink.p,
     T  = st_sink.T,
-    use_in_p0 = true)
+    use_in_p0 = true,
+    gas(
+      p(start = st_sink.p, nominal = st_sink.p), 
+      T(start = st_sink.T, nominal = st_sink.T)))
   annotation(
     Placement(transformation(origin = {0, -80}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
-*/
 
-
+/*
   ThermoPower.Gas.SinkMassFlow sink(
     redeclare package Medium = medium_main, 
     T        = st_sink.T,
     p0       = st_sink.p,
     use_in_T = false,
-    use_in_w0 = false,
+    use_in_w0 = true,
     w0       = st_sink.mdot
   ) 
   annotation(
     Placement(visible = true, transformation(origin = {-105, 33}, extent = {{-5, -5}, {5, 5}}, rotation = 180)));
+*/
 
 /*
   ThermoPower.Gas.SourceMassFlow source_temp(
@@ -675,11 +678,12 @@ model TPDyn_RCBCycle
     Placement(visible = true, transformation(origin = {118, 22}, extent = {{-4, -4}, {4, 4}}, rotation = 90)));
   Steps.TPComponents.FixedPController FPC_mc(
     redeclare package Medium   = medium_main,
-    tablePhic                  = tablePhic_comp_mc,
-    tablePR                    = tablePR_comp_mc,
-    Table                      = ThermoPower.Choices.TurboMachinery.TableTypes.matrix,
-    Ndesign                    = cfg_comp.N,
-    Tdes_in                    = cfg_comp.st_in.T,
+    tablePhic = tablePhic_comp_mc,
+    tablePR   = tablePR_comp_mc,
+    Table     = ThermoPower.Choices.TurboMachinery.TableTypes.matrix,
+    Ndesign   = cfg_comp.N,
+    Tdes_in   = cfg_comp.st_in.T,
+    use_in_p0 = true,
     T_inlet(start = cfg_comp.st_in.T, nominal = cfg_comp.st_in.T),
     p_inlet(start = cfg_comp.st_in.p, nominal = cfg_comp.st_in.p),
     mdot_inlet(start = cfg_comp.st_in.mdot, nominal = cfg_comp.st_in.mdot)
@@ -729,11 +733,12 @@ model TPDyn_RCBCycle
 
   Steps.TPComponents.FixedPController FPC_rc(
     redeclare package Medium   = medium_main,
-    tablePhic                  = tablePhic_comp_rc,
-    tablePR                    = tablePR_comp_rc,
-    Table                      = ThermoPower.Choices.TurboMachinery.TableTypes.matrix,
-    Ndesign                    = cfg_recomp.N,
-    Tdes_in                    = cfg_recomp.st_in.T,
+    tablePhic = tablePhic_comp_rc,
+    tablePR   = tablePR_comp_rc,
+    Table     = ThermoPower.Choices.TurboMachinery.TableTypes.matrix,
+    Ndesign   = cfg_recomp.N,
+    Tdes_in   = cfg_recomp.st_in.T,
+    use_in_p0 = true,
     T_inlet(start = cfg_recomp.st_in.T, nominal = cfg_recomp.st_in.T),
     p_inlet(start = cfg_recomp.st_in.p, nominal = cfg_recomp.st_in.p),
     mdot_inlet(start = cfg_recomp.st_in.mdot, nominal = cfg_recomp.st_in.mdot)
@@ -786,10 +791,10 @@ model TPDyn_RCBCycle
   
   // value to accelerate the simulation
   constant Integer SEC_PER_HOUR = integer(60 * 60 / time_scaling_factor); 
-  constant Real time_scaling_factor = 12; // 5 min = 1 hour
-  // constant Real time_scaling_factor = 1; // 1 hour = 1 hour
+  // constant Real time_scaling_factor = 12; // 5 min = 1 hour
+  constant Real time_scaling_factor = 1; // 1 hour = 1 hour
   
-  /*
+
   // ramp input to simulate the ramp change in ASPEN+ simulation
   // ramp change for case I in Guan's report
   Steps.TPComponents.RampSeq_W ramp_mdot(    
@@ -798,13 +803,15 @@ model TPDyn_RCBCycle
     duration = 0.15 * SEC_PER_HOUR,       
     offset = st_source.mdot
   );
-  */
 
+  /*
   // ramp input to simulate the ramp change in ASPEN+ simulation
   // ramp change for case II in Guan's report
   Steps.TPComponents.RampSeq_W ramp_p(    
-    time_start = 0.01 * SEC_PER_HOUR, // 3 * SEC_PER_HOUR,
-    interval = 1 * SEC_PER_HOUR, // 2 * SEC_PER_HOUR,
+    // time_start = 0.01 * SEC_PER_HOUR, 
+    // interval = 1 * SEC_PER_HOUR, 
+    time_start = 3 * SEC_PER_HOUR,    
+    interval = 2 * SEC_PER_HOUR,
     duration = 0.15 * SEC_PER_HOUR,     
       
     offset = st_source.p,
@@ -812,7 +819,7 @@ model TPDyn_RCBCycle
     ratio_2 = 0.05
   )  annotation(
     Placement(visible = true, transformation(origin = {-120, -32}, extent = {{-6, -6}, {6, 6}}, rotation = 0)));
-
+  */
 
   // ramp input for case III in Guan's report  
   /*
@@ -900,12 +907,9 @@ equation
     connect(splitter.outlet2, r_recomp_in.inlet) annotation(
       Line(points = {{39, -6}, {52, -6}, {52, 0}, {53, 0}}, color = {170, 170, 255}, thickness = 0.5));
     
-    
     connect(r_recomp_in.outlet, recompressor.inlet) annotation(
       Line(points = {{53, 6}, {52, 6}, {52, 14}, {62, 14}}, color = {170, 170, 255}, thickness = 0.5));
-
-      connect(r_recomp_in.outlet, recompressor.inlet);
-    
+   
       connect(r_recomp_in.p, FPC_rc.p_inlet);
       connect(r_recomp_in.T, FPC_rc.T_inlet);
       connect(r_recomp_in.w, FPC_rc.mdot_inlet);    
@@ -915,8 +919,7 @@ equation
     connect(recompressor.outlet, r_recomp_out.inlet) annotation(
       Line(points = {{76, 14}, {76, 20}}, color = {0, 0, 255}, thickness = 0.5));
      
-      /*
-      connect(recompressor.speed.flange, recompressor.shaft_a);
+      /*      
       connect(recompressor.shaft_b, const_speed_rc.flange) annotation(
         Line(points = {{86, 7}, {74, 7}}));
       */
@@ -940,7 +943,6 @@ equation
 
     connect(speed_mc.flange, compressor.shaft_a);  
     
-    // connect(compressor.speed.flange, compressor.shaft_a);
     /*
     connect(compressor.shaft_b, const_speed_mc.flange) annotation(
       Line(points = {{128, 7}, {122.5, 7}, {122.5, 6}, {117, 6}}));
@@ -993,12 +995,24 @@ equation
 
   // ramp input
   
+  // for case I  
+  connect(ramp_mdot.y, source.in_w0);
+  
+  // connect(ramp_mdot.y, sink.in_w0);
+  // connect(r_heater_cout.p, source.in_p0);
+  
+  connect(r_turb_in.p, FPC_mc.in_p0);
+  connect(r_turb_in.p, FPC_rc.in_p0);  
+  connect(r_turb_in.p, sink.in_p0);
    
+  /*
+  // for case II 
   connect(ramp_p.y, source.in_p0) annotation(
     Line(points = {{-113, -32}, {-107.5, -32}, {-107.5, -36}, {-108, -36}}, color = {0, 0, 127}));
   
   connect(ramp_p.y, FPC_mc.in_p0);
   connect(ramp_p.y, FPC_rc.in_p0);
+  */
   
   //connect(r_HTR_cout.p, source.in_p0);
   
