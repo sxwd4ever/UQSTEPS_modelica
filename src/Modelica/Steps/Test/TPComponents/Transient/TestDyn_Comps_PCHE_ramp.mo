@@ -16,7 +16,7 @@ model TestDyn_Comps_PCHE_ramp
   // package medium_main = Modelica.Media.IdealGases.SingleGases.CO2; //Steps.Media.CO2;
   package medium_main = Steps.Media.SCO2(
     // inputChoice = ExternalMedia.Common.InputChoice.pT,
-    substanceNames = {"CO2|debug=40"}
+    // substanceNames = {"CO2|debug=40"}
   );  
   // package medium_main = ExternalMedia.Examples.CO2CoolProp;
   // package medium_heater = Steps.Media.ThermiaOilD; // out of working range of this 10Mw high T loop
@@ -83,8 +83,8 @@ model TestDyn_Comps_PCHE_ramp
     r_i_cooler  = 0.5e-3,
     r_t_cooler  = 0.7e-3,
     r_o_cooler  = 1e-3,    
-    table_k_LTR_wall = table_k_metalwall,
-    table_k_HTR_wall = table_k_metalwall,    
+    // table_k_LTR_wall = table_k_metalwall,
+    // table_k_HTR_wall = table_k_metalwall,    
     // latest boundary conditions, following values are simulation results with sourcePressure.p = 200 bar and above geometry params
     p_comp_in  = 109.59e5,
     p_comp_out = 20e6,    
@@ -370,8 +370,8 @@ model TestDyn_Comps_PCHE_ramp
     N_F              = N_seg_HTR,
     SSInit           = true,
     gasQuasiStatic   = false,
-    fluidQuasiStatic = false,
-    table_k_metalwall = cfg.table_k_HTR_wall  
+    fluidQuasiStatic = false
+    //table_k_metalwall = cfg.table_k_HTR_wall  
     // metalWall(L = L_wall, w_ch = W_ch, h_ch = H_ch, dx = T_wall),
     // table_k_metalwall = table_k_metalwall
     // metalQuasiStatic = true

@@ -17,4 +17,4 @@ TestTP_PCHE_PHE
 TestTP_Compressor_Torque
 TestTP_CompressorFixedP
 TestTP_CompressorFixedP_w_Controller
-TestTP_CompressorFixedP_ramp_mdot
+TestTP_TurbineFixedP_ramp_mdot

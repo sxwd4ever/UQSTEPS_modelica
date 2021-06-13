@@ -1,7 +1,7 @@
 within Steps.Test.TPComponents;
 
-model TestTP_CompressorFixedP_ramp_mdot
-  "Test for HE in ThermoPower"  
+model TestTP_TurbineFixedP_ramp_mdot
+  "Test for Turbine maintaining fiexd inlet p in ThermoPower"  
   import Modelica.SIunits.Conversions.{from_degC, from_deg};
   import Modelica.SIunits.{Temperature, Pressure, SpecificEnthalpy};
   import Util = Utilities.Util;
@@ -190,7 +190,8 @@ model TestTP_CompressorFixedP_ramp_mdot
     w_ref(start = cfg_turb.N, nominal= cfg_turb.N),
     w(start = cfg_turb.N, nominal = cfg_turb.N)
   ); 
-
+  
+  /*
   ThermoPower.Gas.Compressor Compressor(
     redeclare package Medium = Medium,
     pstart_in                  = cfg_comp.st_in.p,
@@ -213,11 +214,12 @@ model TestTP_CompressorFixedP_ramp_mdot
       h(start   = cfg_comp.st_out.h))) annotation (Placement(transformation(extent={{-20,-20},{
               20,20}}, rotation=0)));  
 
-  /* 
+
   Modelica.Mechanics.Rotational.Sources.ConstantSpeed ConstantSpeed1(
       w_fixed=cfg_comp.N, useSupport=false) annotation (Placement(transformation(
           extent={{-50,-10},{-30,10}}, rotation=0)));
   */
+  
   inner ThermoPower.System system
     annotation (Placement(transformation(extent={{80,80},{100,100}})));
 
@@ -262,10 +264,7 @@ equation
     // connect(const_speed_turb.flange, turbine.shaft_a);
     connect(speed_turb.flange, turbine.shaft_a);
     
-  connect(turbine.outlet, Compressor.inlet);
-  
-  
-  connect(Compressor.outlet, SinkP1.flange) annotation (Line(
+  connect(turbine.outlet, SinkP1.flange) annotation (Line(
       points={{16,16},{40,16}},
       color={159,159,223},
       thickness=0.5));
@@ -288,4 +287,4 @@ equation
     experiment(StartTime = 0, StopTime = 2100, Tolerance = 1e-2, Interval = 100),
     __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts",    
     __OpenModelica_simulationFlags(lv = "LOG_DEBUG,LOG_NLS,LOG_NLS_V,LOG_STATS,LOG_INIT,LOG_STDOUT, -w", outputFormat = "mat", s = "dassl", nls = "homotopy"));
-end TestTP_CompressorFixedP_ramp_mdot;
+end TestTP_TurbineFixedP_ramp_mdot;
