@@ -15,13 +15,13 @@ model TurbineFixedPController "A controller to maintain the compressor's outlet 
 annotation(
     Placement(transformation(extent = {{-12, 30}, {8, 50}}, rotation = 0)));
 
-  parameter SI.Pressure p0    = 20e6 "parameter fixed outlet pressure";
-  parameter Boolean use_in_p0 = false "Use connector input for the pressure";
-  Modelica.Blocks.Interfaces.RealInput in_p0 if use_in_p0;
+  parameter SI.Pressure p2    = 20e6 "parameter fixed outlet pressure";
+  parameter Boolean use_in_p2 = false "Use connector input for the pressure";
+  Modelica.Blocks.Interfaces.RealInput in_p2 if use_in_p2;
 
-  Modelica.Blocks.Interfaces.RealInput p_inlet "inlet pressure of the compressor";
-  Modelica.Blocks.Interfaces.RealInput T_inlet "inlet temperature of the compressor";
-  Modelica.Blocks.Interfaces.RealInput mdot_inlet "inlet mass flow";  
+  Modelica.Blocks.Interfaces.RealInput in_p1 "inlet pressure of the compressor";
+  Modelica.Blocks.Interfaces.RealInput in_T1 "inlet temperature of the compressor";
+  Modelica.Blocks.Interfaces.RealInput in_w1 "inlet mass flow";  
   
   Real N_T "Referred speed ";  
   Real N_T_design "Referred design velocity";
@@ -30,17 +30,17 @@ annotation(
   Modelica.Blocks.Interfaces.RealOutput omega "shaft angular velocity - calculated output";
   
 protected
-  Modelica.Blocks.Interfaces.RealInput in_p0_internal;  
+  Modelica.Blocks.Interfaces.RealInput in_p2_internal;  
   
 equation
   N_T_design = Ndesign / sqrt(Tdes_in) "Referred design velocity";
-  N_T = 100 * omega / (sqrt(T_inlet) * N_T_design) "Referred speed definition, as percentage of design velocity";
-  // phic = mdot_inlet * sqrt(T_inlet) / p_inlet "Flow number definition";
-  phic = mdot_inlet * sqrt(T_inlet) / p_inlet "Flow number definition";
+  N_T = 100 * omega / (sqrt(in_T1) * N_T_design) "Referred speed definition, as percentage of design velocity";
+  // phic = in_w1 * sqrt(in_T1) / in_p1 "Flow number definition";
+  phic = in_w1 * sqrt(in_T1) / in_p1 "Flow number definition";
 
 // for constant pressure output  
-  // PR = in_p0_internal / 20e6;
-  PR = p_inlet / in_p0_internal;
+  // PR = in_p2_internal / 20e6;
+  PR = in_p1 / in_p2_internal;
 
 // phic = Phic(beta, N_T)
   Phic.u1 = PR;
@@ -52,15 +52,15 @@ equation
   // can not do it in this component (as in the commented line below)
   // since it will create under-determined situation. 
   
-  if not use_in_p0 then
-    in_p0_internal = p0 "Pressure set by parameter";
+  if not use_in_p2 then
+    in_p2_internal = p2 "Pressure set by parameter";
   end if;
     
   // connect(speed.w_ref, omega);  
   // connect(speed.flange, shaft_a);
   
 // Connect protected connectors to public conditional connectors
-  connect(in_p0, in_p0_internal);
+  connect(in_p2, in_p2_internal);
     
   annotation(
     Documentation(info = "<html>

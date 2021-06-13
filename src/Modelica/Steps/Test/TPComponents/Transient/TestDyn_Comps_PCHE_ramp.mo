@@ -247,7 +247,11 @@ model TestDyn_Comps_PCHE_ramp
   ThermoPower.Gas.SinkPressure sink(
     redeclare package Medium = medium_main,
     T  = st_sink.T,
-    p0 = st_sink.p)
+    p0 = st_sink.p,
+    use_in_p0 = true,
+    gas(
+      p(nominal = st_sink.p), 
+      T(nominal = st_sink.T)))
   annotation(
     Placement(transformation(extent = {{60, -10}, {80, 10}}, rotation = 0)));
 /*
@@ -416,12 +420,31 @@ model TestDyn_Comps_PCHE_ramp
     annotation(
       Placement(transformation(extent = {{-40, -20}, {0, 20}}, rotation = 0)));
 
-  Modelica.Mechanics.Rotational.Sources.ConstantSpeed const_speed_comp(
+  Modelica.Mechanics.Rotational.Sources.ConstantSpeed const_speed_turb(
       w_fixed=cfg_turb.N, useSupport=false) annotation(
     Placement(visible = true, transformation(origin = {81, -7}, extent = {{-5, -5}, {5, 5}}, rotation = 0)));  
  
-  ThermoPower.Gas.SensT sens_turbine(redeclare package Medium = medium_main) annotation(
-    Placement(visible = true, transformation(origin = {20, 44}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
+  Steps.TPComponents.GasStateReader r_turb_in(redeclare package Medium = medium_main) annotation(
+    Placement(visible = true, transformation(origin = {-92, -38}, extent = {{-4, -4}, {4, 4}}, rotation = 0)));
+
+  Steps.TPComponents.TurbineFixedPController FPC_turb(
+    redeclare package Medium   = medium_main,
+    fileName  = Modelica.Utilities.Files.loadResource("modelica://Steps/Resources/Data/turbine_map.txt"),
+    tablePhic = fill(0.0, 14, 12), 
+    Table     = ThermoPower.Choices.TurboMachinery.TableTypes.file,
+    Ndesign   = cfg_turb.N,
+    Tdes_in   = cfg_turb.st_in.T,
+    use_in_p0 = true,    
+    T_inlet(start = cfg_turb.st_in.T, nominal = cfg_turb.st_in.T),
+    p_inlet(start = cfg_turb.st_in.p, nominal = cfg_turb.st_in.p),
+    mdot_inlet(start = cfg_turb.st_in.mdot, nominal = cfg_turb.st_in.mdot)
+  ) "Fixed pressure controller for main compressor";
+   
+  Modelica.Mechanics.Rotational.Sources.Speed speed_turb(
+    exact = false,
+    w_ref(start = cfg_turb.N, nominal= cfg_turb.N),
+    w(start = cfg_turb.N, nominal = cfg_turb.N)
+  ); 
 
 /*
   // Input signals for transient simulation
@@ -471,7 +494,10 @@ model TestDyn_Comps_PCHE_ramp
   final startTime = 3,
   final offset    = st_source.mdot);
   
-
+  Modelica.Blocks.Sources.Constant p_constant_source(k(start = st_source.p, nominal = st_source.p));
+  
+  Modelica.Blocks.Sources.Constant p_constant_sink(k(start = st_sink.p, nominal = st_sink.p));
+  
 protected
   parameter Real tablePhic[5, 4] = [1, 37, 80, 100; 1.5, 7.10E-05, 7.10E-05, 7.10E-05; 2, 8.40E-05, 8.40E-05, 8.40E-05; 2.5, 8.70E-05, 8.70E-05, 8.70E-05; 3, 1.04E-04, 1.04E-04, 1.04E-04];
   parameter Real tableEta[5, 4] = [1, 37, 80, 100; 1.5, 0.57, 0.89, 0.81; 2, 0.46, 0.82, 0.88; 2.5, 0.41, 0.76, 0.85; 3, 0.38, 0.72, 0.82];
@@ -640,14 +666,23 @@ equation
   connect(r_HTR_cout.outlet, r_heater_cin.inlet);
   connect(r_heater_cin.outlet, heater.gasIn);    
   connect(heater.gasOut, r_heater_cout.inlet);
-  connect(r_heater_cout.outlet, Turbine1.inlet);  
-  connect(Turbine1.outlet, sens_turbine.inlet) annotation(
-   Line(points = {{-50, 0}, {-20, 0}}, color = {159, 159, 223}, thickness = 0.5, smooth = Smooth.None));   
-
-    connect(Turbine1.shaft_b, const_speed_comp.flange) annotation(
+  connect(r_heater_cout.outlet, r_turb_in.inlet);
+  connect(r_turb_in.outlet, Turbine1.inlet);  
+  
+    /*
+    connect(Turbine1.shaft_b, const_speed_turb.flange) annotation(
       Line(points = {{30, 0}, {74, 0}, {74, 0}, {74, 0}}));
-
-  connect(sens_turbine.outlet, r_HTR_hin.inlet);
+    */
+    
+    connect(r_turb_in.T, FPC_turb.T_inlet);
+    connect(r_turb_in.w, FPC_turb.mdot_inlet);
+    connect(p_constant_source.y, FPC_turb.p_inlet);
+    connect(FPC_turb.omega, speed_turb.w_ref);
+    connect(speed_turb.flange, Turbine1.shaft_a);
+    
+    connect(p_constant_sink.y, FPC_turb.in_p0);    
+    
+  connect(Turbine1.outlet, r_HTR_hin.inlet);
   connect(r_HTR_hin.outlet, HTR.gasIn);  
   connect(HTR.gasOut, r_HTR_hout.inlet);
   connect(r_HTR_hout.outlet, sink.flange);   
@@ -682,7 +717,7 @@ equation
   connect(Turbine1.outlet, sens_turbine.inlet) annotation(
    Line(points = {{-50, 0}, {-20, 0}}, color = {159, 159, 223}, thickness = 0.5, smooth = Smooth.None));   
 
-    connect(Turbine1.shaft_b, const_speed_comp.flange) annotation(
+    connect(Turbine1.shaft_b, const_speed_turb.flange) annotation(
       Line(points = {{30, 0}, {74, 0}, {74, 0}, {74, 0}}));
 
   connect(sens_turbine.outlet, r_HTR_hin.inlet);
@@ -746,6 +781,7 @@ equation
 */
 
   connect(ramp1.y, source.in_w0);
+  connect(p_constant_sink.y, sink.in_p0);
 
 annotation(
     Diagram(graphics),

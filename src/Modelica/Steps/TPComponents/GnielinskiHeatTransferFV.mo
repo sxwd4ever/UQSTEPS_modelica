@@ -202,13 +202,14 @@ equation
       gamma[j] = noEvent(1 / (1 / hc[j] + t_wall / k_wall[j]));
     end if;
     */
+    /*
     MyUtil.myAssert(
     debug = false, 
     val_test = gamma[j], min = gamma_min, max = gamma_max,
     name_val = "gamma[j]", 
     val_ref = {j, T_vol[j], p[j], Re[j], G_vol[j], Dhyd, mu_vol[j], Pr[j], cp_vol[j], hc[j], t_wall, k_wall[j]}, 
     name_val_ref = {"j", "T_vol[j]", "p[j]", "Re[j]", "G_vol[j]", "Dhyd", "mu_vol[j]", "Pr[j]", "cp_vol[j]", "hc[j]", "t_wall", "k_wall[j]"});  
-
+    */
 /*    
     MyUtil.myAssert(
     debug = false, 

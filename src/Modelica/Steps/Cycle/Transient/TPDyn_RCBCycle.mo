@@ -528,30 +528,24 @@ model TPDyn_RCBCycle
   Steps.TPComponents.GasStateReader r_turb_out(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {-42, -30}, extent = {{-4, -4}, {4, 4}}, rotation = 90)));
 
-  /*
+
   Modelica.Mechanics.Rotational.Sources.ConstantSpeed const_speed_turb(
       w_fixed=cfg_turb.N, useSupport=false) annotation(
     Placement(visible = true, transformation(origin = {-49, -47}, extent = {{5, -5}, {-5, 5}}, rotation = 0)));
-  */
  
   Steps.TPComponents.TurbineFixedPController FPC_turb(
     redeclare package Medium   = medium_main,
-    fileName  = Modelica.Utilities.Files.loadResource("modelica://Steps/Resources/Data/turbine_map_2.txt"),
+    fileName  = Modelica.Utilities.Files.loadResource("modelica://Steps/Resources/Data/turbine_map.txt"),
     tablePhic = fill(0.0, 14, 12), 
     Table     = ThermoPower.Choices.TurboMachinery.TableTypes.file,
     Ndesign   = cfg_turb.N,
     Tdes_in   = cfg_turb.st_in.T,
-    use_in_p0 = true,    
-    T_inlet(start = cfg_turb.st_in.T, nominal = cfg_turb.st_in.T),
-    p_inlet(start = cfg_turb.st_in.p, nominal = cfg_turb.st_in.p),
-    mdot_inlet(start = cfg_turb.st_in.mdot, nominal = cfg_turb.st_in.mdot)
-  ) "Fixed pressure controller for main compressor";
-  
-  Modelica.Mechanics.Rotational.Sources.ConstantSpeed const_speed_turb(
-      w_fixed=cfg_turb.N, useSupport=false) annotation(
-    Placement(visible = true, transformation(origin = {-49, -47}, extent = {{5, -5}, {-5, 5}}, rotation = 0)));
-   
-  
+    use_in_p2 = true,    
+    in_T1(start = cfg_turb.st_in.T, nominal = cfg_turb.st_in.T),
+    in_p1(start = cfg_turb.st_in.p, nominal = cfg_turb.st_in.p),
+    in_w1(start = cfg_turb.st_in.mdot, nominal = cfg_turb.st_in.mdot)
+  ) "Fixed pressure controller for main compressor";  
+
   Modelica.Mechanics.Rotational.Sources.Speed speed_turb(
     exact = false,
     w_ref(start = cfg_turb.N, nominal= cfg_turb.N),
@@ -691,13 +685,13 @@ model TPDyn_RCBCycle
       h(start   = cfg_comp.st_out.h)))
   annotation(
     Placement(visible = true, transformation(origin = {112, 6}, extent = {{-8, -8}, {8, 8}}, rotation = 0)));
-  /*          
+
   Modelica.Mechanics.Rotational.Sources.ConstantSpeed const_speed_mc(
     w_fixed    = cfg_comp.N,
     useSupport = false)
   annotation(
     Placement(visible = true, transformation(origin = {133, 7}, extent = {{5, -5}, {-5, 5}}, rotation = 0)));
-  */
+
   
   Steps.TPComponents.GasStateReader r_comp_in(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {101, 3}, extent = {{-5, -5}, {5, 5}}, rotation = 90)));
@@ -710,10 +704,10 @@ model TPDyn_RCBCycle
     Table     = ThermoPower.Choices.TurboMachinery.TableTypes.matrix,
     Ndesign   = cfg_comp.N,
     Tdes_in   = cfg_comp.st_in.T,
-    use_in_p0 = true,
-    T_inlet(start = cfg_comp.st_in.T, nominal = cfg_comp.st_in.T),
-    p_inlet(start = cfg_comp.st_in.p, nominal = cfg_comp.st_in.p),
-    mdot_inlet(start = cfg_comp.st_in.mdot, nominal = cfg_comp.st_in.mdot)
+    use_in_p2 = true,
+    in_T1(start = cfg_comp.st_in.T, nominal = cfg_comp.st_in.T),
+    in_p1(start = cfg_comp.st_in.p, nominal = cfg_comp.st_in.p),
+    in_w1(start = cfg_comp.st_in.mdot, nominal = cfg_comp.st_in.mdot)
   ) "Fixed pressure controller for main compressor";
   
   Modelica.Mechanics.Rotational.Sources.Speed speed_mc(
@@ -744,14 +738,12 @@ model TPDyn_RCBCycle
       h(start   = cfg_recomp.st_out.h)))
   annotation(
     Placement(visible = true, transformation(origin = {69, 7}, extent = {{-9, -9}, {9, 9}}, rotation = 0)));
-  
-  /*          
+         
   Modelica.Mechanics.Rotational.Sources.ConstantSpeed const_speed_rc(
     w_fixed    = cfg_recomp.N,
     useSupport = false)
   annotation(
     Placement(visible = true, transformation(origin = {91, 7}, extent = {{5, -5}, {-5, 5}}, rotation = 0)));
-  */
   
   Steps.TPComponents.GasStateReader r_recomp_in(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {53, 3}, extent = {{5, 5}, {-5, -5}}, rotation = -90)));
@@ -765,10 +757,10 @@ model TPDyn_RCBCycle
     Table     = ThermoPower.Choices.TurboMachinery.TableTypes.matrix,
     Ndesign   = cfg_recomp.N,
     Tdes_in   = cfg_recomp.st_in.T,
-    use_in_p0 = true,
-    T_inlet(start = cfg_recomp.st_in.T, nominal = cfg_recomp.st_in.T),
-    p_inlet(start = cfg_recomp.st_in.p, nominal = cfg_recomp.st_in.p),
-    mdot_inlet(start = cfg_recomp.st_in.mdot, nominal = cfg_recomp.st_in.mdot)
+    use_in_p2 = true,
+    in_T1(start = cfg_recomp.st_in.T, nominal = cfg_recomp.st_in.T),
+    in_p1(start = cfg_recomp.st_in.p, nominal = cfg_recomp.st_in.p),
+    in_w1(start = cfg_recomp.st_in.mdot, nominal = cfg_recomp.st_in.mdot)
   ) "Fixed pressure controller for recompressor";
   
   Modelica.Mechanics.Rotational.Sources.Speed speed_rc(
@@ -818,8 +810,8 @@ model TPDyn_RCBCycle
   
   // value to accelerate the simulation
   constant Integer SEC_PER_HOUR = integer(60 * 60 / time_scaling_factor); 
-  // constant Real time_scaling_factor = 12; // 5 min = 1 hour
-  constant Real time_scaling_factor = 1; // 1 hour = 1 hour
+  constant Real time_scaling_factor = 12; // 5 min = 1 hour
+  // constant Real time_scaling_factor = 1; // 1 hour = 1 hour
   
 
   // ramp input to simulate the ramp change in ASPEN+ simulation
@@ -831,9 +823,9 @@ model TPDyn_RCBCycle
     offset = st_source.mdot
   );
 
-  Modelica.Blocks.Sources.Constant p_constant_source(k(start = st_source.p, nominal = st_source.p));
+  Modelica.Blocks.Sources.Constant p_const_TIP(k(start = cfg_turb.st_in.p, nominal = cfg_turb.st_in.p));
   
-  Modelica.Blocks.Sources.Constant p_constant_sink(k(start = st_sink.p, nominal = st_sink.p));
+  Modelica.Blocks.Sources.Constant p_const_CIP(k(start = cfg_comp.st_in.p, nominal = cfg_comp.st_in.p));
   
 
   /*
@@ -913,20 +905,22 @@ equation
   connect(r_turb_in.outlet, turbine.inlet) annotation(
     Line(points = {{-90, -38}, {-80, -38}}, color = {0, 0, 255}, thickness = 1));  
   
-    connect(r_turb_in.T, FPC_turb.T_inlet);
-    connect(r_turb_in.w, FPC_turb.mdot_inlet);
-    connect(p_constant_source.y, FPC_turb.mdot_inlet); // set the object inlet pressure 
+    connect(r_turb_in.T, FPC_turb.in_T1);
+    connect(r_turb_in.w, FPC_turb.in_w1);
+    connect(p_const_TIP.y, FPC_turb.in_p1); // set the target inlet pressure 
+    connect(p_const_CIP.y, FPC_turb.in_p2); // set the target outlet pressure
     
     connect(FPC_turb.omega, speed_turb.w_ref);
+    
     connect(speed_turb.flange, turbine.shaft_a);
-  
+    
   connect(turbine.outlet, r_turb_out.inlet) annotation(
     Line(points = {{-64, -38}, {-42, -38}, {-42, -32}}, color = {170, 170, 255}, thickness = 1));
     
     /*
     connect(turbine.shaft_b, const_speed_turb.flange) annotation(
       Line(points = {{-54, -47}, {-60, -47}, {-60, -46}, {-66, -46}}));      
-    */    
+    */
     
   connect(r_turb_out.outlet, r_HTR_hin.inlet) annotation(
     Line(points = {{-42, -28}, {-42, 32}, {-38, 32}}, color = {170, 170, 255}, thickness = 1));   
@@ -952,20 +946,22 @@ equation
     connect(r_recomp_in.outlet, recompressor.inlet) annotation(
       Line(points = {{53, 6}, {52, 6}, {52, 14}, {62, 14}}, color = {170, 170, 255}, thickness = 0.5));
    
-      connect(r_recomp_in.p, FPC_rc.p_inlet);
-      connect(r_recomp_in.T, FPC_rc.T_inlet);
-      connect(r_recomp_in.w, FPC_rc.mdot_inlet);    
+      connect(r_recomp_in.p, FPC_rc.in_p1);
+      connect(r_recomp_in.T, FPC_rc.in_T1);
+      connect(r_recomp_in.w, FPC_rc.in_w1);    
+      connect(p_const_TIP.y, FPC_rc.in_p2);  // set the target outlet pressure   
+      
       connect(FPC_rc.omega, speed_rc.w_ref);
       
       // free the shaft speed of re-compressor
-      connect(speed_rc.flange, recompressor.shaft_a);   
+      // connect(speed_rc.flange, recompressor.shaft_a);   
     
     connect(recompressor.outlet, r_recomp_out.inlet) annotation(
       Line(points = {{76, 14}, {76, 20}}, color = {0, 0, 255}, thickness = 0.5));
-     
-      /*      
+          
+      /*     
       connect(recompressor.shaft_b, const_speed_rc.flange) annotation(
-        Line(points = {{86, 7}, {74, 7}}));
+        Line(points = {{86, 7}, {74, 7}}));      
       */
       
     connect(r_recomp_out.outlet, mixer.inlet2) annotation(
@@ -980,21 +976,24 @@ equation
   connect(r_comp_in.outlet, compressor.inlet) annotation(
     Line(points = {{101, 6}, {100, 6}, {100, 12}, {106, 12}}, color = {170, 170, 255}, thickness = 0.5));
    
-    connect(r_comp_in.p, FPC_mc.p_inlet);
-    connect(r_comp_in.T, FPC_mc.T_inlet);
-    connect(r_comp_in.w, FPC_mc.mdot_inlet);    
+    connect(r_comp_in.p, FPC_mc.in_p1);
+    connect(r_comp_in.T, FPC_mc.in_T1);
+    connect(r_comp_in.w, FPC_mc.in_w1);     
+    connect(p_const_TIP.y, FPC_mc.in_p2);  // set the target outlet pressure       
+    
     connect(FPC_mc.omega, speed_mc.w_ref);
 
     // free the shaft speed of main compressor
-    connect(speed_mc.flange, compressor.shaft_a);  
+    connect(speed_mc.flange, compressor.shaft_a);      
+  
+  connect(compressor.outlet, r_comp_out.inlet) annotation(
+    Line(points = {{118, 12}, {118, 20}}, color = {0, 0, 255}, thickness = 0.5));
     
     /*
     connect(compressor.shaft_b, const_speed_mc.flange) annotation(
       Line(points = {{128, 7}, {122.5, 7}, {122.5, 6}, {117, 6}}));
     */
     
-  connect(compressor.outlet, r_comp_out.inlet) annotation(
-    Line(points = {{118, 12}, {118, 20}}, color = {0, 0, 255}, thickness = 0.5));
   connect(r_comp_out.outlet, r_LTR_cin.inlet) annotation(
     Line(points = {{118, 24}, {118, 64}, {20, 64}, {20, 48}}, color = {0, 0, 255}, thickness = 0.5));
   connect(r_LTR_cin.outlet, LTR.waterIn) annotation(
@@ -1042,17 +1041,11 @@ equation
   
   // for case I  
   connect(ramp_mdot.y, source.in_w0);
+  // set target outlet pressure
+  connect(p_const_TIP.y, sink.in_p0);
+ 
   
-  // connect(ramp_mdot.y, sink.in_w0);
-  // connect(r_heater_cout.p, source.in_p0);
-  
-  connect(r_turb_in.p, FPC_mc.in_p0);
-  connect(r_turb_in.p, FPC_rc.in_p0);  
-  
-  connect(p_constant_sink.y, sink.in_p0);
-  connect(p_constant_sink.y, FPC_turb.in_p0);
-  
-  //connect(r_turb_in.p, sink.in_p0);
+
    
   /*
   // for case II 
