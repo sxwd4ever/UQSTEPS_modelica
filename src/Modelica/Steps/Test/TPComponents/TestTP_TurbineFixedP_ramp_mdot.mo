@@ -175,9 +175,9 @@ model TestTP_TurbineFixedP_ramp_mdot
     Ndesign   = cfg_turb.N,
     Tdes_in   = cfg_turb.st_in.T,
     use_in_p0 = true,    
-    T_inlet(start = cfg_turb.st_in.T, nominal = cfg_turb.st_in.T),
-    p_inlet(start = cfg_turb.st_in.p, nominal = cfg_turb.st_in.p),
-    mdot_inlet(start = cfg_turb.st_in.mdot, nominal = cfg_turb.st_in.mdot)
+    in_T1(start = cfg_turb.st_in.T, nominal = cfg_turb.st_in.T),
+    in_p1(start = cfg_turb.st_in.p, nominal = cfg_turb.st_in.p),
+    in_w1(start = cfg_turb.st_in.mdot, nominal = cfg_turb.st_in.mdot)
   ) "Fixed pressure controller for main compressor";
   
   Modelica.Mechanics.Rotational.Sources.ConstantSpeed const_speed_turb(

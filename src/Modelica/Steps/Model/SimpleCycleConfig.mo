@@ -27,7 +27,8 @@ model SimpleCycleConfig
   parameter Modelica.SIunits.Pressure p_source     = 8.65e6;
   parameter Modelica.SIunits.Pressure p_comp_out   = 12e6;
   parameter Modelica.SIunits.Pressure p_heater_hin = 4e6;
-  parameter Modelica.SIunits.Pressure p_sink       = 9.2e6;
+  // parameter Modelica.SIunits.Pressure p_sink       = 9.2e6;
+  parameter Modelica.SIunits.Pressure p_sink       = p_source; // try to equal the source and sink's pressure
 
   parameter Modelica.SIunits.MassFlowRate mdot_main   = 10.5;
   parameter Modelica.SIunits.MassFlowRate mdot_heater = 10;
@@ -135,6 +136,8 @@ model SimpleCycleConfig
       l_pitch  = l_pitch_h,
       a_phi    = a_phi_h
     ),
+    cfg_fluid  = cfg_cold,
+    cfg_gas    = cfg_hot,
     cfg_wall(
       st_init  = st_heater_hin,
       geo_area = ga_heater_wall,

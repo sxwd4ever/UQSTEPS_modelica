@@ -88,7 +88,7 @@ model TestTP_CompressorFixedP_w_Controller
   //configuration for main compressor          
   parameter Modelica.SIunits.Temperature T_comp_des = from_degC(45) "Design temperature for main compressor";
   
-
+  /*
   ThermoPower.Gas.SourcePressure SourceP1(
     redeclare package Medium = Medium, 
     T        = st_source.T,
@@ -100,21 +100,20 @@ model TestTP_CompressorFixedP_w_Controller
       T(start = st_source.T, nominal = st_source.T))) 
   annotation(
     Placement(visible = true, transformation(origin = {-105, -39}, extent = {{-5, -5}, {5, 5}}, rotation = 0)));
+  */
 
-
-  /* 
+ 
   ThermoPower.Gas.SourceMassFlow SourceP1(
     redeclare package Medium = Medium,
     p0 = st_source.p,
     T  = st_source.T,
     w0 = st_source.mdot,
+    use_in_w0 = true,
     gas(
       p(nominal = st_source.p), 
       T(nominal=st_source.T))) 
-      annotation (Placement(transformation(extent={{-80,6},{-60,26}},rotation=0)));
-  */
-  
-/* 
+      annotation (Placement(transformation(extent={{-80,6},{-60,26}},rotation=0)));  
+ 
   ThermoPower.Gas.SinkPressure SinkP1(
     redeclare package Medium = Medium,
     p0=st_sink.p,
@@ -124,8 +123,8 @@ model TestTP_CompressorFixedP_w_Controller
       p(nominal = st_sink.p), 
       T(nominal = st_sink.T))) 
       annotation (Placement(transformation(extent={{40,6},{60,26}}, rotation=0)));
-*/
 
+/*
   ThermoPower.Gas.SinkMassFlow SinkP1(
     redeclare package Medium = Medium, 
     T        = st_sink.T,
@@ -136,7 +135,7 @@ model TestTP_CompressorFixedP_w_Controller
   ) 
   annotation(
     Placement(visible = true, transformation(origin = {-105, 33}, extent = {{-5, -5}, {5, 5}}, rotation = 180)));
-
+*/
   
   ThermoPower.Gas.Compressor Compressor(
     redeclare package Medium   = Medium,
@@ -161,17 +160,18 @@ model TestTP_CompressorFixedP_w_Controller
               20,20}}, rotation=0)));  
   
   Steps.TPComponents.GasStateReader r_comp_in(redeclare package Medium = Medium); 
-  
 
-  Steps.TPComponents.FixedPController controller(
+  Steps.TPComponents.CompressorFixedPController controller(
     redeclare package Medium = Medium,
     tablePhic                  = tablePhic,
     tablePR                    = tablePR,
     Table                      = ThermoPower.Choices.TurboMachinery.TableTypes.matrix,
     Ndesign                    = cfg_comp.N,
-    Tdes_in                    = cfg_comp.st_in.T
+    Tdes_in                    = cfg_comp.st_in.T,
+    in_T1(start = cfg_comp.st_in.T, nominal = cfg_comp.st_in.T),
+    in_p1(start = cfg_comp.st_in.p, nominal = cfg_comp.st_in.p),
+    in_w1(start = cfg_comp.st_in.mdot, nominal = cfg_comp.st_in.mdot)    
   );
-
   
   /*
   Modelica.Mechanics.Rotational.Sources.ConstantSpeed speed(
@@ -181,7 +181,8 @@ model TestTP_CompressorFixedP_w_Controller
   
   Modelica.Mechanics.Rotational.Sources.Speed speed(
     exact = false,
-    w_ref(nominal(cfg_comp.N))
+    w_ref(start = cfg_comp.N, nominal = cfg_comp.N),
+    w(start = cfg_comp.N, nominal = cfg_comp.N)
   );
   
   
@@ -189,6 +190,8 @@ model TestTP_CompressorFixedP_w_Controller
     annotation (Placement(transformation(extent={{80,80},{100,100}})));
   constant Integer SEC_PER_HOUR = integer(60 * 60 / 120);
 
+  /*
+  // CASE I - pressure ramp change
   Steps.TPComponents.RampSeq_TwoStages ramp_p(
     final time_start = 2 * SEC_PER_HOUR,
     final interval   = 1 * SEC_PER_HOUR,
@@ -202,12 +205,25 @@ model TestTP_CompressorFixedP_w_Controller
   annotation(
     Placement(visible = true, transformation(origin = {-120, -32}, extent = {{-6, -6}, {6, 6}}, rotation = 0)));
 
- Modelica.Blocks.Sources.Ramp ramp_p_outlet(
-  final startTime = 1 * SEC_PER_HOUR,
-  final duration  = 0.1 * SEC_PER_HOUR,
+  Modelica.Blocks.Sources.Ramp ramp_p_outlet(
+    final startTime = 1 * SEC_PER_HOUR,
+    final duration  = 0.1 * SEC_PER_HOUR,
+    
+    final height = 0.2 * st_source.p,
+    final offset = st_source.p);
+  */
   
-  final height = 0.2 * st_source.p,
-  final offset = st_source.p);
+  // CASE II - mdot ramp change, maintain the pressure as well
+  
+  Steps.TPComponents.RampSeq_W ramp_mdot(    
+    time_start = 3 * SEC_PER_HOUR,
+    interval   = 1 * SEC_PER_HOUR,
+    duration   = 0.15 * SEC_PER_HOUR,
+    offset     = st_source.mdot
+  );  
+  
+  Modelica.Blocks.Sources.Constant p_constant_source(k(start = st_source.p, nominal = st_source.p));  
+  Modelica.Blocks.Sources.Constant p_constant_sink(k(start = st_sink.p, nominal = st_sink.p));  
   
 protected
   // performance map for main compressor
@@ -231,13 +247,18 @@ equation
       color={159,159,223},
       thickness=0.5));
   
-  connect(ramp_p.y, SourceP1.in_p0);  
+  // boundary conditions
+  // connect(ramp_p.y, SourceP1.in_p0);  
+  connect(ramp_mdot.y, SourceP1.in_w0);
+  connect(p_constant_sink.y, SinkP1.in_p0);
+  connect(p_constant_sink.y, controller.in_p2);
 
-  connect(ramp_p_outlet.y, controller.in_p0);  
+  //connect(ramp_p_outlet.y, controller.in_p2);  
   
-  connect(r_comp_in.p, controller.p_inlet);
-  connect(r_comp_in.T, controller.T_inlet);
-  connect(r_comp_in.w, controller.mdot_inlet);
+  //connect(r_comp_in.p, controller.in_p1);
+  connect(p_constant_source.y, controller.in_p1);
+  connect(r_comp_in.T, controller.in_T1);
+  connect(r_comp_in.w, controller.in_w1);
 
   connect(controller.omega, speed.w_ref);
   

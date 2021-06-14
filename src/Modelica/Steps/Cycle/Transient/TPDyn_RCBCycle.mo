@@ -120,15 +120,15 @@ model TPDyn_RCBCycle
   );
   
   // set the values of parameters accordingly
-  parameter Model.HeatExchangerConfig cfg_heater = cfg.cfg_heater;
-  parameter Model.HeatExchangerConfig cfg_LTR    = cfg.cfg_LTR;
-  parameter Model.HeatExchangerConfig cfg_HTR    = cfg.cfg_HTR;
-  parameter Model.TurbomachineryConfig cfg_turb  = cfg.cfg_turb;
+  parameter Model.HeatExchangerConfig cfg_heater  = cfg.cfg_heater;
+  parameter Model.HeatExchangerConfig cfg_LTR     = cfg.cfg_LTR;
+  parameter Model.HeatExchangerConfig cfg_HTR     = cfg.cfg_HTR;
+  parameter Model.TurbomachineryConfig cfg_turb   = cfg.cfg_turb;
   parameter Model.TurbomachineryConfig cfg_comp   = cfg.cfg_comp;
   parameter Model.TurbomachineryConfig cfg_recomp = cfg.cfg_recomp;
   parameter Model.HeatExchangerConfig cfg_cooler  = cfg.cfg_cooler;
   parameter Model.SplitterConfig cfg_splitter     = cfg.cfg_splitter;
-  parameter Model.SplitterConfig cfg_merger      = cfg.cfg_merger;
+  parameter Model.SplitterConfig cfg_merger       = cfg.cfg_merger;
   
   parameter Model.ThermoState st_bypass      = cfg_recomp.st_in;
   parameter Model.ThermoState st_source_temp = cfg_cooler.cfg_hot.st_out; //.cfg_hot.st_out;
@@ -177,11 +177,11 @@ model TPDyn_RCBCycle
     redeclare replaceable model HeatTransfer_G = Steps.TPComponents.NgoHeatTransferFV(),
     gasFlow(      
       heatTransfer(
-        Cf_C1 = Cf_C1,
-        Cf_C2 = Cf_C2,
-        Cf_C3 = Cf_C3,
+        Cf_C1     = Cf_C1,
+        Cf_C2     = Cf_C2,
+        Cf_C3     = Cf_C3,
         gamma_min = 1000,
-        gamma_max = 5000        
+        gamma_max = 5000
       ),
       Tstartin  = cfg_heater.cfg_gas.st_in.T,
       Tstartout = cfg_heater.cfg_gas.st_out.T,
@@ -190,9 +190,9 @@ model TPDyn_RCBCycle
     ),
     fluidFlow(      
       heatTransfer(
-        Cf_C1 = Cf_C1,
-        Cf_C2 = Cf_C2,
-        Cf_C3 = Cf_C3,
+        Cf_C1     = Cf_C1,
+        Cf_C2     = Cf_C2,
+        Cf_C3     = Cf_C3,
         gamma_min = 2000,
         gamma_max = 1.5e6
       ), 
@@ -253,7 +253,7 @@ model TPDyn_RCBCycle
   Steps.TPComponents.GasStateReader r_heater_cout(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {-90, 32}, extent = {{-4, -4}, {4, 4}}, rotation = 180)));
 
-
+  // Case II - sourceMassFlow + sinkPressure
   ThermoPower.Gas.SourceMassFlow source(
     redeclare package Medium = medium_main, 
     T         = st_source.T,
@@ -269,6 +269,7 @@ model TPDyn_RCBCycle
     Placement(visible = true, transformation(origin = {-105, -39}, extent = {{-5, -5}, {5, 5}}, rotation = 0)));
 
 /*
+  // Case I - sourcePressure + sinkMassFlow
   ThermoPower.Gas.SourcePressure source(
     redeclare package Medium = medium_main, 
     T        = st_source.T,
@@ -304,11 +305,11 @@ model TPDyn_RCBCycle
     Placement(transformation(origin = {0, -80}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
 */
  
-
+  // Case I - sourceMassFlow + sinkPressure
   ThermoPower.Gas.SinkPressure sink(
     redeclare package Medium = medium_main, 
-    p0 = st_sink.p,
-    T  = st_sink.T,
+    p0        = st_sink.p,
+    T         = st_sink.T,
     use_in_p0 = true,
     gas(
       p(start = st_sink.p, nominal = st_sink.p), 
@@ -317,13 +318,14 @@ model TPDyn_RCBCycle
     Placement(transformation(origin = {0, -80}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
 
 /*
+  // Case II - sourcePressure + sinkMassFlow
   ThermoPower.Gas.SinkMassFlow sink(
     redeclare package Medium = medium_main, 
-    T        = st_sink.T,
-    p0       = st_sink.p,
-    use_in_T = false,
+    T         = st_sink.T,
+    p0        = st_sink.p,
+    use_in_T  = false,
     use_in_w0 = true,
-    w0       = st_sink.mdot
+    w0        = st_sink.mdot
   ) 
   annotation(
     Placement(visible = true, transformation(origin = {-105, 33}, extent = {{-5, -5}, {5, 5}}, rotation = 180)));
@@ -332,11 +334,11 @@ model TPDyn_RCBCycle
 /*
   ThermoPower.Gas.SourceMassFlow source_temp(
     redeclare package Medium = medium_main, 
-    T        = st_source_temp.T,
-    p0       = st_source_temp.p,
-    w0       = st_source_temp.mdot,
-    use_in_T = false,  
-    use_in_w0 = false,  
+    T         = st_source_temp.T,
+    p0        = st_source_temp.p,
+    w0        = st_source_temp.mdot,
+    use_in_T  = false,
+    use_in_w0 = false,
     gas(
       p(start = st_source_temp.p, nominal = st_source_temp.p), 
       T(start = st_source_temp.T, nominal = st_source_temp.T)))
@@ -390,24 +392,24 @@ model TPDyn_RCBCycle
     redeclare replaceable model HeatTransfer_G = Steps.TPComponents.NgoHeatTransferFV(),
     gasFlow(      
       heatTransfer(
-        pitch = cfg_LTR.cfg_hot.l_pitch,
-        phi   = cfg_LTR.cfg_hot.a_phi,
-        Cf_C1 = Cf_C1,
-        Cf_C2 = Cf_C2,
-        Cf_C3 = Cf_C3,
+        pitch     = cfg_LTR.cfg_hot.l_pitch,
+        phi       = cfg_LTR.cfg_hot.a_phi,
+        Cf_C1     = Cf_C1,
+        Cf_C2     = Cf_C2,
+        Cf_C3     = Cf_C3,
         gamma_min = 2000,
-        gamma_max = 5000        
+        gamma_max = 5000
       )
     ),
     fluidFlow(      
       heatTransfer(
-        pitch = cfg_LTR.cfg_cold.l_pitch,
-        phi   = cfg_LTR.cfg_cold.a_phi,
-        Cf_C1 = Cf_C1,
-        Cf_C2 = Cf_C2,
-        Cf_C3 = Cf_C3,
+        pitch     = cfg_LTR.cfg_cold.l_pitch,
+        phi       = cfg_LTR.cfg_cold.a_phi,
+        Cf_C1     = Cf_C1,
+        Cf_C2     = Cf_C2,
+        Cf_C3     = Cf_C3,
         gamma_min = 2000,
-        gamma_max = 5000        
+        gamma_max = 5000
       )
     ),    
     
@@ -445,22 +447,22 @@ model TPDyn_RCBCycle
     redeclare replaceable model HeatTransfer_G = Steps.TPComponents.GnielinskiHeatTransferFV(),
     gasFlow(      
       heatTransfer(
-        pitch = cfg_HTR.cfg_gas.l_pitch,
-        phi   = cfg_HTR.cfg_gas.a_phi,
-        Cf_C1 = Cf_C1,
-        Cf_C2 = Cf_C2,
-        Cf_C3 = Cf_C3,
+        pitch     = cfg_HTR.cfg_gas.l_pitch,
+        phi       = cfg_HTR.cfg_gas.a_phi,
+        Cf_C1     = Cf_C1,
+        Cf_C2     = Cf_C2,
+        Cf_C3     = Cf_C3,
         gamma_min = 2000,
-        gamma_max = 5000        
+        gamma_max = 5000
       )
     ),
     fluidFlow(      
       heatTransfer(
-        pitch = cfg_HTR.cfg_fluid.l_pitch,
-        phi   = cfg_HTR.cfg_fluid.a_phi,
-        Cf_C1 = Cf_C1,
-        Cf_C2 = Cf_C2,
-        Cf_C3 = Cf_C3,
+        pitch     = cfg_HTR.cfg_fluid.l_pitch,
+        phi       = cfg_HTR.cfg_fluid.a_phi,
+        Cf_C1     = Cf_C1,
+        Cf_C2     = Cf_C2,
+        Cf_C3     = Cf_C3,
         gamma_min = 2000,
         gamma_max = 5000
       )
@@ -533,6 +535,7 @@ model TPDyn_RCBCycle
       w_fixed=cfg_turb.N, useSupport=false) annotation(
     Placement(visible = true, transformation(origin = {-49, -47}, extent = {{5, -5}, {-5, 5}}, rotation = 0)));
  
+  // controller FPC (and the speed_turb) only required for Case I - ramp source mdot. Commnent, remove it otherwise. 
   Steps.TPComponents.TurbineFixedPController FPC_turb(
     redeclare package Medium   = medium_main,
     fileName  = Modelica.Utilities.Files.loadResource("modelica://Steps/Resources/Data/turbine_map.txt"),
@@ -550,8 +553,7 @@ model TPDyn_RCBCycle
     exact = false,
     w_ref(start = cfg_turb.N, nominal= cfg_turb.N),
     w(start = cfg_turb.N, nominal = cfg_turb.N)
-  );  
- 
+  );   
 
   ThermoPower.Water.SourceMassFlow source_cooler(
     redeclare package Medium = medium_cooler,
@@ -580,11 +582,11 @@ model TPDyn_RCBCycle
     redeclare replaceable model HeatTransfer_G = Steps.TPComponents.NgoHeatTransferFV(),
     gasFlow(      
       heatTransfer(
-        Cf_C1 = Cf_C1,
-        Cf_C2 = Cf_C2,
-        Cf_C3 = Cf_C3,
+        Cf_C1     = Cf_C1,
+        Cf_C2     = Cf_C2,
+        Cf_C3     = Cf_C3,
         gamma_min = 1500,
-        gamma_max = 5000        
+        gamma_max = 5000
       ),
       Tstartin  = cfg_cooler.cfg_gas.st_in.T,
       Tstartout = cfg_cooler.cfg_gas.st_out.T,
@@ -593,9 +595,9 @@ model TPDyn_RCBCycle
     ),
     fluidFlow(      
       heatTransfer(
-        Cf_C1 = Cf_C1,
-        Cf_C2 = Cf_C2,
-        Cf_C3 = Cf_C3,
+        Cf_C1     = Cf_C1,
+        Cf_C2     = Cf_C2,
+        Cf_C3     = Cf_C3,
         gamma_min = 2000,
         gamma_max = 18000
       ), 
@@ -810,17 +812,17 @@ model TPDyn_RCBCycle
   
   // value to accelerate the simulation
   constant Integer SEC_PER_HOUR = integer(60 * 60 / time_scaling_factor); 
-  constant Real time_scaling_factor = 12; // 5 min = 1 hour
-  // constant Real time_scaling_factor = 1; // 1 hour = 1 hour
+  // constant Real time_scaling_factor = 12; // 5 min = 1 hour
+  constant Real time_scaling_factor = 1; // 1 hour = 1 hour
   
 
   // ramp input to simulate the ramp change in ASPEN+ simulation
   // ramp change for case I in Guan's report
   Steps.TPComponents.RampSeq_W ramp_mdot(    
     time_start = 3 * SEC_PER_HOUR,
-    interval = 1 * SEC_PER_HOUR,
-    duration = 0.15 * SEC_PER_HOUR,       
-    offset = st_source.mdot
+    interval   = 1 * SEC_PER_HOUR,
+    duration   = 0.15 * SEC_PER_HOUR,
+    offset     = st_source.mdot
   );
 
   Modelica.Blocks.Sources.Constant p_const_TIP(k(start = cfg_turb.st_in.p, nominal = cfg_turb.st_in.p));
@@ -834,11 +836,11 @@ model TPDyn_RCBCycle
   Steps.TPComponents.RampSeq_W ramp_p(    
     // time_start = 0.01 * SEC_PER_HOUR, 
     // interval = 1 * SEC_PER_HOUR, 
-    time_start = 3 * SEC_PER_HOUR,    
-    interval = 2 * SEC_PER_HOUR,
-    duration = 0.15 * SEC_PER_HOUR,     
+    time_start = 3 * SEC_PER_HOUR,
+    interval   = 2 * SEC_PER_HOUR,
+    duration   = 0.15 * SEC_PER_HOUR,
       
-    offset = st_source.p,
+    offset  = st_source.p,
     ratio_1 = 0.05,
     ratio_2 = 0.05
   )  annotation(
@@ -856,8 +858,7 @@ model TPDyn_RCBCycle
   ) 
   annotation(
     Placement(visible = true, transformation(origin = {-119, 21}, extent = {{-5, -5}, {5, 5}}, rotation = 0)));
-  */
-  /*    
+
   Steps.TPComponents.RampSeq_TwoStages ramp_p(
     final time_start = 2 * SEC_PER_HOUR,
     final interval   = 1 * SEC_PER_HOUR,
@@ -905,23 +906,23 @@ equation
   connect(r_turb_in.outlet, turbine.inlet) annotation(
     Line(points = {{-90, -38}, {-80, -38}}, color = {0, 0, 255}, thickness = 1));  
   
+    // Case I - variable speed - let FPC determine the shaft speed
     connect(r_turb_in.T, FPC_turb.in_T1);
     connect(r_turb_in.w, FPC_turb.in_w1);
     connect(p_const_TIP.y, FPC_turb.in_p1); // set the target inlet pressure 
-    connect(p_const_CIP.y, FPC_turb.in_p2); // set the target outlet pressure
-    
-    connect(FPC_turb.omega, speed_turb.w_ref);
-    
+    connect(p_const_CIP.y, FPC_turb.in_p2); // set the target outlet pressure    
+    connect(FPC_turb.omega, speed_turb.w_ref);    
     connect(speed_turb.flange, turbine.shaft_a);
-    
-  connect(turbine.outlet, r_turb_out.inlet) annotation(
-    Line(points = {{-64, -38}, {-42, -38}, {-42, -32}}, color = {170, 170, 255}, thickness = 1));
-    
+
     /*
+    // Test case II or common case - constant speed
     connect(turbine.shaft_b, const_speed_turb.flange) annotation(
       Line(points = {{-54, -47}, {-60, -47}, {-60, -46}, {-66, -46}}));      
     */
     
+  connect(turbine.outlet, r_turb_out.inlet) annotation(
+    Line(points = {{-64, -38}, {-42, -38}, {-42, -32}}, color = {170, 170, 255}, thickness = 1)); 
+   
   connect(r_turb_out.outlet, r_HTR_hin.inlet) annotation(
     Line(points = {{-42, -28}, {-42, 32}, {-38, 32}}, color = {170, 170, 255}, thickness = 1));   
    connect(r_HTR_hin.outlet, HTR.gasIn) annotation(
@@ -946,22 +947,30 @@ equation
     connect(r_recomp_in.outlet, recompressor.inlet) annotation(
       Line(points = {{53, 6}, {52, 6}, {52, 14}, {62, 14}}, color = {170, 170, 255}, thickness = 0.5));
    
+      // for Case I - variable speed, fixed inlet and outlet pressure
+      connect(p_const_CIP.y, FPC_rc.in_p1);
+      connect(r_recomp_in.T, FPC_rc.in_T1);
+      connect(r_recomp_in.w, FPC_rc.in_w1);    
+      connect(p_const_TIP.y, FPC_rc.in_p2);  // set the target outlet pressure         
+
+      /*
+      // Case II - variable speed, fixed outlet pressure only
       connect(r_recomp_in.p, FPC_rc.in_p1);
       connect(r_recomp_in.T, FPC_rc.in_T1);
       connect(r_recomp_in.w, FPC_rc.in_w1);    
-      connect(p_const_TIP.y, FPC_rc.in_p2);  // set the target outlet pressure   
-      
-      connect(FPC_rc.omega, speed_rc.w_ref);
-      
-      // free the shaft speed of re-compressor
-      // connect(speed_rc.flange, recompressor.shaft_a);   
+      connect(r_turb_in.p, FPC_rc.in_p2);  // set the target outlet pressure following the source pressure      
+      */
+
+      connect(FPC_rc.omega, speed_rc.w_ref);            
+      connect(speed_rc.flange, recompressor.shaft_a);   
     
     connect(recompressor.outlet, r_recomp_out.inlet) annotation(
       Line(points = {{76, 14}, {76, 20}}, color = {0, 0, 255}, thickness = 0.5));
-          
-      /*     
+      
+      /*
+      // no speed control (neither Case I nor Case II), fixed re-compressor speed               
       connect(recompressor.shaft_b, const_speed_rc.flange) annotation(
-        Line(points = {{86, 7}, {74, 7}}));      
+        Line(points = {{86, 7}, {74, 7}}));  
       */
       
     connect(r_recomp_out.outlet, mixer.inlet2) annotation(
@@ -976,20 +985,28 @@ equation
   connect(r_comp_in.outlet, compressor.inlet) annotation(
     Line(points = {{101, 6}, {100, 6}, {100, 12}, {106, 12}}, color = {170, 170, 255}, thickness = 0.5));
    
-    connect(r_comp_in.p, FPC_mc.in_p1);
+    // Case I - ramp mdot, controller determined varialbe speed, fixed in_p1 of controller
+    connect(p_const_CIP.y, FPC_mc.in_p1);
     connect(r_comp_in.T, FPC_mc.in_T1);
     connect(r_comp_in.w, FPC_mc.in_w1);     
     connect(p_const_TIP.y, FPC_mc.in_p2);  // set the target outlet pressure       
-    
-    connect(FPC_mc.omega, speed_mc.w_ref);
 
-    // free the shaft speed of main compressor
+    /*
+    // Case II - ramp source pressure, controller determined variable speed
+    connect(r_comp_in.p, FPC_mc.in_p1);
+    connect(r_comp_in.T, FPC_mc.in_T1);
+    connect(r_comp_in.w, FPC_mc.in_w1);     
+    connect(r_turb_in.p, FPC_mc.in_p2);  // set the target outlet pressure following the source pressure      
+    */
+
+    connect(FPC_mc.omega, speed_mc.w_ref);
     connect(speed_mc.flange, compressor.shaft_a);      
   
   connect(compressor.outlet, r_comp_out.inlet) annotation(
     Line(points = {{118, 12}, {118, 20}}, color = {0, 0, 255}, thickness = 0.5));
     
     /*
+    // neither Case I nor Case II - constant speed for common situation
     connect(compressor.shaft_b, const_speed_mc.flange) annotation(
       Line(points = {{128, 7}, {122.5, 7}, {122.5, 6}, {117, 6}}));
     */
@@ -1037,23 +1054,17 @@ equation
   connect(r_cooler_cout.outlet, sink_cooler.flange) annotation(
     Line(points = {{56, -66}, {56, -72}, {57, -72}}, color = {0, 255, 0}, thickness = 0.75));
 
-  // ramp input
-  
+  // ramp input  
   // for case I  
   connect(ramp_mdot.y, source.in_w0);
   // set target outlet pressure
   connect(p_const_TIP.y, sink.in_p0);
- 
-  
-
    
   /*
   // for case II 
   connect(ramp_p.y, source.in_p0) annotation(
     Line(points = {{-113, -32}, {-107.5, -32}, {-107.5, -36}, {-108, -36}}, color = {0, 0, 127}));
   
-  connect(ramp_p.y, FPC_mc.in_p0);
-  connect(ramp_p.y, FPC_rc.in_p0);
   */
   
   //connect(r_HTR_cout.p, source.in_p0);
