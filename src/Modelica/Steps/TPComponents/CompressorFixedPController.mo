@@ -1,7 +1,8 @@
 within Steps.TPComponents;
 
 model CompressorFixedPController "A controller to maintain the compressor's outlet pressure by setting the rotational speed"
-   
+  extends Modelica.Blocks.Icons.Block; 
+     
   import ThermoPower.Choices.TurboMachinery.TableTypes;
   replaceable package Medium = Modelica.Media.Interfaces.PartialMedium;
   
@@ -13,26 +14,42 @@ model CompressorFixedPController "A controller to maintain the compressor's outl
   parameter TableTypes Table = TableTypes.matrix "Selection of the way of definition of table matrix";
   
   Modelica.Blocks.Tables.CombiTable2D PressRatio(tableOnFile = if Table == TableTypes.matrix then false else true, table = tablePR, tableName = if Table == TableTypes.matrix then "NoName" else "tabPR", fileName = if Table == TableTypes.matrix then "NoName" else fileName, smoothness = Modelica.Blocks.Types.Smoothness.ContinuousDerivative) annotation(
-    Placement(transformation(extent = {{-12, 0}, {8, 20}}, rotation = 0)));
+    Placement(transformation(origin = {0, 40}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
 
   Modelica.Blocks.Tables.CombiTable2D Phic(tableOnFile = if Table == TableTypes.matrix then false else true, table = tablePhic, tableName = if Table == TableTypes.matrix then "NoName" else "tabPhic", fileName = if Table == TableTypes.matrix then "NoName" else fileName, smoothness = Modelica.Blocks.Types.Smoothness.ContinuousDerivative) 
 annotation(
-    Placement(transformation(extent = {{-12, 30}, {8, 50}}, rotation = 0)));
+    Placement(transformation(origin = {0, -40}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
 
   parameter SI.Pressure p2 = 20e6 "parameter fixed outlet pressure";
   parameter Boolean use_in_p2 = false "Use connector input for the pressure";
-  Modelica.Blocks.Interfaces.RealInput in_p2 if use_in_p2;
-
-  Modelica.Blocks.Interfaces.RealInput in_p1 "inlet pressure of the compressor";
-  Modelica.Blocks.Interfaces.RealInput in_T1 "inlet temperature of the compressor";
-  Modelica.Blocks.Interfaces.RealInput in_w1 "inlet mass flow";  
-  
   Real N_T "Referred speed ";  
   Real N_T_design "Referred design velocity";
   Real phic "Flow number ";
   Real beta(start = integer(size(tablePhic, 1) / 2)) "Number of beta line";
-  SI.PerUnit PR "pressure ratio";
-  Modelica.Blocks.Interfaces.RealOutput omega "shaft angular velocity - calculated output";
+  SI.PerUnit PR "pressure ratio";  
+  
+  // signal inputs
+  Modelica.Blocks.Interfaces.RealInput in_p2 if use_in_p2  
+  annotation(
+    Placement(transformation(origin = {0, 100}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
+
+  Modelica.Blocks.Interfaces.RealInput in_p1 "inlet pressure of the compressor"
+  annotation(
+    Placement(transformation(origin = {-100, -60}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
+    
+  Modelica.Blocks.Interfaces.RealInput in_T1 "inlet temperature of the compressor"  
+  annotation(
+    Placement(transformation(origin = {-100, 0}, extent = {{10, -10}, {-10, 10}}, rotation = 180)));
+    
+  Modelica.Blocks.Interfaces.RealInput in_w1 "inlet mass flow"  
+  annotation(
+    Placement(transformation(origin = {-100, 60}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));      
+
+  // signal output
+  Modelica.Blocks.Interfaces.RealOutput omega "shaft angular velocity - calculated output"  
+  annotation(
+    Placement(transformation(origin = {100, 0}, extent = {{-10, -10}, {10, 10}}, rotation = 0))); 
+ 
   
 protected
   Modelica.Blocks.Interfaces.RealInput in_p2_internal;  

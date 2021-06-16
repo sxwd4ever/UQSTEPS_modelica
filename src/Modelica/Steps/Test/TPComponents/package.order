@@ -15,6 +15,5 @@ TestTP_Components
 TestTP_ClosedSysInit
 TestTP_PCHE_PHE
 TestTP_Compressor_Torque
-TestTP_CompressorFixedP
 TestTP_CompressorFixedP_w_Controller
 TestTP_TurbineFixedP_ramp_mdot
