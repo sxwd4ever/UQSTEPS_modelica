@@ -3,6 +3,7 @@ within Steps.Test.TPComponents.Transient;
 model TestDyn_PCHE
   "Test for ThermoPower based PCHE model against Meshram [2016]"  
     
+    
   import Modelica.SIunits.Conversions.{from_degC, from_deg};
   import Modelica.SIunits.{Temperature, Pressure, SpecificEnthalpy};
   import Util = Utilities.Util;
@@ -15,160 +16,192 @@ model TestDyn_PCHE
   import ThermoPower.Gas;
   import Steps.Components.KimCorrelations;
   import Steps.Components.MaterialConductivity;    
-
-  // package medium_hot = Modelica.Media.IdealGases.SingleGases.CO2;
+  
+  // package medium_hot = Steps.Media.CO2;
+  // package medium_cold = Steps.Media.CO2;
+  // package medium_hot = ExternalMedia.Examples.CO2CoolProp;
+  // package medium_cold = ExternalMedia.Examples.CO2CoolProp;    
   package medium_hot = Steps.Media.SCO2;
-  // package medium_cold = Modelica.Media.IdealGases.SingleGases.CO2;
-  package medium_cold = Steps.Media.SCO2;  
+  package medium_cold = Steps.Media.SCO2; 
+  // package medium_hot = Modelica.Media.IdealGases.SingleGases.CO2;
+  // package medium_cold = Modelica.Media.IdealGases.SingleGases.CO2;    
+  parameter Real table_k_metalwall[:,:] = [293.15, 12.1; 373.15, 16.3; 773.15, 21.5];    
   
-  // geometry parameters
-  constant Real pi = Modelica.Constants.pi;
-  parameter Integer N_ch = integer(1e4) "channel number";
-  parameter Integer N_seg = 10 "number of segments in one tube";
-  parameter SI.Length D_ch = 2e-3 "channel diameter, semi circular tube";
-  parameter SI.Length r_ch = D_ch / 2 "channel radiaus";
-  parameter SI.Length L_fp = 200e-3 "channel flow path length";  
-  parameter SI.Length L_pitch = 12e-3 "pitch length";
-  parameter Real a_phi = 36 "pitch angle degree";
-  parameter SI.Length H_ch = 3.2e-3 "Height of the solid domain, containing one cold tube and one hot tube";
-  parameter SI.Length W_ch = 2.5e-3 "Width of the solid domain";
-  parameter SI.Area A = pi * r_ch ^2 / 2 "Area of cross section of semi circular tube";
-
-  // boundary conditon
+  parameter Real Cf_C1 = 1.626, Cf_C2 = 1, Cf_C3 = 1;
+  // parameter Real Cf_C1_cold = 1, Cf_C2_cold = 1, Cf_C3_cold = 1;
+  parameter Real use_rho_bar = -1.0;  
+  parameter Real rho_bar_hot = 1.0;
+  parameter Real rho_bar_cold = 1.0;    
   
-  // zigzag higher T
-  parameter SI.Velocity u_hot_in = 7.564 "hot inlet velocity m/s";
-  parameter SI.Velocity u_cold_in = 1.876 "cold inlet velocity m/s";
-  parameter SI.Pressure p_hot_in =  from_bar(90) "hot inlet pressure";
-  parameter SI.Pressure p_cold_in = from_bar(225) "cold inlet pressure";
-  parameter SI.Temperature T_hot_in = 730 "hot inlet temperature, K";
-  parameter SI.Temperature T_hot_out = 576.69 "cold outlet temperature, K";
-  parameter SI.Temperature T_cold_in = 500 "cold inlet temperature, K";
-  parameter SI.Temperature T_cold_out = 639.15 "cold outlet temperature, K";
-  
-  // pressure drop correction coefficient 
-  // parameter Real kc_dp = 1.0;  
+  parameter Model.RCBCycleConfig cfg(
+    redeclare package medium_main   = medium_hot,
+    r_i_heater  = 1e-3,
+    r_t_heater  = 2e-3, //cfg.r_i_heater + 10e-3,
+    r_o_heater  = 3e-3,                      // agree with the final parameter Dhyd = 1 in HE, should be checked to see if it is capable of containing all fluid-metal tubes
+    N_ch_heater = 10000,
+    L_heater    = 1,
+    N_ch_HTR    = 30000,
+    L_HTR       = 2.5,
+    r_i_HTR     = 1.5e-3,
+    r_o_HTR     = 1.5e-3,
+    N_ch_LTR    = 30000,
+    L_LTR       = 2.5,
+    r_i_LTR     = 1.5e-3,
+    r_o_LTR     = 1.5e-3,
+    Ns_turb     = 30000,
+    N_ch_cooler = 50000,
+    r_i_cooler  = 0.5e-3,
+    r_t_cooler  = 0.7e-3,
+    r_o_cooler  = 1e-3,    
+    table_k_LTR_wall = table_k_metalwall,
+    table_k_HTR_wall = table_k_metalwall,    
+    // latest boundary conditions, following values are simulation results with sourcePressure.p = 200 bar and above geometry params
+    p_comp_in  = 109.59e5,
+    p_comp_out = 20e6,    
+    p_heater   = 20e6,    
+    T_HTR_hot_in      = from_degC(556.322),
+    T_HTR_cold_out    = from_degC(515.234),
+    T_HTR_hot_out     = from_degC(296.146),
+    T_HTR_cold_in     = from_degC(266.181),
+    T_LTR_cold_in     = from_degC(118.13),
+    T_LTR_hot_out     = from_degC(154.909),
+    T_heater_hot_in   = from_degC(800),
+    T_heater_hot_out  = from_degC(707.918),
+    T_heater_cold_out = from_degC(637.551),
+    T_cooler_cold_out = from_degC(61.7479462700001),
+    T_cooler_hot_out  = from_degC(68.494),
+    
+    mdot_main   = 128.774,
+    mdot_comp   = 88.0661,
+    mdot_heater = 40,
+    mdot_cooler = 40.7188        
+  );
   /*
-  parameter Real kc_cf_hot = 1;  
-  parameter Real kc_cf_cold = 1;
-  parameter Real Cf_a_hot = 1, Cf_b_hot = 1, Cf_c_hot = 1;
-  parameter Real Cf_a_cold = 1, Cf_b_cold = 1, Cf_c_cold = 1;
+  (
+    mdot_heater = 90,
+    table_k_LTR_wall = table_k_metalwall,
+    table_k_HTR_wall = table_k_metalwall
+  );
   */
   
-  parameter Real Cf_C1 = 1, Cf_C2 = 1, Cf_C3 = 1;
-  //parameter Real Cf_a_cold = 1, Cf_b_cold = 1, Cf_c_cold = 1;  
-  
-  // meshram's cp and rho for alloy Inconel 617
-  parameter Modelica.SIunits.Density rho_wall = 8360 "density of wall, kg/m3";
-  parameter Modelica.SIunits.SpecificHeatCapacity cp_wall = 417 "cp of wall, J/kg-K";  
-
-/*  
-  // zigzag lower T
-  parameter SI.Velocity u_hot_in = 1.345 "hot inlet velocity m/s";
-  parameter SI.Velocity u_cold_in = 0.806 "cold inlet velocity m/s";
-  parameter SI.Pressure p_hot_in =  from_bar(90) "hot inlet pressure";
-  parameter SI.Pressure p_cold_in = from_bar(225) "cold inlet pressure";
-  parameter SI.Temperature T_hot_in = 630 "hot inlet temperature, K";
-  parameter SI.Temperature T_hot_out = 466.69 "cold outlet temperature, K";
-  parameter SI.Temperature T_cold_in = 400 "cold inlet temperature, K";
-  parameter SI.Temperature T_cold_out = 522.23 "cold outlet temperature, K";  
-*/  
-  parameter SI.Density rho_hot_in = medium_hot.density_pT(p_hot_in, T_hot_in);
-  parameter SI.Density rho_cold_in = medium_cold.density_pT(p_cold_in, T_cold_in);
-  parameter SI.MassFlowRate mdot_hot_in = rho_hot_in * A * u_hot_in * N_ch;
-  parameter SI.MassFlowRate mdot_cold_in = rho_cold_in * A * u_cold_in * N_ch;
-
-  // use configuration of LTR for this test since the mdot are different for hot and cold side
-  parameter Model.PBConfig_PCHE cfg(
-    p_pump_in = p_hot_in,
-    p_pump_out = p_cold_in,
-    mdot_main = mdot_hot_in,
-    mdot_pump = mdot_cold_in, 
-    T_LTR_cold_in = T_cold_in, 
-    T_LTR_cold_out = T_cold_out,
-    T_HTR_hot_out = T_hot_in, // T_LTR_hot_in = T_HTR_hot_out,
-    T_LTR_hot_out = T_hot_out,
-    r_LTR = r_ch,
-    L_LTR = L_fp,
-    N_ch_LTR = N_ch,
-    N_seg = N_seg,
-    pitch = L_pitch,
-    phi = a_phi,
-    rho_wall = rho_wall,
-    cp_wall = cp_wall
-  );
-  
-  // set the values of parameters accordingly
-  parameter HEBoundaryCondition bc_HE = cfg.bc_LTR; 
+  // set the values of parameters accordingly - For HTR test.
+  // modify it to cfg_HE = cfg.cfg_LTR for LTR test
+  parameter Model.HeatExchangerConfig cfg_HE     = cfg.cfg_LTR;
+  parameter Model.ThermoState st_source_hot      = cfg_HE.cfg_hot.st_in;
+  parameter Model.ThermoState st_sink_hot        = cfg_HE.cfg_hot.st_out;
+  parameter Model.ThermoState st_source_cold     = cfg_HE.cfg_cold.st_in;
+  parameter Model.ThermoState st_sink_cold       = cfg_HE.cfg_cold.st_out;
+  parameter Integer N_seg_HE                     = cfg.cfg_HTR.cfg_hot.geo_path.N_seg;
 
   //Components
-  inner ThermoPower.System system(allowFlowReversal = false, initOpt = ThermoPower.Choices.Init.Options.steadyState) annotation(
+  inner ThermoPower.System system(allowFlowReversal = false, initOpt=ThermoPower.Choices.Init.Options.steadyState) annotation(
     Placement(transformation(extent = {{80, 80}, {100, 100}})));  
+  
+  parameter Boolean SSInit = true "Steady-state initialization";
   
   ThermoPower.Gas.SourceMassFlow source_cold(
     redeclare package Medium = medium_cold, 
-    T = bc_HE.st_cold_in.T, 
-    p0 = bc_HE.st_cold_in.p, 
+    T  = st_source_cold.T,
+    p0 = st_source_cold.p,
     use_in_T = true, 
-    w0 = bc_HE.st_cold_in.mdot,
-    gas(p(nominal = bc_HE.st_cold_in.p), 
-    T(nominal=bc_HE.st_cold_in.T))) 
+    w0 = st_source_cold.mdot,
+    gas(
+      p(nominal = st_source_cold.p), 
+      T(nominal = st_source_cold.T))) 
   annotation(
     Placement(transformation(origin = {0, 60}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
   
   ThermoPower.Gas.SinkPressure sink_cold(
     redeclare package Medium = medium_cold, 
-    p0 = bc_HE.st_cold_out.p, 
-    T = bc_HE.st_cold_out.T) 
+    p0 = st_sink_cold.p, 
+    T = st_sink_cold.T) 
   annotation(
     Placement(transformation(origin = {0, -80}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
-
+ 
   ThermoPower.Gas.SinkPressure sink_hot(
     redeclare package Medium = medium_hot,
-    T = bc_HE.st_hot_out.T, 
-    p0 = bc_HE.st_hot_out.p) 
+    T  = st_sink_hot.T,
+    p0 = st_sink_hot.p)
   annotation(
     Placement(transformation(extent = {{60, -10}, {80, 10}}, rotation = 0)));
   
   ThermoPower.Gas.SourceMassFlow source_hot(
     redeclare package Medium = medium_hot, 
-    T = bc_HE.st_hot_in.T, 
-    p0 = bc_HE.st_hot_in.p, 
-    w0 = bc_HE.st_hot_in.mdot,
+    T  = st_source_hot.T,
+    p0 = st_source_hot.p,
+    w0 = st_source_hot.mdot,
     use_in_T = true,
-    gas(p(nominal = bc_HE.st_hot_in.p), 
-    T(nominal=bc_HE.st_hot_in.T))) 
+    gas(
+      p(nominal = st_source_hot.p), 
+      T(nominal = st_source_hot.T))) 
   annotation(
     Placement(transformation(extent = {{-70, -10}, {-50, 10}}, rotation = 0))); 
-
-  ThermoPower.Gas.SensT T_waterIn(redeclare package Medium = medium_cold) annotation(
-    Placement(transformation(origin = {4, -50}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
-  ThermoPower.Gas.SensT T_waterOut(redeclare package Medium = medium_cold) annotation(
-    Placement(transformation(origin = {4, -50}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
   
-  ThermoPower.Gas.SensT T_gasIn(redeclare package Medium = medium_hot);
-  ThermoPower.Gas.SensT T_gasOut(redeclare package Medium = medium_hot);
+  Steps.TPComponents.GasStateReader r_HE_hin(redeclare package Medium = medium_hot) annotation(
+    Placement(visible = true, transformation(origin = {66, -56}, extent = {{-6, -6}, {6, 6}}, rotation = 0)));
+  Steps.TPComponents.GasStateReader r_HE_hout(redeclare package Medium = medium_hot) annotation(
+    Placement(visible = true, transformation(origin = {96, 44}, extent = {{-6, -6}, {6, 6}}, rotation = 180)));
+  Steps.TPComponents.GasStateReader r_HE_cin(redeclare package Medium = medium_cold) annotation(
+    Placement(visible = true, transformation(origin = {-22, 50}, extent = {{-6, -6}, {6, 6}}, rotation = -90)));
+  Steps.TPComponents.GasStateReader r_HE_cout(redeclare package Medium = medium_cold) annotation(
+    Placement(visible = true, transformation(origin = {-32, 20}, extent = {{-6, -6}, {6, 6}}, rotation = 180)));
 
   Steps.TPComponents.PCHE HE(
     redeclare package FluidMedium = medium_cold, 
-    redeclare package FlueGasMedium = medium_hot,   
-    // use Marchionni PCHE HeatTransfer
-    redeclare replaceable model HeatTransfer_F = Steps.TPComponents.MarchionniPCHEHeatTransferFV(),
-    redeclare replaceable model HeatTransfer_G = Steps.TPComponents.MarchionniPCHEHeatTransferFV(),
-    gasFlow(heatTransfer(pitch = cfg.pitch, phi = cfg.phi, Cf_C1 = Cf_C1, Cf_C2 = Cf_C2, Cf_C3 = Cf_C3)),
-    fluidFlow(heatTransfer(pitch = cfg.pitch, phi = cfg.phi, Cf_C1 = Cf_C1, Cf_C2 = Cf_C2, Cf_C3 = Cf_C3)),    
-    bc = bc_HE, 
-    geo_hot = cfg.cfg_LTR_hot.geo,
-    geo_cold = cfg.cfg_LTR_cold.geo,
-    geo_tube = cfg.cfg_LTR_tube.geo,  
-    thermo_hot = cfg.cfg_LTR_hot.thermo,
-    thermo_cold = cfg.cfg_LTR_cold.thermo,
-    thermo_tube = cfg.cfg_LTR_tube.thermo,   
-    L = L_fp,
-    SSInit = true,
-    gasQuasiStatic = false,
-    fluidQuasiStatic = false
-    // metalQuasiStatic = true
+    redeclare package FlueGasMedium = medium_hot,     
+    /*
+    // with Kim Correlation
+    redeclare replaceable model HeatTransfer_F = Steps.TPComponents.KimPCHEHeatTransferFV(),    
+    // ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficient(gamma = thermo_LTR_cold.gamma_he),
+    // redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer, 
+    redeclare replaceable model HeatTransfer_G = Steps.TPComponents.KimPCHEHeatTransferFV(),
+    fluidFlow(
+      heatTransfer(
+        pitch = cfg_HE.cfg_cold.l_pitch,
+        phi   = cfg_HE.cfg_cold.a_phi
+      )
+    ),
+    gasFlow(
+      heatTransfer(
+        pitch = cfg_HE.cfg_hot.l_pitch,
+        phi   = cfg_HE.cfg_hot.a_phi
+      )
+    ),
+    */
+    
+    // with Marchionni Correlation    
+    redeclare replaceable model HeatTransfer_F = Steps.TPComponents.GnielinskiHeatTransferFV(),
+    redeclare replaceable model HeatTransfer_G = Steps.TPComponents.GnielinskiHeatTransferFV(),
+    gasFlow(
+      heatTransfer(
+        pitch       = cfg_HE.cfg_hot.l_pitch,
+        phi         = cfg_HE.cfg_hot.a_phi,         
+        Cf_C1       = Cf_C1, 
+        Cf_C2       = Cf_C2, 
+        Cf_C3       = Cf_C3, 
+        use_rho_bar = use_rho_bar,
+        rho_bar     = rho_bar_hot,
+        useAverageTemperature = false)),
+    fluidFlow(
+      heatTransfer(
+        pitch       = cfg_HE.cfg_cold.l_pitch, 
+        phi         = cfg_HE.cfg_cold.a_phi,         
+        Cf_C1       = Cf_C1, 
+        Cf_C2       = Cf_C2, 
+        Cf_C3       = Cf_C3, 
+        use_rho_bar = use_rho_bar, 
+        rho_bar     = rho_bar_cold,
+        useAverageTemperature = false)
+    ),  
+    redeclare model HeatExchangerTopology = ThermoPower.Thermal.HeatExchangerTopologies.CounterCurrentFlow, 
+    cfg               = cfg_HE,
+    N_G               = N_seg_HE,
+    N_F               = N_seg_HE,
+    SSInit            = SSInit,
+    gasQuasiStatic    = false,
+    fluidQuasiStatic  = false
+    //metalWall(WallRes=false) 
+    //table_k_metalwall = table_k_metalwall
     // override the values of Am and L of metaltubeFV
     // to make them agree with semi-circular tube of PCHE
     // ('final' modifier of Am in metalTubeFv was removed as well)
@@ -178,9 +211,9 @@ model TestDyn_PCHE
     Placement(transformation(extent = {{-20, -20}, {20, 20}}, rotation = 0)));
 
   // variable for validation
-  Modelica.SIunits.Power Q_out = (HE.gasIn.h_outflow - HE.gasOut.h_outflow) * HE.gasIn.m_flow; 
-  Modelica.SIunits.Power Q_in = (HE.waterOut.h_outflow - HE.waterIn.h_outflow) * HE.waterIn.m_flow;
-  Boolean isQMatch = abs(Q_out -Q_in) < 1e-3;  
+  Modelica.SIunits.Power Q_out    = (HE.gasIn.h_outflow - HE.gasOut.h_outflow) * HE.gasIn.m_flow;
+  Modelica.SIunits.Power Q_in     = (HE.waterOut.h_outflow - HE.waterIn.h_outflow) * HE.waterIn.m_flow;
+  Boolean                isQMatch = abs(Q_out -Q_in) < 1e-3;
   
   
   // Input signals for transient simulation
@@ -234,24 +267,22 @@ equation
   connect(HE.gasOut, sink_hot.flange) annotation(
     Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));    
 */   
- 
-  connect(source_cold.flange, T_waterIn.inlet);
-  connect(T_waterIn.outlet, HE.waterIn) annotation(
+  connect(source_cold.flange, r_HE_cin.inlet);
+  connect(r_HE_cin.outlet, HE.waterIn) annotation(
     Line(points = {{-1.83697e-015, 50}, {-1.83697e-015, 20}, {0, 20}}, color = {0, 0, 255}, thickness = 0.5, smooth = Smooth.None));
-  connect(HE.waterOut, T_waterOut.inlet) annotation(
+  connect(HE.waterOut, r_HE_cout.inlet) annotation(
     Line(points = {{8.88178e-016, -44}, {8.88178e-016, -20}, {0, -20}}, thickness = 0.5, color = {0, 0, 255}));      
-  connect(T_waterOut.outlet, sink_cold.flange) annotation(
+  connect(r_HE_cout.outlet, sink_cold.flange) annotation(
     Line(points = {{1.83697e-015, -70}, {1.83697e-015, -56}, {-8.88178e-016, -56}}, thickness = 0.5, color = {0, 0, 255}));
   
-  connect(source_hot.flange, T_gasIn.inlet);
-  connect(T_gasIn.outlet, HE.gasIn) annotation(
+  connect(source_hot.flange, r_HE_hin.inlet);
+  connect(r_HE_hin.outlet, HE.gasIn) annotation(
         Line(points = {{-50, 0}, {-20, 0}}, color = {159, 159, 223}, thickness = 0.5, smooth = Smooth.None)); 
-  connect(HE.gasOut, T_gasOut.inlet) annotation(
+  connect(HE.gasOut, r_HE_hout.inlet) annotation(
     Line(points = {{34, 0}, {34, 0}, {20, 0}}, color = {159, 159, 223}, thickness = 0.5));
-  connect(T_gasOut.outlet, sink_hot.flange) annotation(
-    Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));     
-
-
+  connect(r_HE_hout.outlet, sink_hot.flange) annotation(
+    Line(points = {{46, 0}, {46, 0}, {60, 0}}, color = {159, 159, 223}, thickness = 0.5));    
+  
   // temperature input
   // hot / gas side
   connect(const_T_step_h.y, triadd_T_h.u) annotation(
@@ -304,10 +335,12 @@ equation
     
 annotation(
     Diagram(graphics),
-    experiment(StartTime = 0, StopTime = 600, Tolerance = 1e-3, Interval = 1),
-    __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts",        
+    experiment(StartTime = 0, StopTime = 10, Tolerance = 1e-3, Interval = 1),
     // remove the option flag bltdump in -d options, which may lead to 'Internal error - IndexReduction.dynamicStateSelectionWork failed!' during Translation
+    __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts",        
     // __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts,bltdump",    
-    __OpenModelica_simulationFlags(lv = "LOG_DEBUG,LOG_NLS,LOG_NLS_V,LOG_STATS,LOG_INIT,LOG_STDOUT, -w", outputFormat = "mat", s = "dassl", nls = "homotopy")
+    // disable some log flags to avoid incredible large log files and false dead of simulation
+    // __OpenModelica_simulationFlags(lv = "LOG_DEBUG,LOG_NLS,LOG_NLS_V,LOG_STATS,LOG_INIT,LOG_STDOUT, -w", outputFormat = "mat", s = "dassl", nls = "homotopy")
+    __OpenModelica_simulationFlags(lv = "LOG_STATS,LOG_INIT -w", outputFormat = "mat", s = "dassl", nls = "homotopy")
     );
 end TestDyn_PCHE;

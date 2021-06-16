@@ -586,8 +586,8 @@ class FittingStage(Enum):
     test = 2
 
 class ErrorFunc(Enum):
-    T = 1, # consider temperature only 
-    Dp = 2, # consider pressure drop only
+    T = 1 # consider temperature only 
+    Dp = 2 # consider pressure drop only
     T_Dp_both = 3
 
 class ParamFitting(object):
@@ -602,6 +602,8 @@ class ParamFitting(object):
         self.sim_ops = sim_ops
         self.errfunc = errfunc
         self.case_name = "" # current case 
+        self.history_pt = None
+        self.history_eval = None
 
 
     def run_fitting(self, pt = (1,1,1), max_steps=50, num_sumples=4, steplength=0.1):
@@ -617,8 +619,13 @@ class ParamFitting(object):
                             max_steps=max_steps,
                             num_samples=num_sumples, 
                             steplength=steplength)
+                            
+        self.history_eval = h_eval
+        self.history_pt = h_pt
 
         print('fitting done')
+
+        return (h_pt, h_eval)
 
     def param_random_local_search(self, func_para,pt,max_steps,num_samples,steplength):
         '''

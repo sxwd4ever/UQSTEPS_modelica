@@ -47,11 +47,11 @@ model Flow1DFV
     //   "Enthalpy state variables";
     Medium.Temperature Ttilde[N - 1](start=linspace(Tstartin, Tstartout, N-1), each stateSelect=StateSelect.prefer)
     "Temperature state variables";      
-    Medium.Temperature T[N] "Node temperatures";
-    Medium.SpecificEnthalpy h[N] "Node specific enthalpies";
-    Medium.MassFraction Xi[if UniformComposition or Medium.fixedX then 1 else N, nXi] "Node mass fraction";
+    Medium.Temperature T[N](start=Tstart, each stateSelect= StateSelect.prefer) "Node temperatures";
+    Medium.SpecificEnthalpy h[N](start=hstart) "Node specific enthalpies";
+    // Medium.MassFraction Xi[if UniformComposition or Medium.fixedX then 1 else N, nXi] "Node mass fraction";
     // Medium.Temperature Tin(start=Tstartin);    
-    Medium.MassFraction Xtilde[if UniformComposition or Medium.fixedX then 1 else N - 1, nX](start = ones(size(Xtilde, 1), size(Xtilde, 2)) * diagonal(Xstart[1:nX]), each stateSelect = StateSelect.prefer) "Composition state variables";    
+    // Medium.MassFraction Xtilde[if UniformComposition or Medium.fixedX then 1 else N - 1, nX](start = ones(size(Xtilde, 1), size(Xtilde, 2)) * diagonal(Xstart[1:nX]), each stateSelect = StateSelect.prefer) "Composition state variables";    
     Medium.MassFlowRate wbar[N - 1](each start=wnom/Nt)
       "Average flow rate through volumes (single tube)";
     SI.Power Q_single[N-1] = heatTransfer.Qvol/Nt
@@ -89,17 +89,17 @@ model Flow1DFV
       "Derivative of average density by left temperature";
     Medium.DerDensityByTemperature drbdT2[N - 1]
       "Derivative of average density by right temperature";    
-    Real drbdX1[N - 1, nX](each unit="kg/m3")
-      "Derivative of average density by left composition";
-    Real drbdX2[N - 1, nX](each unit="kg/m3")
-      "Derivative of average density by right composition";    
+    //Real drbdX1[N - 1, nX](each unit="kg/m3")
+    //  "Derivative of average density by left composition";
+    //Real drbdX2[N - 1, nX](each unit="kg/m3")
+    //  "Derivative of average density by right composition";    
     Medium.SpecificHeatCapacity cvbar[N - 1] "Average cv";
     SI.MassFlowRate dMdt[N - 1] "Derivative of mass in a finite volume";
     Medium.SpecificHeatCapacity cv[N];
     Medium.DerDensityByTemperature dddT[N]
       "Derivative of density by temperature";
     Medium.DerDensityByPressure dddp[N] "Derivative of density by pressure";
-    Real dddX[N, nX](each unit="kg/m3") "Derivative of density by composition";           
+    // Real dddX[N, nX](each unit="kg/m3") "Derivative of density by composition";           
   equation
     assert(FFtype == ThermoPower.Choices.Flow1D.FFtypes.NoFriction or dpnom > 0,
       "dpnom=0 not supported, it is also used in the homotopy trasformation during the inizialization");  
@@ -175,9 +175,10 @@ model Flow1DFV
         // dMdt[j] = A*l*(drbdp[j]*der(p) + drbdT1[j]*der(gas[j].T) + drbdT2[j]*der(gas[j + 1].T)) "Mass balance";
         
         // index error in following equation
-        dMdt[j] = A*l*(drbdT1[j]*der(T[j]) + drbdT2[j]*der(T[j+1]) + drbdp[j]*der(p) + vector(drbdX1[j, :]) * vector(der(Xi[j])) + vector(drbdX2[j, :]) * vector(der(Xi[j+1])))
-        
+        // dMdt[j] = A*l*(drbdT1[j]*der(T[j]) + drbdT2[j]*der(T[j+1]) + drbdp[j]*der(p) + vector(drbdX1[j, :]) * vector(der(Xi[j])) + vector(drbdX2[j, :]) * vector(der(Xi[j+1])))
         // dMdt[j] = A*l*(dddT[j+1]*der(Ttilde[j]) + drbdp[j]*der(p))
+        // dMdt[j] = A*l*(drbdT1[j]*der(T[j]) + drbdT2[j]*der(T[j+1]) + drbdp[j]*der(p))        
+        dMdt[j] = A*l*(drbdT1[j]*der(Ttilde[j-1]) + drbdT2[j]*der(Ttilde[j]) + drbdp[j]*der(p))        
           "Mass derivative for each volume";
           
         if avoidInletEnthalpyDerivative and j == 1 then
@@ -186,16 +187,16 @@ model Flow1DFV
           drbdp[j] = dddp[j + 1];
           drbdT1[j] = 0;
           drbdT2[j] = dddT[j + 1];
-          drbdX1[j, :] = zeros(size(Xtilde, 2));
-          drbdX2[j, :] = dddX[j + 1, :];
+          // drbdX1[j, :] = zeros(size(Xtilde, 2));
+          // drbdX2[j, :] = dddX[j + 1, :];
         else
           // volume properties computed by averaging
           rhobar[j] = (rho[j] + rho[j+1])/2;
           drbdp[j] = (dddp[j] + dddp[j + 1])/2;
           drbdT1[j] = dddT[j]/2;
           drbdT2[j] = dddT[j + 1]/2;
-          drbdX1[j, :] = dddX[j, :]/2;
-          drbdX2[j, :] = dddX[j + 1, :]/2;
+          // drbdX1[j, :] = dddX[j, :]/2;
+          // drbdX2[j, :] = dddX[j + 1, :]/2;
         end if;
                 
         // Average volume quantities
@@ -222,8 +223,8 @@ model Flow1DFV
         drbdT1[j] = 0;
         drbdT2[j] = 0;
         // drbdh[j] = 0;
-        drbdX1[j, :] = zeros(nX);
-        drbdX2[j, :] = zeros(nX);
+        // drbdX1[j, :] = zeros(nX);
+        // drbdX2[j, :] = zeros(nX);
         vbar[j] = 0;
         wbar[j] = infl.m_flow/Nt;
         cvbar[j] = 0;             
@@ -233,6 +234,7 @@ model Flow1DFV
     // for j in 1:N loop
     //   wstar[j] = homotopy(infl.m_flow/Nt - sum(dMdt[1:j - 1]) - dMdt[j]/2, wnom/Nt);
     // end for;
+    /*
     if Medium.fixedX then
         Xtilde = fill(Medium.reference_X, 1);
       elseif QuasiStatic then
@@ -244,13 +246,14 @@ model Flow1DFV
           der(Xtilde[j, :]) = homotopy((u[j + 1] + u[j]) / (2 * l) * (gas[j].X - gas[j + 1].X), 1 / L * unom * (gas[j].X - gas[j + 1].X)) "Partial mass balance for single volume";
         end for;
     end if;
+    */
     // Fluid property calculations
     for j in 1:N loop
       gas[j] = Medium.setState_ph(p, h[j]);
-      T[j] = gas[j].T; // Medium.temperature(gas[j]);
+      T[j] = Medium.temperature(gas[j]);
       // X[j] = gas[j].Xi;
       // MyUtil.myAssert(debug = false, val_test = T[j], min = 274, max = 1e6, name_val = "T[j]", val_ref = {j, p, h[j]}, name_val_ref = {"j", "p", "h[j]"});      
-      rho[j] = gas[j].d; //Medium.density(gas[j]);
+      rho[j] = Medium.density(gas[j]);
       drdp[j] = if Medium.singleState then 0 else Medium.density_derp_h(gas[j]);      
       // drdh[j] = Medium.density_derh_p(gas[j]);
       u[j] = w/(rho[j]*A);
@@ -259,20 +262,20 @@ model Flow1DFV
     for j in 1:N loop
     
       if not QuasiStatic then
-        cv[j] = gas[j].cv; //Medium.heatCapacity_cv(gas[j]);
+        cv[j] = Medium.heatCapacity_cv(gas[j]);
         dddT[j] = Medium.density_derT_p(gas[j]);
         dddp[j] = Medium.density_derp_T(gas[j]);
-
+        /*
         if nX > 0 then
           dddX[j, :] = Medium.density_derX(gas[j].state);
         end if;
-
+        */
       else
         // Dummy values (not needed by dynamic equations)
         cv[j] = 0;
         dddT[j] = 0;
         dddp[j] = 0;
-        dddX[j, :] = zeros(nX);
+        // dddX[j, :] = zeros(nX);
       end if;
     end for;    
 
@@ -297,19 +300,19 @@ model Flow1DFV
     end if;
     infl.h_outflow = h[1];
     outfl.h_outflow = h[N]; //htilde[N - 1];
-    infl.Xi_outflow = Xi[1]; //gas[1].Xi;
-    outfl.Xi_outflow = Xi[N]; //gas[N].Xi;    
+    // infl.Xi_outflow = Xi[1]; //gas[1].Xi;
+    // outfl.Xi_outflow = Xi[N]; //gas[N].Xi;    
 
     h[1] = inStream(infl.h_outflow);
     // h[2:N] = htilde;
     T[2:N] = Ttilde;
     // gas[1].Xi = inStream(infl.Xi_outflow);
-    
+    /*
     Xi[1] = inStream(infl.Xi_outflow);
     for j in 2:N loop
       Xi[j] = Xtilde[if UniformComposition then 1 else j - 1, 1:nXi];
     end for;
-    
+    */
     connect(wall,heatTransfer.wall);
 
     Q = heatTransfer.Q "Total heat flow through lateral boundary";
@@ -327,24 +330,30 @@ model Flow1DFV
       end if;
       // htilde = hstart[2:N];
       Ttilde = Tstart[2:N];
+      /*
       if not Medium.fixedX then
         Xtilde = ones(size(Xtilde, 1), size(Xtilde, 2)) * diagonal(Xstart[1:nX]);
       end if;      
+      */
     elseif initOpt == ThermoPower.Choices.Init.Options.steadyState then
       // der(htilde) = zeros(N - 1);
       der(Ttilde) = zeros(N - 1);
       if (not Medium.singleState) and not noInitialPressure then
         der(p) = 0;
       end if;
+      /*
       if not Medium.fixedX then
         der(Xtilde) = zeros(size(Xtilde, 1), size(Xtilde, 2));
       end if;            
+      */
     elseif initOpt == ThermoPower.Choices.Init.Options.steadyStateNoP then
       // der(htilde) = zeros(N - 1);
       der(Ttilde) = zeros(N - 1);
+      /*
       if not Medium.fixedX then
         der(Xtilde) = zeros(size(Xtilde, 1), size(Xtilde, 2));
       end if;      
+      */
       assert(false, "initOpt = steadyStateNoP deprecated, use steadyState and noInitialPressure",AssertionLevel.warning);
     else
       assert(false, "Unsupported initialisation option");

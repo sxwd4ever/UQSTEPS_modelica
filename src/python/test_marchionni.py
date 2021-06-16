@@ -22,7 +22,7 @@ import os
 from os import path, sep
 
 import numpy as np
-from model import TestDataSet,TestConfig, TestItem, TestResult,Variable
+from model import TestDataSet, TestConfig, TestItem, TestResult, Variable
 from plotlib import PlotManager, DataSeries, AxisType
 from physics import Temperature, Pressure, MDot
 from experiments import Experiment, PCHEExperiment, ErrorFunc, ParamFitting
@@ -64,14 +64,14 @@ class MarchionniTest(PCHEExperiment):
 
         test.set_post_data('hc_hot', np.array(hc_hot[::-1]))
         test.set_post_data('hc_cold', np.array(hc_cold[::-1]))
-
-        keys = data_ref['keys']
+        data_ref_cur = data_ref[test.name]
+        keys = data_ref_cur['keys']
         row_names = ['1D', 'OEM']
 
         err_dict = {}
 
         for rname in row_names:
-            row = data_ref[rname]
+            row = data_ref_cur[rname]
 
             for i in range(0, len(keys)):
                 k = keys[i] + "_act"
@@ -88,108 +88,108 @@ class MarchionniTest(PCHEExperiment):
         return {
             'T_comparison':{
                 'series':[{
-                    'name' : 'T_hot',
-                    'cs': 'r-o',
-                    'x':
+                    'name': 'T_hot',
+                    'cs'  : 'r-o',
+                    'x'   : 
                     {
-                        'value': values['x'] * 1e3,
+                        'value'     : values['x'] * 1e3,
                         'axis_range': meta_cfg['axis_x'],
-                        'label': meta_cfg['label_x']
+                        'label'     : meta_cfg['label_x']
                     },
-                    'y':
+                    'y': 
                     {
-                        'value': values['T_hot'] - 273.15,
+                        'value'     : values['T_hot'] - 273.15,
                         'axis_range': meta_cfg['axis_T'],
-                        'label': meta_cfg['label_T']
+                        'label'     : meta_cfg['label_T']
                     }
                 },
                 {
-                    'name' : 'T_cold',
-                    'cs': 'b-v',
-                    'x':
+                    'name': 'T_cold',
+                    'cs'  : 'b-v',
+                    'x'   : 
                     {
-                        'value': values['x'] * 1e3,
+                        'value'     : values['x'] * 1e3,
                         'axis_range': meta_cfg['axis_x'],
-                        'label': meta_cfg['label_x']
+                        'label'     : meta_cfg['label_x']
                     },
-                    'y':
+                    'y': 
                     {
-                        'value': values['T_cold'] - 273.15,
+                        'value'     : values['T_cold'] - 273.15,
                         'axis_range': meta_cfg['axis_T'],
-                        'label': meta_cfg['label_T']
+                        'label'     : meta_cfg['label_T']
                     }
                 }],
-                "imgfile" : meta_cfg["imgfile_T"]
+                "imgfile": meta_cfg["imgfile_T"]
             },
             'dp_comparison':{
                 'series':[{
-                    'name' : 'dp_hot',
-                    'cs': 'r-o',
-                    'x':
+                    'name': 'dp_hot',
+                    'cs'  : 'r-o',
+                    'x'   : 
                     {
-                        'value': values['x'] * 1e3,
+                        'value'     : values['x'] * 1e3,
                         'axis_range': meta_cfg['axis_x'],
-                        'label': meta_cfg['label_x']
+                        'label'     : meta_cfg['label_x']
                     },
-                    'y':
+                    'y': 
                     {
-                        'value': values['dp_hot'],
+                        'value'     : values['dp_hot'],
                         'axis_range': meta_cfg['axis_dp'],
-                        'label': meta_cfg['label_dp']
+                        'label'     : meta_cfg['label_dp']
                     }
                 },
                 {
-                    'name' : 'dp_cold',
-                    'cs': 'b-v',
-                    'x':
+                    'name': 'dp_cold',
+                    'cs'  : 'b-v',
+                    'x'   : 
                     {
-                        'value': values['x'] * 1e3,
+                        'value'     : values['x'] * 1e3,
                         'axis_range': meta_cfg['axis_x'],
-                        'label': meta_cfg['label_x']
+                        'label'     : meta_cfg['label_x']
                     },
-                    'y':
+                    'y': 
                     {
-                        'value': values['dp_cold'],
+                        'value'     : values['dp_cold'],
                         'axis_range': meta_cfg['axis_dp'],
-                        'label': meta_cfg['label_dp']
+                        'label'     : meta_cfg['label_dp']
                     }
                 }],
-                "imgfile" : meta_cfg["imgfile_dp"]
+                "imgfile": meta_cfg["imgfile_dp"]
             },  
             'gamma_comparison':{
                 'series':[{
-                    'name' : 'gamma_hot',
-                    'cs': 'r-o',
-                    'x':
+                    'name': 'gamma_hot',
+                    'cs'  : 'r-o',
+                    'x'   : 
                     {
-                        'value': values['x_hot'] * 1e3,
+                        'value'     : values['x_hot'] * 1e3,
                         'axis_range': meta_cfg['axis_x'],
-                        'label': meta_cfg['label_x']
+                        'label'     : meta_cfg['label_x']
                     },
-                    'y':
+                    'y': 
                     {
-                        'value': values['hc_hot'] / 1e3,
+                        'value'     : values['hc_hot'] / 1e3,
                         'axis_range': meta_cfg['axis_gamma'],
-                        'label': meta_cfg['label_gamma']
+                        'label'     : meta_cfg['label_gamma']
                     }
                 },
                 {
-                    'name' : 'gamma_cold',
-                    'cs': 'b-v',
-                    'x':
+                    'name': 'gamma_cold',
+                    'cs'  : 'b-v',
+                    'x'   : 
                     {
-                        'value': values['x_cold'] * 1e3,
+                        'value'     : values['x_cold'] * 1e3,
                         'axis_range': meta_cfg['axis_x'],
-                        'label': meta_cfg['label_x']
+                        'label'     : meta_cfg['label_x']
                     },
-                    'y':
+                    'y': 
                     {
-                        'value': values['hc_cold'] / 1e3,
+                        'value'     : values['hc_cold'] / 1e3,
                         'axis_range': meta_cfg['axis_gamma'],
-                        'label': meta_cfg['label_gamma']
+                        'label'     : meta_cfg['label_gamma']
                     }
                 }],
-                "imgfile" : meta_cfg["imgfile_gamma"]
+                "imgfile": meta_cfg["imgfile_gamma"]
             }                  
         } 
 
@@ -207,9 +207,9 @@ class MarchionniExpFitting(ParamFitting):
         return values_new
 class ExpType(Enum):
     LOAD_PRE_EXP = 1,
-    VS_CFD = 2,  # "aginst marchionni's 1D_vs_3D"
-    FULL_SCALE = 3, # full scale off design in Sec. 4 of [Marchionni 2019]
-    Fitting = 4 # paramters fitting
+    VS_CFD       = 2, # "aginst marchionni's 1D_vs_3D"
+    FULL_SCALE   = 3, # full scale off design in Sec. 4 of [Marchionni 2019]
+    Fitting      = 4 # paramters fitting
 
 def cal_rho_bar(cfg_ref) -> Tuple[float, float]:
     '''
@@ -232,7 +232,7 @@ def main(work_root = []):
 
     # parameters initialization for this simulation
     exp_type:ExpType = ExpType.Fitting
-    model_name = "Steps.Test.TestTP_PCHE_Marchionni"  
+    model_name = "Steps.Test.TPComponents.TestTP_PCHE_Marchionni"  
     # exp flags 
     use_rho_bar = -1.0 # > 1.0 use rho_bar for dp calculation 
 
@@ -254,58 +254,58 @@ def main(work_root = []):
     # src->dst 
     mapping = {
         "Comparison of T and dp": {
-            "T_hot_out_act": "T_hot_out_act",
-            "T_cold_out_act": "T_cold_out_act",
-            "T_hot_out_act_OEM_err": "T_hot_out_err",
-            "T_cold_out_act_OEM_err": "T_cold_out_err",            
-            "dp_hot_act": "dp_hot_act",
-            "dp_cold_act": "dp_cold_act",
-            "dp_hot_act_OEM_err": "dp_hot_err",
-            "dp_cold_act_OEM_err": "dp_cold_err"
+            "T_hot_out_act"         : "T_hot_out_act",
+            "T_cold_out_act"        : "T_cold_out_act",
+            "T_hot_out_act_OEM_err" : "T_hot_out_err",
+            "T_cold_out_act_OEM_err": "T_cold_out_err",
+            "dp_hot_act"            : "dp_hot_act",
+            "dp_cold_act"           : "dp_cold_act",
+            "dp_hot_act_OEM_err"    : "dp_hot_err",
+            "dp_cold_act_OEM_err"   : "dp_cold_err"
         }
     }
 
     plot_metacfg_base = {
-        "axis_x": [0, 272],
-        "axis_T" : [80, 440], # degC  
-        "axis_dp" : [0, 10], # kPa
-        "axis_gamma" : [1.7, 3.5], # kW/(m^2K)
-        "label_x" : 'Z (m)',
-        "label_T" : 'T (K)',
-        "label_dp" : '$\\Delta~p~(kPa)$ (K)',  
-        "label_gamma" : '$Local heat transfer co (kW/(m^2 K)$',
-        "imgfile_T": "Marchionni_Fig_04_T_1D_vs_3D.png",
-        "imgfile_dp": "Marchionni_Fig_05_dp_1D_vs_3D.png",  
-        "imgfile_gamma": "Marchionni_Fig_06_gamma_1D_vs_3D.png"                  
+        "axis_x"       : [0, 272],
+        "axis_T"       : [80, 440],                              # degC
+        "axis_dp"      : [0, 10],                                # kPa
+        "axis_gamma"   : [1.7, 3.5],                             # kW/(m^2K)
+        "label_x"      : 'Z (m)',
+        "label_T"      : 'T (K)',
+        "label_dp"     : '$\\Delta~p~(kPa)$ (K)',
+        "label_gamma"  : '$Local heat transfer co (kW/(m^2 K)$',
+        "imgfile_T"    : "Marchionni_Fig_04_T_1D_vs_3D.png",
+        "imgfile_dp"   : "Marchionni_Fig_05_dp_1D_vs_3D.png",
+        "imgfile_gamma": "Marchionni_Fig_06_gamma_1D_vs_3D.png"
     }
 
     plot_metacfg_offest = {} 
 
     ref_data= {
             "Design point" :{
-                "keys" : ['dp_hot','T_hot_out', 'dp_cold', 'T_cold_out'],
-                '1D': [from_kPa(131), from_degC(81.4), from_kPa(119), from_degC(283.0)],
-                'OEM': [from_kPa(130), from_degC(80.5), from_kPa(120), from_degC(284.9)]
+                "keys": ['dp_hot','T_hot_out', 'dp_cold', 'T_cold_out'],
+                '1D'  : [from_kPa(131), from_degC(81.4), from_kPa(119), from_degC(283.0)],
+                'OEM' : [from_kPa(130), from_degC(80.5), from_kPa(120), from_degC(284.9)]
             },
             "off-design #1" :{
-                "keys" : ['dp_hot','T_hot_out', 'dp_cold', 'T_cold_out'],
-                '1D': [from_kPa(80), from_degC(79.5), from_kPa(73), from_degC(285.4)],
-                'OEM': [from_kPa(79), from_degC(78.6), from_kPa(74), from_degC(287.2)]
+                "keys": ['dp_hot','T_hot_out', 'dp_cold', 'T_cold_out'],
+                '1D'  : [from_kPa(80), from_degC(79.5), from_kPa(73), from_degC(285.4)],
+                'OEM' : [from_kPa(79), from_degC(78.6), from_kPa(74), from_degC(287.2)]
             },            
             "off-design #2" :{
-                "keys" : ['dp_hot','T_hot_out', 'dp_cold', 'T_cold_out'],
-                '1D': [from_kPa(146), from_degC(99.4), from_kPa(138), from_degC(293.2)],
-                'OEM': [from_kPa(145), from_degC(99.7), from_kPa(139), from_degC(294.5)]
+                "keys": ['dp_hot','T_hot_out', 'dp_cold', 'T_cold_out'],
+                '1D'  : [from_kPa(146), from_degC(99.4), from_kPa(138), from_degC(293.2)],
+                'OEM' : [from_kPa(145), from_degC(99.7), from_kPa(139), from_degC(294.5)]
             }, 
             "off-design #3" :{
-                "keys" : ['dp_hot','T_hot_out', 'dp_cold', 'T_cold_out'],
-                '1D': [from_kPa(123), from_degC(67.7), from_kPa(104), from_degC(267.7)],
-                'OEM': [from_kPa(122), from_degC(66.6), from_kPa(106), from_degC(269.3)]
+                "keys": ['dp_hot','T_hot_out', 'dp_cold', 'T_cold_out'],
+                '1D'  : [from_kPa(123), from_degC(67.7), from_kPa(104), from_degC(267.7)],
+                'OEM' : [from_kPa(122), from_degC(66.6), from_kPa(106), from_degC(269.3)]
             },  
             "off-design #4" :{
-                "keys" : ['dp_hot','T_hot_out', 'dp_cold', 'T_cold_out'],
-                '1D': [from_kPa(205), from_degC(83.6), from_kPa(183), from_degC(280.1)],
-                'OEM': [from_kPa(202), from_degC(82.7), from_kPa(184), from_degC(282.3)]
+                "keys": ['dp_hot','T_hot_out', 'dp_cold', 'T_cold_out'],
+                '1D'  : [from_kPa(205), from_degC(83.6), from_kPa(183), from_degC(280.1)],
+                'OEM' : [from_kPa(202), from_degC(82.7), from_kPa(184), from_degC(282.3)]
             }                       
         }
     sim_ops=[
@@ -321,22 +321,22 @@ def main(work_root = []):
         # referred base cfg
         cfg_base = {
             # geometry parameters
-            "N_ch": 1e4, # "channel number"
-            "N_seg": 20, # "segments number"
-            "D_ch": 2e-3, # "channel diameter, semi circular tube"
-            "L_fp": 272e-3, # "channel flow path length"
-            "L_pitch": 12.3e-3, # "pitch length"
-            "a_phi": 36.0, # "pitch angle, degree"
-            "H_ch": 3.26e-3, # "Height of the solid domain, containing one cold tube and one hot tube"
-            "W_ch": 1.27e-3 * 2, # "Width of the solid domain"
+            "N_ch"   : 1e4,         # "channel number"
+            "N_seg"  : 20,          # "segments number"
+            "D_ch"   : 2e-3,        # "channel diameter, semi circular tube"
+            "L_fp"   : 272e-3,      # "channel flow path length"
+            "L_pitch": 12.3e-3,     # "pitch length"
+            "a_phi"  : 36.0,        # "pitch angle, degree"
+            "H_ch"   : 3.26e-3,     # "Height of the solid domain, containing one cold tube and one hot tube"
+            "W_ch"   : 1.27e-3 * 2, # "Width of the solid domain"
             # boundary conditon
-            "G_hot_in": 509.3, # "hot inlet velocity m/s";
-            "G_cold_in": 509.3, # "cold inlet velocity m/s";
-            "p_hot_in": from_bar(75), # "hot inlet pressure";
-            "p_cold_in":from_bar(150), # "cold inlet pressure";
-            "T_hot_in": from_degC(400), # "hot inlet temperature, K";
-            "T_hot_out": from_degC(140), # "cold outlet temperature, K";
-            "T_cold_in": from_degC(100), # "cold inlet temperature, K";
+            "G_hot_in"  : 509.3,          # "hot inlet velocity m/s";
+            "G_cold_in" : 509.3,          # "cold inlet velocity m/s";
+            "p_hot_in"  : from_bar(75),   # "hot inlet pressure";
+            "p_cold_in" : from_bar(150),  # "cold inlet pressure";
+            "T_hot_in"  : from_degC(400), # "hot inlet temperature, K";
+            "T_hot_out" : from_degC(140), # "cold outlet temperature, K";
+            "T_cold_in" : from_degC(100), # "cold inlet temperature, K";
             "T_cold_out": from_degC(300), # "cold outlet temperature, K";
         }         
 
@@ -400,33 +400,33 @@ def main(work_root = []):
         exp.plot_results(ds_exp, plot_metacfg_base, plot_metacfg_offest)        
 
     elif exp_type == ExpType.FULL_SCALE:
-        N_ch = 54 * 42
-        A_c = 1.57e-6 # mm^2 -> m^2
+        N_ch    = 54 * 42
+        A_c     = 1.57e-6 # mm^2 -> m^2
         A_stack = N_ch * A_c # area of cross section for a stack containg all channels
         # referred base cfg
         cfg_base = {
             # geometry parameters
-            "N_ch": N_ch, # "channel number"
-            "N_seg": 20, # "segments number"
-            "D_ch": 2e-3, # "channel diameter, semi circular tube"
-            "L_fp": 1012e-3, # "channel flow path length"
-            "L_pitch": 12.3e-3, # "pitch length"
-            "a_phi": 45.0, # "pitch angle, degree"
-            "H_ch": 3.26e-3, # "Height of the solid domain, containing one cold tube and one hot tube"
-            "W_ch": 1.27e-3 * 2, # "Width of the solid domain"
-            # boundary conditon
-            "G_in": 2.06 / A_stack,  # "inlet mass flux rate kg/(m^2 s)";            
-            "p_hot_in": from_bar(75), # "hot inlet pressure";
-            "p_cold_in":from_bar(125), # "cold inlet pressure";
-            "T_hot_in": from_degC(344.3), # "hot inlet temperature, K";
-            "T_hot_out": from_degC(81), # "cold outlet temperature, K";
-            "T_cold_in": from_degC(72.9), # "cold inlet temperature, K";
-            "T_cold_out": from_degC(283), # "cold outlet temperature, K";
-            # "kc_dp": 1 # "pressure drop correction coefficient"
+            "N_ch"   : N_ch,        # "channel number"
+            "N_seg"  : 20,          # "segments number"
+            "D_ch"   : 2e-3,        # "channel diameter, semi circular tube"
+            "L_fp"   : 1012e-3,     # "channel flow path length"
+            "L_pitch": 12.3e-3,     # "pitch length"
+            "a_phi"  : 45.0,        # "pitch angle, degree"
+            "H_ch"   : 3.26e-3,     # "Height of the solid domain, containing one cold tube and one hot tube"
+            "W_ch"   : 1.27e-3 * 2, # "Width of the solid domain"
+            # boundary condition
+              "G_hot_in"  : 2.06 / A_stack,   # "inlet mass flux rate kg/(m^2 s)";
+              "p_hot_in"  : from_bar(75),     # "hot inlet pressure";
+              "p_cold_in" : from_bar(125),    # "cold inlet pressure";
+              "T_hot_in"  : from_degC(344.3), # "hot inlet temperature, K";
+              "T_hot_out" : from_degC(81),    # "cold outlet temperature, K";
+              "T_cold_in" : from_degC(72.9),  # "cold inlet temperature, K";
+              "T_cold_out": from_degC(283),   # "cold outlet temperature, K";
+            # "kc_dp"     : 1 # "pressure drop correction coefficient"
         } 
 
         cfg_offset_base = {
-                "keys" : ["G_in", "T_cold_in"],   
+                "keys" : ["G_hot_in", "T_cold_in"],   
                 "Design point" : [2.06 / A_stack, from_degC(72.9)],
                 "off-design #1" : [1.57 / A_stack, from_degC(72.9)],
                 "off-design #2" : [2.09 / A_stack, from_degC(87.5)],                  
@@ -453,16 +453,17 @@ def main(work_root = []):
                 cfg_offset[f'phi={phi}'] = cfg_offset_cp
         else:
             # kc_cfs = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-            kc_cfs_1 = [7, 7.3, 7.5, 7.8, 8] 
+            # kc_cfs_1 = [7, 7.3, 7.5, 7.8, 8] 
+            kc_cfs_1 = [7, 7.3]  # quick version
             kc_cfs = []
             kc_cfs.extend(kc_cfs_1)
-            kc_cfs.extend(kc_cfs_1 * 2)
+            # kc_cfs.extend(kc_cfs_1 * 2)
 
             cfg_offset = {} 
             l = []            
             for kc_cf in kc_cfs:
                 cfg_offset_cp = deepcopy(cfg_offset_base)
-                cfg_offset_cp['keys'].extend(['kc_cf_hot','kc_cf_cold'])
+                cfg_offset_cp['keys'].extend(['Cf_C1_hot','Cf_C1_cold'])
                 for k, v in cfg_offset_cp.items():
                     if k == 'keys':
                         continue
@@ -511,7 +512,7 @@ def main(work_root = []):
             "T_hs_1D" : [670.3775, 650.3897, 630.6760, 610.4139, 592.0714, 573.1803, 554.5635, 536.4951, 518.9749, 502.0031, 487.7732],
             "T_cs_3D" : [528.0776, 507.2670, 487.8280, 469.2110, 452.2394, 435.8161, 420.7637, 407.3566, 394.4977, 383.2836, 374.2622],
             "T_cs_1D" : [519.8520, 501.5092, 483.4409, 465.9206, 449.7713, 433.8962, 419.3922, 406.2588, 393.9483, 383.0084, 374.8103],
-            # (accumulated) pressdure drop, [kPa]
+            # (accumulated) pressure drop, [kPa]
             "dp_hs_3D" : [0.0000, 0.6471, 1.3399, 2.0785, 2.8552, 3.6776, 4.5381, 5.4520, 6.4040, 7.4093, 8.3384],
             "dp_hs_1D" : [0.0000, 1.0968, 2.1402, 3.1380, 4.0976, 5.0038, 5.8720, 6.6944, 7.4787, 8.2248, 8.9253],
             "dp_cs_3D" : [3.7729, 3.4520, 3.1463, 2.8178, 2.4665, 2.0998, 1.7027, 1.2904, 0.8399, 0.3437, 0.0000],
@@ -528,22 +529,22 @@ def main(work_root = []):
         # referred base cfg
         cfg_base = {
             # geometry parameters
-            "N_ch": 1e4, # "channel number"
-            "N_seg": 20, # "segments number"
-            "D_ch": 2e-3, # "channel diameter, semi circular tube"
-            "L_fp": 272e-3, # "channel flow path length"
-            "L_pitch": 12.3e-3, # "pitch length"
-            "a_phi": 36.0, # "pitch angle, degree"
-            "H_ch": 3.26e-3, # "Height of the solid domain, containing one cold tube and one hot tube"
-            "W_ch": 1.27e-3 * 2, # "Width of the solid domain"
-            # boundary conditon
-            "G_hot_in": 509.3, # "hot inlet velocity m/s";
-            "G_cold_in": 509.3, # "cold inlet velocity m/s";
-            "p_hot_in": from_bar(75), # "hot inlet pressure";
-            "p_cold_in":from_bar(150), # "cold inlet pressure";
-            "T_hot_in": from_degC(400), # "hot inlet temperature, K";
-            "T_hot_out": from_degC(140), # "cold outlet temperature, K";
-            "T_cold_in": from_degC(100), # "cold inlet temperature, K";
+            "N_ch"   : 1e4,         # "channel number"
+            "N_seg"  : 20,          # "segments number"
+            "D_ch"   : 2e-3,        # "channel diameter, semi circular tube"
+            "L_fp"   : 272e-3,      # "channel flow path length"
+            "L_pitch": 12.3e-3,     # "pitch length"
+            "a_phi"  : 36.0,        # "pitch angle, degree"
+            "H_ch"   : 3.26e-3,     # "Height of the solid domain, containing one cold tube and one hot tube"
+            "W_ch"   : 1.27e-3 * 2, # "Width of the solid domain"
+            # boundary condition
+            "G_hot_in"  : 509.3,          # "hot inlet velocity m/s";
+            "G_cold_in" : 509.3,          # "cold inlet velocity m/s";
+            "p_hot_in"  : from_bar(75),   # "hot inlet pressure";
+            "p_cold_in" : from_bar(150),  # "cold inlet pressure";
+            "T_hot_in"  : from_degC(400), # "hot inlet temperature, K";
+            "T_hot_out" : from_degC(140), # "cold outlet temperature, K";
+            "T_cold_in" : from_degC(100), # "cold inlet temperature, K";
             "T_cold_out": from_degC(300), # "cold outlet temperature, K";
         }   
 
@@ -552,14 +553,14 @@ def main(work_root = []):
         case_dict = {
             name: {
                 "cfg": {
-                    "keys": [x for x in cfg_base.keys()] + cfg_offset_full['keys'],
+                    "keys" : [x for x in cfg_base.keys()] + cfg_offset_full['keys'],
                     "train": [x for x in cfg_base.values()] + cfg_offset_full[name]
                 },
                 "data_ref": {
                     "train": {
-                        "T_hs": data_ref_full["T_hs_" + suffix],
+                        "T_hs" : data_ref_full["T_hs_" + suffix],
                         "dp_hs": data_ref_full["dp_hs_" + suffix],
-                        "T_cs": data_ref_full["T_cs_" + suffix],
+                        "T_cs" : data_ref_full["T_cs_" + suffix],
                         "dp_cs": data_ref_full["dp_cs_" + suffix]
                     }
                 }}
@@ -575,9 +576,11 @@ def main(work_root = []):
 
         for name, case in case_dict.items():
             fitting = MarchionniExpFitting(
-                exp, case["cfg"], mapping, sim_ops, case["data_ref"], errfunc=ErrorFunc.Dp)
+                exp, case, mapping, sim_ops, errfunc=ErrorFunc.T)
 
             fitting.run_fitting(pt=(1,1,1),max_steps=50)
+
+        print('No results will be saved, debug and check the fitting params (set a breakpoint here)')
 
     print('All done!')
 

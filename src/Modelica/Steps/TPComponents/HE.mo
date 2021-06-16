@@ -1,7 +1,9 @@
 within Steps.TPComponents;
 
 model HE "Heat Exchanger fluid - gas"
+  //extends ThermoPower.PowerPlants.HRSG.Interfaces.HeatExchanger;
   extends Interfaces.HeatExchanger;
+  
   import Gas = ThermoPower.Gas;  
   import Water = ThermoPower.Water;
   import Choices = ThermoPower.Choices;
@@ -51,7 +53,39 @@ model HE "Heat Exchanger fluid - gas"
     annotation(
     Placement(transformation(extent = {{-10, -66}, {10, -46}}, rotation = 0)));
   
-  Gas.Flow1DFV gasFlow(
+
+   // works for transient simulation  
+   Steps.TPComponents.Flow1DFV gasFlow(
+    Nt = 1, // should be override for Ngo or GnielinskiHeatTransferFV are used
+    N = N_G, 
+    Nw = Nw_G, 
+    Dhyd = 1, 
+    wnom = gasNomFlowRate, 
+    initOpt = if SSInit then Options.steadyState else Options.noInit, 
+    redeclare package Medium = FlueGasMedium, 
+    QuasiStatic = gasQuasiStatic, 
+    pstart = pstart_G, 
+    L = L, 
+    A = gasVol / L, 
+    omega = exchSurface_G / L, 
+    FFtype = FFtype_G, 
+    Kfnom = Kfnom_G, 
+    dpnom = dpnom_G, 
+    rhonom = rhonom_G, 
+    Cfnom = Cfnom_G, 
+    Tstartbar = Tstartbar_G, 
+    Tstartin    = cfg_G.st_in.T,                                              
+    Tstartout   = cfg_G.st_out.T,
+    hstartin    = cfg_F.st_in.h,
+    hstartout   = cfg_F.st_out.h,    
+    redeclare model HeatTransfer = HeatTransfer_G) 
+    annotation(
+      Placement(transformation(extent = {{-12, 66}, {12, 46}}, rotation = 0))); 
+
+/* 
+  // Shell-and-tube configuration
+  
+  Gas.Flow1DFV gasFlow(    
     Nt = 1, 
     N = N_G, 
     Nw = Nw_G, 
@@ -70,17 +104,21 @@ model HE "Heat Exchanger fluid - gas"
     rhonom = rhonom_G, 
     Cfnom = Cfnom_G, 
     Tstartbar = Tstartbar_G, 
+    Tstartin    = cfg_G.st_in.T,                                              
+    Tstartout   = cfg_G.st_out.T,
     redeclare model HeatTransfer = HeatTransfer_G) 
     annotation(
-    Placement(transformation(extent = {{-12, 66}, {12, 46}}, rotation = 0)));
-  
+      Placement(transformation(extent = {{-12, 66}, {12, 46}}, rotation = 0)));  
+*/
+    
   Thermal.MetalTubeFV metalTube(
     Nw = Nw_F, 
     L = exchSurface_F ^ 2 / (fluidVol * pi * 4), 
     rint = fluidVol * 4 / exchSurface_F / 2, 
     rext = (metalVol + fluidVol) * 4 / extSurfaceTub / 2, 
     rhomcm = rhomcm, 
-    lambda = lambda, 
+    lambda = lambda,
+    Tstartbar = Tstartbar_M,
     WallRes = false) 
     annotation(
     Placement(transformation(extent = {{-10, -24}, {10, -4}})));

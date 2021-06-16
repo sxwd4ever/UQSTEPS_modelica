@@ -53,7 +53,32 @@ model PBConfig_PCHE
         d = r_HTR * 2),
       thermo(gamma_he = 1.938761018e6/A_HTR "200")
     ),
-    N_ch_HTR = 422585      
+    N_ch_HTR = 422585,
+    cfg_heater_cold(
+      geo(
+        V = V_heater, // * N_ch_heater, 
+        A_ex = A_heater, // * N_ch_heater, exchange surface between fluid-tube
+        L = L_h, 
+        d = r_heater * 2), // calculate by steps the python code
+      thermo(gamma_he = 1.938761018e6/A_heater "200")
+    ),
+    cfg_heater_tube(
+      geo(
+        V = V_heater * 2, //r_t_heater^2 * pi * L_h * N_ch_heater - cfg_heater_cold.geo.V,
+        A_ex = A_heater, //  * N_ch_heater, // assume thickness of tube approximately 0
+        L = L_h, 
+        d = r_heater * 2),        
+      thermo(rho_mcm = rho_mcm, lambda = 12) // refer http://www.matweb.com/search/datasheet_print.aspx?matguid=9612aa3272134531b8b33eb80e61a1af&n=1 for INCONEL® Alloy X-750
+    ),
+    cfg_heater_hot(
+      geo(
+        V = V_heater, // r_o_heater^2 * pi * L_h * N_ch_heater - cfg_heater_tube.geo.V , 
+        A_ex = A_heater, // * N_ch_heater, 
+        L = L_h, 
+        d = r_heater * 2),
+      thermo(gamma_he = 1.938761018e6/A_heater "200")
+    ),
+    N_ch_h = 422585           
   );
 
   import Modelica.SIunits.Conversions.{from_degC, from_deg};
@@ -77,6 +102,11 @@ model PBConfig_PCHE
   parameter Real p_LTR = (pi + 2) * r_LTR;
   parameter Real V_LTR = r_LTR^2 * pi * L_LTR / 2;
   parameter Real A_LTR = p_LTR * L_LTR;
+  
+  parameter Real r_heater     = 1e-3;  
+  parameter Real peri_heater  = (pi + 2) * r_heater;
+  parameter Real V_heater     = r_heater^2 * pi * L_h / 2;
+  parameter Real A_heater     = peri_heater * L_h;  
   
   parameter Modelica.SIunits.Length pitch = 12.3e-3 "pitch length";
   parameter Real phi = 36 "pitch angle, degree";  

@@ -18,8 +18,11 @@ model TestDyn_PCHE_PHE_ramp
 
   // package medium_hot = Modelica.Media.IdealGases.SingleGases.CO2;
   package medium_hot = Steps.Media.ThermiaOilD;
+  // package medium_hot = Steps.Media.SCO2;
+  // package medium_hot = ExternalMedia.Examples.CO2CoolProp;
   // package medium_cold = Modelica.Media.IdealGases.SingleGases.CO2;
   package medium_cold = Steps.Media.SCO2;  
+  // package medium_cold = ExternalMedia.Examples.CO2CoolProp;
   
   // geometry parameters
   constant Real pi = Modelica.Constants.pi;
@@ -78,8 +81,11 @@ model TestDyn_PCHE_PHE_ramp
   // parameter SI.Density rho_cold_in = medium_cold.density_pT(p_cold_in, T_cold_in);
   parameter SI.MassFlowRate mdot_hot_in = 0.567217;
   parameter SI.MassFlowRate mdot_cold_in = 0.083115;
-
+  
   // use configuration of LTR for this test since the mdot are different for hot and cold side
+  // parameter Model.PBConfig_PCHE cfg(mdot_heater = 90);
+  
+  
   parameter Model.PBConfig_PCHE cfg(
     p_pump_in = p_hot_in,
     p_pump_out = p_cold_in,
@@ -91,7 +97,10 @@ model TestDyn_PCHE_PHE_ramp
     T_LTR_hot_out = T_hot_out,
     r_LTR = r_ch,
     L_LTR = L_fp,
+    r_HTR = r_ch,
+    L_HTR = L_fp,
     N_ch_LTR = N_ch,
+    N_ch_HTR = N_ch,
     N_seg = N_seg,
     pitch = L_pitch,
     phi = a_phi,
@@ -99,10 +108,12 @@ model TestDyn_PCHE_PHE_ramp
     cp_wall = cp_wall
   );
   
+  
   // set the values of parameters accordingly
   parameter HEBoundaryCondition bc_HE = cfg.bc_LTR; 
 
   //Components
+  // for transient simulation, set initOpt = steadyState
   inner ThermoPower.System system(allowFlowReversal = false, initOpt = ThermoPower.Choices.Init.Options.steadyState) annotation(
     Placement(transformation(extent = {{80, 80}, {100, 100}})));  
   
@@ -157,10 +168,27 @@ model TestDyn_PCHE_PHE_ramp
      
     // use Marchionni PCHE HeatTransfer
     // slow but can have a result - set a_phi = 0 to use Gnielinski's correlation 
+    
     redeclare replaceable model HeatTransfer_F = Steps.TPComponents.MarchionniPCHEHeatTransferFV(),
     redeclare replaceable model HeatTransfer_G = Steps.TPComponents.MarchionniPCHEHeatTransferFV(),
     gasFlow(heatTransfer(pitch = cfg.pitch, phi = cfg.phi, Cf_C1 = Cf_C1, Cf_C2 = Cf_C2, Cf_C3 = Cf_C3)),
-    fluidFlow(heatTransfer(pitch = cfg.pitch, phi = cfg.phi, Cf_C1 = Cf_C1, Cf_C2 = Cf_C2, Cf_C3 = Cf_C3)),    
+    fluidFlow(heatTransfer(pitch = cfg.pitch, phi = cfg.phi, Cf_C1 = Cf_C1, Cf_C2 = Cf_C2, Cf_C3 = Cf_C3)),   
+    /*
+    redeclare replaceable model HeatTransfer_F = Steps.TPComponents.KimPCHEHeatTransferFV(
+    pitch = L_pitch,
+    phi = a_phi),
+    // ThermoPower.Thermal.HeatTransferFV.ConstantHeatTransferCoefficient(gamma = thermo_LTR_cold.gamma_he),
+    // redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer, 
+    redeclare replaceable model HeatTransfer_G = Steps.TPComponents.KimPCHEHeatTransferFV(
+    pitch = L_pitch,
+    phi = a_phi),
+    */
+    /*    
+    redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.DittusBoelter,    
+    redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.DittusBoelter,
+    gasFlow(heatTransfer(heating=true)),
+    fluidFlow(heatTransfer(heating=false)),       
+*/
     /*
     // fast and works fine for now. Error occurs when mass flow rate is zero, i.e. one flow is shut down. 
     redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer,      
@@ -178,7 +206,7 @@ model TestDyn_PCHE_PHE_ramp
     SSInit = true,
     gasQuasiStatic = false,
     fluidQuasiStatic = false,
-    metalWall(L = L_wall, w_ch = W_ch, h_ch = H_ch, dx = T_wall),
+    metalWall(L = L_wall, w_ch = W_ch, h_ch = H_ch, dx = T_wall,WallRes = false),
     table_k_metalwall =   table_k_metalwall
     // metalQuasiStatic = true
     // override the values of Am and L of metaltubeFV
@@ -321,14 +349,13 @@ equation
 annotation(
     Diagram(graphics),
     // for steady-state simulation - value check
-    // experiment(StartTime = 0, StopTime = 10, Tolerance = 1e-3, Interval = 1),
+    experiment(StartTime = 0, StopTime = 10, Tolerance = 1e-3, Interval = 1),
     // for complete transient simulation    
-    experiment(StartTime = 0, StopTime = 2200, Tolerance = 1e-3, Interval = 10),
-    __OpenModelica_commandLineOptions = "-showErrorMessages --matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts",        
+    // experiment(StartTime = 0, StopTime = 2200, Tolerance = 1e-3, Interval = 10),
     // remove the option flag --matchingAlgorithm=PFPlusExt, which may lead to 'Internal error - IndexReduction.dynamicStateSelectionWork failed!' during Translation
-    // __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts,bltdump",    
-    // disable some log flags to avoid incredible large log files and false dead of simulation
+    // __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts,bltdump",        
+    __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian,aliasConflicts",        
     // __OpenModelica_simulationFlags(lv = "LOG_DEBUG,LOG_NLS,LOG_NLS_V,LOG_STATS,LOG_INIT,LOG_STDOUT, -w", outputFormat = "mat", s = "dassl", nls = "homotopy")
-    __OpenModelica_simulationFlags(lv = "LOG_STATS,LOG_INIT, -w", outputFormat = "mat", s = "dassl", nls = "homotopy")
+    __OpenModelica_simulationFlags(lv = "LOG_STATS,LOG_INIT,LOG_NLS -w", outputFormat = "mat", s = "dassl", nls = "homotopy")
     );
 end TestDyn_PCHE_PHE_ramp;

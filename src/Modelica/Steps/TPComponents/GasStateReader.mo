@@ -12,5 +12,6 @@ equation
 
   rho = gas.d;
   s = gas.s;  
+  //s = Medium.specificEntropy(gas);
   
 end GasStateReader;

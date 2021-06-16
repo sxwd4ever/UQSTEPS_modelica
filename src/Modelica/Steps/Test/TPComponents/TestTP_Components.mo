@@ -68,7 +68,7 @@ model TestTP_Components
     
   ThermoPower.Water.SinkPressure sink_heater_hot(
     redeclare package Medium = medium_heater, 
-    p0 = bc_heater.st_hot_out.mdot, 
+    p0 = bc_heater.st_hot_out.p, 
     T = bc_heater.st_hot_out.T,
     use_T = true) 
     annotation(

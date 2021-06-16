@@ -9,5 +9,13 @@ ThroughSink
 WaterStateReader
 MarchionniPCHEHeatTransferFV
 Correlations
-Flow1DBase
 Flow1DFV
+Flow1DBase
+GasFlow1DFV
+GnielinskiHeatTransferFV
+NgoHeatTransferFV
+CompressorPham
+RampSeq_W
+RampSeq_TwoStages
+CompressorFixedPController
+TurbineFixedPController
