@@ -41,62 +41,62 @@ def json_IO_test():
             "T_H=550,T_C=10": 
             { # test 1
                 "cfg":{
-                    "mdot_main":mdot_main_des * 0.5, # 62.5
-                    "mdot_heater_hot":55,
-                    "T_heater_hot" : from_degC(550),
-                    "T_cooler_cold" : from_degC(10)
+                    "mdot_main"      : mdot_main_des * 0.5, # 62.5
+                    "mdot_heater_hot": 55,
+                    "T_heater_hot"   : from_degC(550),
+                    "T_cooler_cold"  : from_degC(10)
                 },
                 "result": {}
             },
             "T_H=550,T_C=20": { # test 2
                 "cfg":{
-                    "mdot_main":mdot_main_des * 0.5, # 62.5
-                    "mdot_heater_hot":55,
-                    "T_heater_hot" : from_degC(550),
-                    "T_cooler_cold" : from_degC(20)
+                    "mdot_main"      : mdot_main_des * 0.5, # 62.5
+                    "mdot_heater_hot": 55,
+                    "T_heater_hot"   : from_degC(550),
+                    "T_cooler_cold"  : from_degC(20)
                 },
                 "result": {}
 
             }, 
             "T_H=600,T_C=10": { # test 3
                 "cfg":{
-                    "mdot_main":mdot_main_des * 0.5, # 62.5
-                    "mdot_heater_hot":55,
-                    "T_heater_hot" : from_degC(600),
-                    "T_cooler_cold" : from_degC(10)
+                    "mdot_main"      : mdot_main_des * 0.5, # 62.5
+                    "mdot_heater_hot": 55,
+                    "T_heater_hot"   : from_degC(600),
+                    "T_cooler_cold"  : from_degC(10)
                 },
                 "result": {}
             }
         },
         "10MW off-Design(100%)": 
         {# group 2
-            "T_H=550,T_C=10":
+            "T_H=550,T_C=10": 
             { # test 1
-                "cfg":
+                "cfg": 
                 {
-                    "mdot_main":mdot_main_des * 1, # 125
-                    "mdot_heater_hot":55,
-                    "T_heater_hot" : from_degC(550),
-                    "T_cooler_cold" : from_degC(10)
+                    "mdot_main"      : mdot_main_des * 1, # 125
+                    "mdot_heater_hot": 55,
+                    "T_heater_hot"   : from_degC(550),
+                    "T_cooler_cold"  : from_degC(10)
                 },
                 "result": {}
             },
             "T_H=550,T_C=20": { # test 2                    
-                "cfg":
+                "cfg": 
                 {
-                    "mdot_main":mdot_main_des * 1, # 125
-                    "mdot_heater_hot":55,
-                    "T_heater_hot" : from_degC(550),
-                    "T_cooler_cold" : from_degC(20)
+                    "mdot_main"      : mdot_main_des * 1, # 125
+                    "mdot_heater_hot": 55,
+                    "T_heater_hot"   : from_degC(550),
+                    "T_cooler_cold"  : from_degC(20)
                 },
                 "result": {}
             }, 
             "T_H=600,T_C=10": { # test 3                    
                 "cfg":{
-                    "mdot_main":mdot_main_des * 1, # 125
-                    "mdot_heater_hot":55,
-                    "T_heater_hot" : from_degC(600),
-                    "T_cooler_cold" : from_degC(10)
+                    "mdot_main"      : mdot_main_des * 1, # 125
+                    "mdot_heater_hot": 55,
+                    "T_heater_hot"   : from_degC(600),
+                    "T_cooler_cold"  : from_degC(10)
                 },
                 "result": {}
             }       
@@ -119,11 +119,11 @@ def main(work_root = []):
 
     # referred base cfg
     cfg_ref = {
-        "mdot_main":mdot_main_des,
-        "mdot_heater_hot": 90, # 55,
-        "T_heater_hot" : from_degC(800),
-        "T_cooler_cold" : from_degC(35),
-        "gamma": 0.45
+        "mdot_main"      : mdot_main_des,
+        "mdot_heater_hot": 90,             # 55,
+        "T_heater_hot"   : from_degC(800),
+        "T_cooler_cold"  : from_degC(35),
+        "gamma"          : 0.45
     }
 
     # cfg with varied parameters from the base cfg
@@ -136,32 +136,32 @@ def main(work_root = []):
         # src -> dst
         mapping = {
             "performance map":{
-                "eta_pb":"eta_cycle",
-                "eta_turb":"eta_turb",
-                "eta_MC":"eta_MC",
-                "eta_RC":"eta_RC",            
-                "UA_HTR" : "UA_HTR",
-                "UA_LTR" : "UA_LTR",
+                "eta_pb"    : "eta_cycle",
+                "eta_turb"  : "eta_turb",
+                "eta_MC"    : "eta_MC",
+                "eta_RC"    : "eta_RC",
+                "UA_HTR"    : "UA_HTR",
+                "UA_LTR"    : "UA_LTR",
                 "UA_cooler" : "UA_cooler",
                 "UA_heater" : "UA_heater",
-                "W_MC": "W_comp",
-                "W_RC": "W_recomp",
-                "W_turb": "W_turb",
-                "W_net": "W_net",
-                "Q_HTR": "Q_HTR",
-                "Q_LTR": "Q_LTR",
-                "Q_cooler": "Q_cooler",
-                "Q_heater": "Q_heater",
-                "ex_HTR":"ex_HTR",
-                "ex_LTR":"ex_LTR",
-                "ex_comp":"ex_comp",
-                "ex_recomp":"ex_recomp",
-                "ex_turbine":"ex_turbine",
-                "ex_cooler":"ex_cooler",
-                "ex_heater":"ex_heater",
+                "W_MC"      : "W_comp",
+                "W_RC"      : "W_recomp",
+                "W_turb"    : "W_turb",
+                "W_net"     : "W_net",
+                "Q_HTR"     : "Q_HTR",
+                "Q_LTR"     : "Q_LTR",
+                "Q_cooler"  : "Q_cooler",
+                "Q_heater"  : "Q_heater",
+                "ex_HTR"    : "ex_HTR",
+                "ex_LTR"    : "ex_LTR",
+                "ex_comp"   : "ex_comp",
+                "ex_recomp" : "ex_recomp",
+                "ex_turbine": "ex_turbine",
+                "ex_cooler" : "ex_cooler",
+                "ex_heater" : "ex_heater",
             },
             "demo view":{
-                "rc1.T":"T_amb",
+                "rc1.T": "T_amb",
                 "r05.T": "TIT"
             }
         }        
@@ -174,8 +174,8 @@ def main(work_root = []):
         # load ratio < 0.75 leads error, use following values instead 
         # cfg_offset["mdot_main"] = list(map(lambda x: x * mdot_main_des/100, [50, 75, 100, 120]))  
         
-        cfg_offset_dict["mdot_main"] = list(map(lambda x: x * mdot_main_des/100, [75, 90, 100, 120]))       
-        cfg_offset_dict["T_heater_hot"] = list(map(lambda x: from_degC(x), [550, 600, 650, 700]))
+        cfg_offset_dict["mdot_main"]     = list(map(lambda x: x * mdot_main_des/100, [75, 90, 100, 120]))
+        cfg_offset_dict["T_heater_hot"]  = list(map(lambda x: from_degC(x), [550, 600, 650, 700]))
         cfg_offset_dict["T_cooler_cold"] = list(map(lambda x: from_degC(x), [30, 35, 40, 45]))
         # cfg_offset["mdot_heater_hot"] = 55
         # cfg_offset["gamma"] =[0.3, 0.325, 0.35, 0.375, 0.4, 0.45]	
@@ -184,29 +184,29 @@ def main(work_root = []):
         # src -> dst
         mapping = {
             "performance map":{
-                "eta_pb":"eta_cycle",
-                "eta_turb":"eta_turb",
-                "eta_MC":"eta_MC",
-                "eta_RC":"eta_RC",            
-                "UA_HTR" : "UA_HTR",
-                "UA_LTR" : "UA_LTR",
+                "eta_pb"    : "eta_cycle",
+                "eta_turb"  : "eta_turb",
+                "eta_MC"    : "eta_MC",
+                "eta_RC"    : "eta_RC",
+                "UA_HTR"    : "UA_HTR",
+                "UA_LTR"    : "UA_LTR",
                 "UA_cooler" : "UA_cooler",
                 "UA_heater" : "UA_heater",
-                "W_MC": "W_comp",
-                "W_RC": "W_recomp",
-                "W_turb": "W_turb",
-                "W_net": "W_net",
-                "Q_HTR": "Q_HTR",
-                "Q_LTR": "Q_LTR",
-                "Q_cooler": "Q_cooler",
-                "Q_heater": "Q_heater",
-                "ex_HTR":"ex_HTR",
-                "ex_LTR":"ex_LTR",
-                "ex_comp":"ex_comp",
-                "ex_recomp":"ex_recomp",
-                "ex_turbine":"ex_turbine",
-                "ex_cooler":"ex_cooler",
-                "ex_heater":"ex_heater",
+                "W_MC"      : "W_comp",
+                "W_RC"      : "W_recomp",
+                "W_turb"    : "W_turb",
+                "W_net"     : "W_net",
+                "Q_HTR"     : "Q_HTR",
+                "Q_LTR"     : "Q_LTR",
+                "Q_cooler"  : "Q_cooler",
+                "Q_heater"  : "Q_heater",
+                "ex_HTR"    : "ex_HTR",
+                "ex_LTR"    : "ex_LTR",
+                "ex_comp"   : "ex_comp",
+                "ex_recomp" : "ex_recomp",
+                "ex_turbine": "ex_turbine",
+                "ex_cooler" : "ex_cooler",
+                "ex_heater" : "ex_heater",
             }
         }
     

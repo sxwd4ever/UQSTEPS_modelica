@@ -223,8 +223,8 @@ model TPDyn_RCBCycle
   Steps.TPComponents.GasStateReader r_heater_cout(redeclare package Medium = medium_main) 
   annotation(
     Placement(visible = true, transformation(origin = {-90, 32}, extent = {{-4, -4}, {4, 4}}, rotation = 180)));
-    
-  // Case II - sourceMassFlow + sinkPressure
+/*    
+  // Case I - sourceMassFlow + sinkPressure
   ThermoPower.Gas.SourceMassFlow source(
     redeclare package Medium = medium_main, 
     T         = st_source.T,
@@ -237,10 +237,10 @@ model TPDyn_RCBCycle
       T(start = st_source.T, nominal = st_source.T)))
       //h(start = st_source.h, nominal = st_source.h)))
   annotation(
-    Placement(visible = true, transformation(origin = {-107, -7}, extent = {{-5, -5}, {5, 5}}, rotation = 0)));
-    
-/*
-  // Case I - sourcePressure + sinkMassFlow
+    Placement(visible = true, transformation(origin = {-107, -7}, extent = {{-5, -5}, {5, 5}}, rotation = 0)));    
+*/
+
+  // Case II - sourcePressure + sinkMassFlow
   ThermoPower.Gas.SourcePressure source(
     redeclare package Medium = medium_main, 
     T        = st_source.T,
@@ -251,8 +251,8 @@ model TPDyn_RCBCycle
       p(start = st_source.p, nominal = st_source.p), 
       T(start = st_source.T, nominal = st_source.T))) 
   annotation(
-    Placement(visible = true, transformation(origin = {-105, -39}, extent = {{-5, -5}, {5, 5}}, rotation = 0)));
-*/
+    Placement(visible = true, transformation(origin = {-107, -7}, extent = {{-5, -5}, {5, 5}}, rotation = 0)));
+
 
 /*
   ThermoPower.Gas.SourceMassFlow source_mixer_in(
@@ -275,7 +275,7 @@ model TPDyn_RCBCycle
   annotation(
     Placement(transformation(origin = {0, -80}, extent = {{-10, -10}, {10, 10}}, rotation = 270)));
 */
- 
+/* 
   // Case I - sourceMassFlow + sinkPressure
   ThermoPower.Gas.SinkPressure sink(
     redeclare package Medium = medium_main, 
@@ -287,8 +287,8 @@ model TPDyn_RCBCycle
       T(start = st_sink.T, nominal = st_sink.T)))
   annotation(
     Placement(visible = true, transformation(origin = {-105, 33}, extent = {{-5, 5}, {5, -5}}, rotation = 180)));
-    
-/*
+*/   
+
   // Case II - sourcePressure + sinkMassFlow
   ThermoPower.Gas.SinkMassFlow sink(
     redeclare package Medium = medium_main, 
@@ -299,8 +299,8 @@ model TPDyn_RCBCycle
     w0        = st_sink.mdot
   ) 
   annotation(
-    Placement(visible = true, transformation(origin = {-105, 33}, extent = {{-5, -5}, {5, 5}}, rotation = 180)));
-*/
+    Placement(visible = true, transformation(origin = {-105, 33}, extent = {{-5, 5}, {5, -5}}, rotation = 180)));
+
 
   // use FlowJoin to mix flow
   Gas.FlowJoin mixer(redeclare package Medium = medium_main) 
@@ -336,8 +336,7 @@ model TPDyn_RCBCycle
         gamma_min = 2000,
         gamma_max = 5000
       )
-    ),       
-    
+    ),  
     cfg              = cfg_LTR,
     N_G              = N_seg_LTR,
     N_F              = N_seg_LTR,
@@ -365,9 +364,8 @@ model TPDyn_RCBCycle
     redeclare package FluidMedium = medium_main, 
     redeclare package FlueGasMedium = medium_main, 
      
-    // use Marchionni PCHE HeatTransfer
-    // slow but can have a result - set a_phi = 0 to use Gnielinski's correlation 
-    
+    // use Gnielinski PCHE HeatTransfer
+    // slow but can have a result - set a_phi = 0 to use Gnielinski's correlation     
     redeclare replaceable model HeatTransfer_F = Steps.TPComponents.GnielinskiHeatTransferFV(),
     redeclare replaceable model HeatTransfer_G = Steps.TPComponents.GnielinskiHeatTransferFV(),
     gasFlow(      
@@ -454,7 +452,7 @@ model TPDyn_RCBCycle
   Modelica.Mechanics.Rotational.Sources.ConstantSpeed const_speed_turb(
       w_fixed=cfg_turb.N, useSupport=false) 
   annotation(
-    Placement(visible = false, transformation(origin = {-73, -41}, extent = {{-5, -5}, {5, 5}}, rotation = 0)));
+    Placement(visible = true, transformation(origin = {-73, -41}, extent = {{-5, -5}, {5, 5}}, rotation = 0)));
  
   // controller FPC (and the speed_turb) only required for Case I - ramp source mdot. Commnent, remove it otherwise. 
   Steps.TPComponents.TurbineFixedPController FPC_turb(
@@ -470,7 +468,7 @@ model TPDyn_RCBCycle
     in_w1(start = cfg_turb.st_in.mdot, nominal = cfg_turb.st_in.mdot)
   ) "Fixed pressure controller for main compressor"
   annotation(
-    Placement(visible = true, transformation(origin = {-90, -41}, extent = {{-5, -5}, {5, 5}}, rotation = 0)));  
+    Placement(visible = false, transformation(origin = {-90, -41}, extent = {{-5, -5}, {5, 5}}, rotation = 0)));  
 
   Modelica.Mechanics.Rotational.Sources.Speed speed_turb(
     exact = false,
@@ -478,7 +476,7 @@ model TPDyn_RCBCycle
     w(start = cfg_turb.N, nominal = cfg_turb.N)
   )
   annotation(
-    Placement(visible = true, transformation(origin = {-73, -41}, extent = {{-5, -5}, {5, 5}}, rotation = 0)));   
+    Placement(visible = false, transformation(origin = {-73, -41}, extent = {{-5, -5}, {5, 5}}, rotation = 0)));   
 
   ThermoPower.Water.SourceMassFlow source_cooler(
     redeclare package Medium = medium_cooler,
@@ -681,9 +679,9 @@ model TPDyn_RCBCycle
   constant Real time_scaling_factor = 1; // 1 hour = 1 hour
   
   // boundary conditions
-  
+ /*  
   // ramp input to simulate the ramp change in ASPEN+ simulation
-  // ramp change for case I in Guan's report
+  // ramp change for case I in ASPEN ASTRI report
   Steps.TPComponents.RampSeq_W ramp_mdot(    
     time_start = 3 * SEC_PER_HOUR,
     interval   = 1 * SEC_PER_HOUR,
@@ -699,11 +697,11 @@ model TPDyn_RCBCycle
   Modelica.Blocks.Sources.Constant p_const_CIP(k(start = cfg_comp.st_in.p, nominal = cfg_comp.st_in.p))
   annotation(
     Placement(visible = true, transformation(origin = {-146, 79}, extent = {{-5, -5}, {5, 5}}, rotation = 0)));
-  
+   */ 
 
-  /*
+ 
   // ramp input to simulate the ramp change in ASPEN+ simulation
-  // ramp change for case II in Guan's report
+  // ramp change for case II in the ASPEN ASTRI report
   Steps.TPComponents.RampSeq_W ramp_p(    
     // time_start = 0.01 * SEC_PER_HOUR, 
     // interval = 1 * SEC_PER_HOUR, 
@@ -714,11 +712,12 @@ model TPDyn_RCBCycle
     offset  = st_source.p,
     ratio_1 = 0.05,
     ratio_2 = 0.05
-  )  annotation(
-    Placement(visible = true, transformation(origin = {-120, -32}, extent = {{-6, -6}, {6, 6}}, rotation = 0)));
-  */
+  )  
+  annotation(
+    Placement(visible = true, transformation(origin = {-146, 79}, extent = {{-5, -5}, {5, 5}}, rotation = 0)));
 
-  // ramp input for case III in Guan's report  
+
+  // ramp input for case III in ASPEN ASTRI report 
   /*
   Modelica.Blocks.Sources.Ramp ramp_mdot(
     final duration  = 0.15 * SEC_PER_HOUR,
@@ -815,7 +814,7 @@ equation
   connect(r_turb_in.outlet, turbine.inlet) 
   annotation(
     Line(points = {{-96, -28}, {-63, -28}, {-63, -32}, {-62, -32}}, color = {0, 0, 255}, thickness = 1)); 
-    
+    /*
     // Case I - variable speed - let FPC determine the shaft speed
     connect(r_turb_in.T, FPC_turb.in_T1)
     annotation(
@@ -835,12 +834,13 @@ equation
     connect(speed_turb.flange, turbine.shaft_a)
     annotation(
       Line(points = {{-68, -41}, {-68, -40}, {-60, -40}}));
-
-    /*
-    // Test case II or common case - constant speed
-    connect(turbine.shaft_b, const_speed_turb.flange) annotation(
-      Line(points = {{-54, -47}, {-60, -47}, {-60, -46}, {-66, -46}}));      
     */
+    
+    // Test case II or common case - constant speed
+    connect(turbine.shaft_b, const_speed_turb.flange)     
+    annotation(
+      Line(points = {{-68, -41}, {-68, -40}, {-60, -40}}));
+    
     
   connect(turbine.outlet, r_turb_out.inlet) 
   annotation(
@@ -876,7 +876,7 @@ equation
     connect(r_recomp_in.outlet, recompressor.inlet) 
     annotation(
       Line(points = {{50, 19}, {50, 19.5}, {90, 19.5}, {90, 6}}, color = {170, 170, 255}, thickness = 0.5)); 
-        
+      /*
       // for Case I - variable speed, fixed inlet and outlet pressure
       connect(p_const_CIP.y, FPC_rc.in_p1)
       annotation(
@@ -890,14 +890,21 @@ equation
       connect(p_const_TIP.y, FPC_rc.in_p2)
       annotation(
         Line(points = {{-140, 64}, {-135, 64}, {-135, 72}, {64, 72}, {64, 2}, {66, 2}}, color = {0, 0, 127}, pattern = LinePattern.Dash));  // set the target outlet pressure         
-
-      /*
-      // Case II - variable speed, fixed outlet pressure only
-      connect(r_recomp_in.p, FPC_rc.in_p1);
-      connect(r_recomp_in.T, FPC_rc.in_T1);
-      connect(r_recomp_in.w, FPC_rc.in_w1);    
-      connect(r_turb_in.p, FPC_rc.in_p2);  // set the target outlet pressure following the source pressure      
       */
+      
+      // Case II - variable speed, fixed outlet pressure only
+      connect(r_recomp_in.p, FPC_rc.in_p1)
+      annotation(
+        Line(points = {{44.5, 19}, {44.5, -6}, {60, -6}}, color = {159, 159, 223}, pattern = LinePattern.Dash));
+      connect(r_recomp_in.T, FPC_rc.in_T1)
+      annotation(
+        Line(points = {{47.5, 19}, {47.5, -3}, {60, -3}}, color = {159, 159, 223}, pattern = LinePattern.Dash));
+      connect(r_recomp_in.w, FPC_rc.in_w1)
+      annotation(
+        Line(points = {{50.5, 19}, {50.5, 0}, {60, 0}}, color = {159, 159, 223}, pattern = LinePattern.Dash));          
+      connect(ramp_p.y, FPC_rc.in_p2)
+      annotation(
+        Line(points = {{-140.5, 79}, {44, 79}, {65, 79}, {65, 2}}, color = {0, 0, 127}, pattern = LinePattern.Dash));   // set the target outlet pressure following the source pressure            
 
       connect(FPC_rc.omega, speed_rc.w_ref)
       annotation(
@@ -933,6 +940,7 @@ equation
   annotation(
     Line(points = {{120, 19}, {120, 20}, {156, 20}, {156, 2}}, color = {170, 170, 255}, thickness = 0.5));
     
+    /*
     // Case I - ramp mdot, controller determined varialbe speed, fixed in_p1 of controller
     connect(p_const_CIP.y, FPC_mc.in_p1)
     annotation(
@@ -946,14 +954,23 @@ equation
     connect(p_const_TIP.y, FPC_mc.in_p2)
     annotation(
       Line(points = {{-140, 64}, {-135, 64}, {-135, 72}, {130, 72}, {130, 2}}, color = {0, 0, 127}, pattern = LinePattern.Dash));  // set the target outlet pressure       
-
-    /*
-    // Case II - ramp source pressure, controller determined variable speed
-    connect(r_comp_in.p, FPC_mc.in_p1);
-    connect(r_comp_in.T, FPC_mc.in_T1);
-    connect(r_comp_in.w, FPC_mc.in_w1);     
-    connect(r_turb_in.p, FPC_mc.in_p2);  // set the target outlet pressure following the source pressure      
     */
+    
+    // Case II - ramp source pressure, controller determined variable speed
+    connect(r_comp_in.p, FPC_mc.in_p1)    
+    annotation(
+      Line(points = {{114.5, 19}, {114.5, -6}, {124, -6}}, color = {159, 159, 223}, pattern = LinePattern.Dash)); 
+    connect(r_comp_in.T, FPC_mc.in_T1)    
+    annotation(
+      Line(points = {{117, 19}, {117, -3}, {124, -3}}, color = {159, 159, 223}, pattern = LinePattern.Dash));
+    connect(r_comp_in.w, FPC_mc.in_w1)    
+    annotation(
+      Line(points = {{119.5, 19}, {119.5, 0}, {124, 0}}, color = {159, 159, 223}, pattern = LinePattern.Dash));     
+     
+    connect(ramp_p.y, FPC_mc.in_p2)      
+    annotation(
+        Line(points = {{-140.5, 79}, {44, 79}, {129, 79}, {129, 2}}, color = {0, 0, 127}, pattern = LinePattern.Dash));  // set the target outlet pressure following the source pressure      
+    
 
     connect(FPC_mc.omega, speed_mc.w_ref)
     annotation(
@@ -1023,7 +1040,7 @@ equation
     Line(points = {{56, -74}, {56, -82}}, color = {0, 255, 0}, thickness = 0.75));
   connect(r_cooler_cout.outlet, sink_cooler.flange) annotation(
     Line(points = {{56, -86}, {56, -93}, {57, -93}}, color = {0, 255, 0}, thickness = 0.75));
-    
+  /*
   // ramp input  
   // for case I  
   connect(ramp_mdot.y, source.in_w0)
@@ -1034,15 +1051,13 @@ equation
   connect(p_const_TIP.y, sink.in_p0)
   annotation(
     Line(points = {{-140, 64}, {-135, 64}, {-135, 72}, {-102, 72}, {-102, 36}}, color = {0, 0, 127}, pattern = LinePattern.Dash));
-   
-  /*
+  */ 
+  
   // for case II 
-  connect(ramp_p.y, source.in_p0) annotation(
-    Line(points = {{-113, -32}, {-107.5, -32}, {-107.5, -36}, {-108, -36}}, color = {0, 0, 127}));
+  connect(ramp_p.y, source.in_p0)   
+  annotation(
+    Line(points = {{-140.5, 79}, {-128, 79}, {-128, -0.75}, {-110, -0.75}, {-110, -4.5}}, color = {0, 0, 127}, pattern = LinePattern.Dash));  
   
-  */
-  
-  //connect(r_HTR_cout.p, source.in_p0);
   
   /*
   connect(ramp_mdot.y, sink.in_w0) annotation(

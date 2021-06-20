@@ -354,7 +354,7 @@ model TestTP_Components_PCHE
   Modelica.Mechanics.Rotational.Sources.ConstantSpeed const_speed_comp(
       w_fixed=cfg_turb.N, useSupport=false) annotation(
     Placement(visible = true, transformation(origin = {81, -7}, extent = {{-5, -5}, {5, 5}}, rotation = 0)));  
- 
+/* 
   ThermoPower.Gas.SensT sens_turbine(redeclare package Medium = medium_main) annotation(
     Placement(visible = true, transformation(origin = {20, 44}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
 */
