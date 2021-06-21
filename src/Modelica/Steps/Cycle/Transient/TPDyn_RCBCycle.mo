@@ -762,35 +762,35 @@ model TPDyn_RCBCycle
   // calculated variables
   
   // for turbine
-  Modelica.SIunits.Power W_turb = (r_turb_in.h - r_turb_out.h) * r_turb_in.w / 1e6 "W->MW, net power for turbine";
+  Modelica.SIunits.Power      W_turb   = (r_turb_in.h - r_turb_out.h) * r_turb_in.w / 1e6 "W->MW, net power for turbine";
   Modelica.SIunits.Efficiency eta_turb = turbine.eta * 100;
   // main compressor
-  Modelica.SIunits.Power W_MC = (r_comp_out.h - r_comp_in.h) * r_comp_in.w / 1e6 "W->MW, net power for main compressor";
+  Modelica.SIunits.Power      W_MC   = (r_comp_out.h - r_comp_in.h) * r_comp_in.w / 1e6 "W->MW, net power for main compressor";
   Modelica.SIunits.Efficiency eta_MC = compressor.eta * 100;
   // re compressor
-  Modelica.SIunits.Power W_RC = (r_recomp_out.h - r_recomp_in.h) * r_recomp_in.w / 1e6 "W->MW, net power for recompressor";
+  Modelica.SIunits.Power      W_RC   = (r_recomp_out.h - r_recomp_in.h) * r_recomp_in.w / 1e6 "W->MW, net power for recompressor";
   Modelica.SIunits.Efficiency eta_RC = recompressor.eta * 100;
   
   // power block
-  Modelica.SIunits.Power W_net = W_turb - W_MC - W_RC "net power generated";
-  Modelica.SIunits.Power Q_heater = (r_heater_hin.h - r_heater_hout.h) * r_heater_hin.w / 1e6 "heat input for the power block";
-  Modelica.SIunits.Power Q_cooler = (r_cooler_cout.h - r_cooler_cin.h) * r_cooler_cin.w / 1e6 "heat input for the power block";
-  Modelica.SIunits.Efficiency eta_pb = W_net / Q_heater * 100 "power block efficiency";
-  Real SR = r_recomp_in.w / r_comp_in.w * 100 "split ratio";
+  Modelica.SIunits.Power      W_net    = W_turb - W_MC - W_RC "net power generated";
+  Modelica.SIunits.Power      Q_heater = (r_heater_hin.h - r_heater_hout.h) * r_heater_hin.w / 1e6 "heat input for the power block";
+  Modelica.SIunits.Power      Q_cooler = (r_cooler_cout.h - r_cooler_cin.h) * r_cooler_cin.w / 1e6 "heat input for the power block";
+  Modelica.SIunits.Efficiency eta_pb   = W_net / Q_heater * 100 "power block efficiency";
+  Real                        SR       = r_recomp_in.w / r_comp_in.w * 100 "split ratio";
 
   // heat transfer coefficient for HTR and LTR
   // HTR
-  Modelica.SIunits.Power Q_HTR = (r_HTR_cout.h - r_HTR_cin.h) * r_HTR_cin.w / 1e6 "W->MW, heat input for HTR";
-  Modelica.SIunits.TemperatureDifference dT1_HTR = (r_HTR_hin.T - r_HTR_cout.T);
-  Modelica.SIunits.TemperatureDifference dT2_HTR = (r_HTR_hout.T - r_HTR_cin.T);
-  Real T_ltmd_HTR = if dT1_HTR  > 0 and dT2_HTR > 0 then (dT2_HTR - dT1_HTR) / Modelica.Math.log(abs(dT2_HTR / dT1_HTR)) else -1;
-  Real UA_HTR = if T_ltmd_HTR > 0 then Q_HTR / T_ltmd_HTR else 0.0;
+  Modelica.SIunits.Power                 Q_HTR      = (r_HTR_cout.h - r_HTR_cin.h) * r_HTR_cin.w / 1e6 "W->MW, heat input for HTR";
+  Modelica.SIunits.TemperatureDifference dT1_HTR    = (r_HTR_hin.T - r_HTR_cout.T);
+  Modelica.SIunits.TemperatureDifference dT2_HTR    = (r_HTR_hout.T - r_HTR_cin.T);
+  Real                                   T_ltmd_HTR = if dT1_HTR  > 0 and dT2_HTR > 0 then (dT2_HTR - dT1_HTR) / Modelica.Math.log(abs(dT2_HTR / dT1_HTR)) else -1;
+  Real                                   UA_HTR     = if T_ltmd_HTR > 0 then Q_HTR / T_ltmd_HTR else 0.0;
   // LTR
-  Modelica.SIunits.Power Q_LTR = (r_LTR_cout.h - r_LTR_cin.h) * r_LTR_cin.w / 1e6 "W->MW";
-  Modelica.SIunits.TemperatureDifference dT1_LTR = (r_LTR_hin.T - r_LTR_cout.T);
-  Modelica.SIunits.TemperatureDifference dT2_LTR = (r_LTR_hout.T - r_LTR_cin.T);
-  Real T_ltmd_LTR = if dT1_LTR > 0 and dT2_LTR > 0 then (dT2_LTR - dT1_LTR) / Modelica.Math.log(abs(dT2_LTR / dT1_LTR)) else -1;
-  Real UA_LTR = if T_ltmd_LTR > 0 then Q_LTR / T_ltmd_LTR else 0.0;  
+  Modelica.SIunits.Power                 Q_LTR      = (r_LTR_cout.h - r_LTR_cin.h) * r_LTR_cin.w / 1e6 "W->MW";
+  Modelica.SIunits.TemperatureDifference dT1_LTR    = (r_LTR_hin.T - r_LTR_cout.T);
+  Modelica.SIunits.TemperatureDifference dT2_LTR    = (r_LTR_hout.T - r_LTR_cin.T);
+  Real                                   T_ltmd_LTR = if dT1_LTR > 0 and dT2_LTR > 0 then (dT2_LTR - dT1_LTR) / Modelica.Math.log(abs(dT2_LTR / dT1_LTR)) else -1;
+  Real                                   UA_LTR     = if T_ltmd_LTR > 0 then Q_LTR / T_ltmd_LTR else 0.0;
   
   // Liquid Na exit temperature
   Modelica.SIunits.Temperature T_heater_hot_out = r_HTR_hout.T;    

@@ -220,7 +220,8 @@ def main(work_root = []):
 
     json_str = ds_test.to_json()    
     print(json_str)
-
+    
+    # *** IMPORTANTED: Ports' names changed ***
     ports = [
         'r01', 'r02', 'r03', 'r04', 'r05',
         'r06', 'r07', 'r08', 'r08_source', 'r08a', 'r08b', 'r09', 'r10',
@@ -250,7 +251,7 @@ def main(work_root = []):
             text = f'{prop}_{p[1:]}'            
             sol_dict[key] = Variable(key, unit, text=text)    
 
-    # specilized solutions
+    # specialized solutions
     var_sp = [
         Variable('W_net', 'MW'),
         Variable('Q_heater', 'MW'),
