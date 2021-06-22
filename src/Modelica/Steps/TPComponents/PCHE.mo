@@ -15,6 +15,11 @@ model PCHE "PCHE model based on Thermo Power"
   replaceable model HeatTransfer_F                           = Thermal.HeatTransferFV.IdealHeatTransfer constrainedby ThermoPower.Thermal.BaseClasses.DistributedHeatTransferFV annotation(choicesAllMatching = true);
   replaceable model HeatTransfer_G                           = Thermal.HeatTransferFV.IdealHeatTransfer constrainedby ThermoPower.Thermal.BaseClasses.DistributedHeatTransferFV annotation(choicesAllMatching = true);
   replaceable model HeatExchangerTopology                    = Thermal.HeatExchangerTopologies.CounterCurrentFlow constrainedby ThermoPower.Thermal.BaseClasses.HeatExchangerTopologyData annotation(choicesAllMatching = true);
+  
+  replaceable model Flow1DFV_F = Steps.TPComponents.Flow1DFV;
+  replaceable model Flow1DFV_G = Steps.TPComponents.Flow1DFV;
+  
+  
   parameter   Choices.Flow1D.FFtypes FFtype_G                = ThermoPower.Choices.Flow1D.FFtypes.NoFriction "Friction Factor Type, gas side";
   parameter   Real Kfnom_G                                   = 0 "Nominal hydraulic resistance coefficient, gas side";
   parameter   SI.Pressure dpnom_G                            = 0 "Nominal pressure drop, gas side (friction term only!)";
@@ -44,7 +49,7 @@ model PCHE "PCHE model based on Thermo Power"
   
   // Gas.Flow1DFV fluidFlow(
   // TPComponents.GasFlow1DFV fluidFlow(
-  TPComponents.Flow1DFV fluidFlow(
+  Flow1DFV_F fluidFlow(
     redeclare package Medium     = FluidMedium,
     redeclare model HeatTransfer = HeatTransfer_F,
     Nt          = Nt,                                                       //1, 
@@ -79,7 +84,7 @@ model PCHE "PCHE model based on Thermo Power"
   // use Gas.Flow1DFV otherwise, which is much quicker due to the property calculation  
   
   //TPComponents.GasFlow1DFV gasFlow(
-  TPComponents.Flow1DFV gasFlow(
+  Flow1DFV_G gasFlow(
   // Gas.Flow1DFV gasFlow(
     redeclare package Medium = FlueGasMedium, 
     redeclare model HeatTransfer = HeatTransfer_G,

@@ -16,6 +16,8 @@ model HE "Heat Exchanger fluid - gas"
      choicesAllMatching = true);
   replaceable model HeatExchangerTopology = Thermal.HeatExchangerTopologies.CoCurrentFlow constrainedby ThermoPower.Thermal.BaseClasses.HeatExchangerTopologyData annotation(
      choicesAllMatching = true);
+  replaceable model Flow1DFV_G = Steps.TPComponents.Flow1DFV;
+  
   parameter Choices.Flow1D.FFtypes FFtype_G = ThermoPower.Choices.Flow1D.FFtypes.NoFriction "Friction Factor Type, gas side";
   parameter Real Kfnom_G = 0 "Nominal hydraulic resistance coefficient, gas side";
   parameter SI.Pressure dpnom_G = 0 "Nominal pressure drop, gas side (friction term only!)";
@@ -55,7 +57,7 @@ model HE "Heat Exchanger fluid - gas"
   
 
    // works for transient simulation  
-   Steps.TPComponents.Flow1DFV gasFlow(
+   Flow1DFV_G gasFlow(
     Nt = 1, // should be override for Ngo or GnielinskiHeatTransferFV are used
     N = N_G, 
     Nw = Nw_G, 

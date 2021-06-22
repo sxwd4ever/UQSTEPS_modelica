@@ -291,16 +291,16 @@ import Modelica.SIunits.Conversions.{from_degC, from_deg};
   
   Steps.TPComponents.GasStateReader r_comp_in(redeclare package Medium = medium_main); 
 
-  Steps.TPComponents.FixedPController FPC_mc(
+  Steps.TPComponents.CompressorFixedPController FPC_mc(
     redeclare package Medium   = medium_main,
     tablePhic                  = tablePhic_comp_mc,
     tablePR                    = tablePR_comp_mc,
     Table                      = ThermoPower.Choices.TurboMachinery.TableTypes.matrix,
     Ndesign                    = cfg_comp.N,
     Tdes_in                    = cfg_comp.st_in.T,
-    T_inlet(start = cfg_comp.st_in.T, nominal = cfg_comp.st_in.T),
-    p_inlet(start = cfg_comp.st_in.p, nominal = cfg_comp.st_in.p),
-    mdot_inlet(start = cfg_comp.st_in.mdot, nominal = cfg_comp.st_in.mdot)
+    in_T1(start = cfg_comp.st_in.T, nominal = cfg_comp.st_in.T),
+    in_p1(start = cfg_comp.st_in.p, nominal = cfg_comp.st_in.p),
+    in_w1(start = cfg_comp.st_in.mdot, nominal = cfg_comp.st_in.mdot)
   ) "Fixed pressure controller for main compressor";
   
   Modelica.Mechanics.Rotational.Sources.Speed speed_mc(
@@ -343,16 +343,16 @@ import Modelica.SIunits.Conversions.{from_degC, from_deg};
 
   Steps.TPComponents.GasStateReader r_recomp_in(redeclare package Medium = medium_main); 
   
-  Steps.TPComponents.FixedPController FPC_rc(
+  Steps.TPComponents.CompressorFixedPController FPC_rc(
     redeclare package Medium   = medium_main,
     tablePhic                  = tablePhic_comp_rc,
     tablePR                    = tablePR_comp_rc,
     Table                      = ThermoPower.Choices.TurboMachinery.TableTypes.matrix,
     Ndesign                    = cfg_recomp.N,
     Tdes_in                    = cfg_recomp.st_in.T,
-    T_inlet(start = cfg_recomp.st_in.T, nominal = cfg_recomp.st_in.T),
-    p_inlet(start = cfg_recomp.st_in.p, nominal = cfg_recomp.st_in.p),
-    mdot_inlet(start = cfg_recomp.st_in.mdot, nominal = cfg_recomp.st_in.mdot)
+    in_T1(start = cfg_recomp.st_in.T, nominal = cfg_recomp.st_in.T),
+    in_p1(start = cfg_recomp.st_in.p, nominal = cfg_recomp.st_in.p),
+    in_w1(start = cfg_recomp.st_in.mdot, nominal = cfg_recomp.st_in.mdot)
   ) "Fixed pressure controller for recompressor";
   
   Modelica.Mechanics.Rotational.Sources.Speed speed_rc(
@@ -435,9 +435,9 @@ equation
   connect(r_cooler_hout.outlet, r_comp_in.inlet);
   connect(r_comp_in.outlet, compressor.inlet);
 
-    connect(r_comp_in.p, FPC_mc.p_inlet);
-    connect(r_comp_in.T, FPC_mc.T_inlet);
-    connect(r_comp_in.w, FPC_mc.mdot_inlet);    
+    connect(r_comp_in.p, FPC_mc.in_p1);
+    connect(r_comp_in.T, FPC_mc.in_T1);
+    connect(r_comp_in.w, FPC_mc.in_w1);    
     connect(FPC_mc.omega, speed_mc.w_ref);
 
     connect(speed_mc.flange, compressor.shaft_a);
@@ -452,9 +452,9 @@ equation
   connect(splitter.outlet2, r_recomp_in.inlet);
   connect(r_recomp_in.outlet, recompressor.inlet);
   
-    connect(r_recomp_in.p, FPC_rc.p_inlet);
-    connect(r_recomp_in.T, FPC_rc.T_inlet);
-    connect(r_recomp_in.w, FPC_rc.mdot_inlet);    
+    connect(r_recomp_in.p, FPC_rc.in_p1);
+    connect(r_recomp_in.T, FPC_rc.in_T1);
+    connect(r_recomp_in.w, FPC_rc.in_w1);    
     connect(FPC_rc.omega, speed_rc.w_ref);
     connect(speed_rc.flange, recompressor.shaft_a);
     

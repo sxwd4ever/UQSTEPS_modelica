@@ -1,6 +1,6 @@
 within Steps.TPComponents;
 
-model GasFlow1DFV "1-dimensional fluid flow model for gas (finite volumes)"
+model GasFlow1DFV "1-dimensional fluid flow model for gas (finite volumes), this model is a replica of ThermoPower.Gas.Flow1DFV with minor changes"
   extends ThermoPower.Gas.BaseClasses.Flow1DBase;
   import MyUtil = Steps.Utilities.Util;
   import Thermal = ThermoPower.Thermal;
@@ -34,6 +34,17 @@ model GasFlow1DFV "1-dimensional fluid flow model for gas (finite volumes)"
   Medium.MassFlowRate w(start = wnom / Nt) "Mass flowrate (single tube)";
   Medium.Temperature Ttilde[N - 1](start = Tstart[2:N], each stateSelect = StateSelect.prefer) "Temperature state variables";
   Medium.Temperature T[N](start = Tstart, each stateSelect = StateSelect.prefer) "Node temperatures";
+  parameter ThermoPower.Choices.FluidPhase.FluidPhases FluidPhaseStart=ThermoPower.Choices.FluidPhase.FluidPhases.Liquid
+    "Fluid phase (only for initialization!)"
+    annotation (Dialog(tab="Initialisation"));
+  parameter Medium.SpecificEnthalpy hstartin=if FluidPhaseStart == ThermoPower.Choices.FluidPhase.FluidPhases.Liquid
+       then 1e5 else if FluidPhaseStart == ThermoPower.Choices.FluidPhase.FluidPhases.Steam
+       then 3e6 else 1e6 "Inlet enthalpy start value"
+    annotation (Dialog(tab="Initialisation"));
+  parameter Medium.SpecificEnthalpy hstartout=if FluidPhaseStart == ThermoPower.Choices.FluidPhase.FluidPhases.Liquid
+       then 1e5 else if FluidPhaseStart == ThermoPower.Choices.FluidPhase.FluidPhases.Steam
+       then 3e6 else 1e6 "Outlet enthalpy start value"
+    annotation (Dialog(tab="Initialisation"));
   Medium.SpecificEnthalpy h[N] "Node specific enthalpies";
   // Medium.MassFraction X[if UniformComposition or Medium.fixedX then 1 else N, nX] "Node mass fraction - all compositions";    
   Medium.Temperature Tin(start = Tstartin);
