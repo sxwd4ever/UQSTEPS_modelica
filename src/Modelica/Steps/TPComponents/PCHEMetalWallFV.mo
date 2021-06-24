@@ -28,6 +28,7 @@ model PCHEMetalWallFV "simplified PCHE's fin-like metal wall between parallel mi
   // parameter SI.Area Am = (rext ^ 2 - rint ^ 2) * pi "Area of the metal tube cross-section";
   // parameter SI.Area Am =  w_ch * h_ch - pi * r_c * r_c * 4 "Area of the metal tube cross-section";
   parameter SI.Area Am                   = w_ch * h_ch - pi * r_c * r_c "Area of the metal tube cross-section";
+  // parameter Boolean QuasiStatic = true "=True: Dynamic behavior or heat storage will NOT be simulated for metal wall";  
   final     parameter SI.HeatCapacity Cm = Nt * L * Am * rhomcm "Total heat capacity";
   outer ThermoPower.System system "System wide properties";
 
@@ -46,12 +47,12 @@ equation
   // L / Nw * Nt * rhomcm * Am * der(Tvol) = int.Q + ext.Q "Energy balance";
   // For now, we consider static-state simulation and ignore the heat storage in metal tube for PCHE;
   // fill(0.0, Nw) = int.Q + ext.Q "Energy balance";
+  
   // if QuasiStatic then   
     // fill(0.0, Nw) = int.Q + ext.Q "Energy balance";
-    // der(Tvol) = zeros(Nw);
-  //else
+  // else
     L / Nw * Nt * rhomcm * Am * der(Tvol) = int.Q + ext.Q "Energy balance";
-  //end if;
+  // end if;
   
   th_conductivity.u[1] = 0.0;
   

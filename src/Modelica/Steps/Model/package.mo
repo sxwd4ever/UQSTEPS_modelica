@@ -47,7 +47,7 @@ package Model "Data model definition for consistent parameter configuration"
     Real T "Temperature, K";
     Real p "Pressure, pa";
     Modelica.SIunits.SpecificEnthalpy h "specific enthalpy, J/kg";
-    Real mdot "mass flow rate kg/s";
+    parameter Real mdot "mass flow rate kg/s";
     // optional id, to specify which point this state is assigned to
     // because of the mapping constraintns of Modelica and external functions
     // integer id is used instead of string(char *) name
@@ -69,7 +69,7 @@ package Model "Data model definition for consistent parameter configuration"
   end AreaGeometry;
 
   record PathGeometry
-    Modelica.SIunits.Length l "path length";
+    parameter Modelica.SIunits.Length l "path length";
     Modelica.SIunits.Volume V "volume of the path";
     Modelica.SIunits.Area A_cr "cross-sectional area";
     Modelica.SIunits.Area A_surf "surface area";

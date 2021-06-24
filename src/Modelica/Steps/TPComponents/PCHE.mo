@@ -16,9 +16,10 @@ model PCHE "PCHE model based on Thermo Power"
   replaceable model HeatTransfer_G                           = Thermal.HeatTransferFV.IdealHeatTransfer constrainedby ThermoPower.Thermal.BaseClasses.DistributedHeatTransferFV annotation(choicesAllMatching = true);
   replaceable model HeatExchangerTopology                    = Thermal.HeatExchangerTopologies.CounterCurrentFlow constrainedby ThermoPower.Thermal.BaseClasses.HeatExchangerTopologyData annotation(choicesAllMatching = true);
   
-  replaceable model Flow1DFV_F = Steps.TPComponents.Flow1DFV;
-  replaceable model Flow1DFV_G = Steps.TPComponents.Flow1DFV;
-  
+  // This default flow model works for the transient PCHE simulation 
+  // for off-design simulation model, use TPComponents.GasFlow1DFV to accelerate the simulation
+  replaceable model Flow1DFV_F = Steps.TPComponents.Flow1DFV; 
+  replaceable model Flow1DFV_G = Steps.TPComponents.Flow1DFV;   
   
   parameter   Choices.Flow1D.FFtypes FFtype_G                = ThermoPower.Choices.Flow1D.FFtypes.NoFriction "Friction Factor Type, gas side";
   parameter   Real Kfnom_G                                   = 0 "Nominal hydraulic resistance coefficient, gas side";
@@ -33,6 +34,7 @@ model PCHE "PCHE model based on Thermo Power"
   parameter   Choices.Flow1D.HCtypes HCtype_F                = ThermoPower.Choices.Flow1D.HCtypes.Downstream "Location of the hydraulic capacitance, fluid side";
   parameter   Boolean gasQuasiStatic                         = false "Quasi-static model of the flue gas (mass, energy and momentum static balances";
   parameter   Boolean fluidQuasiStatic                       = false "Quasi-static model of the fluid (mass, energy and momentum static balances";
+  // parameter   Boolean metalQuasiStatic                       = true "Quasi-static model of the metalWall (energy static balances)";
   constant    Real pi                                        = Modelica.Constants.pi;
   // parameter   SI.Distance L                                  = 1 "Tube length";
   parameter   Choices.FluidPhase.FluidPhases FluidPhaseStart = Choices.FluidPhase.FluidPhases.Liquid "Fluid phase (only for initialization!)" annotation(Dialog(tab = "Initialization"));
@@ -45,7 +47,7 @@ model PCHE "PCHE model based on Thermo Power"
   //IMPORTANT:
   // To date, (because of a bug in Gas.Flow1DFV
   // use TPComponents.Flow1DFV for transient simulation when two PCHEs connected (LTR and HTR),
-  // use Gas.Flow1DFV otherwise, which is much quicker due to the property calculation
+  // use TPComponents.GasFlow1DFV or ThermoPower.Gas.Flow1DFV otherwise, which is much quicker due to the property calculation using ExternalMedia
   
   // Gas.Flow1DFV fluidFlow(
   // TPComponents.GasFlow1DFV fluidFlow(
@@ -72,16 +74,13 @@ model PCHE "PCHE model based on Thermo Power"
     Tstartin    = cfg_F.st_in.T,                                              //bc.st_cold_in.T, 
     Tstartout   = cfg_F.st_out.T,
     hstartin    = cfg_F.st_in.h,
-    hstartout   = cfg_F.st_out.h) 
+    hstartout   = cfg_F.st_out.h
+    ) 
   annotation(
     Placement(transformation(extent = {{-10, -66}, {10, -46}}, rotation = 0)));
     
   //changed Medium=FlueGasMedium to Medium=FluidMedium
   
-  //IMPORTANT:
-  // To date, (because of a bug in Gas.Flow1DFV
-  // use TPComponents.Flow1DFV for transient simulation when two PCHEs connected (LTR and HTR),
-  // use Gas.Flow1DFV otherwise, which is much quicker due to the property calculation  
   
   //TPComponents.GasFlow1DFV gasFlow(
   Flow1DFV_G gasFlow(
@@ -108,7 +107,8 @@ model PCHE "PCHE model based on Thermo Power"
     Tstartin    = cfg_G.st_in.T,                                              //bc.st_hot_in.T, 
     Tstartout   = cfg_G.st_out.T,
     hstartin    = cfg_G.st_in.h,
-    hstartout   = cfg_G.st_out.h)
+    hstartout   = cfg_G.st_out.h
+    )
    annotation(
     Placement(transformation(extent = {{-12, 66}, {12, 46}}, rotation = 0)));
   
@@ -126,6 +126,7 @@ model PCHE "PCHE model based on Thermo Power"
     TstartN               = cfg_wall.st_init.T, //cfg_hot.st_in.T,    //Tstartbar_G,                       //bc.st_hot_in.T,   
     WallRes               = false,
     table_th_conductivity = table_k_metalwall,
+    //QuasiStatic           = metalQuasiStatic, 
     rhomcm                = rhomcm
   ) annotation(
     Placement(transformation(extent = {{-10, -24}, {10, -4}})));

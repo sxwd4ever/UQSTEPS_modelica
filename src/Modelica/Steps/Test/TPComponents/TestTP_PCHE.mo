@@ -60,7 +60,7 @@ model TestTP_PCHE
   parameter Integer N_seg_HE                     = cfg.cfg_HTR.cfg_hot.geo_path.N_seg;
 
   //Components
-  inner ThermoPower.System system(allowFlowReversal = false, initOpt=ThermoPower.Choices.Init.Options.fixedState) annotation(
+  inner ThermoPower.System system(allowFlowReversal = false, initOpt=ThermoPower.Choices.Init.Options.noInit) annotation(
     Placement(transformation(extent = {{80, 80}, {100, 100}})));  
   
   parameter Boolean SSInit = false "Steady-state initialization";
@@ -165,8 +165,10 @@ model TestTP_PCHE
     N_F               = N_seg_HE,
     SSInit            = SSInit,
     gasQuasiStatic    = true,
-    fluidQuasiStatic  = true
-    //metalWall(WallRes=false) 
+    fluidQuasiStatic  = true,
+    metalWall(
+      WallRes=false,
+      QuasiStatic = true) 
     //table_k_metalwall = table_k_metalwall
     // override the values of Am and L of metaltubeFV
     // to make them agree with semi-circular tube of PCHE

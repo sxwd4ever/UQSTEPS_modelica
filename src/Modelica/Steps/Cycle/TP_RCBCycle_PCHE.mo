@@ -14,7 +14,9 @@ import Modelica.SIunits.Conversions.{from_degC,from_deg};
   import ThermoPower.Gas;
   //package medium_main = Modelica.Media.IdealGases.SingleGases.CO2; //Steps.Media.CO2; //
   //package medium_main = Modelica.Media.IdealGases.SingleGases.CO2; //Steps.Media.CO2; Steps.Media.CO2; //
-  package medium_main   = Steps.Media.SCO2;
+  package medium_main   = Steps.Media.SCO2(
+    inputChoice = ExternalMedia.Common.InputChoice.pT // use pT to accelerate the simulation. 
+  );
   package medium_heater = SolarTherm.Media.Sodium.Sodium_pT;
   // Modelica.Media.IdealGases.SingleGases.CO2;
   package medium_cooler = ThermoPower.Water.StandardWater;
@@ -194,37 +196,22 @@ import Modelica.SIunits.Conversions.{from_degC,from_deg};
   TPComponents.HE heater(
     redeclare package FluidMedium = medium_heater, 
     redeclare package FlueGasMedium = medium_main, 
-    // use ThermoPower.Gas.Flow1DFV to accelerate the simulation
-    // which are only feasible for steady-state simulation due the bug in transient simulation.     
+    // use TPComponents.GasFlow1DFV to accelerate the simulation
+    // which is only feasible for steady-state simulation due the bug in transient simulation.     
     redeclare replaceable model Flow1DFV_G = TPComponents.GasFlow1DFV(),   
-    // Ngo 
-    redeclare replaceable model HeatTransfer_F = Steps.TPComponents.NgoHeatTransferFV(),
-    redeclare replaceable model HeatTransfer_G = Steps.TPComponents.NgoHeatTransferFV(),
-    gasFlow(      
-      heatTransfer(
-        Cf_C1     = Cf_C1,
-        Cf_C2     = Cf_C2,
-        Cf_C3     = Cf_C3,
-        gamma_min = 1000,
-        gamma_max = 5000
-      ),
-      Tstartin  = cfg_heater.cfg_gas.st_in.T,
-      Tstartout = cfg_heater.cfg_gas.st_out.T,
-      Nt        = cfg_heater.cfg_gas.N_ch,
-      Dhyd      = cfg_heater.cfg_gas.geo_area.d_hyd
-    ),
-    fluidFlow(      
-      heatTransfer(
-        Cf_C1     = Cf_C1,
-        Cf_C2     = Cf_C2,
-        Cf_C3     = Cf_C3,
-        gamma_min = 2000,
-        gamma_max = 1.5e6
-      ), 
-      fixedMassFlowSimplified = true,
-      hstartin                = cfg_heater.cfg_fluid.st_in.h,
-      hstartout               = cfg_heater.cfg_fluid.st_out.h
-    ),    
+    
+    // Ideal Heat Transfer
+    redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer,   
+    redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer,  
+    fluidFlow(
+      fixedMassFlowSimplified = true, 
+      hstartin                = cfg_heater.cfg_hot.st_in.h, 
+      hstartout               = cfg_heater.cfg_hot.st_out.h), // set the fluid flow as fixed mdot for simplarity
+    gasFlow(
+      QuasiStatic = true, 
+      Tstartin    = cfg_heater.cfg_cold.st_in.T,
+      Tstartout   = cfg_heater.cfg_cold.st_out.T),      
+    
     redeclare model HeatExchangerTopology = ThermoPower.Thermal.HeatExchangerTopologies.CounterCurrentFlow,
     cfg             = cfg_heater,
     N_G             = N_seg_heater,
@@ -256,10 +243,11 @@ import Modelica.SIunits.Conversions.{from_degC,from_deg};
   TPComponents.PCHE HTR(
     redeclare package FluidMedium   = medium_main,
     redeclare package FlueGasMedium = medium_main,
-    // use ThermoPower.Gas.Flow1DFV to accelerate the simulation
-    // which are only feasible for steady-state simulation due the bug in transient simulation.     
-    redeclare replaceable model Flow1DFV_F = TPComponents.GasFlow1DFV(),
-    redeclare replaceable model Flow1DFV_G = TPComponents.GasFlow1DFV(),
+    // use TPComponents.GasFlow1DFV to accelerate the simulation
+    // which is only feasible for steady-state simulation due the bug in transient simulation.     
+    redeclare replaceable model Flow1DFV_F = TPComponents.GasFlow1DFV, 
+    redeclare replaceable model Flow1DFV_G = TPComponents.GasFlow1DFV,
+    
     // with Marchionni Correlation    
     redeclare replaceable model HeatTransfer_F = Steps.TPComponents.GnielinskiHeatTransferFV(),
     redeclare replaceable model HeatTransfer_G = Steps.TPComponents.GnielinskiHeatTransferFV(),
@@ -283,7 +271,8 @@ import Modelica.SIunits.Conversions.{from_degC,from_deg};
         use_rho_bar           = use_rho_bar,
         rho_bar               = rho_bar_cold,
         useAverageTemperature = false)
-    ),  
+    ),      
+
     redeclare model HeatExchangerTopology = ThermoPower.Thermal.HeatExchangerTopologies.CounterCurrentFlow,  
     cfg              = cfg_HTR,
     N_G              = N_seg_HTR,
@@ -293,7 +282,10 @@ import Modelica.SIunits.Conversions.{from_degC,from_deg};
     fluidQuasiStatic = true,
     // table_k_metalwall =  table_k_metalwall,
     //metalQuasiStatic = false,   
-    metalWall(WallRes=false)) 
+    metalWall(
+      WallRes     = false
+      // QuasiStatic = false
+    )) 
     annotation(
       Placement(visible = true, transformation(origin = {-21, 33}, extent = {{-7, -7}, {7, 7}}, rotation = 0)));
 
@@ -316,8 +308,10 @@ import Modelica.SIunits.Conversions.{from_degC,from_deg};
     redeclare package FlueGasMedium = medium_main,
     // use ThermoPower.Gas.Flow1DFV to accelerate the simulation
     // which are only feasible for steady-state simulation due the bug in transient simulation.     
-    redeclare replaceable model Flow1DFV_F = TPComponents.GasFlow1DFV(),
-    redeclare replaceable model Flow1DFV_G = TPComponents.GasFlow1DFV(),    
+    redeclare replaceable model Flow1DFV_F = TPComponents.GasFlow1DFV,
+    redeclare replaceable model Flow1DFV_G = TPComponents.GasFlow1DFV,    
+    
+    
     // with Marchionni Correlation    
     redeclare replaceable model HeatTransfer_F = Steps.TPComponents.GnielinskiHeatTransferFV(),
     redeclare replaceable model HeatTransfer_G = Steps.TPComponents.GnielinskiHeatTransferFV(),
@@ -341,7 +335,9 @@ import Modelica.SIunits.Conversions.{from_degC,from_deg};
         use_rho_bar           = use_rho_bar,
         rho_bar               = rho_bar_cold,
         useAverageTemperature = false)
-    ),    
+    ),   
+    
+
     cfg              = cfg_LTR,
     N_G              = N_seg_LTR,
     N_F              = N_seg_LTR,
@@ -350,7 +346,10 @@ import Modelica.SIunits.Conversions.{from_degC,from_deg};
     fluidQuasiStatic = true,
     //table_k_metalwall =   cfg.table_k_LTR_wall,
     //metalQuasiStatic = false,   
-    metalWall(WallRes=false)
+    metalWall(
+      WallRes     = false
+      // QuasiStatic = false
+    )
   ) annotation(
     Placement(visible = true, transformation(origin = {21, 33}, extent = {{-7, -7}, {7, 7}}, rotation = 0)));
   
@@ -426,35 +425,20 @@ import Modelica.SIunits.Conversions.{from_degC,from_deg};
     redeclare package FlueGasMedium = medium_main, 
     // use ThermoPower.Gas.Flow1DFV to accelerate the simulation
     // which are only feasible for steady-state simulation due the bug in transient simulation.     
-    redeclare replaceable model Flow1DFV_G = TPComponents.GasFlow1DFV(),      
-    // Ngo 
-    redeclare replaceable model HeatTransfer_F = Steps.TPComponents.NgoHeatTransferFV(),
-    redeclare replaceable model HeatTransfer_G = Steps.TPComponents.NgoHeatTransferFV(),
-    gasFlow(      
-      heatTransfer(
-        Cf_C1     = Cf_C1,
-        Cf_C2     = Cf_C2,
-        Cf_C3     = Cf_C3,
-        gamma_min = 1500,
-        gamma_max = 5000
-      ),
-      Tstartin  = cfg_cooler.cfg_gas.st_in.T,
-      Tstartout = cfg_cooler.cfg_gas.st_out.T,
-      Nt        = cfg_cooler.cfg_gas.N_ch,
-      Dhyd      = cfg_cooler.cfg_gas.geo_area.d_hyd
-    ),
-    fluidFlow(      
-      heatTransfer(
-        Cf_C1     = Cf_C1,
-        Cf_C2     = Cf_C2,
-        Cf_C3     = Cf_C3,
-        gamma_min = 2000,
-        gamma_max = 18000
-      ), 
-      fixedMassFlowSimplified = true,
-      hstartin                = cfg_cooler.cfg_fluid.st_in.h,
-      hstartout               = cfg_cooler.cfg_fluid.st_out.h
-    ),    
+    redeclare replaceable model Flow1DFV_G = TPComponents.GasFlow1DFV,    
+    
+    // Ideal Heat Transfer
+    redeclare replaceable model HeatTransfer_F = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer,   
+    redeclare replaceable model HeatTransfer_G = ThermoPower.Thermal.HeatTransferFV.IdealHeatTransfer,  
+    fluidFlow(
+      fixedMassFlowSimplified = true, 
+      hstartin                = cfg_cooler.cfg_cold.st_in.h, 
+      hstartout               = cfg_cooler.cfg_cold.st_out.h), // set the fluid flow as fixed mdot for simplarity
+    gasFlow(
+      QuasiStatic = true, 
+      Tstartin    = cfg_cooler.cfg_hot.st_in.T,
+      Tstartout   = cfg_cooler.cfg_hot.st_out.T),
+
     redeclare model HeatExchangerTopology = ThermoPower.Thermal.HeatExchangerTopologies.CounterCurrentFlow,
     cfg             = cfg_cooler,
     N_G             = N_seg_cooler,
