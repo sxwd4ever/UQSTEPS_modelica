@@ -36,7 +36,7 @@ class Experiment(object):
             modelica_libs: 3rd party modelica libraries like ThermoPower, ExternalMedia
         '''
         super().__init__()
-        # common variable defination
+        # common variable definition
         self.path_root = work_root
         from pathlib import Path
         parent_dir = Path(self.path_root).parent

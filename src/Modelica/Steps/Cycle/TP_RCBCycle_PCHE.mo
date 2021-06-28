@@ -23,11 +23,11 @@ import Modelica.SIunits.Conversions.{from_degC,from_deg};
   
   // input parameters of the power block
   parameter Modelica.SIunits.MassFlowRate mdot_main       = 125 "kg/s, mass flow in the main path of PB, which follows the power demand";
-  parameter Modelica.SIunits.MassFlowRate mdot_heater_hot = 90 "kg/s, mass flow rate of heater's hot fluid";
-  parameter Real gamma = 0.4 "split ratio, mdot_bypass/mdot_main";
-  
+  parameter Modelica.SIunits.MassFlowRate mdot_heater_hot = 40 "kg/s, mass flow rate of heater's hot fluid";  
   parameter Modelica.SIunits.Temperature T_heater_hot  = from_degC(800) "K, Temperature of heater's hot fluid";
   parameter Modelica.SIunits.Temperature T_cooler_cold = from_degC(45) "K, Temperature of cooler's cold fluid";
+  
+  parameter Real gamma = 0.4 "split ratio, mdot_bypass/mdot_main";
 
   //Real kim_cor_coe[4] = {kim.a, kim.b, kim.c, kim.d};
   parameter SI.Length pitch = 12.3e-3 "pitch length";
@@ -133,16 +133,21 @@ import Modelica.SIunits.Conversions.{from_degC,from_deg};
     T_HTR_cold_in     = from_degC(234.1382066),
     T_LTR_cold_in     = from_degC(114.9643057),
     T_LTR_hot_out     = from_degC(135.1385679),
-    T_heater_hot_in   = from_degC(800),
-    T_heater_hot_out  = from_degC(499.229),
-    T_heater_cold_out = from_degC(589.3063657),
+    T_heater_hot_in   = T_heater_hot,
+    T_heater_hot_out  = T_heater_hot - 200,
+    T_heater_cold_out = T_heater_hot - 90,
+    // T_heater_hot_out  = from_degC(499.229),
+    // T_heater_cold_out = from_degC(589.3063657),
     T_cooler_cold_out = from_degC(101.2910134),
     T_cooler_hot_out  = from_degC(56.3275225),
+    T_amb             = T_cooler_cold,
 
-    mdot_main   = 128.774, // mdot on 10WMe point
-    mdot_comp   = 85.5916, // mdot on 10WMe point 
-        
-    mdot_heater = 40,
+    // mdot_main   = 128.774, // mdot on 10WMe point
+    // mdot_comp   = 85.5916, // mdot on 10WMe point         
+    // mdot_heater = 40,
+    mdot_main   = mdot_main,                 // mdot on 10WMe point
+    mdot_comp   = mdot_main * (1 - gamma),   // mdot on 10WMe point     
+    mdot_heater = mdot_heater_hot,    
     mdot_cooler = 40.7188    
   );  
   
@@ -580,7 +585,8 @@ import Modelica.SIunits.Conversions.{from_degC,from_deg};
     redeclare package Medium = medium_main,
     w0 = bc_heater.st_cold_out.mdot);
 */ 
-/*
+
+  // calculated performance index
   // for turbine
   Modelica.SIunits.Power W_turb = (r_turb_in.h - r_turb_out.h) * r_turb_in.w / 1e6 "W->MW, net power for turbine";
   Modelica.SIunits.Efficiency eta_turb = turbine.eta * 100;
@@ -614,7 +620,7 @@ import Modelica.SIunits.Conversions.{from_degC,from_deg};
   
   // Liquid Na exit temperature
   Modelica.SIunits.Temperature T_heater_hot_out = r_HTR_hout.T;  
-*/
+
 protected
   // performance map for main compressor
   parameter Real tableEta_comp_mc[5, 4]  = [0, 95, 100, 105; 1, 0.85310219, 0.837591241, 0.832420925; 2, 0.868613139, 0.857238443, 0.851034063; 3, 0.860340633, 0.85, 0.842761557; 4, 0.85310219, 0.839659367, 0.816909976];

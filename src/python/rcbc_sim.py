@@ -105,13 +105,26 @@ def json_IO_test():
     ds_test = TestDataSet.from_json("demoTest", json.dumps(test_data_set_demo1))
 
 
-def main(work_root = []):
-    # root path of modelica root
+def gen_performance_map(mdot_heat, mdot_main, T_HTF_in, T_amb, work_root=[], test_mode = False, use_PCHE = True):
+    '''
+        parameter sweep function to generate the RCBC performance map
+
+        mdot_heat: array containing candidates of HTF (hot transfer fluid) mass flow rates, kg/s
+        mdot_main: array containing candidates of main working fluid (s-CO2) mass flow rates, kg/s
+        T_HTF_in : array containing candidates of HTF inlet temperatures, K
+        T_amb    : array containing candidates of cooler's cooling fluid, K.
+
+        work_root: work root for current simulation, Default = [] and current directory will be used.  
+        test_mode: Flag for test mode, for debug purpose only. Default = false
+        use_PCHE : if use PCHE as recuperator (HTR, LTR). Default = true
+    '''
+
+   # root path of modelica root
     if work_root == []:
         work_root = os.path.abspath(os.curdir)  
 
-    test_mode = False # =True: use mock data to accelerate development
-    use_PCHE = True # =True: use PCHE as recuperator
+     # =True: use mock data to accelerate development
+     # =True: use PCHE as recuperator
 
     model_name = "Steps.Cycle.TP_RCBCycleMock" if test_mode else "Steps.Cycle.TP_RCBCycle_PCHE" if use_PCHE else "Steps.Cycle.TP_RCBCycle"
 
@@ -161,25 +174,27 @@ def main(work_root = []):
                 "ex_heater" : "ex_heater",
             },
             "demo view":{
-                "rc1.T": "T_amb",
-                "r05.T": "TIT"
+                "r_cooler_cin.T": "T_amb",
+                "r_turb_in.T"   : "TIT"
             }
         }        
     else:
-        # reduced size batch
-        # cfg_offset["mdot_main"] = list(map(lambda x: x * mdot_main_des/100, [75, 100]))        
-        # cfg_offset["T_heater_hot"] = list(map(lambda x: from_degC(x), [550, 700]))
-        # cfg_offset["T_cooler_cold"] = list(map(lambda x: from_degC(x), [30]))
+        # # reduced size batch
+
+        # cfg_offset_dict["mdot_main"] = list(map(lambda x: x * mdot_main_des/100, [75, 100]))        
+        # cfg_offset_dict["T_heater_hot"] = list(map(lambda x: from_degC(x), [650, 700]))
+        # cfg_offset_dict["T_cooler_cold"] = list(map(lambda x: from_degC(x), [35]))
+
         # full size batch
         # load ratio < 0.75 leads error, use following values instead 
         # cfg_offset["mdot_main"] = list(map(lambda x: x * mdot_main_des/100, [50, 75, 100, 120]))  
         
-        cfg_offset_dict["mdot_main"]     = list(map(lambda x: x * mdot_main_des/100, [75, 90, 100, 120]))
-        cfg_offset_dict["T_heater_hot"]  = list(map(lambda x: from_degC(x), [550, 600, 650, 700]))
-        cfg_offset_dict["T_cooler_cold"] = list(map(lambda x: from_degC(x), [30, 35, 40, 45]))
-        # cfg_offset["mdot_heater_hot"] = 55
+        cfg_offset_dict["T_heater_hot"]    = T_HTF_in
+        cfg_offset_dict["mdot_heater_hot"] = mdot_heat
+        cfg_offset_dict["mdot_main"]       = mdot_main
+        cfg_offset_dict["T_cooler_cold"]   = T_amb
         # cfg_offset["gamma"] =[0.3, 0.325, 0.35, 0.375, 0.4, 0.45]	
-        cfg_offset_dict["gamma"] =[0.3, 0.35, 0.4, 0.45]	       
+        # cfg_offset_dict["gamma"] =[0.3, 0.35, 0.4, 0.45]	       
 
         # src -> dst
         mapping = {
@@ -221,27 +236,21 @@ def main(work_root = []):
     json_str = ds_test.to_json()    
     print(json_str)
     
-    # *** IMPORTANTED: Ports' names changed ***
     ports = [
-        'r01', 'r02', 'r03', 'r04', 'r05',
-        'r06', 'r07', 'r08', 'r08_source', 'r08a', 'r08b', 'r09', 'r10',
-        'rh1', 'rh2', 'rc1', 'rc2']
+        'r_cooler_hout', 'r_comp_out', 'r_HTR_cin', 'r_HTR_cout', 'r_heater_cout',
+        'r_HTR_hin', 'r_HTR_hout', 'r_LTR_hout', 'r_cooler_hin', 'r_recomp_in', 
+        'r_recomp_out', 'r_LTR_cout', 'r_heater_hin', 'r_heater_hout', 
+        'r_cooler_cin', 'r_cooler_cout']
 
     # (propName, unit)
     props = [
-        # ('fluid', '1'), # error in parsing this props, since returned name(string) are not digitial values
+        # ('fluid', '1'), # error in parsing this props, since returned name(string) are not digital values
         ('T', 'K'), 
         ('p', 'Pa'),
         ('rho', 'kg/m3'),
         ('w', 'kg/s'),
         ('h', 'kJ/kg'),
         ('s', 'kJ/kgK')]
-
-    # props = [
-    #     ('T','K'), 
-    #     ('p', 'Pa'),
-    #     ('h', 'kJ/kg'),
-    #     ('w', 'kg/s')]
 
     sol_dict = OrderedDict()
 
@@ -294,18 +303,29 @@ def main(work_root = []):
     exp.simulate_batch(
         sim_ops=[
             'startTime=0', 
-            'stopTime=100',
-            'stepSize=10',
+            'stopTime=10',
+            'stepSize=2',
             'solver=dassl',
             '-nls=homotopy',
-            '-lv=LOG_DEBUG,LOG_INIT,LOG_NLS,LOG_NLS_V,LOG_STATS'],
+            '-newtonXTol=1e-6',
+            '-newtonFTol=1e-6',
+            '-lv=LOG_DEBUG,LOG_INIT,LOG_NLS,LOG_STATS'],
         solution_dict=sol_dict, 
         ds_test=ds_test)   
 
-    # exp.save_results(ds_test)
+    exp.save_results(ds_test)
 
     print('All done!')
 
-###
+
 if __name__ == "__main__":
-    main()
+
+    mdot_main_des = 125 # Working fluid mass flow rate design point. 
+
+    # call the parameter sweep function to generate performance map
+    gen_performance_map(
+        mdot_heat = [30, 35, 40, 45],
+        mdot_main = list(map(lambda x: x * mdot_main_des/100, [75, 90, 100, 120])),
+        T_HTF_in  = list(map(lambda x: from_degC(x), [550, 600, 650, 700])),
+        T_amb     = list(map(lambda x: from_degC(x), [30, 35, 40, 45]))
+    )
