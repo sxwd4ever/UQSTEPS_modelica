@@ -28,6 +28,13 @@ In SCOPE, the Modelica code for a 10 WMe s-CO2 RCBC off-design simulation is sav
 As is shown in Figure 2, the simulation code is configured with fixed pre-defined design point values  $T_{HTF,in}=800°C,T_{amb}=45°C, \dot{m}_{co2}=125 kg/s, \dot{m}_{HTF,in}=40 kg/s$  (marked with red under line). Other parameter values can be assigned by modifying these parameters.
 
 To run the simulation, click the simulation button in the toolbar menu to start the simulation and see result. More instruction about how to run a Modelica simulation can be found in [OpenModelica User’s Guide](https://www.openmodelica.org/doc/OpenModelicaUsersGuide/latest/)
+### 2.1 Consideration in parameter modification
+
+For a given power block, the off-design simulation is only feasible with valid system parameters. The value of the input parameters can not be set arbitrarily since invalid parameters will cause initial errors or runtime errors and halt the simulation abnormally. For example, the geometry parameter for heater, low temperature recuperator (LTR) and high temperature recuperator (HTR) are selected with careful computation. For turbomachines, the performance maps are also valid within certain range and validity issue should be considered as well. 
+
+It is a complicated task to find the proper parameter values and boundary conditions for given power block. Therefore, on-design simulation involving the design process is required before fulfilling the off-design simulation, through which the system parameters can be figured out. If the design point altered, the configuration of parameters such as geometry (TIM, TIP, channel numbers of LTR, HTR, etc.) should be updated as well to enable the off-design simulation. 
+
+For current configuration (10 WMe sCO2 RCBC), variations ranging in $\pm 15 \%$ of the design point are valid. The feasibility for bigger variations can not be guaranteed.  
 
 ## 2. Performance map generation using Python
 
@@ -62,6 +69,25 @@ if __name__ == "__main__":
     )
 
 ```
+
+## 3. 10 MWe sCO2 RCBC Transient Simulation in Modelica
+
+In SCOPE, the logic and configuration of a 10 WMe sCO2 RCBC transient simulation is saved in file '{SCOPE_ROOT}/src/Modelica/Steps/Cycle/Transient/TPDyn_RCBCylce.mo'. The graphical user interface (GUI) of the simulation code is shown in Figure 4,
+
+![](img/RCBC_layout_modelica_dyn.png)
+*Figure 4. GUI of 10 MWe sCO2 RCBC Transient Simulation*
+
+In Figure 4, constant value, step change or ramp change in the turbine inlet mass flow rate (TIM) or turbine inlet pressure (TIP) can be applied to change the boundary conditions dynamically for the RCBC transient simulation. Furthermore, when TIP or TIM changes during the transient simulation, the turbine or compressor’s shaft speed should be adjusted accordingly. Otherwise, significant discrepancies in mass flow rate or pressure will be witnessed on the opposite side of the virtual break, i.e. at the source and the sink of the power block. Actually, the thermodynamic states and hydraulic properties should be identical at source and sink component since they physically stand for same location in the loop. Therefore, three speed controllers are developed in SCOPE to adjust turbomachines’ shaft speed and to achieve the equilibrium states between source and sink. More effects of the speed controllers will be presented in the result presentation. 
+
+To run the transient simulation, please follow similar procedure as in Section 1 about how to start the off-design simulation. Also, the validity issue of system parameters should also be paid attention to. 
+ 
+## 4. Prerequisites
+
+To run SCOPE, several open-source libraries are required, 
+
+- ExternalMedia and CoolProp. These two libraries are required to provide the thermo-physical properties of the super critical $\text{CO}_2$. Two windows-based platform dynamic link libraries (DLLs) are included in '{SCOPE_ROOT}/lib'. 
+- ThermoPower. ThermoPower is a Modelica open-source library which is distributed with OpenModelica. 
+- SolarTherm. [SolarTherm](https://github.com/SolarTherm/SolarTherm ) is an open source Modelica project developed by ANU team for Solar thermal power station performance simulation and optimisation. It is required to provide the properties of the HTF such as liquid sodium and molten salt. 
 
 ## Reference 
 
