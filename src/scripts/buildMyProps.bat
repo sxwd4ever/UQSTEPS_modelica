@@ -1,3 +1,5 @@
+setlocal EnableDelayedExpansion
+
 SET CWD=%cd%
 
 cd build
@@ -12,13 +14,20 @@ SET MODELICA_INCLUDE=..\Modelica\Steps\Resources\Include
 
 SET MODELICA_LIBRARY=..\Modelica\Steps\Resources\Library
 
-SET MODELICA_TEST=C:\Users\uqxsui\AppData\Local\Temp\OpenModelica\OMEdit\Steps.Utilities.CoolProp
+SET MODELICA_WS[0]="C:\Users\uqxsui\AppData\Local\Temp\OpenModelica\OMEdit\Steps.Cycle.OffDesignRCBCycle_v2"
+SET MODELICA_WS[1]="C:\Users\uqxsui\AppData\Local\Temp\OpenModelica\OMEdit\Steps.Test.TestComponentSeries"
+SET MODELICA_WS[2]="C:\Users\uqxsui\AppData\Local\Temp\OpenModelica\OMEdit\Steps.Test.TestPCHECImpl"
+SET MODELICA_WS[3]="C:\Users\uqxsui\AppData\Local\Temp\OpenModelica\OMEdit\Steps.Utilities.CoolProp"
+
+ECHO OFF
 
 REM build
 
 REM generate dynamic lib
 
-REM libCoolProp.a (static library) should be exsits current directory
+REM libCoolProp.a (static library) should be exsits in working directory
+
+ECHO ON
 
 g++ -g -ggdb -c ../MyPropsLib.cpp ../PCHE.cpp -m64 -DBUILDING_DLL -DWITH_SHARED_LIB_WRAPPER -DSHARED_PTR_TR1_NAMESPACE -DSHARED_PTR_TR1_MEMORY_HEADER -I%INCLUDE_COOLPROP% -I%INCLUDE_FMT_LIB%
 
@@ -36,4 +45,9 @@ copy PCHE.h %MODELICA_INCLUDE%
 
 copy build\%TARGET_LIB% %MODELICA_LIBRARY%
 
-copy build\%TARGET_LIB% "%MODELICA_TEST%"
+REM copy build\%TARGET_LIB% %TARGETDIR%
+
+for /L %%i in (0,1,3) do (
+    call echo !MODELICA_WS[%%i]!
+    call copy build\%TARGET_LIB% !MODELICA_WS[%%i]!
+)

@@ -1,26 +1,34 @@
 within Steps.Media;
 package SCO2 "supercritical CO2"
-  /*
-  extends Modelica.Media.IdealGases.Common.SingleGasNasa(
-  mediumName="Carbon Dioxide",
-  data=Modelica.Media.IdealGases.Common.SingleGasesData.CO2,
-  fluidConstants={Modelica.Media.IdealGases.Common.FluidData.CO2});
-  */
-  
-  extends Modelica.Media.Interfaces.PartialPureSubstance(
-    ThermoStates=Modelica.Media.Interfaces.Choices.IndependentVariables.pT,
-    FluidConstants = Modelica.Media.Interfaces.Types.IdealGas.FluidConstants,
-    mediumName="CO2",
-    substanceNames={"CO2"},
-    singleState=false,
-    final reducedX = true, 
-    final fixedX = true, 
-    Temperature(min=200, max=6000, start=500, nominal=500),
-    SpecificEnthalpy(start=0, nominal=1.0e5),
-    Density(start=10, nominal=10),
-    AbsolutePressure(start=10e5, nominal=10e5));  
-  
-  constant Modelica.Media.IdealGases.Common.DataRecord CO2(
+  extends ExternalMedia.Media.CoolPropMedium(
+      // mediumName = "CarbonDioxide",
+      mediumName = "CO2",
+      // substanceNames = {"CO2|debug=40"}, // for single test, more detailed output
+      substanceNames = {"CO2"}, // for parameters sweep, lesser output with the debug flag
+      ThermoStates = Modelica.Media.Interfaces.Choices.IndependentVariables.pT,
+      // inputChoice = ExternalMedia.Common.InputChoice.pT,
+      singleState=false,
+      onePhase = true,
+      final reducedX = true, 
+      final fixedX = true, 
+      // just for Pijarra Hill Experimental data which is below critical point. 
+      // Temperature(min=204.128, max=2000, start=204.128, nominal=204.128),
+      // Valid range of temperature
+      Temperature(min=304.128, max=2000, start=304.128, nominal=304.128),
+      //SpecificEnthalpy(start=2e5, nominal=1.0e5),
+      AbsolutePressure(min=7.377e6, start=7.377e6, nominal=7.377e6),      
+      SpecificEnthalpy(start=if Functions.referenceChoice==ReferenceEnthalpy.ZeroAt0K then data.H0 else
+        if Functions.referenceChoice==ReferenceEnthalpy.UserDefined then Functions.h_offset else 0, nominal=1.0e5),      
+     Density(start=10, nominal=10),
+     fluidConstants = {CO2FluidConstants});
+     
+  import Modelica.Media.Interfaces.Choices.ReferenceEnthalpy;   
+  import Modelica.Media.IdealGases.Common;
+  import Modelica.Media.IdealGases.Common.Functions;
+  import Modelica.Media.Air.ReferenceAir.Air_Utilities;
+  import SI = Modelica.SIunits;
+              
+  constant Modelica.Media.IdealGases.Common.DataRecord data(
     name="CO2",
     MM=0.0440095,
     Hf=-8941478.544405185,
@@ -32,197 +40,171 @@ package SCO2 "supercritical CO2"
     ahigh={117696.2419,-1788.791477,8.29152319,-9.22315678e-005,4.86367688e-009,
         -1.891053312e-012,6.330036589999999e-016},
     bhigh={-39083.5059,-26.52669281},
-    R=188.9244822140674);
-  
-  
-  
-  import CP = Steps.Utilities.CoolProp;  
-  import SI = Modelica.SIunits;
-  
+    R=188.9244822140674) "Data record of ideal gas substance";
   /*
-  type Temperature = Real (
-      final quantity="ThermodynamicTemperature",
-      final unit="K",
-      min=273.15,
-      max=1200,
-      start=300,
-      nominal=300,
-      displayUnit="degC")
-      "Temperature of the medium; add of min and max constraints"
-      annotation(absoluteValue=true); 
-  */
-  
+    type AbsolutePressure    
+      "Type for absolute pressure with medium specific attributes"
+    extends SI.AbsolutePressure(
+      min=7.377e6,
+      max=1.0e8,
+      nominal=7.377e6,
+      start=7.377e6);
+    end AbsolutePressure;
+    
+    type SpecificEnthalpy 
+    extends SI.SpecificEnthalpy(
+      start=if Functions.referenceChoice==ReferenceEnthalpy.ZeroAt0K then data.H0 else
+        if Functions.referenceChoice==ReferenceEnthalpy.UserDefined then Functions.h_offset else 0, 
+      nominal=1.0e6);
+    end SpecificEnthalpy;
+      
+    type Temperature
+      "Type for temperature with medium specific attributes"
+      extends SI.Temperature(
+      min=304.128,
+      max=1.0e4,
+      nominal=304.128,
+      start=304.128);
+    end Temperature;
+  */          
+    constant Modelica.Media.Interfaces.Types.IdealGas.FluidConstants CO2Constants = Modelica.Media.IdealGases.Common.FluidData.CO2;
+    
+    replaceable constant FluidConstants CO2FluidConstants = FluidConstants(
+      iupacName=  CO2Constants.iupacName,
+      casRegistryNumber=  CO2Constants.casRegistryNumber,
+      chemicalFormula=  CO2Constants.chemicalFormula,
+      structureFormula=  "unknown",
+      molarMass=  0.0440098, // "value in CoolProp slightly different from CO2Constants.molarMass 0.0440095",
+      criticalTemperature= 304.128, // "value in CoolProp slightly different from CO2Constants.molarMass 304.12",
+      criticalPressure= 7.3773e6, // "value in CoolProp slightly different from CO2Constants.molarMass 73.74e5",
+      criticalMolarVolume= 9.41185e-5, // "value in CoolProp slightly different from CO2Constants.molarMass 94.07e-6",
+      acentricFactor=  CO2Constants.acentricFactor,
+      triplePointTemperature=  280,
+      triplePointPressure=  500,
+      meltingPoint=  CO2Constants.meltingPoint,
+      normalBoilingPoint=  CO2Constants.normalBoilingPoint,
+      dipoleMoment=  CO2Constants.dipoleMoment); 	  
 
-  redeclare record extends ThermodynamicState "A selection of variables that uniquely defines the thermodynamic state"
-      AbsolutePressure p "Absolute pressure of medium";
-      Temperature T "Temperature of PBMedia";
-  end ThermodynamicState;
+  // It is necessary to redeclare this function 
+  // althought these two (here and ExternalMedia's code) are identical. 
+  // Or else runtime error will occour in the way that Hmoler, P, T will out of range
+  // The cause of this bug is not clear yet. - Xin, 06/05/2021
 
-  
-  /*
-  record FullThermodynamicState
-    "Full state info for a medium, for data transfer purpose"
-    
-    Modelica.SIunits.Temperature T;
-    Modelica.SIunits.AbsolutePressure p;
-    Modelica.SIunits.SpecificEnthalpy h;    
-    Modelica.SIunits.SpecificEntropy s;
-    Modelica.SIunits.Density d;
-    
-  end FullThermodynamicState;
-  */
-  
-  redeclare replaceable model extends BaseProperties(final standardOrderComponents = true) "Base properties of medium"
-    Modelica.SIunits.SpecificEntropy s;
-  equation
-      state.p = p;
-      state.T = T;     
-      d = CP.PropsSI("D", "P", p, "T", T, mediumName);
-      h = CP.PropsSI("H", "P", p, "T", T, mediumName);
-      s = CP.PropsSI("S", "P", p, "T", T, mediumName);
-      u = h - p / d;
-      MM = 0.044;
-      R = 8.3144 / MM; 
-  end BaseProperties;
-    
-  function getFullState
-    "get the full state of this medium"
-    input BaseProperties prop;
-    output FullThermodynamicState state;
-    algorithm
-    
-    state.T := prop.T;
-    state.p := prop.p;
-    state.h := prop.h;
-    state.d := prop.d;
-    state.s := prop.s;
-    
-  end getFullState;
-    
-  redeclare function setState_pTX "Return thermodynamic state from p, T, and X or Xi"
+  redeclare replaceable function setState_pT
+    "Return thermodynamic state record from p and T"
     extends Modelica.Icons.Function;
-    input AbsolutePressure p "Pressure";
-    input Temperature T "Temperature";
-    input MassFraction X[:] = reference_X "Mass fractions";
-    output ThermodynamicState state "Thermodynamic state record";
-  algorithm
-    state := ThermodynamicState(p = p, T = T);
-  end setState_pTX;
-
-  redeclare function setState_phX "Return thermodynamic state from p, h, and X or Xi"
-    extends Modelica.Icons.Function;
-    input AbsolutePressure p "Pressure";
-    input SpecificEnthalpy h "Specific enthalpy";
-    input MassFraction X[:] = reference_X "Mass fractions";
-    output ThermodynamicState state "Thermodynamic state record";
-  algorithm
-    state := ThermodynamicState(p = p, T = CP.PropsSI("T", "P", p, "H", h, mediumName));
-  end setState_phX;
-
-  redeclare function setState_psX "Return thermodynamic state from p, s, and X or Xi"
-    extends Modelica.Icons.Function;
-    input AbsolutePressure p "Pressure";
-    input SpecificEntropy s "Specific entropy";
-    input MassFraction X[:] = reference_X "Mass fractions";
-    output ThermodynamicState state "Thermodynamic state record";
-  algorithm
-    state := ThermodynamicState(p = p, T = CP.PropsSI("T", "P", p, "S", s, mediumName));
-  end setState_psX;
-  
-  function setState_ph
-    "Return thermodynamic state from p and h"
-    extends Modelica.Icons.Function;
-    input AbsolutePressure p "Pressure";
-    input SpecificEnthalpy h "Specific enthalpy";
-    input FixedPhase phase=0
+    input AbsolutePressure p "pressure";
+    input Temperature T "temperature";
+    input FixedPhase phase = 1
       "2 for two-phase, 1 for one-phase, 0 if not known";
-    output ThermodynamicState state "Thermodynamic state record";
-  algorithm
-    state := setState_phX(
-            p,
-            h,
-            fill(0, 0),
-            phase);
+    output ThermodynamicState state;
+  algorithm  
+    // assert((p > 1000 and p < 2.5e8) and (h > 0 and h < 2e8), "Invalid Pressure or Specific Enthalpy (p, h)=(" + String(p) + "," + String(h) + ")");  
+    state := setState_pT_lib(p, T, phase);
+    
+    // external media indicates the computation error by assign negetive values for p, h, T.
+    if(state.p < 0 and state.T < 0 and state.h < 0) then
+      assert(false, "Error in region computation of ExternalMedia" + "(p = " + String(p) + ", T = " + String(T) + ")");    
+    end if;      
+    
+    
+    annotation(Include="#include \"externalmedialib.h\"", Library="ExternalMediaLib", IncludeDirectory="modelica://ExternalMedia/Resources/Include", LibraryDirectory="modelica://ExternalMedia/Resources/Library");
+  end setState_pT;
+
+
+  function setState_pT_lib
+    "Return thermodynamic state record from p and T"
+    extends Modelica.Icons.Function;
+    input AbsolutePressure p "pressure";
+    input Temperature T "temperature";
+    input FixedPhase phase = 1
+      "2 for two-phase, 1 for one-phase, 0 if not known";
+    output ThermodynamicState state;
+  external "C" TwoPhaseMedium_setState_pT_C_impl(p, T, state, mediumName, libraryName, substanceName)
+    annotation(Include="#include \"externalmedialib.h\"", Library="ExternalMediaLib", IncludeDirectory="modelica://ExternalMedia/Resources/Include", LibraryDirectory="modelica://ExternalMedia/Resources/Library");
+  end setState_pT_lib;
+  
+  
+/*  
+  redeclare replaceable function setState_ph
+    input AbsolutePressure p "pressure";
+    input SpecificEnthalpy h "specific enthalpy";
+    input FixedPhase phase = 1
+      "2 for two-phase, 1 for one-phase, 0 if not known";
+    output ThermodynamicState state;      
+  external "C" TwoPhaseMedium_setState_ph_C_impl(p, h, phase, state, mediumName, libraryName, substanceName)
+    annotation(Include="#include \"externalmedialib.h\"", Library="ExternalMediaLib", IncludeDirectory="modelica://ExternalMedia/Resources/Include", LibraryDirectory="modelica://ExternalMedia/Resources/Library");
+  end setState_ph; 
+*/    
+
+  // To locate the error source during initialization, use this wrapper function to add assert()
+  redeclare replaceable function setState_ph
+    input AbsolutePressure p "pressure";
+    input SpecificEnthalpy h "specific enthalpy";
+    input FixedPhase phase = 1
+      "2 for two-phase, 1 for one-phase, 0 if not known";
+    output ThermodynamicState state;        
+   
+  algorithm    
+  
+    // assert((p > 1000 and p < 2.5e8) and (h > 0 and h < 2e8), "Invalid Pressure or Specific Enthalpy (p, h)=(" + String(p) + "," + String(h) + ")");  
+    state := setState_ph_lib(p, h, phase);
+    
+    // external media indicates the computation error by assign negetive values for p, h, T.
+    if(state.p < 0 and state.T < 0 and state.h < 0) then
+      assert(false, "Error in region computation of ExternalMedia" + "(p = " + String(p) + ", h = " + String(h) + ")");    
+    end if;  
+    
   end setState_ph;
+    
+  function setState_ph_lib
+    "Return thermodynamic state record from p and h"
+    extends Modelica.Icons.Function;
+    input AbsolutePressure p "pressure";
+    input SpecificEnthalpy h "specific enthalpy";
+    input FixedPhase phase = 1
+      "2 for two-phase, 1 for one-phase, 0 if not known";
+    output ThermodynamicState state;
+  external "C" TwoPhaseMedium_setState_ph_C_impl(p, h, phase, state, mediumName, libraryName, substanceName)
+    annotation(Include="#include \"externalmedialib.h\"", Library="ExternalMediaLib", IncludeDirectory="modelica://ExternalMedia/Resources/Include", LibraryDirectory="modelica://ExternalMedia/Resources/Library");
+  end setState_ph_lib;  
 
-  redeclare function extends pressure "Return pressure"
+/*  
+  redeclare function extends specificEnthalpy "Return specific enthalpy as a function of the thermodynamic state record"
+      algorithm
+        h := specificEnthalpy_pT(p = state.p, T = state.T);
+      annotation(
+        Inline = true,
+        smoothOrder = 2);
+    end specificEnthalpy;  
+*/
+  /*
+  // To locate the error source during initialization, use this wrapper function to add assert()
+  redeclare replaceable function setState_pT
+    "Return thermodynamic state record from p and T"
+    extends Modelica.Icons.Function;
+    input AbsolutePressure p "pressure";
+    input Temperature T "temperature";
+    input FixedPhase phase = 1
+      "2 for two-phase, 1 for one-phase, 0 if not known";
+    output ThermodynamicState state;
   algorithm
-      p := state.p;
-  end pressure;
-
-  redeclare function extends temperature "Return temperature"
-  algorithm
-      T := state.T;
-  end temperature;
-
-  redeclare function extends specificEnthalpy "Return specific enthalpy"
-  algorithm
-      h := CP.PropsSI("H", "P", state.p, "T", state.T, mediumName);
-  end specificEnthalpy;
-
-  redeclare function extends density "Return density"
-  protected
-      outer Modelica.Blocks.Types.ExternalCombiTable2D tableIDd_p_h;
-  algorithm
-      d := CP.PropsSI("D", "P", state.p, "T", state.T, mediumName);
-  end density;
-
-  redeclare function extends specificInternalEnergy "Return specific internal energy"
-  protected
-      outer Modelica.Blocks.Types.ExternalCombiTable2D tableIDu_p_h;
-  algorithm
-      u := CP.PropsSI("U", "P", state.p, "T", state.T, mediumName);
-  end specificInternalEnergy;
-
-  redeclare function extends dynamicViscosity "Return dynamic viscosity"
-  algorithm
-      eta := CP.PropsSI("V", "P", state.p, "T", state.T, mediumName);
-  end dynamicViscosity;
-
-  redeclare function extends thermalConductivity "Return thermal conductivity"
-  algorithm
-      lambda := CP.PropsSI("CONDUCTIVITY", "P", state.p, "T", state.T, mediumName);
-  end thermalConductivity;
+    assert(p >= 7.3773e6, "pressure out of range");
+    assert(T >= 304.128 and T <=2000, "temperature out of critical range");
+    state := setState_pT_lib(p, T, phase);
+  end setState_pT;
 
 
-  redeclare function extends specificEntropy "Return specific entropy"
-  algorithm
-      s := CP.PropsSI("S", "P", state.p, "T", state.T, mediumName);
-  end specificEntropy;
-
-  redeclare function extends specificHelmholtzEnergy "Return specific Helmholtz energy"
-  algorithm
-      f := CP.PropsSI("HELMHOLTZMASS", "P", state.p, "T", state.T, mediumName);
-  end specificHelmholtzEnergy;
-
-  redeclare function extends specificHeatCapacityCp "Return specific heat capacity at constant pressure"
-  algorithm
-      cp := CP.PropsSI("CP0MASS", "P", state.p, "T", state.T, mediumName);
-  end specificHeatCapacityCp;
-
-  redeclare function extends specificHeatCapacityCv "Return specific heat capacity at constant volume"
-  algorithm
-      cv := CP.PropsSI("CVMASS", "P", state.p, "T", state.T, mediumName);
-  end specificHeatCapacityCv;  
-  
-  redeclare function extends density_derp_T
-    "Returns the partial derivative of density with respect to pressure at constant temperature"
-  algorithm
-    ddpT := 1/(state.T*CO2.R);
-    annotation(Inline=true,smoothOrder=2);
-  end density_derp_T;
-
-  redeclare function extends density_derT_p
-    "Returns the partial derivative of density with respect to temperature at constant pressure"
-  algorithm
-    ddTp := -state.p/(state.T*state.T*CO2.R);
-    annotation(Inline=true,smoothOrder=2);
-  end density_derT_p;  
-  
-  redeclare function extends density_derX
-    "Returns the partial derivative of density with respect to mass fractions at constant pressure and temperature"
-  algorithm
-    dddX := fill(0,nX);
-    annotation(Inline=true,smoothOrder=2);
-  end density_derX;  
+  function setState_pT_lib
+    "Return thermodynamic state record from p and T"
+    extends Modelica.Icons.Function;
+    input AbsolutePressure p "pressure";
+    input Temperature T "temperature";
+    input FixedPhase phase = 1
+      "2 for two-phase, 1 for one-phase, 0 if not known";
+    output ThermodynamicState state;
+  external "C" TwoPhaseMedium_setState_pT_C_impl(p, T, state, mediumName, libraryName, substanceName)
+    annotation(Include="#include \"externalmedialib.h\"", Library="ExternalMediaLib", IncludeDirectory="modelica://ExternalMedia/Resources/Include", LibraryDirectory="modelica://ExternalMedia/Resources/Library");
+  end setState_pT_lib;
+  */   
 end SCO2;

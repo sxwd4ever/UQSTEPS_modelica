@@ -8,6 +8,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from enum import IntEnum
+from matplotlib.figure import Figure
+from utils import mkdir_filepath
 
 class AxisType(IntEnum):
     Primary = 0,
@@ -16,17 +18,17 @@ class DataSeries(object):
     ''' 
     2D data Series used to contain a series of (x,y) data
     '''
-    def __init__(self, name, x, y, range_x, range_y,cs = 'r-s', label = []):
-        self.x = x
-        self.y = y
+    def __init__(self, name, x:dict, y:dict, cs = 'r-s', ax_type=AxisType.Primary):
+        self.x = x['value']
+        self.y = y['value']
         self.name = name
-        self.range_x = range_x
-        self.range_y = range_y
+        self.range_x = x['axis_range']
+        self.range_y = y['axis_range']
         self.cs = cs
-        self.ax_type = AxisType.Primary
+        self.ax_type = ax_type
         self.ticks = [None] * 2
         self.ticks_label = [None] * 2 
-        self.label = label
+        self.label = [x['label'], y['label']]
 
     def set_tick(self, tick, tick_label, orient = 0):
         '''
@@ -43,18 +45,17 @@ class PlotManager(object):
         self.series_set = dict()
         self.title = title
 
-    def add(self, series: DataSeries, ax_type: AxisType = AxisType.Primary):
+    def add(self, series: DataSeries):
         name = series.name
 
         if name in self.series_set:
             raise ValueError(' existing data series with key=' + name)
-
-        series.ax_type = ax_type
+        
         self.series_set[name] = series               
 
     def draw(self, img_file: str = "", dest_file: str = ""):
 
-        fig, ax = None, None        
+        fig, ax = None, None
         
         for key, series in self.series_set.items():
 
@@ -65,7 +66,11 @@ class PlotManager(object):
 
         fig.suptitle(self.title)
         # save the figure 
+
+        mkdir_filepath(dest_file)
         fig.savefig(dest_file)
+
+        plt.close() # close the window once it is done. 
 
     def draw_ticks(self, ax: mp.pyplot.axes, series: DataSeries):
         '''
@@ -193,5 +198,5 @@ class PlotManager(object):
 
         x_data = [xy_data[i][0] for i in range(0, len(xy_data))]
         y_data = [xy_data[i][1] for i in range(0, len(xy_data))]
-
+        
         return x_data, y_data

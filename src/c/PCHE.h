@@ -15,6 +15,12 @@ struct ThermoState
     double p;
     double h;
     double mdot;
+    // optional id, to specify which point this state is assigned to 
+    // because of the mapping constraintns of Modelica and external functions
+    // integer id is used instead of string(char *) name
+    // more detailed naming specificaiton should be provided
+    // hot_in=0, cold_in=1, hot_out=2, cold_out=3
+    int id = -1; 
 };
 
 /**
@@ -28,7 +34,7 @@ struct PCHE_GEO_PARAM
     // pitch angle
     double phi;
     // length of segment
-    double length_cell;
+    double length;
     // Diameter of semi_circular
     double d_c;
     // number of channels
@@ -95,6 +101,21 @@ typedef struct
 
 } SimulationResult;
 
+
+// Output result work with Modelica model
+// Use this struct to limit the number of outputs and update the dll exported function
+typedef struct 
+{ 
+  // "hot side calculated pressuare, could be in/out"
+  double p_hot; 
+  // "hot side calculated specific enthalphy"
+  double h_hot;
+  // "cold side calculated pressuare, could be in/out"
+  double p_cold; 
+  // "cold side calculated specific enthalphy, could be in/out"
+  double h_cold;     
+}PCHECImplResult;
+
 class PCHE;
 
 class PCHE_CELL
@@ -110,6 +131,8 @@ public:
     // type: 0=hot, 1=cold
     void init(int idx, int type, PCHE * pche);
     void clone(PCHE_CELL * src);
+
+    std::string to_string();
 
     void print_state();
 
@@ -168,17 +191,19 @@ private:
     double _avg_T(PCHE_CELL * cell_seq, int count);
 
     /*** function outputs parameters for debug ***/
-    bool _can_log(int level);
 
-    void _print_boundary_conditions(BoundaryCondtion & bc);
+    void _log(std::string content, log_level level = log_level::INFO);
 
-    void _print_geo_param(PCHE_GEO_PARAM & geo);
+    std::string _boundary_condition_info(BoundaryCondtion & bc);    
 
-    void _print_sim_param(SIM_PARAM & sim_param);
+    std::string _geo_param_info(PCHE_GEO_PARAM & geo);
+
+    std::string _sim_param_info(SIM_PARAM & sim_param);
 
     void _print_PCHE_state(std::string title);
 
-    void _print_cp_err(const char * info);
+    void _print_cp_err(const char * err);
+    void _print_cp_err(std::string err);
 
     const char * _get_prop_name(long handle_prop);
 
@@ -222,8 +247,8 @@ private:
     double _A_stack;
     // Flow area for all channels
     double _A_flow;
-    // length of one pipe in HeatExchanger unit m
-    double _length_ch;
+    // length of one segment in a tube, m
+    double _length_cell;
 
     // mass flux for cold/hot side    
     double _G_hot, _G_cold;
@@ -231,17 +256,13 @@ private:
     PCHE_CELL * _cell_hot;
     PCHE_CELL * _cell_cold;
     
-    // overall heat transfer coefficients
-    double * _U;
-    // array of local transferred heat 
-    double * _Q;
     // index of the pinch point cell
     int _idx_pinch;
 
-    // system log level
-    int _log_level; 
+    const char * _name;
+    
 public:
-    PCHE(PCHE_GEO_PARAM & geo);
+    PCHE(const char * name, PCHE_GEO_PARAM & geo);
     ~PCHE();
 
     /**
@@ -249,9 +270,16 @@ public:
      */
     void set_kim_corr_coe(KIM_CORR_COE & coe);
 
-    void simulate(const char * media_hot, const char * media_cold, BoundaryCondtion & bc, SIM_PARAM & sim_param, SimulationResult & sr);
+    bool simulate(const char * media_hot, const char * media_cold, BoundaryCondtion & bc, SIM_PARAM & sim_param, SimulationResult & sr);
 
-
+    // overall heat transfer coefficients
+    double * _U;
+    // array of local transferred heat 
+    double * _Q;    
 };
+
+std::string new_state_string(ThermoState & st);
+
+std::string new_state_string(const char * name, ThermoState & st);
 
 #endif

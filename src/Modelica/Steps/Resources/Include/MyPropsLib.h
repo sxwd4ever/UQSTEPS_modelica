@@ -3,7 +3,10 @@
 
 #ifdef __cplusplus
 // put it here to avoid error: template with C linkage
+#include <stdio.h>
 #include <string> 
+#include <memory>
+#include <stdexcept>
 #include "PCHE.h"
 
 extern "C" {
@@ -26,6 +29,19 @@ typedef struct {
 
 } State;
 
+struct CoolPropWrapper
+{
+    long handle_cp_state;
+
+    //optional name for this state
+    const char * name;
+    /* for CP's error handle */
+    long err_code;
+    char * cp_err_buf;
+    long buffer_size;
+};
+
+void my_log(std::string content, log_level level);
 /**
  * Wrapper of CoolProp's PropsSI function. 
  */
@@ -44,7 +60,9 @@ double EXPORT_MY_CODE MyPropsSI_pH(double p, double H, const char * FluidName, d
 /**
  * off-design simulation for PCHE
  */
-double EXPORT_MY_CODE PCHE_OFFD_Simulation(const char * media_hot, const char * media_cold, PCHE_GEO_PARAM * geo, KIM_CORR_COE * cor, SIM_PARAM * sim_param, BoundaryCondtion * bc, double * h_hot, double * h_cold, double * p_hot, double * p_cold, size_t N_seg);
+double EXPORT_MY_CODE PCHE_OFFD_Simulation(const char * name, const char * media_hot, const char * media_cold, PCHE_GEO_PARAM * geo, KIM_CORR_COE * cor, SIM_PARAM * sim_param, BoundaryCondtion * bc, PCHECImplResult * retOutput);
+
+double EXPORT_MY_CODE PCHE_OFFD_Simulation_UQ_out(const char * name, const char * media_hot, const char * media_cold, PCHE_GEO_PARAM * geo, KIM_CORR_COE * cor, SIM_PARAM * sim_param, BoundaryCondtion * bc, PCHECImplResult * retOutput, double * Q, double * U);
 
 /**
  * Create new ThermoState with given (p, T), mdot and medium name
@@ -73,9 +91,24 @@ double EXPORT_MY_CODE from_degC(double degC);
  */
 bool EXPORT_MY_CODE the_same(double x, double y, double eps, double & diff_per);
 
+double EXPORT_MY_CODE material_conductivity(double T, bool extrapolate = false);
+
+double EXPORT_MY_CODE print_path_state(const char * name, const char * media, ThermoState * st, int log_level);
+
 void EXPORT_MY_CODE test_struct_param(SIM_PARAM * sim_param, PCHE_GEO_PARAM * geo, BoundaryCondtion * bc, double * h_hot, double * h_cold, double * p_hot, double * p_cold, size_t N_seg);
 
 void EXPORT_MY_CODE setState_C_impl(double p, double M,  State *state);
+
+
+/** 
+ * CoolProp query function
+ * Using modelica's external object and low level API of CoolProp to accelerate query speed.
+ */
+void * EXPORT_MY_CODE init_cp_wrapper(const char * medium, const char * name);
+
+double EXPORT_MY_CODE cp_query(void * wrapper, const char * input_pair,  double val1, double val2, const char * output_name);
+
+void EXPORT_MY_CODE close_cp_wrapper(void * state);
 
 /** 
  * functions utilizing external objects - not very useful since I have to return data
@@ -103,5 +136,25 @@ void EXPORT_MY_CODE close_PCHE_sim_ext_object(void * ext_obj);
 #ifdef __cplusplus
 }
 #endif
+
+// template function needs to be implemented in header file. 
+template<typename ... Args>
+std::string EXPORT_MY_CODE string_format( const std::string& format, Args ... args )
+{
+    try
+    {
+        size_t size = std::snprintf( nullptr, 0, format.c_str(), args ... ) + 1; // Extra space for '\0'
+        if( size <= 0 ){ throw std::runtime_error( "Error during formatting." ); }
+        std::unique_ptr<char[]> buf( new char[ size ] ); 
+        std::snprintf( buf.get(), size, format.c_str(), args ... );
+        return std::string( buf.get(), buf.get() + size - 1 ); // We don't want the '\0' inside
+    }
+    catch(const std::exception& e)
+    {
+        std::cerr << e.what() << '\n';
+        return format;
+    }   
+
+}
 
 #endif

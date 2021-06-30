@@ -8,7 +8,7 @@ model PCMHeater
   
   // Modelica.SIunits.TemperatureDifference delta_T "The exit temperature difference between PCM and fluid";
 
-  Modelica.Blocks.Interfaces.RealInput T_input;
+  parameter Modelica.Blocks.Interfaces.RealInput T_output_set;
   
   Modelica.SIunits.Temperature T_output;
   
@@ -17,22 +17,22 @@ model PCMHeater
   import Steps.Utilities.CoolProp.PropsSI;
   
   parameter Modelica.SIunits.MassFlowRate mdot_init = 100;
-
-protected
-  
-  Modelica.SIunits.Temperature T_inlet;
+  // TRUE: use pcm heater to set Power block's mass flow rate; false: use upstream component's output
+  parameter Boolean SetMdot = false;
 
 equation
-  
-  T_inlet = PropsSI("T", "P", inlet.p, "H", inlet.h_outflow, PBMedia.mediumName);
  
-  // outlet.m_flow + inlet.m_flow = 0;
+  // outlet.m_flow + inlet.m_flow = 0; 
   
-  outlet.m_flow = - mdot_init;
+  if SetMdot then
+    outlet.m_flow = - mdot_init;
+  else
+    outlet.m_flow + inlet.m_flow = 0;
+  end if;
   
-  T_output = max(T_input, T_inlet);
+  T_output = max(T_output_set, T_inlet_rt);
   
-  outlet.h_outflow =  PropsSI("H", "P", inlet.p, "T", 730, PBMedia.mediumName);
+  outlet.h_outflow =  PropsSI("H", "P", inlet.p, "T", T_output, PBMedia.mediumName);
   //outlet.T = medium_out.T;  
   outlet.p = inlet.p;  
   inlet.h_outflow = inStream(inlet.h_outflow);

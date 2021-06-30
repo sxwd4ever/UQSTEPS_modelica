@@ -3,7 +3,14 @@
     // Hover to view descriptions of existing attributes.
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
-    "configurations": [       
+    "configurations": [
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal"
+        },
         {
             "name": "g++ Launch",
             "type": "cppdbg",
@@ -51,17 +58,34 @@
             "type": "python",
             "request": "launch",
             "cwd": "${workspaceFolder}/src/python",
-            "program": "${workspaceFolder}/scripts/main.py",
-            "console": "integratedTerminal",
-            "python.terminal.activateEnvironment": true
+            "program": "main.py",
+            "console": "integratedTerminal"            
         },
         {
-            "name": "Python: Current File",
+            "name": "Python: Test TP_RCBC",
             "type": "python",
             "request": "launch",
-            "program": "${file}",
+            "cwd": "${workspaceFolder}/src/python",
+            "program": "rcbc_sim.py",
+            "console": "integratedTerminal"            
+        },
+        {
+            "name": "Python: TP_PCHE Test(Meshram)",
+            "type": "python",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/src/python",
+            "program": "test_meshram.py",
             "console": "integratedTerminal",
-            "justMyCode": true
-        }
+            "justMyCode": false
+        },
+        {
+            "name": "Python: TP_PCHE Test(Marchionni)",
+            "type": "python",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/src/python",
+            "program": "test_marchionni.py",
+            "console": "integratedTerminal",
+            "justMyCode": false
+        }                
     ]
 }

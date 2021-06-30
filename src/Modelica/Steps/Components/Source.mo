@@ -6,13 +6,15 @@ model Source
   
   import CP = Steps.Utilities.CoolProp;  
   import Modelica.SIunits.Conversions.{from_bar, from_degC};
+  import Modelica.Blocks.Interfaces.RealInput;
   
   replaceable package PBMedia = Steps.Media.SCO2;
   
   // fixed outlet temperautre and pressure
   parameter Modelica.SIunits.AbsolutePressure p_outlet = 9 * 1e6;
   parameter Modelica.SIunits.Temperature T_outlet = from_degC(400);
-
+  parameter Modelica.SIunits.SpecificEnthalpy h_outlet = CP.PropsSI("H", "P", p_outlet, "T", T_outlet, PBMedia.mediumName);
+  
   // fixed mass flow
   parameter Modelica.SIunits.MassFlowRate mdot_init = 8.3;
   
@@ -20,18 +22,21 @@ model Source
   
   Modelica.SIunits.Temperature T;
   
-  replaceable Steps.Interfaces.PBFluidPort_b outlet(redeclare package Medium = PBMedia, p.start = p_outlet) "Outlet port, next component";  
+  replaceable Steps.Interfaces.PBFluidPort_b outlet(redeclare package Medium = PBMedia, p.start = p_outlet, h_outflow.start = h_outlet) "Outlet port, next component";  
  
 equation  
   //determine the boundary condition
   if fix_state then 
     outlet.p = p_outlet;
     outlet.m_flow = - mdot_init;  
-    outlet.h_outflow = CP.PropsSI("H", "P", p_outlet, "T", T_outlet, PBMedia.mediumName);
+    // outlet.h_outflow = max(CP.PropsSI("H", "P", p_outlet, "T", T_outlet, PBMedia.mediumName), h_out_update);
+    outlet.h_outflow = h_outlet;
     T = T_outlet;
   else     
-    //outlet.h_outflow = inStream(outlet.h_outflow); 
-    T = CP.PropsSI("T", "P", p_outlet, "H", outlet.h_outflow, PBMedia.mediumName);
+    // outlet.h_outflow = inStream(outlet.h_outflow); 
+    // outlet.p = p_outlet;
+    // outlet.m_flow = - mdot_init;
+    T = CP.PropsSI("T", "P", outlet.p, "H", outlet.h_outflow, PBMedia.mediumName);
   end if;     
   
 end Source;

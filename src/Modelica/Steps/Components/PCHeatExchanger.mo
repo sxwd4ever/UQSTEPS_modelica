@@ -5,11 +5,16 @@ model PCHeatExchanger
   "Printed Circuit based Heat Exchanger"
   //extends BaseExchanger; 
   
+  import Steps.Utilities.CoolProp.PropsSI; 
   import CP = Steps.Utilities.CoolProp; 
   import TB = Modelica.Blocks.Tables;  
   import UTIL = Modelica.Utilities;
   import MyUtil = Steps.Utilities.Util;
+  import Steps.Utilities.CoolPropExternalObject;
+  import Steps.Utilities.CoolProp.QueryProps;
   import Modelica.SIunits.Conversions.{from_degC, from_bar};
+  import Steps.Model.HEBoundaryCondition;
+  
 /*  
   replaceable Steps.Interfaces.PBFluidPort_a inlet_hot(redeclare package Medium = PBMedia, p(start= p_start_hot), h_outflow(start = h_start_hot)) "Inlet port, previous component";
   replaceable Steps.Interfaces.PBFluidPort_b outlet_hot(redeclare package Medium = PBMedia, p(start= p_start_hot), h_outflow(start = h_start_hot)) "Outlet port, next component";
@@ -17,104 +22,105 @@ model PCHeatExchanger
   replaceable Steps.Interfaces.PBFluidPort_b outlet_cold(redeclare package Medium = PBMedia, p(start= p_start_cold), h_outflow(start = h_start_cold)) "Recuperator outlet";
 */
   
-  replaceable Steps.Interfaces.PBFluidPort_a inlet_hot(redeclare package Medium = PBMedia) "Inlet port, previous component";
-  replaceable Steps.Interfaces.PBFluidPort_b outlet_hot(redeclare package Medium = PBMedia) "Outlet port, next component";
-  replaceable Steps.Interfaces.PBFluidPort_a inlet_cold(redeclare package Medium = PBMedia) "Recuperator inlet";
-  replaceable Steps.Interfaces.PBFluidPort_b outlet_cold(redeclare package Medium = PBMedia) "Recuperator outlet";  
+  replaceable Steps.Interfaces.PBFluidPort_a inlet_hot(redeclare package Medium = PBMedia, p(start=bc.st_hot_in.p), h_outflow(start=bc.st_hot_in.h), m_flow(start=bc.st_hot_in.mdot)) "Inlet port, previous component";
+  replaceable Steps.Interfaces.PBFluidPort_b outlet_hot(redeclare package Medium = PBMedia, p(start=bc.st_hot_out.p), h_outflow(start=bc.st_hot_out.h), m_flow(start=bc.st_hot_out.mdot)) "Outlet port, next component";
+  replaceable Steps.Interfaces.PBFluidPort_a inlet_cold(redeclare package Medium = PBMedia, p(start=bc.st_cold_in.p), h_outflow(start=bc.st_cold_in.h), m_flow(start=bc.st_cold_in.mdot)) "Recuperator inlet";
+  replaceable Steps.Interfaces.PBFluidPort_b outlet_cold(redeclare package Medium = PBMedia, p(start=bc.st_cold_out.p), h_outflow(start=bc.st_cold_out.h), m_flow(start=bc.st_cold_out.mdot)) "Recuperator outlet";  
 
   replaceable package PBMedia = Steps.Media.SCO2; 
+  
+  parameter String name = "PCHE";
   
   parameter String name_material = "inconel 750";    
   
   MaterialConductivity mc(name_material = name_material);
   // On design parameters
   // Geometry parameters  
-  inner parameter Modelica.SIunits.Length pitch = 10 "pitch length of channel";
-  
-  inner parameter Modelica.SIunits.Angle phi = 1.0 "angle of zigzag path, unit rad";
-  
-  // Geometry determined correlation coefficients - a, b, c d
-  inner KimCorrelations kim_cor(phi = phi, pitch = pitch, d_h = d_h); 
-  
-  inner parameter Modelica.SIunits.Length length_cell = 1e-3 "length of a cell";
-  
-  parameter Modelica.SIunits.Diameter d_c = 0.0 "Diameter of semi-circular channel";
-  
-  // start values for parameters to increase convergence. on-design values should be used here
-  parameter Modelica.SIunits.Temp_K T_start_hot = from_degC(700);
-  parameter Modelica.SIunits.Temp_K T_start_cold = from_degC(15);
-  
-  parameter Modelica.SIunits.AbsolutePressure p_start_hot = from_bar(80);  
-  parameter Modelica.SIunits.AbsolutePressure p_start_cold = from_bar(200);
-  
-  //Modelica.SIunits.SpecificEnthalpy h_start_hot = CP.PropsSI("H", "P", p_start_hot, "T", T_start_hot, PBMedia.mediumName);  
-  //Modelica.SIunits.SpecificEnthalpy h_start_cold = CP.PropsSI("H", "P", p_start_cold, "T", T_start_cold, PBMedia.mediumName);
-  
-  // d_c determined variables, d_h, A_c, peri_c
-  inner Modelica.SIunits.Diameter d_h = 4 * A_c / peri_c "Hydraulic Diameter";
-  
-  inner Modelica.SIunits.Area A_c = Modelica.Constants.pi * d_c * d_c / 8 "Area of semi-circular tube";   
-  
-  inner Modelica.SIunits.Length peri_c = d_c * Modelica.Constants.pi / 2 + d_c "perimeter of semi-circular";  
-  
-  inner Modelica.SIunits.Length t_wall = (2 - Modelica.Constants.pi  / 4) * (d_c / 2) "thickness of wall between two neighboring hot and cold";
+  inner parameter PCHEGeoParam geo(
+    // pitch length
+    pitch = 12e-3,
+    // pitch angle
+    phi = from_deg((180 - 108) /2),
+    // length of pche, mm
+    length = 2860e-3,
+    // Diameter of semi_circular
+    d_c = 2e-3,
+    // number of channels
+    N_ch = integer(80e3),
+    // number of segments
+    N_seg = 50 // [Kwon2019]'s maximum node number
+  ); 
   
   parameter Modelica.SIunits.ReynoldsNumber Re_hot_start = 5e3 "Re off design value in hot stream";
 
-  parameter Modelica.SIunits.ReynoldsNumber Re_cold_start = 5e3 "Re off design value in cold stream";
+  parameter Modelica.SIunits.ReynoldsNumber Re_cold_start = 5e3 "Re off design value in cold stream";  
   
-  parameter Modelica.SIunits.MassFlowRate mdot_start_hot = 100;
+  // Geometry determined correlation coefficients - a, b, c d
+  inner KimCorrelations kim_cor(phi = geo.phi, pitch = geo.pitch, d_h = d_h); 
   
-  parameter Modelica.SIunits.MassFlowRate mdot_start_cold = 100;
+  inner Modelica.SIunits.Length length_cell = geo.length / geo.N_seg "length of a cell";  
   
-  inner parameter Integer N_ch = 10 "Number of Channels in PCHE";
+  inner CoolPropExternalObject cp_wrapper(PBMedia.mediumName, name);
   
-  inner Modelica.SIunits.Area A_stack = peri_c * length_cell * N_ch "surface area of all cells in a stack";
-  
-  inner Modelica.SIunits.Area A_flow = N_ch * A_c "Flow area for all channels";
-  
-  parameter Integer N_seg = 1 "Number of segments in a tube";
+  // d_c determined variables, d_h, A_c, peri_c
+  inner Modelica.SIunits.Diameter d_h = 4 * A_c / peri_c "Hydraulic Diameter";  
+  inner Modelica.SIunits.Area A_c = Modelica.Constants.pi * geo.d_c * geo.d_c / 8 "Area of semi-circular tube"; 
+  inner Modelica.SIunits.Length peri_c = geo.d_c * Modelica.Constants.pi / 2 + geo.d_c "perimeter of semi-circular"; 
+  inner Modelica.SIunits.Length t_wall = (2 - Modelica.Constants.pi  / 4) * (geo.d_c / 2) "thickness of wall between two neighboring hot and cold"; 
+  inner Modelica.SIunits.Area A_stack = peri_c * length_cell * geo.N_ch "surface area of all cells in a stack";
+  inner Modelica.SIunits.Area A_flow = geo.N_ch * A_c "Flow area for all channels";
   
   parameter Boolean ByInlet_hot = false "flag indicate if the fluid state is determined by upstream, which can acelerate the convergence of simulation. "; 
   
   parameter Boolean ByInlet_cold = false "flag indicate if inlet states is fixed 1: fixed; 0: free (cold stream is determined by outlet)"; 
   
-  Modelica.SIunits.Length length_ch = length_cell * N_seg "length of one pipe in HeatExchanger unit m"; 
+  parameter HEBoundaryCondition bc(
+    st_hot_in(p = from_bar(80), T = from_degC(578.22), h = PropsSI("H", "P", bc.st_hot_in.p, "T", bc.st_hot_in.T, PBMedia.mediumName), mdot = 51.91),   
+    st_cold_in(p = from_bar(200), T = from_degC(151.45), h = PropsSI("H", "P", bc.st_cold_in.p, "T", bc.st_cold_in.T, PBMedia.mediumName), mdot = 51.91), 
+    st_hot_out(p = from_bar(80), T = from_degC(156.5), h = PropsSI("H", "P", bc.st_hot_out.p, "T", bc.st_hot_out.T, PBMedia.mediumName), mdot = 51.91),
+    st_cold_out(p = from_bar(200), T = from_degC(533.5), h = PropsSI("H", "P", bc.st_cold_out.p, "T", bc.st_cold_out.T, PBMedia.mediumName), mdot = 51.91)    
+  );  
+  
+  // output for debug purpose
+  Modelica.SIunits.Temp_C T_hot_in = to_degC(cell_hot[1].T);  
+  Modelica.SIunits.Temp_C T_cold_in = to_degC(cell_cold[geo.N_seg].T);  
+  Modelica.SIunits.Temp_C T_hot_out = to_degC(cell_hot[geo.N_seg].T);  
+  Modelica.SIunits.Temp_C T_cold_out = to_degC(cell_cold[1].T);  
   
   // two sequences of the hx cells
   // use id to distinguish cold and hot cell
   // hot_cell.id > 1000 and < 2000
   // cold_cell.id > 2000
-  HXCell [N_seg] cell_cold(
+  HXCell [geo.N_seg] cell_cold(
     each ByInlet = ByInlet_cold, 
-    each inlet.p.start = p_start_cold, 
-    each inlet.h_outflow.start = CP.PropsSI("H", "P", p_start_cold, "T", T_start_cold, PBMedia.mediumName),
+    each inlet.p.start = bc.st_cold_in.p, 
+    each inlet.h_outflow.start = bc.st_cold_in.h,
     //each outlet.p.start = p_start_cold,
     //each outlet.h_outflow.start = CP.PropsSI("H", "P", p_start_cold, "T", T_start_cold, PBMedia.mediumName),
-    each T.start = T_start_cold, 
+    each T.start = bc.st_cold_in.T, 
     each Re.start = Re_cold_start,  
     //each inlet.m_flow.start = mdot_start_cold,  
-    id = {i + 2000 for i in 1 : N_seg}); 
+    id = {i + 2000 for i in 1 : geo.N_seg}); 
     
-  HXCell [N_seg] cell_hot(
+  HXCell [geo.N_seg] cell_hot(
     each ByInlet = ByInlet_hot, 
-    each inlet.p.start = p_start_hot, 
-    each inlet.h_outflow.start = CP.PropsSI("H", "P", p_start_hot, "T", T_start_hot, PBMedia.mediumName),   
+    each inlet.p.start = bc.st_hot_in.p,
+    each inlet.h_outflow.start = bc.st_hot_in.h,  
     //each outlet.p.start = p_start_hot, 
     //each outlet.h_outflow.start = CP.PropsSI("H", "P", p_start_hot, "T", T_start_hot, PBMedia.mediumName),
-    each T.start = T_start_hot,     
+    each T.start = bc.st_hot_in.T,     
     each Re.start = Re_hot_start,
     //each inlet.m_flow.start = mdot_start_hot,
-    id = {i + 1000 for i in 1 : N_seg});
+    id = {i + 1000 for i in 1 : geo.N_seg});
 
   // Heat Change
-  Modelica.SIunits.Heat Q[N_seg];  
+  Modelica.SIunits.Heat Q[geo.N_seg];  
   
   // wall thermal conductivity - determined by material of wall and local temperature
-  Modelica.SIunits.ThermalConductivity k_wall[N_seg];
+  Modelica.SIunits.ThermalConductivity k_wall[geo.N_seg];
   
   // overall Heat transfer coefficient
-  Modelica.SIunits.CoefficientOfHeatTransfer U[N_seg];   
+  Modelica.SIunits.CoefficientOfHeatTransfer U[geo.N_seg];   
   
 protected
   // internal variable, for debug or efficient purpose
@@ -137,6 +143,8 @@ protected
     parameter Boolean ByInlet = true;
     
     parameter Integer id = 0;
+    
+    PBMedia.ThermodynamicState state;
  
     // Heat Flux
     Modelica.SIunits.Heat Q; 
@@ -146,18 +154,15 @@ protected
     
     outer Modelica.SIunits.Diameter d_h "Hydraulic Diameter";  
     
-    outer KimCorrelations kim_cor;      
-    
-    // length of this cell
-    outer Modelica.SIunits.Length length_cell "unit m";  
-    
-    outer Integer N_ch "number of channels";    
-    
-    outer parameter Modelica.SIunits.Angle phi;
-    
-    outer parameter Modelica.SIunits.Length pitch;
-    
+    outer KimCorrelations kim_cor; 
+        
     outer Modelica.SIunits.Area A_flow;
+    
+    outer Modelica.SIunits.Length length_cell;
+    
+    outer PCHEGeoParam geo;
+    
+    outer CoolPropExternalObject cp_wrapper;
     
     //Local temperature
     Modelica.SIunits.Temperature T;
@@ -230,8 +235,16 @@ equation
     (outlet.h_outflow - inlet.h_outflow) * inlet.m_flow = Q;
        
     inlet.p - outlet.p = dp; 
+    
+    state = PBMedia.setState_ph(p,h);
+    
+    T = PBMedia.temperature_ph(p, h);  
+    mu = PBMedia.dynamicViscosity(state);
+    k = PBMedia.thermalConductivity(state);
+    rho = PBMedia.density(state);
+    
      
-    (T, mu, k, rho) = CP.MyPropsSI(p=p, H=h, fluidName=PBMedia.mediumName);
+    //(T, mu, k, rho) = CP.MyPropsSI(p=p, H=h, fluidName=PBMedia.mediumName);
     
     /*
     T = CP.PropsSI("V", "P", p, "H", h, PBMedia.mediumName); 
@@ -241,6 +254,15 @@ equation
     k = CP.PropsSI("L", "P", p, "T", T, PBMedia.mediumName);   
     
     rho = CP.PropsSI("D", "P", p, "T", T, PBMedia.mediumName);     
+    
+    
+    T = QueryProps(cp_wrapper, "HmassP_INPUTS", h, p, "T"); // ("V", "P", p, "H", h, PBMedia.mediumName); 
+        
+    mu = QueryProps(cp_wrapper, "HmassP_INPUTS", h, p, "VISCOSITY");
+
+    k = QueryProps(cp_wrapper, "HmassP_INPUTS", h, p, "CONDUCTIVITY");  
+    
+    rho = QueryProps(cp_wrapper, "HmassP_INPUTS", h, p, "DMASS");   
     */
     
     Re = G * d_h / mu; 
@@ -264,7 +286,7 @@ algorithm
     // if a variable become invalid (zero, inf or weired)
     // 1. make a copy of its equation
     // 2. move the copy into this section, rewrite the equation into an algorithm ('=' -> ':=')
-    // 3. commet the origin one
+    // 3. comment the origin one
     // 4. update the calling of function MyAseert accordingly to print value in console
     //
     // once the bug fixed, DO REMEMBER to rewind the changed lines reversely. 
@@ -306,14 +328,14 @@ algorithm
 equation  
   
   // connect all the segments within the heat exchanger, except for the end segment
-  for i in 1 : N_seg loop
+  for i in 1 : geo.N_seg loop
   
     if i <> 1 then
       // connect current segment's cold outlet with next segment's cold inlet
       connect(cell_cold[i].outlet, cell_cold[i-1].inlet);
     end if;
     
-    if i <> N_seg then
+    if i <> geo.N_seg then
       // connect current segment's hot outlet with previous segment's hot inlet
       connect(cell_hot[i].outlet, cell_hot[i+1].inlet);
     end if;
@@ -322,16 +344,16 @@ equation
   
   // Now connect the end segement with my inlet and outlet
   connect(cell_cold[1].outlet, outlet_cold);
-  connect(inlet_cold, cell_cold[N_seg].inlet); 
+  connect(inlet_cold, cell_cold[geo.N_seg].inlet); 
  
   connect(cell_hot[1].inlet, inlet_hot);   
-  connect(outlet_hot, cell_hot[N_seg].outlet);    
+  connect(outlet_hot, cell_hot[geo.N_seg].outlet);    
   
   //inlet_cold.h_outflow = inStream(inlet_cold.h_outflow);   
   //inlet_hot.h_outflow = inStream(inlet_hot.h_outflow);    
 
 
-  for i in 1 : N_seg loop
+  for i in 1 : geo.N_seg loop
   
     k_wall[i] = MyUtil.thermal_conductivity(tableID = mc.table_th_inconel_750, name = name_material, temperature = (cell_cold[i].T + cell_hot[i].T) / 2);
  
@@ -346,8 +368,8 @@ equation
     cell_cold[i].Q = Q[i];
     cell_hot[i].Q = -Q[i];  
     
-    cell_cold[i].G = inlet_cold.m_flow / N_ch / A_c;
-    cell_hot[i].G = inlet_hot.m_flow / N_ch / A_c;   
+    cell_cold[i].G = inlet_cold.m_flow / geo.N_ch / A_c;
+    cell_hot[i].G = inlet_hot.m_flow / geo.N_ch / A_c;   
   
   end for;
 

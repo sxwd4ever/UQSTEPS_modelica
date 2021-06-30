@@ -252,7 +252,7 @@ class TestPCHEMeshram(object):
             T_cold.append(result.get_values('pchx.cell_cold[{0}].T'.format(i+1))[0])
             # pa -> kPa
             dp_hot.append((p_hot_start - result.get_values('pchx.cell_hot[{0}].p'.format(i+1))[0]) / 1e3)
-            dp_cold.append((p_cold_start - result.get_values('pchx.cell_cold[{0}].p'.format(i+1))[0]) / 1e3)
+         FileNotFoundError   dp_cold.append((p_cold_start - result.get_values('pchx.cell_cold[{0}].p'.format(i+1))[0]) / 1e3)
         
         x_values = np.arange(0, len_seg * (N_seg) , len_seg) 
 
@@ -263,8 +263,8 @@ class TestPCHEMeshram(object):
         plot = PlotManager(title=cfg.full_name)
         plot.add(DataSeries(name = 'T_hot', x = x_values, y = np.array(T_hot), range_x=axis_x, range_y=axis_T, cs = 'r-s', label=[label_x, label_T]))
         plot.add(DataSeries(name = 'T_cold', x = x_values + len_seg, y = np.array(T_cold), range_x=axis_x, range_y=axis_T, cs = 'b--s', label=[label_x, label_T]))
-        plot.add(DataSeries(name = 'dp_hot', x = x_values, y = np.array(dp_hot), range_x=axis_x, range_y=axis_dp, cs = 'r-^', label=[label_x, label_dp]), ax_type=AxisType.Secondary)
-        plot.add(DataSeries(name = 'dp_cold', x = x_values + len_seg, y = np.array(dp_cold), range_x=axis_x, range_y=axis_dp, cs = 'b--^', label=[label_x, label_dp]), ax_type=AxisType.Secondary)
+        plot.add(DataSeries(name = 'dp_hot', x = x_values, y = np.array(dp_hot), range_x=axis_x, range_y=axis_dp, cs = 'r-^', label=[label_x, label_dp], ax_type=AxisType.Secondary))
+        plot.add(DataSeries(name = 'dp_cold', x = x_values + len_seg, y = np.array(dp_cold), range_x=axis_x, range_y=axis_dp, cs = 'b--^', label=[label_x, label_dp], ax_type=AxisType.Secondary))
 
         return plot
 

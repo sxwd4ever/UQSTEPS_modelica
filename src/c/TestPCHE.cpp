@@ -4,7 +4,7 @@
 
 int main()
 {	
-    cout<<"Ready to go"<<endl;
+    std::string info = string_format("Ready to go %d\n", 1);
 
     time_t t1, t2;
     t1 = clock();
@@ -33,26 +33,25 @@ int main()
 
     BoundaryCondtion bc;
 
-    bc.st_hot_in = * NewThermoState_pT(from_bar(90), 730, mdot_hot, mname_hot);
-    bc.st_cold_in = * NewThermoState_pT(from_bar(225), 500, mdot_cold, mname_cold);
+    bc.st_hot_in = * NewThermoState_pT(from_bar(90), 350, mdot_hot, mname_hot);
+    bc.st_cold_in = * NewThermoState_pT(from_bar(225), 300, mdot_cold, mname_cold);
     bc.st_hot_out = * NewThermoState_pT(from_bar(90), 576.69, mdot_hot, mname_hot);
     bc.st_cold_out = * NewThermoState_pT(from_bar(225), 639.15, mdot_cold, mname_cold);
-    bc.media_hot = "CO2";
-    bc.media_cold = "CO2";
 
     SIM_PARAM sim_param;
     sim_param.N_iter = 1e4;
     sim_param.err = 1e-2; // 1 percent
     sim_param.step_rel = 0.2;
     sim_param.delta_T_init = 5;
-
+    sim_param.log_level = 0;
        
     double * h_hot = new double[geo.N_seg];
     double * h_cold = new double[geo.N_seg];
     double * p_hot = new double[geo.N_seg];
     double * p_cold = new double[geo.N_seg];
 
-    PCHE_OFFD_Simulation(&geo, &cor, &sim_param, &bc, h_hot, h_cold, p_hot, p_cold, geo.N_seg);     
+    //double EXPORT_MY_CODE PCHE_OFFD_Simulation(const char * name, const char * media_hot, const char * media_cold, PCHE_GEO_PARAM * geo, KIM_CORR_COE * cor, SIM_PARAM * sim_param, BoundaryCondtion * bc, double * h_hot, double * h_cold, double * p_hot, double * p_cold);
+    PCHE_OFFD_Simulation("PCHEDemo", "CO2", "CO2", &geo, &cor, &sim_param, &bc, h_hot, h_cold, p_hot, p_cold);     
 
     t2 = clock();
     printf("All done! Elapsed time for user defined tests: %g s",(double)(t2-t1)/CLOCKS_PER_SEC);

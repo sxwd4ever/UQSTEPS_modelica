@@ -131,8 +131,8 @@ class Angle(Quantity):
     @classmethod    
     def deg(cls, val):
         return Angle(val, '°')
-
 class Pressure(Quantity):
+
     '''
     Quantity Pressure
     '''

@@ -1,5 +1,7 @@
 within Steps.Components;
 
+
+
 model KimCorrelations  "Correlation constants in Kim [2012]"
   import MyUtil = Steps.Utilities.Util;
   
@@ -11,6 +13,15 @@ model KimCorrelations  "Correlation constants in Kim [2012]"
 	output Real b;
 	output Real c;	
 	output Real d;
+	
+	record KimCorrCoe "Record for Kim correlation coefficients, aligns with the struct definition in C"
+  
+    Real a;
+    Real b;
+    Real c;
+    Real d;
+  
+  end KimCorrCoe;
 	
 	protected
     Modelica.Blocks.Types.ExternalCombiTable1D table_4a_a = Modelica.Blocks.Types.ExternalCombiTable1D(tableName = "4a_a", fileName = Modelica.Utilities.Files.loadResource("modelica://Steps/Resources/Data/kim_2012.txt"), table = fill(0.0, 9, 2), smoothness = Modelica.Blocks.Types.Smoothness.LinearSegments, columns = 2:2) "Table 4a - column a in Kim[2012] for pitch=24.6, dh=0.922 (dc=1.3 mm))";

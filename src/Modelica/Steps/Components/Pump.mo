@@ -12,10 +12,8 @@ model Pump
   input Real eta  "efficiency of this pump";   
   input SI.AbsolutePressure p_outlet "fixed outlet pressure of pump"; 
   SI.Power W_comp "power input";   
-
   
-  Modelica.SIunits.Entropy s "Isentropic entropy";
-  
+  Modelica.SIunits.Entropy s "Isentropic entropy";  
   Modelica.SIunits.SpecificEnthalpy h_isen "Isentropic enthaplpy";
   
 equation
