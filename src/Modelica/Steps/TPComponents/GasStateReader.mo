@@ -11,7 +11,8 @@ model GasStateReader
 equation   
 
   rho = gas.d;
-  s = gas.s;  
-  //s = Medium.specificEntropy(gas);
+  s = 0; // when used for thermal oil, use this trial value. 
+  // s = gas.s;  
+  // s = Medium.specificEntropy(gas);
   
 end GasStateReader;

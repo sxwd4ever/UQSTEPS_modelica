@@ -2,7 +2,7 @@
 
 a. PHE_data_[ramp/step].csv
 
-Pinjarra Hills Experimental data file for ramp/step case, provided by Hugh as recorded in Test 807 / Test 809 which are saved in project's document directories. Remove the suffix '_[ramp/step]' to make it as the input of the Jupyter notebook '../plot_data.ipynb'.
+Pinjarra Hills Experimental data file for ramp/step case, provided by Hugh as recorded in Test 807 / Test 809 which are saved in project's document directories. Remove the suffix '_[ramp/step]' to make it as the input for the Jupyter notebook '../plot_data.ipynb'.
 
 b. TestDyn_PCHE_PHE_data_[ramp/step]_YYYY_MM_DD.csv
 

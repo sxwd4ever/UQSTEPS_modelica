@@ -135,7 +135,7 @@ model TestTP_PCHE
     ),
     */
     
-    // with Marchionni Correlation    
+    // with GnielinskiHeatTransferFV Correlation    
     redeclare replaceable model HeatTransfer_F = Steps.TPComponents.GnielinskiHeatTransferFV(),
     redeclare replaceable model HeatTransfer_G = Steps.TPComponents.GnielinskiHeatTransferFV(),
     gasFlow(
