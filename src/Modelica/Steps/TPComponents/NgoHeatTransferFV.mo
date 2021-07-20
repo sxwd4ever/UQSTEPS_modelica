@@ -36,6 +36,7 @@ model NgoHeatTransferFV "Ngo heat transfer Correlation"
   
   // calculated by local averaged properties
   Real Pr[Nw];
+  Real Pr_cmp[Nw] "Dummy variables, for align the comparision";
   Real co_A[Nw] "coefficients in Eq. 2 of [Marchionni 2019]";
   Real co_B[Nw] "coefficients in Eq. 3 of [Marchionni 2019]";  
   Real f[Nw] "Fanning Friction Factor - used to calculate pressure drop";
@@ -44,6 +45,7 @@ model NgoHeatTransferFV "Ngo heat transfer Correlation"
   SI.PerUnit Re[Nw] "Reynolds number";
   SI.PerUnit Nu[Nw] "Nussult numbers";
   SI.PerUnit Re_l[Nw] "Reynolds number limited to validity range";
+  SI.PerUnit Re_cmp[Nw] "Reynolds number limited to validity range, per volume, for comparison purpose only";
   SI.CoefficientOfHeatTransfer gamma[Nw] "Heat transfer coefficients at the volumes";
   Medium.AbsolutePressure p_vol[Nw];  
 
@@ -179,6 +181,9 @@ equation
       end if;  
       //   
     end if;
+    
+    Re_cmp[j] = Re_l[j];
+    Pr_cmp[j] = Pr[j];
       
     hc[j] = noEvent(Nu[j] * k_vol[j] / Dhyd);   
 

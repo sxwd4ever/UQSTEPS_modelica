@@ -72,7 +72,7 @@ model TestTP_PCHE_PHE
   parameter Model.PCHEConfig cfg(
     redeclare package medium_main   = medium_cold,
     redeclare package medium_heater = medium_hot,
-    N_ch = 1200
+    N_ch = 1100
   );
 
   // set the parameters accordingly
@@ -140,33 +140,139 @@ model TestTP_PCHE_PHE
   Steps.TPComponents.PCHE HE(
     redeclare package FluidMedium = medium_cold, 
     redeclare package FlueGasMedium = medium_hot, 
-     
-  // with GnielinskiHeatTransferFV Correlation    
-    redeclare replaceable model HeatTransfer_F = Steps.TPComponents.GnielinskiHeatTransferFV(),
-    redeclare replaceable model HeatTransfer_G = Steps.TPComponents.GnielinskiHeatTransferFV(),
+    /* 
+    // Dittus Boelter
+    redeclare replaceable model HeatTransfer_F = Steps.TPComponents.DittusBoelterHeatTransferFV,    
+    redeclare replaceable model HeatTransfer_G = Steps.TPComponents.DittusBoelterHeatTransferFV,
+    fluidFlow(
+      heatTransfer(heating=false, Re_min = 100),  // Re_min should not be modified. for this case only.
+      fixedMassFlowSimplified = true,      
+      hstartin                = cfg_HE.cfg_fluid.st_in.h,
+      hstartout               = cfg_HE.cfg_fluid.st_out.h),   // set the fluid flow as fixed mdot for simplarity
     gasFlow(
+      heatTransfer(heating=true, Re_min = 100), // Re_min should not be modified. for this case only.
+      Tstartin  = cfg_HE.cfg_gas.st_in.T,
+      Tstartout = cfg_HE.cfg_gas.st_out.T),      
+      // Nt        = cfg_HE.cfg_gas.N_ch,
+      // Dhyd      = cfg_HE.cfg_gas.geo_area.d_hyd),    
+    */
+    /*  
+    // With Ngo correlation for both sides
+    redeclare replaceable model HeatTransfer_F = Steps.TPComponents.NgoHeatTransferFV(),
+    redeclare replaceable model HeatTransfer_G = Steps.TPComponents.NgoHeatTransferFV(),
+    gasFlow(      
       heatTransfer(
-        pitch       = cfg_HE.cfg_hot.l_pitch,
-        phi         = cfg_HE.cfg_hot.a_phi,         
-        Cf_C1       = Cf_C1, 
-        Cf_C2       = Cf_C2, 
-        Cf_C3       = Cf_C3, 
-        use_rho_bar = use_rho_bar,
-        rho_bar     = rho_bar_hot,
-        gamma_min   = 100,
-        useAverageTemperature = false)),
+        Cf_C1     = Cf_C1,
+        Cf_C2     = Cf_C2,
+        Cf_C3     = Cf_C3,
+        Re_min    = 100,
+        gamma_min = 100
+      ),
+      Tstartin  = cfg_HE.cfg_gas.st_in.T,
+      Tstartout = cfg_HE.cfg_gas.st_out.T,      
+      Dhyd      = cfg_HE.cfg_gas.geo_area.d_hyd
+    ),
+    fluidFlow(      
+      heatTransfer(
+        Cf_C1     = Cf_C1,
+        Cf_C2     = Cf_C2,
+        Cf_C3     = Cf_C3,
+        Re_min    = 100,
+        gamma_min = 100
+      ), 
+      fixedMassFlowSimplified = true,
+      hstartin                = cfg_HE.cfg_fluid.st_in.h,
+      hstartout               = cfg_HE.cfg_fluid.st_out.h
+    ),       
+    */
+    /*
+    // with Gnielinski (sco2, fluid, cold) + Ngo (oil, gas, hot) since the low Reynolds number in Oil side
+    redeclare replaceable model HeatTransfer_F = Steps.TPComponents.GnielinskiHeatTransferFV(),    
+    redeclare replaceable model HeatTransfer_G = Steps.TPComponents.NgoHeatTransferFV(),
+    gasFlow(      
+      heatTransfer(
+        Cf_C1     = Cf_C1,
+        Cf_C2     = Cf_C2,
+        Cf_C3     = Cf_C3,
+        Re_min    = 100,
+        gamma_min = 100
+      ),
+      Tstartin  = cfg_HE.cfg_gas.st_in.T,
+      Tstartout = cfg_HE.cfg_gas.st_out.T,      
+      Dhyd      = cfg_HE.cfg_gas.geo_area.d_hyd
+    ),
     fluidFlow(
       heatTransfer(
-        pitch       = cfg_HE.cfg_cold.l_pitch, 
-        phi         = cfg_HE.cfg_cold.a_phi,         
-        Cf_C1       = Cf_C1, 
+        pitch       = cfg_HE.cfg_fluid.l_pitch, 
+        phi         = cfg_HE.cfg_fluid.a_phi,         
+        Cf_C1       = 1.63, 
         Cf_C2       = Cf_C2, 
         Cf_C3       = Cf_C3, 
         use_rho_bar = use_rho_bar, 
         rho_bar     = rho_bar_cold,
         gamma_min   = 100,
-        useAverageTemperature = false)
-    ),  
+        Re_min    = 1000,
+        useAverageTemperature = false),
+      hstartin                = cfg_HE.cfg_fluid.st_in.h,
+      hstartout               = cfg_HE.cfg_fluid.st_out.h        
+    ),
+    */
+    /*
+    // with Liao (sco2, fluid, cold) + DB (oil, gas, hot) since the low Reynolds number in Oil side    
+    redeclare replaceable model HeatTransfer_G = Steps.TPComponents.DittusBoelterHeatTransferFV,
+    redeclare replaceable model HeatTransfer_F = Steps.TPComponents.LiaoHeatTransferFV(),   
+    gasFlow(
+      heatTransfer(heating=true, Re_min = 100), // Re_min should not be modified. for this case only.
+      Tstartin  = cfg_HE.cfg_gas.st_in.T,
+      Tstartout = cfg_HE.cfg_gas.st_out.T), 
+    fluidFlow(
+      heatTransfer(
+        pitch       = cfg_HE.cfg_fluid.l_pitch, 
+        phi         = cfg_HE.cfg_fluid.a_phi,         
+        Cf_C1       = 1.63, 
+        Cf_C2       = Cf_C2, 
+        Cf_C3       = Cf_C3, 
+        use_rho_bar = use_rho_bar, 
+        rho_bar     = rho_bar_cold,
+        gamma_min   = 100,
+        Re_min    = 1000,
+        useAverageTemperature = false),
+      hstartin                = cfg_HE.cfg_fluid.st_in.h,
+      hstartout               = cfg_HE.cfg_fluid.st_out.h        
+    ),    
+    */
+    
+    // with SHYoon (sco2, fluid, cold) + Ngo (oil, gas, hot) since the low Reynolds number in Oil side    
+    redeclare replaceable model HeatTransfer_G = Steps.TPComponents.NgoHeatTransferFV(),
+    redeclare replaceable model HeatTransfer_F = Steps.TPComponents.SHYoonHeatTransferFV(),
+    gasFlow(      
+      heatTransfer(
+        Cf_C1     = Cf_C1,
+        Cf_C2     = Cf_C2,
+        Cf_C3     = Cf_C3,
+        Re_min    = 100,
+        gamma_min = 100
+      ),
+      Tstartin  = cfg_HE.cfg_gas.st_in.T,
+      Tstartout = cfg_HE.cfg_gas.st_out.T,      
+      Dhyd      = cfg_HE.cfg_gas.geo_area.d_hyd
+    ),
+    fluidFlow(
+      heatTransfer(
+        pitch       = cfg_HE.cfg_fluid.l_pitch, 
+        phi         = cfg_HE.cfg_fluid.a_phi,         
+        Cf_C1       = 1.63, 
+        Cf_C2       = Cf_C2, 
+        Cf_C3       = Cf_C3, 
+        use_rho_bar = use_rho_bar, 
+        rho_bar     = rho_bar_cold,
+        gamma_min   = 100,
+        Re_min    = 1000,
+        useAverageTemperature = false),
+      hstartin                = cfg_HE.cfg_fluid.st_in.h,
+      hstartout               = cfg_HE.cfg_fluid.st_out.h        
+    ),        
+   
     redeclare model HeatExchangerTopology = ThermoPower.Thermal.HeatExchangerTopologies.CounterCurrentFlow, 
     cfg               = cfg_HE,
     N_G               = N_seg_HE,

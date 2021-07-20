@@ -1,6 +1,6 @@
 within Steps.TPComponents;
 
-model GnielinskiHeatTransferFV "Gnielinski heat transfer Correlation"
+model SHYoonHeatTransferFV "Marchionni [2019] heat transfer Correlation"
   extends BaseClasses.DistributedHeatTransferFV;
   import SI = Modelica.SIunits;
   import MyUtil = Steps.Utilities.Util;
@@ -12,7 +12,6 @@ model GnielinskiHeatTransferFV "Gnielinski heat transfer Correlation"
   //parameter Modelica.SIunits.Length pitch = 24.6 * 1e-3;
   //parameter Modelica.SIunits.Angle phi = 0.0 "unit rad";
   parameter Real Re_min = 2300 "Minimum Reynolds number";
-  parameter Real gamma_max = 15000, gamma_min = 1500 "max and min valid gamma, to prevent unfeasible gamma";
   
   SI.Length d_c = (8 * A / Modelica.Constants.pi) ^ 0.5 "Diameter of semi_circular";
   /*
@@ -32,23 +31,34 @@ model GnielinskiHeatTransferFV "Gnielinski heat transfer Correlation"
   Medium.ThermalConductivity k_vol[Nw] "Thermal conductivity";
   Medium.Density rho_vol[Nw] "Averaged Density of fluid";  
   SI.SpecificHeatCapacityAtConstantPressure cp_vol[Nw] "HeatCapacityAtConstantPressure";  
-  Medium.AbsolutePressure p_vol[Nw];  
   
   // calculated by local averaged properties
+  parameter Boolean heating = true "true if fluid is heated, false if fluid is cooled";  
   Real Pr[Nw];
-  Real Pr_cmp[Nw] "Dummy variables, for align the comparision";  
-  Real co_A[Nw] "coefficients in Eq. 2 of [Marchionni 2019]";
-  Real co_B[Nw] "coefficients in Eq. 3 of [Marchionni 2019]";  
+  Real Pr_cmp[Nw] "Dummy variables, for align the comparision";
   Real f[Nw] "Fanning Friction Factor - used to calculate pressure drop";
   Real dp[Nw];
   SI.PerUnit hc[Nw] "Local heat transfer coefficient";
   SI.PerUnit Re[Nw] "Reynolds number";
-  SI.PerUnit Re_cmp[Nw] "Reynolds number per volume, for comparison purpose only";
   SI.PerUnit Nu[Nw] "Nussult numbers";
   SI.PerUnit Re_l[Nw] "Reynolds number limited to validity range";
+  SI.PerUnit Re_cmp[Nw] "dummpy Reynolds number per volume, for comparison (with Other HT models) purpose only";  
   SI.CoefficientOfHeatTransfer gamma[Nw] "Heat transfer coefficients at the volumes";  
+  parameter Real gamma_max = 15000, gamma_min = 1500 "max and min valid gamma, to prevent unfeasible gamma";  
 
- 
+  // Real kc_T[Nw];    
+  Medium.AbsolutePressure p_vol[Nw] "volume averaged pressure";
+  SI.SpecificEnthalpy h_vol[Nw];
+  
+  // quantities evaluated at corresponding wall volume temperature
+  Medium.ThermodynamicState state_w[Nw] "ThermoDynamicState";
+  SI.Density rho_w[Nw] "density";
+  SI.SpecificEnthalpy h_w[Nw];
+  SI.SpecificHeatCapacityAtConstantPressure cp_bar[Nw] "mean specific heat in Eq. 12 in Liao's paper";
+  Real Gr[Nw] "Grasholf number";
+  
+  Real q1[Nw], q2[Nw], q3[Nw] "intermediate values for debug/correlation modelling purpose";
+  
   // node properties    
   SI.Velocity u[Nf] "Local velocity of fluid";
   Real G[Nf] "mass flow flux";
@@ -57,7 +67,6 @@ model GnielinskiHeatTransferFV "Gnielinski heat transfer Correlation"
   Medium.Density rho[Nf] "Density of fluid";  
   SI.SpecificHeatCapacityAtConstantPressure cp[Nf] "HeatCapacityAtConstantPressure";  
   SI.SpecificEnthalpy h[Nf] ;
-  Medium.AbsolutePressure p[Nf];
 
   Modelica.SIunits.Length t_wall = (2 - Modelica.Constants.pi / 4) * (d_c / 2) "thickness of wall between two neighboring hot and cold";
   parameter SI.Length pitch "pitch length";
@@ -68,7 +77,7 @@ model GnielinskiHeatTransferFV "Gnielinski heat transfer Correlation"
   // DO NOT set values for these two parameters since use_rho_bar will be used as flags in if-statement. 
   parameter Real use_rho_bar "> 0, use rho_bar for dp calculation. error in passing a boolean from OMPython so Real type variable is used here";
   parameter Real rho_bar "Averaged rho, >0: valid rho and will be used for dp calculation";   
-  
+
   parameter Real Cf_C1 = 1.0;
   parameter Real Cf_C2 = 1.0;
   parameter Real Cf_C3 = 1.0;
@@ -94,7 +103,6 @@ equation
     rho[j] = noEvent(Medium.density(fluidState[j]));
     cp[j] = noEvent(Medium.specificHeatCapacityCp(fluidState[j]));   
     h[j] = noEvent(Medium.specificEnthalpy(fluidState[j])); 
-    p[j] = fluidState[j].p;
   end for;   
   
   // required for table initialization and equation balance
@@ -110,20 +118,9 @@ equation
       k_vol[j] = noEvent((k[j] + k[j+1]) / 2);
       rho_vol[j] = noEvent((rho[j] + rho[j+1]) / 2);
       cp_vol[j] = noEvent((cp[j] + cp[j+1]) / 2); 
-      p_vol[j] = noEvent((p[j] + p[j+1]) / 2);
+      p_vol[j] = noEvent((fluidState[j].p + fluidState[j+1].p) / 2);
+      h_vol[j] = noEvent((h[j] + h[j+1]) / 2);
     else
-    /*
-      // downstream
-      T_vol[j] = noEvent(T[j+1]);
-      G_vol[j] = noEvent(G[j+1]);
-      u_vol[j] = noEvent(u[j+1]);
-      mu_vol[j] = noEvent(mu[j+1]);
-      k_vol[j] = noEvent(k[j+1]);
-      rho_vol[j] = noEvent(rho[j+1]);
-      cp_vol[j] = noEvent(cp[j+1]);
-      p_vol[j] = noEvent(fluidState[j+1].p);
-      h_vol[j] = noEvent(h[j+1]);
-    */
       // upstream
       T_vol[j] = noEvent(T[j]);
       G_vol[j] = noEvent(G[j]);
@@ -132,8 +129,25 @@ equation
       k_vol[j] = noEvent(k[j]);
       rho_vol[j] = noEvent(rho[j]);
       cp_vol[j] = noEvent(cp[j]);
-      p_vol[j] = noEvent((p[j])); 
+      p_vol[j] = noEvent(fluidState[j].p);
+      h_vol[j] = noEvent(h[j]);
     end if;    
+    
+    // kc_T[j] = if T_vol[j] < 600 then 2.0 else 1.0;  
+    
+    // calculate thermaldynamic state and relative quantities on wall temperature       
+    // Only for Liao's correlation and its update since the calculation is time consuming
+    state_w[j] = Medium.setState_pT(p_vol[j], Tw[j]);
+    rho_w[j] = Medium.density(state_w[j]);
+    h_w[j] = Medium.specificEnthalpy(state_w[j]);    
+    // use abs() to prevent negetive Gr
+    Gr[j] = abs((rho_w[j] - rho_vol[j]) * rho_vol[j] * g * (d_c ^ 3) / (mu_vol[j]^2));   
+    
+    if abs(Tw[j] - T_vol[j]) < 1e-3 then
+      cp_bar[j] = cp_vol[j]; 
+    else
+      cp_bar[j] = (h_w[j] - h_vol[j]) / (Tw[j] - T_vol[j]);  
+    end if;
     
     // calculate Re and Pr  
     Re[j] =  noEvent(G_vol[j] * Dhyd / mu_vol[j]);    
@@ -155,23 +169,27 @@ equation
         
       // dummy variables  
       Re_l[j] = Re_min; 
-         
-      co_A[j] = 0;
-      co_B[j] = 0;      
+   
       f[j] = 0;
       
+      q1[j] = 0;
+      q2[j] = 0;
+      q3[j] = 0; 
       dp[j] = 0;  
     else      
-      Re_l[j] = noEvent(Functions.smoothSat(Re[j], Re_min, 1e9, Re_min / 2));       
-      co_A[j] = noEvent(-2.0 * Modelica.Math.log10( 12 / Re_l[j])) "neglect roughness";
-      co_B[j] = noEvent(-2.0 * Modelica.Math.log10( 2.51 * co_A[j] / Re_l[j]));         
+      Re_l[j] = noEvent(Functions.smoothSat(Re[j], Re_min, 1e9, Re_min / 2));               
   
-      //C1[j] = exp(Cf_C1 +  Cf_C2  * log(Re_l[j] / 1e4)  + Cf_C3 * log(Pr[j]));
-      f[j] = noEvent(Cf_C1 * (0.25 * (( 4.781 - (co_A[j] - 4.781) ^ 2 / (co_B[j] - 2 * co_A[j] + 4.781)) ^(-2))));
-      Nu[j] = noEvent((1 / Cf_C1) * ((f[j]/2 * (Re_l[j] - 1000) * Pr[j]) / (1 + 12.7 * ( Pr[j] ^(2/3) - 1) * (f[j]/2)^0.5)));
-      
-      // co_A[j] = 1.0;
-      //  co_B[j] = 1.0;      
+      q1[j] = noEvent(Gr[j] / (Re_l[j] ^ 2));      
+      q2[j] = noEvent(rho_w[j] / rho_vol[j]);      
+      q3[j] = noEvent(cp_bar[j] / cp_vol[j]);  
+
+      // Nusselt number by Liao-Zhao correlation
+      Nu[j] = 0.14 * (Re_l[j] ^ 0.69) * (Pr[j] * 0.66); // for T_b > T_pc which is true for sco2 RCBC
+      // Nu[j] = 0.013 * (Re_l[j] ^ 1.0) * (Pr[j] * -0.05) * ( rho_pc / rho[j]); // for T_b < T_pc which is true for sco2 RCBC
+      // Nu[j] = noEvent(0.124 * (Re_l[j] ^ 0.8) * (Pr[j] ^ 0.4) * q1[j] ^ 0.203 * q2[j] ^ 0.842 * q3[j] ^ 0.384);   
+
+      // No f[j] in Liao's correlation, so use Ngo's correlation as default
+      f[j] = noEvent(0.1924 * (Re_l[j] ^ (-0.091)));    
       
       if use_rho_bar > 0 then    
         // dp[j] = noEvent(kc_dp * f[j] * l * rho_bar * u_vol[j] ^ 2 / Dhyd);
@@ -182,10 +200,8 @@ equation
       end if;  
       //   
     end if;
-    
-    Re_cmp[j] = Re_l[j];
-    Pr_cmp[j] = Pr[j]; 
-        
+    Re_cmp[j] = Re_l[j];  
+    Pr_cmp[j] = Pr[j];     
     hc[j] = noEvent(Nu[j] * k_vol[j] / Dhyd);   
 
     //th_conductivity.u[1] = (Tw[j] + T_vol[j]) / 2;
@@ -193,11 +209,6 @@ equation
     k_wall[j] =  MyUtil.metal_conductivity(th_conductivity.tableID, Tw[j]);
     
     gamma[j] = noEvent(1 / (1 / hc[j] + t_wall / k_wall[j]));
-    
-    assert(
-      gamma[j] > gamma_min and gamma[j] < gamma_max, 
-      "invalid gamma=" + String(gamma[j]) + " out of range: (min, max)=(" + String(gamma_min) + ", " + String(gamma_max) + ").");    
-      
     //gamma[j] = noEvent(hc[j]);
     
     /*
@@ -206,32 +217,23 @@ equation
     else
       gamma[j] = noEvent(1 / (1 / hc[j] + t_wall / k_wall[j]));
     end if;
-    */
-
+    
+    
     MyUtil.myAssert(
     debug = false, 
-    val_test = gamma[j], min = gamma_min, max = gamma_max,
-    name_val = "gamma[j]", 
-    val_ref = {j, T_vol[j], p[j], Re[j], G_vol[j], Dhyd, mu_vol[j], Pr[j], cp_vol[j], hc[j], t_wall, k_wall[j], Nu[j]}, 
-    name_val_ref = {"j", "T_vol[j]", "p[j]", "Re[j]", "G_vol[j]", "Dhyd", "mu_vol[j]", "Pr[j]", "cp_vol[j]", "hc[j]", "t_wall", "k_wall[j]", "Nu[j]"});  
-
-/*    
+    val_test = Tw[j], min = 0, max = 1e6,
+    name_val = "Tw[j]", 
+    val_ref = {kc, gamma[j], hc[j], k_vol[j]}, 
+    name_val_ref = {"kc", "gamma[j]", "hc[j]", "k_vol[j]"});  
+    
     MyUtil.myAssert(
     debug = false, 
     val_test = T_vol[j], min = 0, max = 1e6,
     name_val = "T_vol[j]", 
     val_ref = {kc, gamma[j], hc[j], k_vol[j]}, 
     name_val_ref = {"kc", "gamma[j]", "hc[j]", "k_vol[j]"});        
-    
-        
-    MyUtil.myAssert(
-    debug = false, 
-    val_test = gamma[j], min = 0, max = 1e6,
-    name_val = "gamma[j]", 
-    val_ref = {kc, j, hc[j], k_wall[j], t_wall, Re[j], Pr[j]}, 
-    name_val_ref = {"kc", "j", "hc[j]", "k_wall[j]", "t_wall", "Re[j]", "Pr[j]"});   
     */
-              
+    
     Qw[j] = noEvent((Tw[j] - T_vol[j]) * kc * omega * l * gamma[j] * Nt);
   end for;
 /*        
@@ -266,4 +268,4 @@ algorithm
       name_val_ref = {"kc", "gamma[j]", "hc[j]", "k_wall[j]", "k_vol[j]"});    
     end for;
 */
-end GnielinskiHeatTransferFV;
+end SHYoonHeatTransferFV;

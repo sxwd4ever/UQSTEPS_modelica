@@ -13,9 +13,13 @@ Flow1DFV
 Flow1DBase
 GasFlow1DFV
 GnielinskiHeatTransferFV
+DittusBoelterHeatTransferFV
+SJYoonHeatTransferFV
 NgoHeatTransferFV
 CompressorPham
 RampSeq_W
 RampSeq_TwoStages
 CompressorFixedPController
 TurbineFixedPController
+LiaoHeatTransferFV
+SHYoonHeatTransferFV

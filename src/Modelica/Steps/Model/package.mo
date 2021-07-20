@@ -160,7 +160,7 @@ package Model "Data model definition for consistent parameter configuration"
       A        = pi * r^2 / 2,
       w        = 0,
       h        = 0,
-      d_hyd    = 4 * pi * r / ( pi + 2),
+      d_hyd    = 2 * pi * r / ( pi + 2),
       p1       = p1,
       p2       = p2
     );
